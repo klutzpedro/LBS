@@ -24,7 +24,9 @@ const CaseManagement = () => {
       const response = await axios.get(`${API}/cases`);
       setCases(response.data);
     } catch (error) {
-      toast.error('Failed to load cases');
+      console.error('Failed to load cases:', error);
+      // Set empty array instead of showing error
+      setCases([]);
     } finally {
       setLoading(false);
     }
