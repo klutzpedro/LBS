@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
+import { useTelegram } from '@/context/TelegramContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +9,9 @@ import { Shield, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const TelegramSetup = () => {
-  const [telegramStatus, setTelegramStatus] = useState(null);
+  const { telegramAuthorized, telegramUser, refreshStatus } = useTelegram();
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState(1); // 1: phone, 2: code, 3: success
+  const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState('+62');
   const [verificationCode, setVerificationCode] = useState('');
   const [password2FA, setPassword2FA] = useState('');
@@ -18,23 +19,11 @@ const TelegramSetup = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    checkTelegramStatus();
-  }, []);
-
-  const checkTelegramStatus = async () => {
-    try {
-      const response = await axios.get(`${API}/telegram/status`);
-      setTelegramStatus(response.data);
-      
-      if (response.data.authorized) {
-        setStep(3);
-      }
-    } catch (error) {
-      console.error('Failed to check Telegram status:', error);
-    } finally {
-      setLoading(false);
+    if (telegramAuthorized) {
+      setStep(3);
     }
-  };
+    setLoading(false);
+  }, [telegramAuthorized]);
 
   const handleSendCode = async (e) => {
     e.preventDefault();
@@ -47,8 +36,8 @@ const TelegramSetup = () => {
 
       if (response.data.already_authorized) {
         toast.success('Sudah login ke Telegram!');
+        await refreshStatus();
         setStep(3);
-        checkTelegramStatus();
       } else {
         toast.success('Kode verifikasi telah dikirim!');
         setStep(2);
@@ -76,8 +65,8 @@ const TelegramSetup = () => {
         toast.info('Akun dilindungi 2FA, masukkan password');
       } else if (response.data.success) {
         toast.success('Login Telegram berhasil!');
+        await refreshStatus();
         setStep(3);
-        checkTelegramStatus();
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Verifikasi gagal');
@@ -263,7 +252,7 @@ const TelegramSetup = () => {
           )}
 
           {/* Step 3: Success */}
-          {step === 3 && telegramStatus?.authorized && (
+          {step === 3 && telegramAuthorized && telegramUser && (
             <div className="text-center space-y-6">
               <div 
                 className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
@@ -298,13 +287,13 @@ const TelegramSetup = () => {
                   Logged in as
                 </p>
                 <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
-                  {telegramStatus.user.first_name}
+                  {telegramUser.first_name}
                 </p>
                 <p className="text-sm font-mono" style={{ color: 'var(--accent-primary)' }}>
-                  @{telegramStatus.user.username}
+                  @{telegramUser.username}
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
-                  Phone: {telegramStatus.user.phone}
+                  Phone: {telegramUser.phone}
                 </p>
               </div>
 
