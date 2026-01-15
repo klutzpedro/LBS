@@ -135,7 +135,7 @@ const History = () => {
               data-testid="search-input"
               placeholder="Search phone or name..."
               className="pl-10 bg-background-tertiary border-borders-default"
-              style={{ color: 'var(--foreground-primary)' }}
+              style={{ color: '#000000' }}
             />
           </div>
 

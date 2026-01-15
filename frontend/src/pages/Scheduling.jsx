@@ -222,7 +222,7 @@ const Scheduling = () => {
                   value={newSchedule.phone_number}
                   onChange={(e) => setNewSchedule({ ...newSchedule, phone_number: e.target.value })}
                   className="font-mono bg-background-tertiary border-borders-default"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="62XXXXXXXXXX"
                   required
                 />
@@ -281,7 +281,7 @@ const Scheduling = () => {
                     value={newSchedule.interval_value}
                     onChange={(e) => setNewSchedule({ ...newSchedule, interval_value: parseInt(e.target.value) })}
                     className="bg-background-tertiary border-borders-default"
-                    style={{ color: 'var(--foreground-primary)' }}
+                    style={{ color: '#000000' }}
                     required
                   />
                 </div>

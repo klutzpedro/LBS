@@ -146,7 +146,7 @@ const TelegramSetup = () => {
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="bg-background-tertiary border-borders-default"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="+628123456789"
                   required
                 />
@@ -203,7 +203,7 @@ const TelegramSetup = () => {
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                   className="bg-background-tertiary border-borders-default text-center text-2xl tracking-widest font-mono"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="12345"
                   maxLength={5}
                   required
@@ -225,7 +225,7 @@ const TelegramSetup = () => {
                     value={password2FA}
                     onChange={(e) => setPassword2FA(e.target.value)}
                     className="bg-background-tertiary border-borders-default"
-                    style={{ color: 'var(--foreground-primary)' }}
+                    style={{ color: '#000000' }}
                     placeholder="Enter 2FA password"
                     required
                   />

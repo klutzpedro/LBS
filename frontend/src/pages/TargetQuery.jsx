@@ -314,7 +314,7 @@ const TargetQuery = () => {
                     value={manualData.name}
                     onChange={(e) => setManualData({ ...manualData, name: e.target.value })}
                     className="bg-background-secondary border-borders-default"
-                    style={{ color: 'var(--foreground-primary)' }}
+                    style={{ color: '#000000' }}
                     placeholder="Nama pemilik nomor"
                   />
                 </div>
@@ -327,7 +327,7 @@ const TargetQuery = () => {
                     value={manualData.address}
                     onChange={(e) => setManualData({ ...manualData, address: e.target.value })}
                     className="bg-background-secondary border-borders-default min-h-[60px]"
-                    style={{ color: 'var(--foreground-primary)' }}
+                    style={{ color: '#000000' }}
                     placeholder="Alamat lengkap"
                   />
                 </div>
@@ -343,7 +343,7 @@ const TargetQuery = () => {
                       value={manualData.latitude}
                       onChange={(e) => setManualData({ ...manualData, latitude: e.target.value })}
                       className="bg-background-secondary border-borders-default font-mono"
-                      style={{ color: 'var(--foreground-primary)' }}
+                      style={{ color: '#000000' }}
                       placeholder="-6.2088"
                       required
                     />
@@ -358,7 +358,7 @@ const TargetQuery = () => {
                       value={manualData.longitude}
                       onChange={(e) => setManualData({ ...manualData, longitude: e.target.value })}
                       className="bg-background-secondary border-borders-default font-mono"
-                      style={{ color: 'var(--foreground-primary)' }}
+                      style={{ color: '#000000' }}
                       placeholder="106.8456"
                       required
                     />

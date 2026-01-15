@@ -212,7 +212,7 @@ const Settings = () => {
                   value={apiId}
                   onChange={(e) => setApiId(e.target.value)}
                   className="pl-10 font-mono bg-background-tertiary border-borders-default"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="12345678"
                   required
                 />
@@ -241,7 +241,7 @@ const Settings = () => {
                   value={apiHash}
                   onChange={(e) => setApiHash(e.target.value)}
                   className="pl-10 font-mono bg-background-tertiary border-borders-default"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="abc123def456..."
                   required
                 />
