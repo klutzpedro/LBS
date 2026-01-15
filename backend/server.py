@@ -66,6 +66,8 @@ class Case(BaseModel):
 class TargetCreate(BaseModel):
     case_id: str
     phone_number: str
+    manual_mode: Optional[bool] = False
+    manual_data: Optional[dict] = None
 
 class Target(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -183,7 +185,7 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
     if not re.match(r'^62\d{9,12}$', target_data.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number format")
     
-    target = Target(**target_data.model_dump())
+    target = Target(**target_data.model_dump(exclude={'manual_mode', 'manual_data'}))
     doc = target.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     
@@ -195,10 +197,37 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
         {"$inc": {"target_count": 1}}
     )
     
-    # Start background task to query bot
-    asyncio.create_task(query_telegram_bot(target.id, target_data.phone_number))
+    # If manual mode, process immediately with provided data
+    if target_data.manual_mode and target_data.manual_data:
+        await process_manual_target(target.id, target_data.manual_data)
+    else:
+        # Start background task to query bot
+        asyncio.create_task(query_telegram_bot(target.id, target_data.phone_number))
     
     return target
+
+async def process_manual_target(target_id: str, manual_data: dict):
+    """Process target with manually entered data"""
+    try:
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    "status": "completed",
+                    "data": manual_data,
+                    "location": {
+                        "type": "Point",
+                        "coordinates": [manual_data.get('longitude'), manual_data.get('latitude')]
+                    }
+                }
+            }
+        )
+    except Exception as e:
+        logging.error(f"Error processing manual target: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
 
 @api_router.get("/targets", response_model=List[Target])
 async def get_targets(case_id: Optional[str] = None, username: str = Depends(verify_token)):
