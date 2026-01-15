@@ -72,7 +72,7 @@ const Login = () => {
                 color: 'var(--foreground-primary)'
               }}
             >
-              NORTHARCH GIS
+              WASKITA LBS
             </h1>
             <p 
               className="text-sm"
@@ -81,7 +81,7 @@ const Login = () => {
                 color: 'var(--foreground-secondary)'
               }}
             >
-              Intelligence System Login
+              Location Based System Login
             </p>
           </div>
 

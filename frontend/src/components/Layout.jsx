@@ -40,9 +40,9 @@ export const Layout = ({ children }) => {
             </div>
             <div>
               <h1 className="text-xl font-bold" style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}>
-                NORTHARCH
+                WASKITA
               </h1>
-              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>GIS Intelligence</p>
+              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Location Based System</p>
             </div>
           </div>
         </div>
