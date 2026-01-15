@@ -84,6 +84,28 @@ class QueryStatus(BaseModel):
     message: str
     data: Optional[dict] = None
 
+class ScheduleCreate(BaseModel):
+    case_id: str
+    phone_number: str
+    interval_type: str  # minutes, hourly, daily, weekly, monthly
+    interval_value: int
+    active: bool = True
+
+class Schedule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    case_id: str
+    phone_number: str
+    interval_type: str
+    interval_value: int
+    active: bool = True
+    next_run: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_run: Optional[datetime] = None
+
+class ScheduleUpdate(BaseModel):
+    active: Optional[bool] = None
+
 # Authentication
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
