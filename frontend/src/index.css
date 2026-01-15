@@ -118,3 +118,14 @@
     transition: none !important;
   }
 }
+
+/* Hide all Emergent watermarks */
+#emergent-badge,
+#emergent-watermark,
+[id*="emergent"],
+[class*="emergent-badge"],
+[class*="emergent-watermark"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
