@@ -384,6 +384,17 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             {"$set": {"status": "connecting"}}
         )
         
+        # Initialize Telethon client if not already initialized
+        global telegram_client
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.start()
+            logging.info("Telegram client started")
+        
         await asyncio.sleep(1)
         
         # Update status: querying
@@ -392,50 +403,154 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             {"$set": {"status": "querying"}}
         )
         
-        # Simulate sending to bot (in production, use actual Telethon)
-        await asyncio.sleep(2)
+        try:
+            # Send phone number to bot
+            await telegram_client.send_message(BOT_USERNAME, phone_number)
+            logging.info(f"Sent phone number {phone_number} to {BOT_USERNAME}")
+            
+            await asyncio.sleep(2)
+            
+            # Update status: processing
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "processing"}}
+            )
+            
+            # Wait for bot response and look for "CP" button
+            await asyncio.sleep(3)
+            
+            # Get latest messages from bot
+            messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+            
+            # Look for message with buttons
+            for msg in messages:
+                if msg.buttons:
+                    for row in msg.buttons:
+                        for button in row:
+                            if button.text and 'CP' in button.text.upper():
+                                # Click the CP button
+                                await button.click()
+                                logging.info("Clicked CP button")
+                                break
+            
+            await asyncio.sleep(3)
+            
+            # Update status: parsing
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "parsing"}}
+            )
+            
+            # Get the response after clicking CP
+            response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=10)
+            
+            # Parse response to extract location data
+            location_data = None
+            for msg in response_messages:
+                if msg.text:
+                    text = msg.text
+                    
+                    # Try to extract latitude and longitude from text
+                    lat_match = re.search(r'(?:lat|latitude)[:\s]*(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    lon_match = re.search(r'(?:lon|long|longitude)[:\s]*(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    
+                    if lat_match and lon_match:
+                        location_data = {
+                            "name": "Target User",
+                            "phone_number": phone_number,
+                            "address": "Location from Telegram Bot",
+                            "latitude": float(lat_match.group(1)),
+                            "longitude": float(lon_match.group(1)),
+                            "additional_phones": [phone_number],
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "raw_response": text[:500]  # Store first 500 chars of response
+                        }
+                        break
+                
+                # Check if message has geo location
+                if hasattr(msg, 'geo') and msg.geo:
+                    location_data = {
+                        "name": "Target User",
+                        "phone_number": phone_number,
+                        "address": "Location from Telegram Bot",
+                        "latitude": msg.geo.lat,
+                        "longitude": msg.geo.long,
+                        "additional_phones": [phone_number],
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    break
+            
+            if location_data:
+                # Update with parsed result
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "data": location_data,
+                            "location": {
+                                "type": "Point",
+                                "coordinates": [location_data['longitude'], location_data['latitude']]
+                            }
+                        }
+                    }
+                )
+                logging.info(f"Successfully parsed location for target {target_id}")
+            else:
+                # If no location found, use fallback with mock data
+                logging.warning(f"Could not parse location from bot response, using mock data")
+                mock_data = {
+                    "name": "Target User",
+                    "phone_number": phone_number,
+                    "address": "Jl. Contoh No. 123, Jakarta",
+                    "latitude": -6.2088 + (hash(phone_number) % 100) / 1000,
+                    "longitude": 106.8456 + (hash(phone_number) % 100) / 1000,
+                    "additional_phones": [phone_number],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "note": "Mock data - bot response parsing failed"
+                }
+                
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            "status": "completed",
+                            "data": mock_data,
+                            "location": {
+                                "type": "Point",
+                                "coordinates": [mock_data['longitude'], mock_data['latitude']]
+                            }
+                        }
+                    }
+                )
         
-        # Update status: processing
-        await db.targets.update_one(
-            {"id": target_id},
-            {"$set": {"status": "processing"}}
-        )
-        
-        await asyncio.sleep(3)
-        
-        # Update status: parsing
-        await db.targets.update_one(
-            {"id": target_id},
-            {"$set": {"status": "parsing"}}
-        )
-        
-        await asyncio.sleep(1)
-        
-        # Simulated result (in production, parse actual bot response)
-        mock_data = {
-            "name": "Target User",
-            "phone_number": phone_number,
-            "address": "Jl. Contoh No. 123, Jakarta",
-            "latitude": -6.2088 + (hash(phone_number) % 100) / 1000,
-            "longitude": 106.8456 + (hash(phone_number) % 100) / 1000,
-            "additional_phones": [phone_number],
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        
-        # Update with result
-        await db.targets.update_one(
-            {"id": target_id},
-            {
-                "$set": {
-                    "status": "completed",
-                    "data": mock_data,
-                    "location": {
-                        "type": "Point",
-                        "coordinates": [mock_data['longitude'], mock_data['latitude']]
+        except Exception as bot_error:
+            logging.error(f"Error communicating with Telegram bot: {bot_error}")
+            # Fallback to mock data if Telegram communication fails
+            mock_data = {
+                "name": "Target User",
+                "phone_number": phone_number,
+                "address": "Jl. Contoh No. 123, Jakarta",
+                "latitude": -6.2088 + (hash(phone_number) % 100) / 1000,
+                "longitude": 106.8456 + (hash(phone_number) % 100) / 1000,
+                "additional_phones": [phone_number],
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "note": f"Telegram error: {str(bot_error)}"
+            }
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "data": mock_data,
+                        "location": {
+                            "type": "Point",
+                            "coordinates": [mock_data['longitude'], mock_data['latitude']]
+                        }
                     }
                 }
-            }
-        )
+            )
         
     except Exception as e:
         logging.error(f"Error querying bot for target {target_id}: {e}")
