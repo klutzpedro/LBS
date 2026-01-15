@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
+import { useTelegram } from '@/context/TelegramContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Crosshair, Phone, Activity, CheckCircle, XCircle } from 'lucide-react';
+import { Crosshair, Phone, Activity, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const TargetQuery = () => {
@@ -15,6 +17,16 @@ const TargetQuery = () => {
   const [loading, setLoading] = useState(false);
   const [currentTarget, setCurrentTarget] = useState(null);
   const [statusPolling, setStatusPolling] = useState(null);
+  const { telegramAuthorized } = useTelegram();
+  
+  // Manual mode fields
+  const [manualMode, setManualMode] = useState(false);
+  const [manualData, setManualData] = useState({
+    name: '',
+    address: '',
+    latitude: '',
+    longitude: ''
+  });
 
   useEffect(() => {
     fetchCases();
@@ -43,17 +55,53 @@ const TargetQuery = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API}/targets`, {
+      const payload = {
         case_id: selectedCase,
         phone_number: phoneNumber
-      });
+      };
+
+      // If manual mode, include manual data
+      if (manualMode) {
+        payload.manual_mode = true;
+        payload.manual_data = {
+          name: manualData.name || 'Target User',
+          phone_number: phoneNumber,
+          address: manualData.address || 'Manual Entry',
+          latitude: parseFloat(manualData.latitude),
+          longitude: parseFloat(manualData.longitude),
+          additional_phones: [phoneNumber],
+          timestamp: new Date().toISOString(),
+          note: 'Manual entry - Telegram bot not used'
+        };
+      }
+
+      const response = await axios.post(`${API}/targets`, payload);
 
       setCurrentTarget(response.data);
-      toast.success('Target query dimulai!');
-      startStatusPolling(response.data.id);
+      
+      if (manualMode) {
+        toast.success('Target berhasil ditambahkan (mode manual)');
+        setLoading(false);
+        // Refresh to show completed status
+        setTimeout(() => {
+          checkTargetStatus(response.data.id);
+        }, 1000);
+      } else {
+        toast.success('Target query dimulai!');
+        startStatusPolling(response.data.id);
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to create target');
       setLoading(false);
+    }
+  };
+
+  const checkTargetStatus = async (targetId) => {
+    try {
+      const response = await axios.get(`${API}/targets/${targetId}/status`);
+      setCurrentTarget(prev => ({ ...prev, status: response.data.status, data: response.data.data }));
+    } catch (error) {
+      console.error('Failed to check status:', error);
     }
   };
 
@@ -124,6 +172,27 @@ const TargetQuery = () => {
         </p>
       </div>
 
+      {/* Telegram Warning */}
+      {!telegramAuthorized && (
+        <div 
+          className="p-4 rounded-lg border mb-6 flex items-start gap-3"
+          style={{
+            backgroundColor: 'rgba(255, 184, 0, 0.1)',
+            borderColor: 'var(--status-warning)'
+          }}
+        >
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-warning)' }} />
+          <div className="flex-1 text-sm">
+            <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
+              Telegram Bot Belum Terhubung
+            </p>
+            <p style={{ color: 'var(--foreground-secondary)' }}>
+              Mode manual diaktifkan. Anda perlu input data lokasi secara manual. Untuk mengaktifkan bot automation, setup Telegram di menu Settings.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Query Form */}
         <div 
@@ -133,15 +202,26 @@ const TargetQuery = () => {
             borderColor: 'var(--borders-default)'
           }}
         >
-          <h2 
-            className="text-2xl font-bold mb-6"
-            style={{ 
-              fontFamily: 'Barlow Condensed, sans-serif',
-              color: 'var(--foreground-primary)'
-            }}
-          >
-            Query Form
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 
+              className="text-2xl font-bold"
+              style={{ 
+                fontFamily: 'Barlow Condensed, sans-serif',
+                color: 'var(--foreground-primary)'
+              }}
+            >
+              Query Form
+            </h2>
+            
+            {!telegramAuthorized && (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-status-warning animate-pulse" />
+                <span className="text-xs uppercase" style={{ color: 'var(--status-warning)' }}>
+                  Manual Mode
+                </span>
+              </div>
+            )}
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -213,6 +293,84 @@ const TargetQuery = () => {
               </p>
             </div>
 
+            {/* Manual Mode Fields */}
+            {!telegramAuthorized && (
+              <div 
+                className="p-4 rounded-lg border space-y-4"
+                style={{
+                  backgroundColor: 'var(--background-tertiary)',
+                  borderColor: 'var(--borders-subtle)'
+                }}
+              >
+                <p className="text-xs font-semibold uppercase" style={{ color: 'var(--accent-primary)' }}>
+                  Input Data Manual
+                </p>
+
+                <div>
+                  <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                    Nama Target
+                  </Label>
+                  <Input
+                    value={manualData.name}
+                    onChange={(e) => setManualData({ ...manualData, name: e.target.value })}
+                    className="bg-background-secondary border-borders-default"
+                    style={{ color: 'var(--foreground-primary)' }}
+                    placeholder="Nama pemilik nomor"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                    Alamat
+                  </Label>
+                  <Textarea
+                    value={manualData.address}
+                    onChange={(e) => setManualData({ ...manualData, address: e.target.value })}
+                    className="bg-background-secondary border-borders-default min-h-[60px]"
+                    style={{ color: 'var(--foreground-primary)' }}
+                    placeholder="Alamat lengkap"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                      Latitude
+                    </Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={manualData.latitude}
+                      onChange={(e) => setManualData({ ...manualData, latitude: e.target.value })}
+                      className="bg-background-secondary border-borders-default font-mono"
+                      style={{ color: 'var(--foreground-primary)' }}
+                      placeholder="-6.2088"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                      Longitude
+                    </Label>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={manualData.longitude}
+                      onChange={(e) => setManualData({ ...manualData, longitude: e.target.value })}
+                      className="bg-background-secondary border-borders-default font-mono"
+                      style={{ color: 'var(--foreground-primary)' }}
+                      placeholder="106.8456"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                  💡 Tip: Gunakan Google Maps untuk mendapatkan koordinat. Click kanan di peta → Salin koordinat.
+                </p>
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={loading || !selectedCase}
@@ -225,7 +383,7 @@ const TargetQuery = () => {
               }}
             >
               <Crosshair className="w-5 h-5 mr-2" />
-              {loading ? 'PROCESSING...' : 'START QUERY'}
+              {loading ? 'PROCESSING...' : telegramAuthorized ? 'START QUERY' : 'ADD TARGET (MANUAL)'}
             </Button>
           </form>
         </div>
@@ -306,6 +464,16 @@ const TargetQuery = () => {
                         <p className="font-mono" style={{ color: 'var(--accent-primary)' }}>{currentTarget.data.longitude}</p>
                       </div>
                     </div>
+                    {currentTarget.data.note && (
+                      <div 
+                        className="p-3 rounded mt-3"
+                        style={{ backgroundColor: 'rgba(0, 217, 255, 0.1)' }}
+                      >
+                        <p className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
+                          📝 {currentTarget.data.note}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
