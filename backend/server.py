@@ -362,6 +362,58 @@ async def delete_schedule(schedule_id: str, username: str = Depends(verify_token
         raise HTTPException(status_code=404, detail="Schedule not found")
     return {"message": "Schedule deleted successfully"}
 
+# Settings Routes
+@api_router.post("/settings/telegram-credentials")
+async def update_telegram_credentials(credentials: dict, username: str = Depends(verify_token)):
+    api_id = credentials.get('api_id')
+    api_hash = credentials.get('api_hash')
+    
+    if not api_id or not api_hash:
+        raise HTTPException(status_code=400, detail="API ID and Hash required")
+    
+    try:
+        # Update .env file
+        env_path = ROOT_DIR / '.env'
+        env_lines = []
+        
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.startswith('TELEGRAM_API_ID='):
+                    env_lines.append(f'TELEGRAM_API_ID={api_id}\n')
+                elif line.startswith('TELEGRAM_API_HASH='):
+                    env_lines.append(f'TELEGRAM_API_HASH={api_hash}\n')
+                else:
+                    env_lines.append(line)
+        
+        # Check if TELEGRAM vars exist, if not add them
+        has_api_id = any(line.startswith('TELEGRAM_API_ID=') for line in env_lines)
+        has_api_hash = any(line.startswith('TELEGRAM_API_HASH=') for line in env_lines)
+        
+        if not has_api_id:
+            env_lines.append(f'TELEGRAM_API_ID={api_id}\n')
+        if not has_api_hash:
+            env_lines.append(f'TELEGRAM_API_HASH={api_hash}\n')
+        
+        with open(env_path, 'w') as f:
+            f.writelines(env_lines)
+        
+        # Delete old session file if exists
+        session_files = [
+            '/app/backend/northarch_session.session',
+            '/app/backend/northarch_session.session-journal'
+        ]
+        for sf in session_files:
+            if os.path.exists(sf):
+                os.remove(sf)
+        
+        return {
+            "success": True,
+            "message": "Credentials updated. Please restart backend and setup Telegram again."
+        }
+    except Exception as e:
+        logging.error(f"Error updating credentials: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Telegram Bot Integration
 telegram_client = None
 telegram_phone_code_hash = None

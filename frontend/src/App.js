@@ -8,6 +8,7 @@ import MapView from '@/pages/MapView';
 import History from '@/pages/History';
 import Scheduling from '@/pages/Scheduling';
 import TelegramSetup from '@/pages/TelegramSetup';
+import Settings from '@/pages/Settings';
 import Layout from '@/components/Layout';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TelegramProvider } from '@/context/TelegramContext';
@@ -38,6 +39,7 @@ function App() {
                       <Route path="/scheduling" element={<Scheduling />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/telegram-setup" element={<TelegramSetup />} />
+                      <Route path="/settings" element={<Settings />} />
                     </Routes>
                   </Layout>
                 </PrivateRoute>

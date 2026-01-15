@@ -9,7 +9,8 @@ import {
   Calendar,
   Clock,
   LogOut,
-  Shield
+  Shield,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -24,7 +25,8 @@ export const Layout = ({ children }) => {
     { name: 'Target Query', path: '/query', icon: Crosshair },
     { name: 'Map View', path: '/map', icon: Map },
     { name: 'Scheduling', path: '/scheduling', icon: Calendar },
-    { name: 'History', path: '/history', icon: Clock }
+    { name: 'History', path: '/history', icon: Clock },
+    { name: 'Settings', path: '/settings', icon: SettingsIcon }
   ];
 
   const handleLogout = () => {
