@@ -10,6 +10,7 @@ import Scheduling from '@/pages/Scheduling';
 import TelegramSetup from '@/pages/TelegramSetup';
 import Layout from '@/components/Layout';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { TelegramProvider } from '@/context/TelegramContext';
 import '@/App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -20,30 +21,32 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/cases" element={<CaseManagement />} />
-                    <Route path="/query" element={<TargetQuery />} />
-                    <Route path="/map" element={<MapView />} />
-                    <Route path="/scheduling" element={<Scheduling />} />
-                    <Route path="/history" element={<History />} />
-                    <Route path="/telegram-setup" element={<TelegramSetup />} />
-                  </Routes>
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-        <Toaster position="top-right" />
-      </BrowserRouter>
+      <TelegramProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/*"
+              element={
+                <PrivateRoute>
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/cases" element={<CaseManagement />} />
+                      <Route path="/query" element={<TargetQuery />} />
+                      <Route path="/map" element={<MapView />} />
+                      <Route path="/scheduling" element={<Scheduling />} />
+                      <Route path="/history" element={<History />} />
+                      <Route path="/telegram-setup" element={<TelegramSetup />} />
+                    </Routes>
+                  </Layout>
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+          <Toaster position="top-right" />
+        </BrowserRouter>
+      </TelegramProvider>
     </AuthProvider>
   );
 }
