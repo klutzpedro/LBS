@@ -31,7 +31,7 @@ JWT_SECRET = os.getenv('JWT_SECRET', 'northarch-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 
 # Telegram Client Setup
-TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID', '35564970'))
+TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID', '37983970'))
 TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH', 'd484d8fe3d2f4025f99101caeb070e1a')
 BOT_USERNAME = '@northarch_bot'
 
