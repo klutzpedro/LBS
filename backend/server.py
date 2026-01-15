@@ -265,6 +265,103 @@ async def get_stats(username: str = Depends(verify_token)):
         "success_rate": success_rate
     }
 
+# Scheduling Routes
+@api_router.post("/schedules", response_model=Schedule)
+async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends(verify_token)):
+    # Validate phone number format
+    if not schedule_data.phone_number.startswith('62'):
+        raise HTTPException(status_code=400, detail="Phone number must start with 62")
+    
+    if not re.match(r'^62\d{9,12}$', schedule_data.phone_number):
+        raise HTTPException(status_code=400, detail="Invalid phone number format")
+    
+    schedule = Schedule(**schedule_data.model_dump())
+    
+    # Calculate next run time
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    if schedule_data.interval_type == 'minutes':
+        schedule.next_run = now + timedelta(minutes=schedule_data.interval_value)
+    elif schedule_data.interval_type == 'hourly':
+        schedule.next_run = now + timedelta(hours=schedule_data.interval_value)
+    elif schedule_data.interval_type == 'daily':
+        schedule.next_run = now + timedelta(days=schedule_data.interval_value)
+    elif schedule_data.interval_type == 'weekly':
+        schedule.next_run = now + timedelta(weeks=schedule_data.interval_value)
+    elif schedule_data.interval_type == 'monthly':
+        schedule.next_run = now + timedelta(days=schedule_data.interval_value * 30)
+    
+    doc = schedule.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    if doc.get('next_run'):
+        doc['next_run'] = doc['next_run'].isoformat()
+    if doc.get('last_run'):
+        doc['last_run'] = doc['last_run'].isoformat()
+    
+    await db.schedules.insert_one(doc)
+    return schedule
+
+@api_router.get("/schedules", response_model=List[Schedule])
+async def get_schedules(username: str = Depends(verify_token)):
+    schedules = await db.schedules.find({}, {"_id": 0}).to_list(1000)
+    
+    for schedule in schedules:
+        if isinstance(schedule.get('created_at'), str):
+            schedule['created_at'] = datetime.fromisoformat(schedule['created_at'])
+        if schedule.get('next_run') and isinstance(schedule['next_run'], str):
+            schedule['next_run'] = datetime.fromisoformat(schedule['next_run'])
+        if schedule.get('last_run') and isinstance(schedule['last_run'], str):
+            schedule['last_run'] = datetime.fromisoformat(schedule['last_run'])
+    
+    return schedules
+
+@api_router.get("/schedules/{schedule_id}", response_model=Schedule)
+async def get_schedule(schedule_id: str, username: str = Depends(verify_token)):
+    schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    if isinstance(schedule.get('created_at'), str):
+        schedule['created_at'] = datetime.fromisoformat(schedule['created_at'])
+    if schedule.get('next_run') and isinstance(schedule['next_run'], str):
+        schedule['next_run'] = datetime.fromisoformat(schedule['next_run'])
+    if schedule.get('last_run') and isinstance(schedule['last_run'], str):
+        schedule['last_run'] = datetime.fromisoformat(schedule['last_run'])
+    
+    return schedule
+
+@api_router.patch("/schedules/{schedule_id}", response_model=Schedule)
+async def update_schedule(schedule_id: str, update_data: ScheduleUpdate, username: str = Depends(verify_token)):
+    schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    if update_dict:
+        await db.schedules.update_one(
+            {"id": schedule_id},
+            {"$set": update_dict}
+        )
+    
+    updated_schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    
+    if isinstance(updated_schedule.get('created_at'), str):
+        updated_schedule['created_at'] = datetime.fromisoformat(updated_schedule['created_at'])
+    if updated_schedule.get('next_run') and isinstance(updated_schedule['next_run'], str):
+        updated_schedule['next_run'] = datetime.fromisoformat(updated_schedule['next_run'])
+    if updated_schedule.get('last_run') and isinstance(updated_schedule['last_run'], str):
+        updated_schedule['last_run'] = datetime.fromisoformat(updated_schedule['last_run'])
+    
+    return updated_schedule
+
+@api_router.delete("/schedules/{schedule_id}")
+async def delete_schedule(schedule_id: str, username: str = Depends(verify_token)):
+    result = await db.schedules.delete_one({"id": schedule_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule deleted successfully"}
+
 # Telegram Bot Integration
 async def init_telegram_client():
     global telegram_client
