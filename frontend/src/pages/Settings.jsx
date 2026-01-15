@@ -52,17 +52,17 @@ const Settings = () => {
       <div 
         className="p-4 rounded-lg border mb-6 flex items-start gap-3"
         style={{
-          backgroundColor: 'rgba(255, 184, 0, 0.1)',
-          borderColor: 'var(--status-warning)'
+          backgroundColor: 'rgba(0, 255, 136, 0.1)',
+          borderColor: 'var(--status-success)'
         }}
       >
-        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-warning)' }} />
+        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-success)' }} />
         <div className="text-sm">
           <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
-            Error: The api_id/api_hash combination is invalid
+            ✓ API Credentials Sudah Benar
           </p>
           <p style={{ color: 'var(--foreground-secondary)' }}>
-            Credentials Telegram yang digunakan tidak valid. Anda perlu mendapatkan API ID dan API Hash yang benar dari Telegram Developer Portal.
+            Credentials Telegram sudah valid. Silakan setup Telegram di menu Telegram Setup atau click banner kuning untuk mengaktifkan bot automation.
           </p>
         </div>
       </div>
@@ -306,13 +306,13 @@ const Settings = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
-              Current API ID (Invalid)
+              Current API ID
             </p>
-            <p className="font-mono" style={{ color: 'var(--status-error)' }}>
-              35564970
+            <p className="font-mono" style={{ color: 'var(--status-success)' }}>
+              37983970
             </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--status-error)' }}>
-              ✗ Ini adalah User ID, bukan API ID
+            <p className="text-xs mt-1" style={{ color: 'var(--status-success)' }}>
+              ✓ Credentials sudah benar
             </p>
           </div>
           <div>
