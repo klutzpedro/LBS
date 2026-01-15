@@ -9,21 +9,25 @@ export const TelegramProvider = ({ children }) => {
   const [telegramAuthorized, setTelegramAuthorized] = useState(false);
   const [telegramUser, setTelegramUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { token } = useAuth();
+  const { token, isAuthenticated } = useAuth();
 
   const checkTelegramStatus = async () => {
-    if (!token) {
+    if (!token || !isAuthenticated) {
       setLoading(false);
       return;
     }
     
     try {
-      const response = await axios.get(`${API}/telegram/status`);
-      console.log('Telegram status:', response.data);
+      const response = await axios.get(`${API}/telegram/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      console.log('Telegram status response:', response.data);
       setTelegramAuthorized(response.data.authorized || false);
       setTelegramUser(response.data.user || null);
     } catch (error) {
-      console.error('Failed to check Telegram status:', error);
+      console.error('Failed to check Telegram status:', error.response?.status, error.response?.data);
       setTelegramAuthorized(false);
       setTelegramUser(null);
     } finally {
@@ -32,10 +36,14 @@ export const TelegramProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    if (token) {
-      checkTelegramStatus();
+    if (token && isAuthenticated) {
+      // Small delay to ensure token is set in axios defaults
+      const timer = setTimeout(() => {
+        checkTelegramStatus();
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [token]);
+  }, [token, isAuthenticated]);
 
   return (
     <TelegramContext.Provider
