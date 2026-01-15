@@ -309,7 +309,8 @@ const Scheduling = () => {
           className="text-center py-20 rounded-lg border"
           style={{
             backgroundColor: 'var(--background-secondary)',
-            borderColor: 'var(--borders-default)'\n          }}
+            borderColor: 'var(--borders-default)'
+          }}
         >
           <Calendar className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--foreground-muted)' }} />
           <p className="text-lg mb-4" style={{ color: 'var(--foreground-muted)' }}>Belum ada schedule</p>
