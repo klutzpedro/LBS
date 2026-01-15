@@ -40,7 +40,8 @@ const TargetQuery = () => {
       const response = await axios.get(`${API}/cases`);
       setCases(response.data.filter(c => c.status === 'active'));
     } catch (error) {
-      toast.error('Failed to load cases');
+      console.error('Failed to load cases:', error);
+      setCases([]);
     }
   };
 
