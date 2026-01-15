@@ -630,12 +630,13 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             )
             
             # Wait for bot response and look for "CP" button
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)  # Increased wait time
             
             # Get latest messages from bot
             messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
             
             # Look for message with buttons
+            cp_clicked = False
             for msg in messages:
                 if msg.buttons:
                     for row in msg.buttons:
@@ -644,9 +645,16 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                                 # Click the CP button
                                 await button.click()
                                 logging.info("Clicked CP button")
+                                cp_clicked = True
                                 break
+                    if cp_clicked:
+                        break
             
-            await asyncio.sleep(3)
+            if not cp_clicked:
+                logging.warning("CP button not found in messages")
+            
+            # Wait longer for bot to process and respond
+            await asyncio.sleep(8)  # Increased from 3 to 8 seconds
             
             # Update status: parsing
             await db.targets.update_one(
@@ -654,8 +662,8 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 {"$set": {"status": "parsing"}}
             )
             
-            # Get the response after clicking CP
-            response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=10)
+            # Get the response after clicking CP - get more messages
+            response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
             
             # Parse response to extract location data
             location_data = None
@@ -663,21 +671,76 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 if msg.text:
                     text = msg.text
                     
-                    # Try to extract latitude and longitude from text
-                    lat_match = re.search(r'(?:lat|latitude)[:\s]*(-?\d+\.?\d*)', text, re.IGNORECASE)
-                    lon_match = re.search(r'(?:lon|long|longitude)[:\s]*(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    # Look for the specific format from your bot
+                    # Format: "Long: 106.940340\nLat: -6.411650\nAddress: ...\nMaps: https://maps.google.com/?q=-6.411650,106.940340"
                     
-                    if lat_match and lon_match:
+                    # Try to extract from "Maps:" link first (most reliable)
+                    maps_match = re.search(r'Maps:\s*https://maps\.google\.com/\?q=(-?\d+\.?\d*),(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    
+                    if maps_match:
+                        lat = float(maps_match.group(1))
+                        lon = float(maps_match.group(2))
+                        
+                        # Extract address
+                        address_match = re.search(r'Address:\s*(.+?)(?=\nMaps:|\n\n|$)', text, re.IGNORECASE | re.DOTALL)
+                        address = address_match.group(1).strip() if address_match else "Location from Telegram Bot"
+                        
+                        # Extract phone info
+                        phone_match = re.search(r'Phone:\s*(.+?)(?=\n|$)', text, re.IGNORECASE)
+                        phone_info = phone_match.group(1).strip() if phone_match else "NULL NULL"
+                        
+                        # Extract operator
+                        operator_match = re.search(r'Operator:\s*(.+?)(?=\n|$)', text, re.IGNORECASE)
+                        operator = operator_match.group(1).strip() if operator_match else "NULL"
+                        
+                        # Extract network
+                        network_match = re.search(r'Network:\s*(.+?)(?=\n|$)', text, re.IGNORECASE)
+                        network = network_match.group(1).strip() if network_match else "NULL"
+                        
+                        # Extract IMEI
+                        imei_match = re.search(r'Imei:\s*(.+?)(?=\n|$)', text, re.IGNORECASE)
+                        imei = imei_match.group(1).strip() if imei_match else "NULL"
+                        
+                        location_data = {
+                            "name": phone_info if phone_info != "NULL NULL" else "Target User",
+                            "phone_number": phone_number,
+                            "address": address,
+                            "latitude": lat,
+                            "longitude": lon,
+                            "additional_phones": [phone_number],
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "imei": imei,
+                            "operator": operator,
+                            "network": network,
+                            "maps_link": maps_match.group(0).replace('Maps: ', ''),
+                            "raw_response": text[:1000]
+                        }
+                        logging.info(f"Successfully parsed location from Maps link: lat={lat}, lon={lon}")
+                        break
+                    
+                    # Fallback: Try to extract Long and Lat separately
+                    long_match = re.search(r'Long:\s*(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    lat_match = re.search(r'Lat:\s*(-?\d+\.?\d*)', text, re.IGNORECASE)
+                    
+                    if long_match and lat_match:
+                        lon = float(long_match.group(1))
+                        lat = float(lat_match.group(1))
+                        
+                        # Extract address
+                        address_match = re.search(r'Address:\s*(.+?)(?=\nMaps:|\n\n|$)', text, re.IGNORECASE | re.DOTALL)
+                        address = address_match.group(1).strip() if address_match else "Location from Telegram Bot"
+                        
                         location_data = {
                             "name": "Target User",
                             "phone_number": phone_number,
-                            "address": "Location from Telegram Bot",
-                            "latitude": float(lat_match.group(1)),
-                            "longitude": float(lon_match.group(1)),
+                            "address": address,
+                            "latitude": lat,
+                            "longitude": lon,
                             "additional_phones": [phone_number],
                             "timestamp": datetime.now(timezone.utc).isoformat(),
-                            "raw_response": text[:500]  # Store first 500 chars of response
+                            "raw_response": text[:1000]
                         }
+                        logging.info(f"Successfully parsed location from Long/Lat fields: lat={lat}, lon={lon}")
                         break
                 
                 # Check if message has geo location
