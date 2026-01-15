@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Crosshair,
   Map,
+  Calendar,
   Clock,
   LogOut,
   Shield
@@ -21,6 +22,7 @@ export const Layout = ({ children }) => {
     { name: 'Cases', path: '/cases', icon: FolderOpen },
     { name: 'Target Query', path: '/query', icon: Crosshair },
     { name: 'Map View', path: '/map', icon: Map },
+    { name: 'Scheduling', path: '/scheduling', icon: Calendar },
     { name: 'History', path: '/history', icon: Clock }
   ];
 

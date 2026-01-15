@@ -6,6 +6,7 @@ import CaseManagement from '@/pages/CaseManagement';
 import TargetQuery from '@/pages/TargetQuery';
 import MapView from '@/pages/MapView';
 import History from '@/pages/History';
+import Scheduling from '@/pages/Scheduling';
 import Layout from '@/components/Layout';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import '@/App.css';
@@ -31,6 +32,7 @@ function App() {
                     <Route path="/cases" element={<CaseManagement />} />
                     <Route path="/query" element={<TargetQuery />} />
                     <Route path="/map" element={<MapView />} />
+                    <Route path="/scheduling" element={<Scheduling />} />
                     <Route path="/history" element={<History />} />
                   </Routes>
                 </Layout>
