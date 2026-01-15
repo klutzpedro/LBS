@@ -203,7 +203,7 @@ const TargetQuery = () => {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   data-testid="phone-number-input"
                   className="pl-10 font-mono bg-background-tertiary border-borders-default focus:border-accent-primary"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  style={{ color: '#000000' }}
                   placeholder="62XXXXXXXXXX"
                   required
                 />

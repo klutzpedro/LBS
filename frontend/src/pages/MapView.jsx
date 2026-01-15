@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Map as MapIcon, MapPin, Maximize2, Minimize2, Layers } from 'lucide-react';
@@ -187,11 +187,13 @@ const MapView = () => {
           }}
         >
           <MapContainer
+            key={selectedTileLayer}
             center={center}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
           >
             <TileLayer
+              key={selectedTileLayer}
               url={mapTiles[selectedTileLayer].url}
               attribution={mapTiles[selectedTileLayer].attribution}
             />
