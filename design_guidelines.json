@@ -1,0 +1,876 @@
+{
+  "project_name": "NORTHARCH GIS Intelligence System",
+  "design_context": "Dashboard - Tactical Intelligence & Geospatial Tracking",
+  "theme": "Dark - Cyber Tactical with Neon Accents",
+  "target_audience": "Intelligence/security professionals, investigators requiring geospatial tracking capabilities",
+  "emotional_tone": "Professional, tactical, high-tech, precise, command-center authority",
+  
+  "design_archetype": "ELECTRIC & NEON with SWISS & HIGH-CONTRAST fusion",
+  "design_philosophy": "Command center precision meets cyberpunk aesthetics. Every element serves operational clarity while maintaining tactical sophistication. The interface should feel like a professional intelligence tool, not a consumer app.",
+  
+  "typography": {
+    "philosophy": "Tactical precision with technical authority. Use condensed sans for data density, monospace for technical readability.",
+    "font_families": {
+      "primary_heading": {
+        "family": "Barlow Condensed",
+        "weights": [600, 700, 800, 900],
+        "usage": "Page titles, section headers, case names",
+        "import": "@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&display=swap');",
+        "characteristics": "Strong, condensed, military-grade authority"
+      },
+      "secondary_heading": {
+        "family": "Rajdhani",
+        "weights": [500, 600, 700],
+        "usage": "Subsection titles, card headers, metric labels",
+        "import": "@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');",
+        "characteristics": "Technical, geometric, tactical"
+      },
+      "body": {
+        "family": "IBM Plex Sans",
+        "weights": [400, 500, 600],
+        "usage": "Body text, descriptions, form labels",
+        "import": "@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');",
+        "characteristics": "Clean, readable, professional"
+      },
+      "monospace": {
+        "family": "JetBrains Mono",
+        "weights": [400, 500, 600],
+        "usage": "Phone numbers, coordinates, timestamps, technical data",
+        "import": "@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');",
+        "characteristics": "Technical precision, code-like clarity"
+      }
+    },
+    "scale": {
+      "hero": "text-6xl md:text-7xl lg:text-8xl",
+      "h1": "text-4xl md:text-5xl lg:text-6xl",
+      "h2": "text-3xl md:text-4xl lg:text-5xl",
+      "h3": "text-2xl md:text-3xl lg:text-4xl",
+      "h4": "text-xl md:text-2xl",
+      "h5": "text-lg md:text-xl",
+      "body_large": "text-base md:text-lg",
+      "body": "text-sm md:text-base",
+      "body_small": "text-xs md:text-sm",
+      "caption": "text-xs"
+    },
+    "letter_spacing": {
+      "headlines": "tracking-tight",
+      "subheadings": "tracking-normal",
+      "labels": "tracking-wide uppercase",
+      "body": "tracking-normal",
+      "monospace": "tracking-wider"
+    },
+    "line_height": {
+      "headlines": "leading-none",
+      "subheadings": "leading-tight",
+      "body": "leading-relaxed",
+      "dense": "leading-snug"
+    }
+  },
+  
+  "color_system": {
+    "philosophy": "Deep void black foundation with electric cyan accents. High contrast for 24/7 monitoring. Tinted greys for depth, never pure black/white.",
+    "palette": {
+      "background": {
+        "primary": "#0A0E14",
+        "secondary": "#0F1419",
+        "tertiary": "#151B23",
+        "elevated": "#1A2129",
+        "description": "Deep indigo-tinted blacks for depth and sophistication"
+      },
+      "foreground": {
+        "primary": "#E6EDF3",
+        "secondary": "#B8C5D0",
+        "tertiary": "#8B98A5",
+        "muted": "#5D6B79",
+        "description": "Cool-tinted whites and greys for readability"
+      },
+      "accent": {
+        "primary": "#00D9FF",
+        "secondary": "#00FFC2",
+        "tertiary": "#0099FF",
+        "glow": "rgba(0, 217, 255, 0.5)",
+        "description": "Electric cyan - the signature tactical accent. Use sparingly for CTAs, active states, critical alerts"
+      },
+      "status": {
+        "success": "#00FF88",
+        "warning": "#FFB800",
+        "error": "#FF3B5C",
+        "info": "#00D9FF",
+        "processing": "#A78BFA",
+        "description": "High-visibility status colors for operational clarity"
+      },
+      "semantic": {
+        "target_active": "#00FF88",
+        "target_pending": "#FFB800",
+        "target_failed": "#FF3B5C",
+        "case_active": "#00D9FF",
+        "case_archived": "#5D6B79",
+        "bot_processing": "#A78BFA",
+        "location_marker": "#FF3B5C"
+      },
+      "borders": {
+        "subtle": "rgba(230, 237, 243, 0.08)",
+        "default": "rgba(230, 237, 243, 0.12)",
+        "strong": "rgba(230, 237, 243, 0.18)",
+        "accent": "rgba(0, 217, 255, 0.3)",
+        "glow": "rgba(0, 217, 255, 0.5)"
+      },
+      "overlays": {
+        "modal": "rgba(10, 14, 20, 0.85)",
+        "dropdown": "rgba(15, 20, 25, 0.95)",
+        "tooltip": "rgba(26, 33, 41, 0.98)",
+        "glass": "rgba(21, 27, 35, 0.7)"
+      }
+    },
+    "gradients": {
+      "hero": "linear-gradient(135deg, #0A0E14 0%, #151B23 50%, #0F1419 100%)",
+      "card_hover": "linear-gradient(135deg, rgba(0, 217, 255, 0.05) 0%, rgba(0, 255, 194, 0.05) 100%)",
+      "accent_glow": "radial-gradient(circle at center, rgba(0, 217, 255, 0.2) 0%, transparent 70%)",
+      "status_bar": "linear-gradient(90deg, #00FF88 0%, #00D9FF 100%)"
+    },
+    "contrast_requirements": {
+      "normal_text": "Minimum 4.5:1 against background",
+      "large_text": "Minimum 3:1 against background",
+      "interactive_elements": "Minimum 3:1 against adjacent colors",
+      "critical_data": "Prefer 7:1 or higher for phone numbers, coordinates, case IDs"
+    }
+  },
+  
+  "spacing_system": {
+    "philosophy": "Generous spacing for tactical clarity. Dense data requires breathing room. Use 2-3x more space than typical dashboards.",
+    "scale": {
+      "xs": "0.25rem (4px)",
+      "sm": "0.5rem (8px)",
+      "md": "1rem (16px)",
+      "lg": "1.5rem (24px)",
+      "xl": "2rem (32px)",
+      "2xl": "3rem (48px)",
+      "3xl": "4rem (64px)",
+      "4xl": "6rem (96px)",
+      "5xl": "8rem (128px)"
+    },
+    "component_spacing": {
+      "card_padding": "p-6 md:p-8",
+      "section_padding": "py-12 md:py-16 lg:py-20",
+      "container_padding": "px-4 md:px-6 lg:px-8",
+      "grid_gap": "gap-4 md:gap-6 lg:gap-8",
+      "form_field_gap": "gap-4 md:gap-6",
+      "button_padding": "px-6 py-3 md:px-8 md:py-4"
+    },
+    "layout_constraints": {
+      "max_content_width": "max-w-7xl",
+      "max_form_width": "max-w-2xl",
+      "max_card_width": "max-w-md",
+      "sidebar_width": "w-64 lg:w-72",
+      "mobile_image_height": "max-h-[80vh] md:max-h-none"
+    }
+  },
+  
+  "layout_system": {
+    "type": "High Density Grid (Dashboard Mode B)",
+    "philosophy": "Every pixel utilized. Data correlation is key. Scannable hierarchy with tight gaps.",
+    "grid_configuration": {
+      "base": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+      "gap": "gap-4 md:gap-6",
+      "alignment": "items-start",
+      "span_patterns": {
+        "summary_metric": "col-span-1",
+        "primary_data": "col-span-2 row-span-2 or col-span-3",
+        "map_view": "col-span-full lg:col-span-3 row-span-3",
+        "feed_list": "col-span-1 row-span-2"
+      }
+    },
+    "page_layouts": {
+      "login": "Centered card on gradient background with subtle grid pattern",
+      "dashboard": "Sidebar + main content area with metric cards grid",
+      "case_management": "List view with filters sidebar, detail view modal",
+      "target_query": "Two-column: form left, live status right",
+      "map_view": "Full-width map with floating control panels",
+      "history": "Data table with advanced filters and search"
+    },
+    "responsive_breakpoints": {
+      "mobile": "< 768px - Single column, stacked cards",
+      "tablet": "768px - 1024px - 2-3 columns, condensed sidebar",
+      "desktop": "1024px+ - Full 4-column grid, expanded sidebar"
+    }
+  },
+  
+  "surface_treatments": {
+    "philosophy": "Flat backgrounds with 1px borders. No heavy shadows. Subtle glow on hover. Grid borders for technical look.",
+    "card_style": {
+      "default": "bg-background-secondary border border-borders-default rounded-lg",
+      "hover": "hover:border-borders-accent hover:shadow-[0_0_20px_rgba(0,217,255,0.1)] transition-all duration-300",
+      "active": "border-accent-primary shadow-[0_0_30px_rgba(0,217,255,0.2)]",
+      "glass": "bg-overlays-glass backdrop-blur-xl border border-borders-subtle"
+    },
+    "header_style": {
+      "type": "Solid with bottom border",
+      "classes": "bg-background-primary/95 backdrop-blur-md border-b border-borders-default sticky top-0 z-50",
+      "height": "h-16 md:h-20"
+    },
+    "sidebar_style": {
+      "type": "Solid with right border",
+      "classes": "bg-background-secondary border-r border-borders-default",
+      "width": "w-64 lg:w-72"
+    },
+    "modal_style": {
+      "overlay": "bg-overlays-modal backdrop-blur-sm",
+      "content": "bg-background-elevated border border-borders-strong rounded-xl shadow-2xl"
+    },
+    "grid_borders": {
+      "usage": "For data-heavy sections, case lists, history tables",
+      "implementation": "border-r border-b border-borders-subtle on grid items, remove on last items"
+    }
+  },
+  
+  "component_library": {
+    "philosophy": "Use Shadcn components for logic, heavily customize appearance. Never use default Vercel look.",
+    "required_components": {
+      "forms": {
+        "components": ["Input", "Select", "Form", "Label", "Button"],
+        "customization": "Sharp edges (rounded-md), cyan focus rings, monospace for phone inputs"
+      },
+      "navigation": {
+        "components": ["Tabs", "Dropdown Menu", "Command"],
+        "customization": "Tactical styling, active state with cyan accent, hover glow"
+      },
+      "feedback": {
+        "components": ["Toast (Sonner)", "Alert", "Progress", "Skeleton"],
+        "customization": "Status colors, cyber aesthetic, animated progress bars"
+      },
+      "data_display": {
+        "components": ["Table", "Card", "Badge", "Separator"],
+        "customization": "Dense tables, grid borders, status badges with glow"
+      },
+      "overlays": {
+        "components": ["Dialog", "Sheet", "Popover", "Tooltip"],
+        "customization": "Glass morphism, dark overlays, cyan accents"
+      }
+    },
+    "custom_components": {
+      "map_container": "Leaflet.js integration with custom dark tiles and cyan markers",
+      "status_indicator": "Animated pulse dot with status colors",
+      "case_card": "Custom card with status bar, metadata grid, action buttons",
+      "target_form": "Phone input with format validation, submit with loading state",
+      "bot_status_feed": "Real-time message stream with typing indicators",
+      "coordinate_display": "Monospace lat/long with copy button",
+      "timeline": "Vertical timeline for case history with status nodes"
+    }
+  },
+  
+  "motion_and_interactions": {
+    "philosophy": "Subtle, purposeful animations. Tactical precision, not playfulness. Respect prefers-reduced-motion.",
+    "hover_states": {
+      "cards": "transform: translateY(-2px), border glow, shadow increase",
+      "buttons": "background brighten, scale(1.02), glow effect",
+      "links": "color shift to accent, underline slide-in",
+      "map_markers": "scale pulse, glow intensify"
+    },
+    "transitions": {
+      "default": "transition-all duration-300 ease-out",
+      "fast": "transition-all duration-150 ease-out",
+      "slow": "transition-all duration-500 ease-out",
+      "properties": "Specify: transform, opacity, colors, border-color, box-shadow"
+    },
+    "animations": {
+      "entrance": "Staggered fade-in-up for lists, fade-in for modals",
+      "loading": "Pulse for skeletons, spin for loaders, progress bar slide",
+      "status_change": "Color transition with brief glow pulse",
+      "map_plot": "Marker drop-in with bounce, ripple effect on land"
+    },
+    "micro_interactions": {
+      "button_click": "Scale down (0.98) then spring back",
+      "input_focus": "Border color shift, subtle glow, label slide up",
+      "toast_appear": "Slide in from top-right with fade",
+      "tab_switch": "Underline slide animation, content fade transition"
+    },
+    "accessibility": {
+      "reduced_motion": "@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }",
+      "focus_indicators": "Always visible, cyan ring, 2px offset",
+      "keyboard_navigation": "Clear focus states, logical tab order"
+    }
+  },
+  
+  "iconography": {
+    "library": "lucide-react (default), @phosphor-icons/react for duotone tactical icons",
+    "installation": "yarn add @phosphor-icons/react",
+    "style": "Outline style, 1.5-2px stroke, cyan accent on active",
+    "sizes": {
+      "small": "w-4 h-4",
+      "default": "w-5 h-5",
+      "large": "w-6 h-6",
+      "hero": "w-8 h-8 md:w-10 md:h-10"
+    },
+    "key_icons": {
+      "case": "FolderOpen, FileText",
+      "target": "Crosshair, MapPin",
+      "phone": "Phone, Hash",
+      "location": "MapPin, Navigation",
+      "status": "Activity, CheckCircle, XCircle, Clock",
+      "bot": "Bot, MessageSquare",
+      "map": "Map, Globe",
+      "search": "Search, Filter",
+      "user": "User, Shield"
+    },
+    "usage_rules": "Never use emoji icons. Always use proper icon libraries. Icons should be semantic, not decorative."
+  },
+  
+  "map_visualization": {
+    "library": "Leaflet.js with OpenStreetMap tiles",
+    "installation": "yarn add leaflet react-leaflet",
+    "tile_provider": "Dark mode tiles from CartoDB or Stamen",
+    "tile_url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    "marker_style": {
+      "color": "#FF3B5C (error red for target locations)",
+      "icon": "Custom SVG pin with cyan glow",
+      "size": "32x32px",
+      "animation": "Drop-in with bounce, pulse on hover"
+    },
+    "map_controls": {
+      "zoom": "Custom styled zoom buttons, cyan accent",
+      "layers": "Toggle between satellite/street view",
+      "search": "Geocoding search with autocomplete",
+      "fullscreen": "Expand map to full viewport"
+    },
+    "interaction": {
+      "click_marker": "Show popup with target details",
+      "drag": "Pan map freely",
+      "zoom": "Scroll or pinch to zoom",
+      "cluster": "Cluster markers when multiple targets in area"
+    },
+    "styling": {
+      "container": "h-[500px] md:h-[600px] lg:h-[700px] rounded-lg overflow-hidden border border-borders-default",
+      "popup": "bg-background-elevated text-foreground-primary p-4 rounded-md shadow-xl",
+      "controls": "bg-background-secondary border border-borders-default rounded-md shadow-lg"
+    }
+  },
+  
+  "telegram_bot_integration": {
+    "bot_username": "@northarch_bot",
+    "automation_flow": [
+      "User inputs phone number (62xxxxxxxxx format)",
+      "System validates format and creates query",
+      "Backend initiates Telethon/Pyrogram userbot session",
+      "Send phone number to bot",
+      "Bot responds with menu, system auto-selects 'CP' option",
+      "Bot processes and returns data with lat/long and address link",
+      "System parses response and extracts coordinates",
+      "Plot location on map with marker",
+      "Display full data in results panel"
+    ],
+    "status_indicators": {
+      "idle": "Ready to query",
+      "connecting": "Connecting to bot...",
+      "sending": "Sending phone number...",
+      "processing": "Bot processing request...",
+      "parsing": "Extracting location data...",
+      "complete": "Location plotted successfully",
+      "error": "Query failed - see details"
+    },
+    "ui_components": {
+      "status_feed": "Real-time message stream showing bot conversation",
+      "progress_bar": "Animated progress through query stages",
+      "result_card": "Structured display of parsed data (name, address, coordinates, etc.)",
+      "error_handling": "Clear error messages with retry option"
+    }
+  },
+  
+  "data_display_patterns": {
+    "phone_numbers": {
+      "format": "Monospace font (JetBrains Mono), grouped (62-XXX-XXXX-XXXX)",
+      "styling": "text-accent-primary font-mono tracking-wider",
+      "interaction": "Click to copy, hover shows copy icon"
+    },
+    "coordinates": {
+      "format": "Lat: -6.123456, Long: 106.123456",
+      "styling": "font-mono text-sm text-foreground-secondary",
+      "interaction": "Click to copy, click again to open in Google Maps"
+    },
+    "timestamps": {
+      "format": "Relative (2 hours ago) with absolute on hover",
+      "styling": "text-xs text-foreground-muted",
+      "library": "date-fns or dayjs"
+    },
+    "case_ids": {
+      "format": "CASE-2024-001234",
+      "styling": "font-mono font-semibold text-foreground-primary",
+      "interaction": "Click to view case details"
+    },
+    "status_badges": {
+      "styling": "px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide",
+      "colors": "Use semantic colors with 10% opacity background",
+      "animation": "Pulse animation for 'processing' status"
+    }
+  },
+  
+  "form_design": {
+    "philosophy": "Clear, tactical, efficient. Minimal friction. Instant validation feedback.",
+    "input_styling": {
+      "base": "bg-background-tertiary border border-borders-default rounded-md px-4 py-3 text-foreground-primary",
+      "focus": "border-accent-primary ring-2 ring-accent-primary/20 outline-none",
+      "error": "border-status-error ring-2 ring-status-error/20",
+      "disabled": "opacity-50 cursor-not-allowed"
+    },
+    "label_styling": "text-sm font-medium text-foreground-secondary mb-2 tracking-wide uppercase",
+    "button_styling": {
+      "primary": "bg-accent-primary hover:bg-accent-tertiary text-background-primary font-semibold px-8 py-4 rounded-md transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,217,255,0.4)]",
+      "secondary": "bg-background-tertiary hover:bg-background-elevated border border-borders-default text-foreground-primary",
+      "danger": "bg-status-error hover:bg-status-error/90 text-white",
+      "ghost": "hover:bg-background-tertiary text-foreground-secondary"
+    },
+    "validation": {
+      "phone_format": "Must start with 62, 10-13 digits total",
+      "real_time": "Validate on blur, show error below field",
+      "success_state": "Green checkmark icon, border color shift"
+    }
+  },
+  
+  "accessibility": {
+    "philosophy": "WCAG 2.1 AA minimum. Tactical doesn't mean inaccessible.",
+    "requirements": {
+      "color_contrast": "All text meets 4.5:1 minimum, critical data 7:1",
+      "focus_indicators": "Always visible, 2px cyan ring with offset",
+      "keyboard_navigation": "All interactive elements accessible via keyboard",
+      "screen_readers": "Proper ARIA labels, semantic HTML, alt text for images",
+      "reduced_motion": "Respect prefers-reduced-motion, disable animations",
+      "text_scaling": "Support up to 200% zoom without breaking layout"
+    },
+    "testing_attributes": {
+      "philosophy": "All interactive and key elements must have data-testid",
+      "convention": "kebab-case, role-based naming",
+      "examples": {
+        "login_form": "data-testid='login-form-submit-button'",
+        "case_card": "data-testid='case-card-{caseId}'",
+        "target_input": "data-testid='target-phone-input'",
+        "map_marker": "data-testid='map-marker-{targetId}'",
+        "status_badge": "data-testid='status-badge-{status}'"
+      }
+    }
+  },
+  
+  "visual_enhancements": {
+    "philosophy": "Subtle tactical details that elevate the experience. No decoration for decoration's sake.",
+    "techniques": {
+      "noise_texture": "Add subtle grain overlay to backgrounds for depth (opacity: 0.02-0.05)",
+      "grid_pattern": "Faint grid lines on hero sections for technical feel",
+      "glow_effects": "Cyan glow on hover/active states using box-shadow",
+      "scanlines": "Optional: subtle horizontal lines for retro-futurism (use sparingly)",
+      "gradient_borders": "Animated gradient borders on active cards",
+      "particle_effects": "Minimal floating particles on login/hero (use TSParticles if needed)"
+    },
+    "implementation": {
+      "noise": "background-image: url('data:image/svg+xml,...') with noise pattern",
+      "grid": "background-image: linear-gradient(rgba(230,237,243,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(230,237,243,0.03) 1px, transparent 1px); background-size: 20px 20px;",
+      "glow": "box-shadow: 0 0 20px rgba(0, 217, 255, 0.3), 0 0 40px rgba(0, 217, 255, 0.1);",
+      "gradient_border": "Use pseudo-element with gradient background, animate background-position"
+    }
+  },
+  
+  "performance_considerations": {
+    "map_optimization": "Lazy load map component, use marker clustering for multiple targets",
+    "image_optimization": "Use WebP format, lazy loading, responsive images",
+    "animation_performance": "Use transform and opacity for animations, avoid layout thrashing",
+    "code_splitting": "Lazy load routes, split vendor bundles",
+    "websocket": "Use WebSocket for real-time bot status updates, fallback to polling"
+  },
+  
+  "image_assets": {
+    "categories": {
+      "hero_backgrounds": {
+        "description": "Dark tactical backgrounds for login and hero sections",
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1664526937033-fe2c11f1be25?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "description": "Network diagram with nodes - perfect for cyber security theme",
+            "usage": "Login page background, hero section"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1628939824352-baa1cdddeb6b?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "description": "Cyberpunk blue geometric shapes with lighting",
+            "usage": "Dashboard hero, case management header"
+          }
+        ]
+      },
+      "decorative_elements": {
+        "description": "Subtle decorative images for empty states and backgrounds",
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1593407089396-93f0c7a575f0?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "description": "Silhouette with blue digital matrix background",
+            "usage": "Empty state illustrations, loading screens"
+          }
+        ]
+      },
+      "map_references": {
+        "description": "Digital map interface references for styling inspiration",
+        "images": [
+          {
+            "url": "https://images.unsplash.com/photo-1695632231361-7468689ed9a4?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "description": "Car dashboard GPS navigation system",
+            "usage": "Reference for map UI styling"
+          },
+          {
+            "url": "https://images.unsplash.com/photo-1759256243611-502772ac391b?crop=entropy&cs=srgb&fm=jpg&q=85",
+            "description": "Person using Google Maps navigation on smartphone",
+            "usage": "Reference for mobile map interactions"
+          }
+        ]
+      }
+    },
+    "usage_guidelines": {
+      "hero_images": "Use with dark overlay (rgba(10, 14, 20, 0.7)) for text readability",
+      "backgrounds": "Apply subtle blur (backdrop-blur-sm) when used behind content",
+      "empty_states": "Center with max-width 400px, opacity 0.6",
+      "optimization": "Serve as WebP, use srcset for responsive images"
+    }
+  },
+  
+  "page_specific_guidelines": {
+    "login_page": {
+      "layout": "Centered card (max-w-md) on gradient background with grid pattern",
+      "elements": ["Logo/title", "Username input", "Password input", "Login button", "Error message area"],
+      "styling": "Glass morphism card, cyan accent on focus, animated background",
+      "validation": "Real-time validation, clear error messages",
+      "security": "Password visibility toggle, rate limiting feedback"
+    },
+    "dashboard_home": {
+      "layout": "Sidebar + main grid (4 columns)",
+      "sections": ["Metrics overview (active cases, total targets, success rate)", "Recent queries list", "Quick actions", "System status"],
+      "widgets": ["Stat cards (col-span-1)", "Recent activity feed (col-span-2 row-span-2)", "Quick query form (col-span-1)"],
+      "interactions": "Click stat cards to filter, hover for details"
+    },
+    "case_management": {
+      "layout": "List view with filters sidebar, detail modal",
+      "elements": ["Case list with status badges", "Search and filter controls", "Create new case button", "Case detail modal"],
+      "table_columns": ["Case ID", "Name", "Created", "Targets", "Status", "Actions"],
+      "actions": ["View details", "Add target", "Archive case", "Export data"]
+    },
+    "target_query": {
+      "layout": "Two-column: form left (col-span-1), status feed right (col-span-2)",
+      "form_fields": ["Case selection dropdown", "Phone number input (62xxxxxxxxx)", "Submit button"],
+      "status_feed": ["Real-time bot conversation", "Progress indicator", "Current stage label"],
+      "result_display": ["Parsed data cards", "Map preview", "Action buttons (view on map, save, export)"]
+    },
+    "map_view": {
+      "layout": "Full-width map with floating control panels",
+      "controls": ["Zoom controls", "Layer toggle", "Search location", "Filter targets", "Fullscreen toggle"],
+      "markers": "Clustered markers with custom icons, click to show popup",
+      "popup_content": ["Target name", "Phone number", "Address", "Coordinates", "View details button"],
+      "sidebar": "Collapsible target list with search and filters"
+    },
+    "history_archive": {
+      "layout": "Data table with advanced filters",
+      "columns": ["Timestamp", "Case", "Phone Number", "Status", "Location", "Actions"],
+      "filters": ["Date range", "Case", "Status", "Search query"],
+      "actions": ["View details", "Re-query", "Export", "Delete"],
+      "pagination": "Show 25/50/100 per page, total count"
+    }
+  },
+  
+  "technical_implementation": {
+    "frontend_stack": "React.js, Tailwind CSS, Shadcn/ui",
+    "backend_stack": "FastAPI (Python), MongoDB",
+    "map_library": "Leaflet.js with react-leaflet",
+    "telegram_automation": "Telethon or Pyrogram (Python userbot)",
+    "real_time_updates": "WebSocket or Server-Sent Events for bot status",
+    "state_management": "React Context or Zustand for global state",
+    "form_handling": "React Hook Form with Zod validation",
+    "date_handling": "date-fns or dayjs",
+    "toast_notifications": "Sonner (already in Shadcn)",
+    "icons": "lucide-react (default), @phosphor-icons/react (tactical)",
+    "animations": "Framer Motion for complex animations, CSS transitions for simple ones"
+  },
+  
+  "code_conventions": {
+    "file_structure": {
+      "pages": "src/pages/ - default exports",
+      "components": "src/components/ - named exports",
+      "ui_components": "src/components/ui/ - Shadcn components",
+      "hooks": "src/hooks/ - custom React hooks",
+      "utils": "src/utils/ - helper functions",
+      "services": "src/services/ - API calls, bot integration",
+      "styles": "src/styles/ - global CSS, Tailwind config"
+    },
+    "naming_conventions": {
+      "components": "PascalCase (e.g., CaseCard.jsx)",
+      "files": "kebab-case for utilities (e.g., format-phone.js)",
+      "css_classes": "Tailwind utility classes, custom classes in kebab-case",
+      "test_ids": "kebab-case with role prefix (e.g., data-testid='case-card-123')"
+    },
+    "component_patterns": {
+      "pages": "export default function PageName() { ... }",
+      "components": "export const ComponentName = ({ props }) => { ... }",
+      "hooks": "export const useHookName = () => { ... }",
+      "utils": "export const functionName = () => { ... }"
+    }
+  },
+  
+  "scrollbar_customization": {
+    "philosophy": "Custom scrollbars to match tactical aesthetic. No default browser scrollbars.",
+    "implementation": {
+      "webkit": "::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: #0F1419; } ::-webkit-scrollbar-thumb { background: #1A2129; border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #00D9FF; }",
+      "firefox": "scrollbar-width: thin; scrollbar-color: #1A2129 #0F1419;"
+    }
+  },
+  
+  "error_handling": {
+    "philosophy": "Clear, actionable error messages. Never leave users confused.",
+    "patterns": {
+      "form_validation": "Inline errors below fields, red border, error icon",
+      "api_errors": "Toast notification with error details and retry option",
+      "bot_errors": "Status feed shows error message, suggest troubleshooting steps",
+      "network_errors": "Offline indicator, queue actions for retry when online",
+      "404_pages": "Custom 404 with navigation back to dashboard"
+    },
+    "error_messages": {
+      "phone_invalid": "Phone number must start with 62 and be 10-13 digits",
+      "bot_timeout": "Bot query timed out. Please try again.",
+      "location_not_found": "Could not extract location from bot response",
+      "auth_failed": "Invalid credentials. Please try again.",
+      "network_error": "Connection lost. Retrying..."
+    }
+  },
+  
+  "loading_states": {
+    "philosophy": "Always show loading feedback. Never leave users wondering.",
+    "patterns": {
+      "page_load": "Full-page skeleton with logo and progress bar",
+      "data_fetch": "Skeleton cards matching final content layout",
+      "button_action": "Button shows spinner, text changes to 'Processing...'",
+      "map_load": "Map container shows loading overlay with spinner",
+      "bot_query": "Multi-stage progress indicator with current stage highlighted"
+    },
+    "components": {
+      "skeleton": "Use Shadcn Skeleton component with pulse animation",
+      "spinner": "Cyan spinning circle or dots",
+      "progress_bar": "Animated gradient progress bar with percentage",
+      "status_text": "Text updates showing current operation"
+    }
+  },
+  
+  "empty_states": {
+    "philosophy": "Helpful, not discouraging. Guide users to take action.",
+    "patterns": {
+      "no_cases": "Illustration + 'No cases yet' + 'Create your first case' button",
+      "no_targets": "Icon + 'No targets in this case' + 'Add target' button",
+      "no_history": "Icon + 'No query history' + 'Start by querying a target'",
+      "no_results": "Icon + 'No results found' + 'Try adjusting your filters'",
+      "map_no_markers": "Map with center message 'No locations to display'"
+    },
+    "styling": "Centered content, muted colors, large icon (w-16 h-16), clear CTA button"
+  },
+  
+  "responsive_design": {
+    "philosophy": "Mobile-first, but optimized for desktop tactical use. Most users will be on desktop.",
+    "breakpoints": {
+      "mobile": "< 768px - Single column, hamburger menu, stacked cards",
+      "tablet": "768px - 1024px - 2 columns, condensed sidebar, smaller map",
+      "desktop": "1024px+ - Full layout, expanded sidebar, large map"
+    },
+    "mobile_optimizations": {
+      "navigation": "Hamburger menu, bottom tab bar for key actions",
+      "forms": "Full-width inputs, larger touch targets (min 44px)",
+      "map": "Reduced height (400px), simplified controls",
+      "tables": "Horizontal scroll or card view for narrow screens",
+      "modals": "Full-screen on mobile, centered on desktop"
+    },
+    "touch_targets": "Minimum 44x44px for all interactive elements on mobile"
+  },
+  
+  "security_considerations": {
+    "authentication": "JWT tokens, secure httpOnly cookies, refresh token rotation",
+    "data_protection": "Encrypt sensitive data (phone numbers, locations) at rest and in transit",
+    "rate_limiting": "Limit bot queries per user/IP to prevent abuse",
+    "input_validation": "Sanitize all inputs, validate phone number format",
+    "audit_logging": "Log all queries, case creations, user actions for accountability",
+    "session_management": "Auto-logout after inactivity, secure session storage"
+  },
+  
+  "instructions_to_main_agent": {
+    "critical_rules": [
+      "ALWAYS use dark theme with cyber tactical aesthetic",
+      "NEVER use default Shadcn/Vercel styling - heavily customize all components",
+      "ALWAYS use specified fonts (Barlow Condensed, Rajdhani, IBM Plex Sans, JetBrains Mono)",
+      "ALWAYS use electric cyan (#00D9FF) as primary accent - use sparingly for CTAs and active states",
+      "ALWAYS add data-testid attributes to interactive elements",
+      "ALWAYS respect prefers-reduced-motion for animations",
+      "ALWAYS ensure 4.5:1 contrast minimum for text",
+      "NEVER use emoji icons - use lucide-react or @phosphor-icons/react",
+      "NEVER center-align body text or dense content - left-align for readability",
+      "NEVER use transparent backgrounds without backdrop-blur on overlays",
+      "ALWAYS use monospace font (JetBrains Mono) for phone numbers, coordinates, technical data",
+      "ALWAYS add generous spacing (2-3x typical) for tactical clarity",
+      "ALWAYS use 1px borders with subtle opacity, not heavy shadows",
+      "ALWAYS implement proper loading states for all async operations",
+      "ALWAYS show clear error messages with actionable next steps"
+    ],
+    "implementation_priorities": [
+      "1. Set up dark theme with custom color variables in index.css",
+      "2. Import and configure Google Fonts (Barlow Condensed, Rajdhani, IBM Plex Sans, JetBrains Mono)",
+      "3. Create base layout with sidebar navigation and header",
+      "4. Implement authentication (login page with single credential)",
+      "5. Build dashboard home with metrics and recent activity",
+      "6. Create case management (list, create, detail views)",
+      "7. Implement target query interface with bot integration",
+      "8. Integrate Leaflet.js map with dark tiles and custom markers",
+      "9. Build results display with parsed bot data",
+      "10. Create history/archive with data table and filters",
+      "11. Add real-time status updates via WebSocket or polling",
+      "12. Implement toast notifications with Sonner",
+      "13. Add loading states and error handling throughout",
+      "14. Customize all Shadcn components to match tactical aesthetic",
+      "15. Test responsive design on mobile, tablet, desktop",
+      "16. Add accessibility features (keyboard nav, screen reader support)",
+      "17. Optimize performance (lazy loading, code splitting)",
+      "18. Add custom scrollbars and visual enhancements (noise, grid, glow)"
+    ],
+    "component_customization_examples": {
+      "button": "Remove default rounded-md, add sharp edges or rounded-md, cyan hover glow, font-semibold, uppercase tracking-wide",
+      "input": "Dark background (#151B23), cyan focus ring, monospace for phone inputs, clear error states",
+      "card": "Flat background with 1px border, hover glow effect, no heavy shadows, grid borders for data sections",
+      "table": "Dense rows, grid borders, sticky header, hover row highlight, monospace for technical columns",
+      "modal": "Glass morphism overlay, elevated content background, cyan accent border, smooth animations",
+      "toast": "Dark background, status color accent, icon on left, action button on right, slide-in animation"
+    },
+    "bot_integration_notes": [
+      "Use Telethon or Pyrogram for userbot automation (not standard Telegram Bot API)",
+      "Bot username: @northarch_bot",
+      "Query flow: send phone → wait for menu → auto-select 'CP' → wait for response → parse lat/long",
+      "Implement retry logic for failed queries",
+      "Show real-time status updates in UI (connecting, sending, processing, parsing, complete)",
+      "Parse bot response to extract: name, address, phone numbers, lat/long, other metadata",
+      "Handle errors gracefully: timeout, invalid response, bot unavailable, parsing failure",
+      "Store query history in MongoDB with timestamps, case association, results"
+    ],
+    "map_integration_notes": [
+      "Use react-leaflet wrapper for Leaflet.js",
+      "Dark tiles: CartoDB Dark Matter or Stamen Toner",
+      "Custom marker icon: SVG pin with cyan glow (#00D9FF)",
+      "Marker clustering for multiple targets in same area",
+      "Popup on marker click: show target details, 'View Details' button",
+      "Map controls: zoom, layer toggle, search, fullscreen",
+      "Responsive height: 400px mobile, 600px tablet, 700px desktop",
+      "Floating control panels: target list sidebar, filter controls",
+      "Smooth animations: marker drop-in, popup fade, zoom transitions"
+    ],
+    "data_flow": [
+      "User logs in → JWT token stored → redirect to dashboard",
+      "Dashboard loads → fetch cases, recent queries, metrics from API",
+      "User creates case → POST to /api/cases → add to list",
+      "User queries target → validate phone → send to bot via backend → WebSocket updates status → parse response → plot on map → save to history",
+      "User views history → fetch from /api/history with filters → display in table",
+      "User clicks marker → show popup with target details → 'View Details' opens modal with full data"
+    ],
+    "styling_workflow": [
+      "1. Start with Tailwind utility classes for layout and spacing",
+      "2. Use CSS variables from index.css for colors (--background-primary, --accent-primary, etc.)",
+      "3. Add custom classes in index.css for reusable patterns (e.g., .glow-effect, .grid-pattern)",
+      "4. Use inline styles sparingly, only for dynamic values (e.g., marker positions)",
+      "5. Leverage Tailwind's @apply directive for component-specific styles",
+      "6. Test dark theme exclusively - no light theme needed",
+      "7. Ensure all colors are from defined palette, no arbitrary values",
+      "8. Add hover/focus/active states to all interactive elements",
+      "9. Use transition utilities for smooth state changes",
+      "10. Add custom scrollbar styles globally in index.css"
+    ]
+  },
+  
+  "universal_ui_ux_guidelines": {
+    "design_principles": [
+      "Clarity over cleverness - users should never be confused",
+      "Consistency in patterns - same actions look the same everywhere",
+      "Feedback for every action - loading, success, error states",
+      "Hierarchy through size, color, spacing - not decoration",
+      "Accessibility is non-negotiable - keyboard nav, screen readers, contrast",
+      "Performance matters - optimize images, lazy load, code split",
+      "Mobile-first responsive - works on all devices",
+      "Error prevention over error handling - validate early, guide users",
+      "Progressive disclosure - show what's needed, hide complexity",
+      "Familiar patterns - don't reinvent common interactions"
+    ],
+    "interaction_patterns": [
+      "Hover states: subtle transform, color shift, glow effect",
+      "Click feedback: scale down briefly, then spring back",
+      "Focus indicators: always visible, high contrast, 2px ring",
+      "Loading states: skeleton screens, spinners, progress bars",
+      "Success feedback: green checkmark, toast notification, state update",
+      "Error feedback: red border, inline message, toast with retry",
+      "Disabled states: reduced opacity, cursor not-allowed, no hover",
+      "Active states: distinct color, border, or background change"
+    ],
+    "content_guidelines": [
+      "Headings: clear, concise, action-oriented",
+      "Body text: left-aligned, readable line length (60-80 chars)",
+      "Labels: descriptive, positioned above or left of inputs",
+      "Buttons: verb-based text (Submit, Create, Delete, not OK/Cancel)",
+      "Error messages: specific problem + how to fix it",
+      "Empty states: explain why empty + clear action to populate",
+      "Loading text: describe what's happening (Loading cases...)",
+      "Success messages: confirm action + next steps if applicable"
+    ],
+    "layout_principles": [
+      "Visual hierarchy: most important content first, largest, highest contrast",
+      "Whitespace: generous spacing between sections, tight within groups",
+      "Alignment: consistent grid, optical alignment over geometric",
+      "Grouping: related items close together, separated from others",
+      "Responsive: mobile-first, progressive enhancement for larger screens",
+      "Scrolling: vertical scroll preferred, horizontal only for carousels/tables",
+      "Fixed elements: sticky headers/navs, floating action buttons",
+      "Z-index: clear layering (base < elevated < overlay < modal < toast)"
+    ],
+    "form_best_practices": [
+      "One column layout for forms (easier to scan and complete)",
+      "Labels above inputs (better for mobile, clearer association)",
+      "Required fields marked clearly (asterisk or 'Required' label)",
+      "Validation on blur, not on every keystroke (less annoying)",
+      "Inline errors below fields (immediate, contextual feedback)",
+      "Disabled submit until valid (prevent errors, guide completion)",
+      "Clear button states (default, hover, focus, loading, disabled)",
+      "Autofocus first field (faster completion, better UX)",
+      "Tab order logical (top to bottom, left to right)",
+      "Success state after submit (confirmation message, redirect, or update)"
+    ],
+    "data_table_guidelines": [
+      "Sticky header row (always visible when scrolling)",
+      "Sortable columns (click header to sort, show sort indicator)",
+      "Filterable data (search box, dropdown filters, date range)",
+      "Pagination or infinite scroll (don't load 1000 rows at once)",
+      "Row hover highlight (shows which row you're on)",
+      "Selectable rows (checkbox on left, bulk actions available)",
+      "Responsive: card view on mobile, table on desktop",
+      "Loading state: skeleton rows matching final layout",
+      "Empty state: centered message + action to populate",
+      "Actions column: right-aligned, icon buttons or dropdown menu"
+    ],
+    "navigation_patterns": [
+      "Sidebar: persistent on desktop, collapsible on mobile",
+      "Top nav: logo left, user menu right, search center",
+      "Breadcrumbs: show hierarchy, clickable to navigate back",
+      "Tabs: for related content sections, underline active tab",
+      "Dropdown menus: hover on desktop, click on mobile",
+      "Back button: browser back or explicit 'Back to X' link",
+      "Active state: distinct color/style for current page",
+      "Keyboard shortcuts: common actions (Cmd+K for search, etc.)"
+    ],
+    "modal_dialog_guidelines": [
+      "Overlay: dark semi-transparent background, blur content behind",
+      "Content: centered, max-width, elevated background, border",
+      "Close button: top-right X icon, ESC key also closes",
+      "Focus trap: tab cycles through modal elements only",
+      "Scroll: modal content scrolls if too tall, not page behind",
+      "Actions: primary action right, secondary left or cancel",
+      "Animation: fade in overlay, slide up content",
+      "Mobile: full-screen on small screens, centered on large"
+    ],
+    "notification_guidelines": [
+      "Toast position: top-right or bottom-right (not blocking content)",
+      "Duration: 3-5 seconds for info, persistent for errors",
+      "Dismissible: X button to close, auto-dismiss after duration",
+      "Action button: optional 'Undo', 'Retry', 'View' button",
+      "Stacking: multiple toasts stack vertically, newest on top",
+      "Animation: slide in from side, fade out when dismissed",
+      "Status colors: success green, error red, warning yellow, info cyan",
+      "Icon: status icon on left, message center, action/close right"
+    ]
+  }
+}
