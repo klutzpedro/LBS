@@ -155,13 +155,27 @@ const TargetQuery = () => {
               <Select value={selectedCase} onValueChange={setSelectedCase} required>
                 <SelectTrigger 
                   data-testid="case-select"
-                  className="bg-background-tertiary border-borders-default focus:border-accent-primary"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)',
+                    color: 'var(--foreground-primary)'
+                  }}
                 >
                   <SelectValue placeholder="Pilih case" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  style={{
+                    backgroundColor: 'var(--background-elevated)',
+                    borderColor: 'var(--borders-strong)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
                   {cases.map((caseItem) => (
-                    <SelectItem key={caseItem.id} value={caseItem.id}>
+                    <SelectItem 
+                      key={caseItem.id} 
+                      value={caseItem.id}
+                      style={{ color: 'var(--foreground-primary)' }}
+                    >
                       {caseItem.name}
                     </SelectItem>
                   ))}
@@ -189,6 +203,7 @@ const TargetQuery = () => {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   data-testid="phone-number-input"
                   className="pl-10 font-mono bg-background-tertiary border-borders-default focus:border-accent-primary"
+                  style={{ color: 'var(--foreground-primary)' }}
                   placeholder="62XXXXXXXXXX"
                   required
                 />

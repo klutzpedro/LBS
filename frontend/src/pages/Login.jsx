@@ -106,6 +106,7 @@ const Login = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   data-testid="username-input"
                   className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                  style={{ color: 'var(--foreground-primary)' }}
                   placeholder="Enter username"
                   required
                 />
@@ -132,6 +133,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   data-testid="password-input"
                   className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                  style={{ color: 'var(--foreground-primary)' }}
                   placeholder="Enter password"
                   required
                 />
