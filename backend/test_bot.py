@@ -14,7 +14,7 @@ import re
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-API_ID = int(os.getenv('TELEGRAM_API_ID', '35564970'))
+API_ID = int(os.getenv('TELEGRAM_API_ID', '37983970'))
 API_HASH = os.getenv('TELEGRAM_API_HASH', 'd484d8fe3d2f4025f99101caeb070e1a')
 BOT_USERNAME = '@northarch_bot'
 
