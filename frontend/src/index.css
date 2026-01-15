@@ -36,10 +36,6 @@
 }
 
 @layer base {
-  * {
-    @apply border-borders-default;
-  }
-  
   body {
     margin: 0;
     background-color: var(--background-primary);
