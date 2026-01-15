@@ -118,6 +118,7 @@ const CaseManagement = () => {
                   onChange={(e) => setNewCase({ ...newCase, name: e.target.value })}
                   data-testid="case-name-input"
                   className="bg-background-tertiary border-borders-default focus:border-accent-primary"
+                  style={{ color: '#000000' }}
                   placeholder="Enter case name"
                   required
                 />
@@ -136,6 +137,7 @@ const CaseManagement = () => {
                   onChange={(e) => setNewCase({ ...newCase, description: e.target.value })}
                   data-testid="case-description-input"
                   className="bg-background-tertiary border-borders-default focus:border-accent-primary min-h-[100px]"
+                  style={{ color: '#000000' }}
                   placeholder="Enter case description"
                 />
               </div>
