@@ -363,18 +363,150 @@ async def delete_schedule(schedule_id: str, username: str = Depends(verify_token
     return {"message": "Schedule deleted successfully"}
 
 # Telegram Bot Integration
-async def init_telegram_client():
-    global telegram_client
+telegram_client = None
+telegram_phone_code_hash = None
+
+@api_router.post("/telegram/send-code")
+async def send_telegram_code(phone_data: dict, username: str = Depends(verify_token)):
+    global telegram_client, telegram_phone_code_hash
+    
+    phone = phone_data.get('phone')
+    if not phone:
+        raise HTTPException(status_code=400, detail="Phone number required")
+    
     try:
-        telegram_client = TelegramClient(
-            'northarch_session',
-            TELEGRAM_API_ID,
-            TELEGRAM_API_HASH
-        )
-        await telegram_client.start()
-        logging.info("Telegram client initialized successfully")
+        # Initialize client if not exists
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.connect()
+        
+        # Check if already authorized
+        if await telegram_client.is_user_authorized():
+            me = await telegram_client.get_me()
+            return {
+                "already_authorized": True,
+                "username": me.username,
+                "phone": me.phone
+            }
+        
+        # Send code
+        result = await telegram_client.send_code_request(phone)
+        telegram_phone_code_hash = result.phone_code_hash
+        
+        return {
+            "success": True,
+            "message": f"Kode verifikasi telah dikirim ke {phone}",
+            "phone_code_hash": result.phone_code_hash
+        }
     except Exception as e:
-        logging.error(f"Failed to initialize Telegram client: {e}")
+        logging.error(f"Error sending Telegram code: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/telegram/verify-code")
+async def verify_telegram_code(verify_data: dict, username: str = Depends(verify_token)):
+    global telegram_client, telegram_phone_code_hash
+    
+    phone = verify_data.get('phone')
+    code = verify_data.get('code')
+    password = verify_data.get('password')
+    
+    if not phone or not code:
+        raise HTTPException(status_code=400, detail="Phone and code required")
+    
+    try:
+        if telegram_client is None:
+            raise HTTPException(status_code=400, detail="Please send code first")
+        
+        # Sign in with code
+        try:
+            await telegram_client.sign_in(phone, code, phone_code_hash=telegram_phone_code_hash)
+        except Exception as signin_error:
+            # Check if it's 2FA error
+            if "password" in str(signin_error).lower():
+                if not password:
+                    return {
+                        "requires_2fa": True,
+                        "message": "Akun dilindungi 2FA, masukkan password"
+                    }
+                # Try with password
+                await telegram_client.sign_in(password=password)
+            else:
+                raise signin_error
+        
+        # Get user info
+        me = await telegram_client.get_me()
+        
+        # Test bot connection
+        try:
+            await telegram_client.send_message(BOT_USERNAME, '/start')
+            await asyncio.sleep(1)
+            messages = await telegram_client.get_messages(BOT_USERNAME, limit=1)
+            bot_active = True
+        except:
+            bot_active = False
+        
+        return {
+            "success": True,
+            "message": "Login Telegram berhasil!",
+            "user": {
+                "username": me.username,
+                "first_name": me.first_name,
+                "phone": me.phone,
+                "user_id": me.id
+            },
+            "bot_status": "connected" if bot_active else "not_connected"
+        }
+    except Exception as e:
+        logging.error(f"Error verifying Telegram code: {e}")
+        raise HTTPException(status_code=500, detail=f"Verification failed: {str(e)}")
+
+@api_router.get("/telegram/status")
+async def telegram_status(username: str = Depends(verify_token)):
+    global telegram_client
+    
+    session_exists = os.path.exists('/app/backend/northarch_session.session')
+    
+    if not session_exists:
+        return {
+            "authorized": False,
+            "message": "Belum login ke Telegram"
+        }
+    
+    try:
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.connect()
+        
+        if await telegram_client.is_user_authorized():
+            me = await telegram_client.get_me()
+            return {
+                "authorized": True,
+                "user": {
+                    "username": me.username,
+                    "first_name": me.first_name,
+                    "phone": me.phone,
+                    "user_id": me.id
+                }
+            }
+        else:
+            return {
+                "authorized": False,
+                "message": "Session expired atau belum login"
+            }
+    except Exception as e:
+        logging.error(f"Error checking Telegram status: {e}")
+        return {
+            "authorized": False,
+            "message": str(e)
+        }
 
 async def query_telegram_bot(target_id: str, phone_number: str):
     try:
