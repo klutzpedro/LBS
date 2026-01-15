@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { TelegramStatusBanner } from '@/components/TelegramStatusBanner';
 import {
   LayoutDashboard,
   FolderOpen,
@@ -98,6 +99,7 @@ export const Layout = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
+        <TelegramStatusBanner />
         {children}
       </main>
     </div>
