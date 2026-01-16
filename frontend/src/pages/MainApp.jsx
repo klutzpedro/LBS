@@ -627,24 +627,28 @@ const MainApp = () => {
             >
               <div>
                 <h3 
-                  className="font-semibold"
-                  style={{ color: 'var(--foreground-primary)' }}
+                  className="font-semibold text-sm"
+                  style={{ 
+                    color: 'var(--foreground-primary)',
+                    fontFamily: 'Barlow Condensed, sans-serif'
+                  }}
                 >
-                  Chat History
+                  CHAT HISTORY
                 </h3>
                 <p 
-                  className="text-xs font-mono"
+                  className="text-xs font-mono mt-1"
                   style={{ color: 'var(--accent-primary)' }}
                 >
-                  {targets.find(t => t.id === selectedTargetForChat)?.phone_number}
+                  {targets.find(t => t.id === selectedTargetForChat)?.phone_number || 'Select target'}
                 </p>
               </div>
               <Button
                 size="icon"
                 variant="ghost"
                 onClick={() => setShowChatPanel(false)}
+                data-testid="close-chat-button"
               >
-                <XCircle className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
+                <Minimize2 className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
               </Button>
             </div>
 
