@@ -158,13 +158,13 @@ const Settings = () => {
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         {/* Telegram Status Banner */}
         <div 
-          className="p-4 rounded-lg border mb-6"
+          className="rounded-lg border mb-6"
           style={{
             backgroundColor: telegramAuthorized ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 184, 0, 0.1)',
             borderColor: telegramAuthorized ? 'var(--status-success)' : 'var(--status-warning)'
           }}
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="p-4 flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               {telegramAuthorized ? <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-success)' }} /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-warning)' }} />}
               <div className="text-sm">
@@ -179,20 +179,26 @@ const Settings = () => {
                 </p>
               </div>
             </div>
-            {telegramAuthorized && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleResetConnection}
-                data-testid="reset-connection-button"
-                style={{
-                  backgroundColor: 'var(--status-error)',
-                  color: 'white'
-                }}
-              >
-                Reset Connection
-              </Button>
-            )}
+          </div>
+          
+          {/* Reset Connection Button - Always visible */}
+          <div className="px-4 pb-4">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleResetConnection}
+              data-testid="reset-connection-button"
+              className="w-full"
+              style={{
+                backgroundColor: 'var(--status-error)',
+                color: 'white'
+              }}
+            >
+              Reset Connection
+            </Button>
+            <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
+              Gunakan jika koneksi stuck atau bermasalah
+            </p>
           </div>
         </div>
 
