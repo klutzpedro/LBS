@@ -108,6 +108,16 @@ class Schedule(BaseModel):
 class ScheduleUpdate(BaseModel):
     active: Optional[bool] = None
 
+class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    target_id: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    direction: str  # "sent" or "received"
+    message: str
+    has_buttons: bool = False
+    buttons: Optional[list] = None
+
 # Authentication
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
