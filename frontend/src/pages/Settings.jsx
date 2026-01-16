@@ -99,12 +99,18 @@ const Settings = () => {
   };
 
   const handleResetConnection = async () => {
+    console.log('Reset connection clicked');
+    
     if (!window.confirm('Reset koneksi Telegram? Anda perlu login ulang setelah reset.')) {
+      console.log('Reset cancelled by user');
       return;
     }
 
+    console.log('Resetting Telegram connection...');
+
     try {
       const response = await axios.post(`${API}/telegram/reset-connection`);
+      console.log('Reset response:', response.data);
       toast.success('Koneksi Telegram direset. Silakan setup ulang.');
       await refreshStatus();
       setSetupStep(1);
@@ -113,6 +119,7 @@ const Settings = () => {
       setPassword2FA('');
       setRequires2FA(false);
     } catch (error) {
+      console.error('Reset error:', error);
       toast.error(error.response?.data?.detail || 'Gagal reset koneksi');
     }
   };
