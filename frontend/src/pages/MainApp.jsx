@@ -521,13 +521,16 @@ const MainApp = () => {
                   border: '2px solid var(--accent-primary)'
                 }}
               >
-                💬
+                <MessageSquare className="w-6 h-6" />
               </Button>
               {/* Red blinking indicator for active queries */}
               {hasActiveQueries && !showChatPanel && (
                 <div 
                   className="absolute -top-1 -right-1 w-4 h-4 rounded-full animate-pulse"
-                  style={{ backgroundColor: 'var(--status-error)' }}
+                  style={{ 
+                    backgroundColor: 'var(--status-error)',
+                    boxShadow: '0 0 10px var(--status-error)'
+                  }}
                 />
               )}
             </div>
