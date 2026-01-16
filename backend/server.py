@@ -662,7 +662,7 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         try:
             # Send phone number to bot
             await telegram_client.send_message(BOT_USERNAME, phone_number)
-            logging.info(f"Sent phone number {phone_number} to {BOT_USERNAME}")
+            logging.info(f"[TARGET {target_id}] Sent phone number {phone_number} to {BOT_USERNAME}")
             
             await asyncio.sleep(2)
             
@@ -673,31 +673,39 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             )
             
             # Wait for bot response and look for "CP" button
-            await asyncio.sleep(5)  # Increased wait time
+            logging.info(f"[TARGET {target_id}] Waiting for bot response...")
+            await asyncio.sleep(5)
             
             # Get latest messages from bot
             messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+            logging.info(f"[TARGET {target_id}] Retrieved {len(messages)} messages from bot")
             
             # Look for message with buttons
             cp_clicked = False
-            for msg in messages:
+            for idx, msg in enumerate(messages):
+                logging.info(f"[TARGET {target_id}] Message {idx}: has_buttons={msg.buttons is not None}, text_preview={msg.text[:50] if msg.text else 'No text'}...")
+                
                 if msg.buttons:
+                    button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                    logging.info(f"[TARGET {target_id}] Buttons found: {button_texts}")
+                    
                     for row in msg.buttons:
                         for button in row:
                             if button.text and 'CP' in button.text.upper():
                                 # Click the CP button
                                 await button.click()
-                                logging.info("Clicked CP button")
+                                logging.info(f"[TARGET {target_id}] ✓ Clicked CP button: {button.text}")
                                 cp_clicked = True
                                 break
                     if cp_clicked:
                         break
             
             if not cp_clicked:
-                logging.warning("CP button not found in messages")
+                logging.warning(f"[TARGET {target_id}] ⚠ CP button not found in messages")
             
             # Wait longer for bot to process and respond
-            await asyncio.sleep(8)  # Increased from 3 to 8 seconds
+            logging.info(f"[TARGET {target_id}] Waiting for location response...")
+            await asyncio.sleep(8)
             
             # Update status: parsing
             await db.targets.update_one(
