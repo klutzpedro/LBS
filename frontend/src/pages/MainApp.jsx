@@ -603,26 +603,41 @@ const MainApp = () => {
                 chatMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`p-3 rounded-lg ${msg.is_outgoing ? 'ml-8' : 'mr-8'}`}
+                    className={`p-3 rounded-lg ${msg.direction === 'sent' ? 'ml-8' : 'mr-8'}`}
                     style={{
-                      backgroundColor: msg.is_outgoing 
-                        ? 'var(--accent-primary)' 
+                      backgroundColor: msg.direction === 'sent' 
+                        ? 'rgba(0, 217, 255, 0.2)' 
                         : 'var(--background-tertiary)',
-                      color: msg.is_outgoing 
-                        ? 'var(--background-primary)' 
-                        : 'var(--foreground-primary)'
+                      borderLeft: msg.direction === 'sent' 
+                        ? '3px solid var(--accent-primary)' 
+                        : '3px solid var(--borders-default)'
                     }}
                   >
-                    <p className="text-sm">{msg.text}</p>
+                    <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                      {msg.message}
+                    </p>
+                    {msg.has_buttons && msg.buttons && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {msg.buttons.flat().map((btn, i) => (
+                          <span 
+                            key={i}
+                            className="px-2 py-1 rounded text-xs"
+                            style={{
+                              backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                              color: 'var(--accent-primary)',
+                              border: '1px solid var(--accent-primary)'
+                            }}
+                          >
+                            {btn}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p 
                       className="text-xs mt-1"
-                      style={{ 
-                        color: msg.is_outgoing 
-                          ? 'rgba(255,255,255,0.7)' 
-                          : 'var(--foreground-muted)' 
-                      }}
+                      style={{ color: 'var(--foreground-muted)' }}
                     >
-                      {new Date(msg.timestamp).toLocaleTimeString()}
+                      {new Date(msg.timestamp).toLocaleTimeString('id-ID')}
                     </p>
                   </div>
                 ))
