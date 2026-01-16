@@ -1,15 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import Login from '@/pages/Login';
-import Dashboard from '@/pages/Dashboard';
-import CaseManagement from '@/pages/CaseManagement';
-import TargetQuery from '@/pages/TargetQuery';
-import MapView from '@/pages/MapView';
-import History from '@/pages/History';
-import Scheduling from '@/pages/Scheduling';
-import TelegramSetup from '@/pages/TelegramSetup';
+import MainApp from '@/pages/MainApp';
 import Settings from '@/pages/Settings';
-import Layout from '@/components/Layout';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TelegramProvider } from '@/context/TelegramContext';
 import '@/App.css';
@@ -26,25 +19,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route
-              path="/*"
-              element={
-                <PrivateRoute>
-                  <Layout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/cases" element={<CaseManagement />} />
-                      <Route path="/query" element={<TargetQuery />} />
-                      <Route path="/map" element={<MapView />} />
-                      <Route path="/scheduling" element={<Scheduling />} />
-                      <Route path="/history" element={<History />} />
-                      <Route path="/telegram-setup" element={<TelegramSetup />} />
-                      <Route path="/settings" element={<Settings />} />
-                    </Routes>
-                  </Layout>
-                </PrivateRoute>
-              }
-            />
+            <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+            <Route path="/*" element={<PrivateRoute><MainApp /></PrivateRoute>} />
           </Routes>
           <Toaster position="top-right" />
         </BrowserRouter>
