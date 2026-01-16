@@ -79,6 +79,8 @@ const MainApp = () => {
   const [showChatPanel, setShowChatPanel] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
+  const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]);
+  const [mapZoom, setMapZoom] = useState(13);
 
   useEffect(() => {
     fetchCases();
@@ -207,9 +209,32 @@ const MainApp = () => {
     navigate('/login');
   };
 
+  const handleTargetClick = (target) => {
+    setSelectedTargetForChat(target.id);
+    
+    // If target has location, zoom to it
+    if (target.data && target.data.latitude && target.data.longitude) {
+      setMapCenter([target.data.latitude, target.data.longitude]);
+      setMapZoom(16); // Zoom in closer
+    }
+  };
+
   const hasActiveQueries = targets.some(t => 
     ['pending', 'connecting', 'querying', 'processing', 'parsing'].includes(t.status)
   );
+
+  // Component to handle map view changes
+  const MapViewController = ({ center, zoom }) => {
+    const map = useMap();
+    
+    useEffect(() => {
+      if (center && zoom) {
+        map.setView(center, zoom, { animate: true, duration: 1 });
+      }
+    }, [center, zoom, map]);
+    
+    return null;
+  };
 
   const center = targets.filter(t => t.data).length > 0
     ? [targets.filter(t => t.data)[0].data.latitude, targets.filter(t => t.data)[0].data.longitude]
@@ -371,10 +396,7 @@ const MainApp = () => {
             {targets.map((target) => (
               <div
                 key={target.id}
-                onClick={() => {
-                  setSelectedTargetForChat(target.id);
-                  // Don't auto-open chat panel, just set selected
-                }}
+                onClick={() => handleTargetClick(target)}
                 className="p-3 rounded-md border cursor-pointer hover:bg-background-elevated transition-all"
                 style={{
                   backgroundColor: selectedTargetForChat === target.id ? 'var(--background-elevated)' : 'var(--background-tertiary)',
@@ -558,10 +580,11 @@ const MainApp = () => {
           ) : (
             <MapContainer
               key={selectedTileLayer}
-              center={center}
-              zoom={13}
+              center={mapCenter}
+              zoom={mapZoom}
               style={{ height: '100%', width: '100%' }}
             >
+              <MapViewController center={mapCenter} zoom={mapZoom} />
               <TileLayer
                 key={selectedTileLayer}
                 url={mapTiles[selectedTileLayer].url}
