@@ -195,6 +195,7 @@ const MainApp = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'var(--status-success)';
+      case 'not_found': return 'var(--status-warning)';
       case 'error': return 'var(--status-error)';
       default: return 'var(--status-processing)';
     }
@@ -365,6 +366,8 @@ const MainApp = () => {
                   </p>
                   {target.status === 'completed' ? (
                     <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-success)' }} />
+                  ) : target.status === 'not_found' ? (
+                    <XCircle className="w-4 h-4" style={{ color: 'var(--status-warning)' }} />
                   ) : target.status === 'error' ? (
                     <XCircle className="w-4 h-4" style={{ color: 'var(--status-error)' }} />
                   ) : (
@@ -372,8 +375,17 @@ const MainApp = () => {
                   )}
                 </div>
                 {target.data && (
-                  <p className="text-xs line-clamp-1" style={{ color: 'var(--foreground-secondary)' }}>
-                    {target.data.address}
+                  <p className="text-xs line-clamp-1" style={{ color: 'var(--foreground-secondary)' }}>\n                    {target.data.address}
+                  </p>
+                )}
+                {target.status === 'not_found' && (
+                  <p className="text-xs" style={{ color: 'var(--status-warning)' }}>
+                    Target OFF / Tidak ditemukan
+                  </p>
+                )}
+                {target.status === 'error' && (
+                  <p className="text-xs" style={{ color: 'var(--status-error)' }}>
+                    Error: {target.error}
                   </p>
                 )}
                 <p className="text-xs uppercase mt-1" style={{ color: 'var(--foreground-muted)' }}>
