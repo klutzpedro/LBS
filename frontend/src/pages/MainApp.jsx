@@ -192,9 +192,8 @@ const MainApp = () => {
       setNewPhoneNumber('');
       fetchTargets(selectedCase.id);
       
-      // Show chat panel for this target
+      // Set selected target but don't auto-open chat panel
       setSelectedTargetForChat(response.data.id);
-      setShowChatPanel(true);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to add target');
     } finally {
@@ -206,6 +205,10 @@ const MainApp = () => {
     logout();
     navigate('/login');
   };
+
+  const hasActiveQueries = targets.some(t => 
+    ['pending', 'connecting', 'querying', 'processing', 'parsing'].includes(t.status)
+  );
 
   const center = targets.filter(t => t.data).length > 0
     ? [targets.filter(t => t.data)[0].data.latitude, targets.filter(t => t.data)[0].data.longitude]
