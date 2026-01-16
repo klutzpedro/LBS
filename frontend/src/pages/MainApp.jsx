@@ -552,6 +552,83 @@ const MainApp = () => {
             </MapContainer>
           )}
         </div>
+
+        {/* Chat Panel */}
+        {showChatPanel && selectedTargetForChat && (
+          <div 
+            className="w-96 border-l flex flex-col"
+            style={{
+              backgroundColor: 'var(--background-secondary)',
+              borderColor: 'var(--borders-default)'
+            }}
+          >
+            {/* Chat Header */}
+            <div 
+              className="p-4 border-b flex items-center justify-between"
+              style={{ borderColor: 'var(--borders-default)' }}
+            >
+              <div>
+                <h3 
+                  className="font-semibold"
+                  style={{ color: 'var(--foreground-primary)' }}
+                >
+                  Chat History
+                </h3>
+                <p 
+                  className="text-xs font-mono"
+                  style={{ color: 'var(--accent-primary)' }}
+                >
+                  {targets.find(t => t.id === selectedTargetForChat)?.phone_number}
+                </p>
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setShowChatPanel(false)}
+              >
+                <XCircle className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
+              </Button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                    Belum ada chat
+                  </p>
+                </div>
+              ) : (
+                chatMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-3 rounded-lg ${msg.is_outgoing ? 'ml-8' : 'mr-8'}`}
+                    style={{
+                      backgroundColor: msg.is_outgoing 
+                        ? 'var(--accent-primary)' 
+                        : 'var(--background-tertiary)',
+                      color: msg.is_outgoing 
+                        ? 'var(--background-primary)' 
+                        : 'var(--foreground-primary)'
+                    }}
+                  >
+                    <p className="text-sm">{msg.text}</p>
+                    <p 
+                      className="text-xs mt-1"
+                      style={{ 
+                        color: msg.is_outgoing 
+                          ? 'rgba(255,255,255,0.7)' 
+                          : 'var(--foreground-muted)' 
+                      }}
+                    >
+                      {new Date(msg.timestamp).toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* New Case Dialog */}
