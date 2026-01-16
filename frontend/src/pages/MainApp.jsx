@@ -75,6 +75,9 @@ const MainApp = () => {
   const [newCaseName, setNewCaseName] = useState('');
   const [newPhoneNumber, setNewPhoneNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
 
   useEffect(() => {
     fetchCases();
@@ -90,6 +93,16 @@ const MainApp = () => {
       return () => clearInterval(interval);
     }
   }, [selectedCase]);
+
+  useEffect(() => {
+    if (selectedTargetForChat) {
+      fetchChatMessages(selectedTargetForChat);
+      const interval = setInterval(() => {
+        fetchChatMessages(selectedTargetForChat);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedTargetForChat]);
 
   const fetchCases = async () => {
     try {
@@ -110,6 +123,15 @@ const MainApp = () => {
       setTargets(response.data);
     } catch (error) {
       console.error('Failed to load targets:', error);
+    }
+  };
+
+  const fetchChatMessages = async (targetId) => {
+    try {
+      const response = await axios.get(`${API}/targets/${targetId}/chat`);
+      setChatMessages(response.data);
+    } catch (error) {
+      console.error('Failed to load chat:', error);
     }
   };
 
@@ -142,7 +164,7 @@ const MainApp = () => {
     
     setSubmitting(true);
     try {
-      await axios.post(`${API}/targets`, {
+      const response = await axios.post(`${API}/targets`, {
         case_id: selectedCase.id,
         phone_number: newPhoneNumber
       });
@@ -150,6 +172,10 @@ const MainApp = () => {
       setAddTargetDialog(false);
       setNewPhoneNumber('');
       fetchTargets(selectedCase.id);
+      
+      // Show chat panel for this target
+      setSelectedTargetForChat(response.data.id);
+      setShowChatPanel(true);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to add target');
     } finally {
