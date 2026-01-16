@@ -372,7 +372,7 @@ const MainApp = () => {
                 key={target.id}
                 onClick={() => {
                   setSelectedTargetForChat(target.id);
-                  setShowChatPanel(true);
+                  // Don't auto-open chat panel, just set selected
                 }}
                 className="p-3 rounded-md border cursor-pointer hover:bg-background-elevated transition-all"
                 style={{
