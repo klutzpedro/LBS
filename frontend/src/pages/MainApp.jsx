@@ -345,11 +345,14 @@ const MainApp = () => {
           </div>
           <div className="space-y-2">
             {targets.map((target) => (
-              <div
-                key={target.id}
-                className="p-3 rounded-md border"
+              <div\n                key={target.id}
+                onClick={() => {
+                  setSelectedTargetForChat(target.id);
+                  setShowChatPanel(true);
+                }}
+                className="p-3 rounded-md border cursor-pointer hover:bg-background-elevated transition-all"
                 style={{
-                  backgroundColor: 'var(--background-tertiary)',
+                  backgroundColor: selectedTargetForChat === target.id ? 'var(--background-elevated)' : 'var(--background-tertiary)',
                   borderColor: 'var(--borders-subtle)',
                   borderLeftWidth: '3px',
                   borderLeftColor: getStatusColor(target.status)
