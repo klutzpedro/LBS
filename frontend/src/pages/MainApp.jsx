@@ -95,6 +95,25 @@ const MainApp = () => {
   }, [selectedCase]);
 
   useEffect(() => {
+    // Monitor target status changes for notifications
+    targets.forEach(target => {
+      const prevTarget = targets.find(t => t.id === target.id);
+      
+      if (target.status === 'completed' && prevTarget?.status !== 'completed') {
+        toast.success(`✓ Lokasi ${target.phone_number} ditemukan!`);
+      }
+      
+      if (target.status === 'not_found' && prevTarget?.status !== 'not_found') {
+        toast.warning(`⚠ Target ${target.phone_number} tidak ditemukan atau sedang OFF`);
+      }
+      
+      if (target.status === 'error' && prevTarget?.status !== 'error') {
+        toast.error(`✗ Query gagal untuk ${target.phone_number}`);
+      }
+    });
+  }, [targets]);
+
+  useEffect(() => {
     if (selectedTargetForChat) {
       fetchChatMessages(selectedTargetForChat);
       const interval = setInterval(() => {
