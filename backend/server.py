@@ -589,6 +589,49 @@ async def telegram_status(username: str = Depends(verify_token)):
             "message": str(e)
         }
 
+@api_router.post("/telegram/reset-connection")
+async def reset_telegram_connection(username: str = Depends(verify_token)):
+    global telegram_client, telegram_phone_code_hash
+    
+    try:
+        # Disconnect existing client
+        if telegram_client is not None:
+            try:
+                await telegram_client.disconnect()
+                logging.info("Disconnected existing Telegram client")
+            except Exception as e:
+                logging.warning(f"Error disconnecting client: {e}")
+        
+        # Reset global variables
+        telegram_client = None
+        telegram_phone_code_hash = None
+        
+        # Delete session files
+        session_files = [
+            '/app/backend/northarch_session.session',
+            '/app/backend/northarch_session.session-journal'
+        ]
+        
+        deleted_files = []
+        for sf in session_files:
+            if os.path.exists(sf):
+                try:
+                    os.remove(sf)
+                    deleted_files.append(sf)
+                    logging.info(f"Deleted session file: {sf}")
+                except Exception as e:
+                    logging.error(f"Error deleting {sf}: {e}")
+        
+        return {
+            "success": True,
+            "message": "Telegram connection reset successfully",
+            "deleted_files": deleted_files,
+            "status": "You need to setup Telegram again"
+        }
+    except Exception as e:
+        logging.error(f"Error resetting Telegram connection: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def query_telegram_bot(target_id: str, phone_number: str):
     try:
         # Update status: connecting
