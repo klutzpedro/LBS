@@ -98,6 +98,25 @@ const Settings = () => {
     navigate('/login');
   };
 
+  const handleResetConnection = async () => {
+    if (!window.confirm('Reset koneksi Telegram? Anda perlu login ulang setelah reset.')) {
+      return;
+    }
+
+    try {
+      const response = await axios.post(`${API}/telegram/reset-connection`);
+      toast.success('Koneksi Telegram direset. Silakan setup ulang.');
+      await refreshStatus();
+      setSetupStep(1);
+      setPhoneNumber('+62');
+      setVerificationCode('');
+      setPassword2FA('');
+      setRequires2FA(false);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Gagal reset koneksi');
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background-primary)' }}>
       {/* Header */}
@@ -139,23 +158,41 @@ const Settings = () => {
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         {/* Telegram Status Banner */}
         <div 
-          className="p-4 rounded-lg border mb-6 flex items-start gap-3"
+          className="p-4 rounded-lg border mb-6"
           style={{
             backgroundColor: telegramAuthorized ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 184, 0, 0.1)',
             borderColor: telegramAuthorized ? 'var(--status-success)' : 'var(--status-warning)'
           }}
         >
-          {telegramAuthorized ? <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-success)' }} /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-warning)' }} />}
-          <div className="text-sm">
-            <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
-              {telegramAuthorized ? '✓ Telegram Connected' : '⚠ Telegram Not Connected'}
-            </p>
-            <p style={{ color: 'var(--foreground-secondary)' }}>
-              {telegramAuthorized 
-                ? `Logged in as @${telegramUser?.username} - Bot automation active`
-                : 'Setup Telegram untuk aktivasi bot automation'
-              }
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              {telegramAuthorized ? <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-success)' }} /> : <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--status-warning)' }} />}
+              <div className="text-sm">
+                <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                  {telegramAuthorized ? '✓ Telegram Connected' : '⚠ Telegram Not Connected'}
+                </p>
+                <p style={{ color: 'var(--foreground-secondary)' }}>
+                  {telegramAuthorized 
+                    ? `Logged in as @${telegramUser?.username} - Bot automation active`
+                    : 'Setup Telegram untuk aktivasi bot automation'
+                  }
+                </p>
+              </div>
+            </div>
+            {telegramAuthorized && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={handleResetConnection}
+                data-testid="reset-connection-button"
+                style={{
+                  backgroundColor: 'var(--status-error)',
+                  color: 'white'
+                }}
+              >
+                Reset Connection
+              </Button>
+            )}
           </div>
         </div>
 
