@@ -284,6 +284,20 @@ async def get_target_status(target_id: str, username: str = Depends(verify_token
         data=target.get('data')
     )
 
+@api_router.get("/targets/{target_id}/chat")
+async def get_target_chat(target_id: str, username: str = Depends(verify_token)):
+    """Get chat history for a target query"""
+    chat_messages = await db.chat_messages.find(
+        {"target_id": target_id},
+        {"_id": 0}
+    ).sort("timestamp", 1).to_list(100)
+    
+    for msg in chat_messages:
+        if isinstance(msg.get('timestamp'), str):
+            msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
+    
+    return chat_messages
+
 # Dashboard Stats
 @api_router.get("/stats")
 async def get_stats(username: str = Depends(verify_token)):
