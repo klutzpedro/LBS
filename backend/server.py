@@ -688,6 +688,16 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             await telegram_client.send_message(BOT_USERNAME, phone_number)
             logging.info(f"[TARGET {target_id}] Sent phone number {phone_number} to {BOT_USERNAME}")
             
+            # Save sent message to chat history
+            await db.chat_messages.insert_one({
+                "id": str(uuid.uuid4()),
+                "target_id": target_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "direction": "sent",
+                "message": f"📤 Mengirim nomor: {phone_number}",
+                "has_buttons": False
+            })
+            
             await asyncio.sleep(2)
             
             # Update status: processing
@@ -713,12 +723,34 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                     button_texts = [[btn.text for btn in row] for row in msg.buttons]
                     logging.info(f"[TARGET {target_id}] Buttons found: {button_texts}")
                     
+                    # Save received message with buttons
+                    await db.chat_messages.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "target_id": target_id,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "direction": "received",
+                        "message": f"📥 Bot: {msg.text[:100] if msg.text else 'Response'}...",
+                        "has_buttons": True,
+                        "buttons": button_texts
+                    })
+                    
                     for row in msg.buttons:
                         for button in row:
                             if button.text and 'CP' in button.text.upper():
                                 # Click the CP button
                                 await button.click()
                                 logging.info(f"[TARGET {target_id}] ✓ Clicked CP button: {button.text}")
+                                
+                                # Save click action
+                                await db.chat_messages.insert_one({
+                                    "id": str(uuid.uuid4()),
+                                    "target_id": target_id,
+                                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                                    "direction": "sent",
+                                    "message": f"🔘 Clicked button: {button.text}",
+                                    "has_buttons": False
+                                })
+                                
                                 cp_clicked = True
                                 break
                     if cp_clicked:
