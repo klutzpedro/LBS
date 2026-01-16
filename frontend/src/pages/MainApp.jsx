@@ -650,6 +650,7 @@ const MainApp = () => {
       {/* New Case Dialog */}
       <Dialog open={newCaseDialog} onOpenChange={setNewCaseDialog}>
         <DialogContent 
+          className="z-[9999]"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -696,6 +697,7 @@ const MainApp = () => {
       {/* Add Target Dialog */}
       <Dialog open={addTargetDialog} onOpenChange={setAddTargetDialog}>
         <DialogContent 
+          className="z-[9999]"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
