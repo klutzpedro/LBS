@@ -345,7 +345,8 @@ const MainApp = () => {
           </div>
           <div className="space-y-2">
             {targets.map((target) => (
-              <div\n                key={target.id}
+              <div
+                key={target.id}
                 onClick={() => {
                   setSelectedTargetForChat(target.id);
                   setShowChatPanel(true);
