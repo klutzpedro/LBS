@@ -25,7 +25,8 @@ import {
   MapPin,
   CheckCircle,
   XCircle,
-  Activity
+  Activity,
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 
