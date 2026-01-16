@@ -878,34 +878,41 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                         }
                     }
                 )
-                logging.info(f"Successfully parsed location for target {target_id}")
-            else:
-                # If no location found, use fallback with mock data
-                logging.warning(f"Could not parse location from bot response, using mock data")
-                mock_data = {
-                    "name": "Target User",
-                    "phone_number": phone_number,
-                    "address": "Jl. Contoh No. 123, Jakarta",
-                    "latitude": -6.2088 + (hash(phone_number) % 100) / 1000,
-                    "longitude": 106.8456 + (hash(phone_number) % 100) / 1000,
-                    "additional_phones": [phone_number],
+                
+                # Save success message
+                await db.chat_messages.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "target_id": target_id,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "note": "Mock data - bot response parsing failed"
-                }
+                    "direction": "received",
+                    "message": f"✅ Lokasi ditemukan: {location_data['address'][:100]}",
+                    "has_buttons": False
+                })
+                
+                logging.info(f"[TARGET {target_id}] ✓✓ Location found and saved")
+            else:
+                # No location found - mark as not_found
+                logging.warning(f"[TARGET {target_id}] ⚠ Could not parse location from bot response")
                 
                 await db.targets.update_one(
                     {"id": target_id},
                     {
                         "$set": {
-                            "status": "completed",
-                            "data": mock_data,
-                            "location": {
-                                "type": "Point",
-                                "coordinates": [mock_data['longitude'], mock_data['latitude']]
-                            }
+                            "status": "not_found",
+                            "error": "Lokasi tidak ditemukan atau target sedang OFF"
                         }
                     }
                 )
+                
+                # Save not found message
+                await db.chat_messages.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "target_id": target_id,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "direction": "received",
+                    "message": "❌ Target tidak ditemukan atau sedang OFF. Bot tidak memberikan koordinat lokasi.",
+                    "has_buttons": False
+                })
         
         except Exception as bot_error:
             logging.error(f"Error communicating with Telegram bot: {bot_error}")
