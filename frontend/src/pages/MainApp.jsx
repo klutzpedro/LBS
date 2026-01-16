@@ -395,85 +395,84 @@ const MainApp = () => {
       </aside>
 
       {/* Main Map Area */}
-      <main className="flex-1 relative">
-        {/* Map Controls */}
-        <div 
-          className="absolute top-4 right-4 z-[1000] flex flex-col gap-2"
-          style={{ pointerEvents: 'auto' }}
-        >
-          {/* Map Type */}
+      <main className="flex-1 relative flex">
+        {/* Map */}
+        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} h-full transition-all duration-300`}>
+          {/* Map Controls */}
           <div 
-            className="rounded-lg border p-3"
-            style={{
-              backgroundColor: 'var(--background-elevated)',
-              borderColor: 'var(--borders-default)'
-            }}
+            className="absolute top-4 right-4 z-[1000] flex flex-col gap-2"
+            style={{ pointerEvents: 'auto' }}
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Layers className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-              <span className="text-xs font-semibold uppercase" style={{ color: 'var(--foreground-secondary)' }}>
-                Map Type
-              </span>
-            </div>
-            <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
-              <SelectTrigger 
-                className="w-32"
-                style={{
-                  backgroundColor: 'var(--background-tertiary)',
-                  borderColor: 'var(--borders-default)',
-                  color: 'var(--foreground-primary)'
-                }}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent
-                style={{
-                  backgroundColor: 'var(--background-elevated)',
-                  borderColor: 'var(--borders-strong)',
-                  color: 'var(--foreground-primary)'
-                }}
-              >
-                {Object.entries(mapTiles).map(([key, tile]) => (
-                  <SelectItem key={key} value={key} style={{ color: 'var(--foreground-primary)' }}>
-                    {tile.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Maximize */}
-          <Button
-            onClick={() => setIsMaximized(!isMaximized)}
-            size="icon"
-            className="w-10 h-10 border"
-            style={{
-              backgroundColor: 'var(--background-elevated)',
-              borderColor: 'var(--borders-default)',
-              color: 'var(--accent-primary)'
-            }}
-          >
-            {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-          </Button>
-
-          {/* Add Target (Floating) */}
-          {selectedCase && (
-            <Button
-              onClick={() => setAddTargetDialog(true)}
-              data-testid="floating-add-target"
-              className="w-12 h-12 rounded-full shadow-lg"
+            {/* Map Type */}
+            <div 
+              className="rounded-lg border p-3"
               style={{
-                backgroundColor: 'var(--accent-primary)',
-                color: 'var(--background-primary)'
+                backgroundColor: 'var(--background-elevated)',
+                borderColor: 'var(--borders-default)'
               }}
             >
-              <Plus className="w-6 h-6" />
-            </Button>
-          )}
-        </div>
+              <div className="flex items-center gap-2 mb-2">
+                <Layers className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+                <span className="text-xs font-semibold uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                  Map Type
+                </span>
+              </div>
+              <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
+                <SelectTrigger 
+                  className="w-32"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent
+                  style={{
+                    backgroundColor: 'var(--background-elevated)',
+                    borderColor: 'var(--borders-strong)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
+                  {Object.entries(mapTiles).map(([key, tile]) => (
+                    <SelectItem key={key} value={key} style={{ color: 'var(--foreground-primary)' }}>
+                      {tile.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Map */}
-        <div className="h-full w-full">
+            {/* Maximize */}
+            <Button
+              onClick={() => setIsMaximized(!isMaximized)}
+              size="icon"
+              className="w-10 h-10 border"
+              style={{
+                backgroundColor: 'var(--background-elevated)',
+                borderColor: 'var(--borders-default)',
+                color: 'var(--accent-primary)'
+              }}
+            >
+              {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </Button>
+
+            {/* Add Target (Floating) */}
+            {selectedCase && (
+              <Button
+                onClick={() => setAddTargetDialog(true)}
+                data-testid="floating-add-target"
+                className="w-12 h-12 rounded-full shadow-lg"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)'
+                }}
+              >
+                <Plus className="w-6 h-6" />
+              </Button>
+            )}
+          </div>
           {targets.filter(t => t.data).length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
