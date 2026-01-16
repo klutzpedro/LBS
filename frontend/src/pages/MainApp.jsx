@@ -507,6 +507,29 @@ const MainApp = () => {
                 <Plus className="w-6 h-6" />
               </Button>
             )}
+
+            {/* Chat History Toggle */}
+            <div className="relative">
+              <Button
+                onClick={() => setShowChatPanel(!showChatPanel)}
+                data-testid="toggle-chat-button"
+                className="w-12 h-12 rounded-full shadow-lg"
+                style={{
+                  backgroundColor: showChatPanel ? 'var(--accent-primary)' : 'var(--background-elevated)',
+                  color: showChatPanel ? 'var(--background-primary)' : 'var(--accent-primary)',
+                  border: '2px solid var(--accent-primary)'
+                }}
+              >
+                💬
+              </Button>
+              {/* Red blinking indicator for active queries */}
+              {hasActiveQueries && !showChatPanel && (
+                <div 
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full animate-pulse"
+                  style={{ backgroundColor: 'var(--status-error)' }}
+                />
+              )}
+            </div>
           </div>
           {targets.filter(t => t.data).length === 0 ? (
             <div className="h-full flex items-center justify-center">
