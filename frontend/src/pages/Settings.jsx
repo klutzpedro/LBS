@@ -1,16 +1,30 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTelegram } from '@/context/TelegramContext';
+import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, Save, Key, AlertCircle, ExternalLink } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Key, AlertCircle, ExternalLink, ArrowLeft, Shield, Send, CheckCircle, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { telegramAuthorized, telegramUser, refreshStatus } = useTelegram();
   const [apiId, setApiId] = useState('');
   const [apiHash, setApiHash] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
+  // Telegram setup states
+  const [setupStep, setSetupStep] = useState(1);
+  const [phoneNumber, setPhoneNumber] = useState('+62');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [password2FA, setPassword2FA] = useState('');
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [settingUp, setSettingUp] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,12 +36,66 @@ const Settings = () => {
         api_hash: apiHash
       });
 
-      toast.success('Credentials updated! Silakan restart backend dan setup Telegram lagi.');
+      toast.success('Credentials updated! Backend perlu restart.');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to update credentials');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    setSettingUp(true);
+
+    try {
+      const response = await axios.post(`${API}/telegram/send-code`, {
+        phone: phoneNumber
+      });
+
+      if (response.data.already_authorized) {
+        toast.success('Sudah login ke Telegram!');
+        await refreshStatus();
+      } else {
+        toast.success('Kode verifikasi telah dikirim!');
+        setSetupStep(2);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Gagal mengirim kode');
+    } finally {
+      setSettingUp(false);
+    }
+  };
+
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    setSettingUp(true);
+
+    try {
+      const response = await axios.post(`${API}/telegram/verify-code`, {
+        phone: phoneNumber,
+        code: verificationCode,
+        password: password2FA || undefined
+      });
+
+      if (response.data.requires_2fa) {
+        setRequires2FA(true);
+        toast.info('Akun dilindungi 2FA, masukkan password');
+      } else if (response.data.success) {
+        toast.success('Login Telegram berhasil!');
+        await refreshStatus();
+        setTimeout(() => navigate('/'), 1000);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Verifikasi gagal');
+    } finally {
+      setSettingUp(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
