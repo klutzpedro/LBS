@@ -83,7 +83,9 @@ const MainApp = () => {
   const [mapZoom, setMapZoom] = useState(13);
   const [mapKey, setMapKey] = useState(0);
   const [reghpDialogOpen, setReghpDialogOpen] = useState(false);
-  const [selectedReghpTarget, setSelectedReghpTarget] = useState(null); // Force map re-render
+  const [selectedReghpTarget, setSelectedReghpTarget] = useState(null);
+  const [nikDialogOpen, setNikDialogOpen] = useState(false);
+  const [selectedNikData, setSelectedNikData] = useState(null); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -241,6 +243,22 @@ const MainApp = () => {
   const handleShowReghpInfo = (target) => {
     setSelectedReghpTarget(target);
     setReghpDialogOpen(true);
+  };
+
+  const handleNikPendalaman = async (targetId, nik) => {
+    try {
+      await axios.post(`${API}/targets/${targetId}/nik`, { nik });
+      toast.success('NIK query dimulai!');
+      // Refresh target to get updated nik_queries
+      setTimeout(() => fetchTargets(selectedCase.id), 1000);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to start NIK query');
+    }
+  };
+
+  const handleShowNikInfo = (nikData) => {
+    setSelectedNikData(nikData);
+    setNikDialogOpen(true);
   };
 
   const center = targets.filter(t => t.data).length > 0
