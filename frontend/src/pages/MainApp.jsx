@@ -636,42 +636,47 @@ const MainApp = () => {
         {/* Chat Panel */}
         {showChatPanel && selectedTargetForChat && (
           <div 
-            className="w-96 border-l flex flex-col"
+            className="w-96 border-l flex flex-col relative"
             style={{
               backgroundColor: 'var(--background-secondary)',
               borderColor: 'var(--borders-default)'
             }}
           >
+            {/* Minimize Button - positioned outside chat panel */}
+            <Button
+              onClick={() => setShowChatPanel(false)}
+              data-testid="minimize-chat-button"
+              size="icon"
+              className="absolute -left-12 top-4 w-10 h-10 rounded-full shadow-lg z-[1001]"
+              style={{
+                backgroundColor: 'var(--background-elevated)',
+                color: 'var(--accent-primary)',
+                border: '2px solid var(--accent-primary)'
+              }}
+            >
+              <Minimize2 className="w-5 h-5" />
+            </Button>
+
             {/* Chat Header */}
             <div 
-              className="p-4 border-b flex items-center justify-between"
+              className="p-4 border-b"
               style={{ borderColor: 'var(--borders-default)' }}
             >
-              <div>
-                <h3 
-                  className="font-semibold text-sm"
-                  style={{ 
-                    color: 'var(--foreground-primary)',
-                    fontFamily: 'Barlow Condensed, sans-serif'
-                  }}
-                >
-                  CHAT HISTORY
-                </h3>
-                <p 
-                  className="text-xs font-mono mt-1"
-                  style={{ color: 'var(--accent-primary)' }}
-                >
-                  {targets.find(t => t.id === selectedTargetForChat)?.phone_number || 'Select target'}
-                </p>
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setShowChatPanel(false)}
-                data-testid="close-chat-button"
+              <h3 
+                className="font-semibold text-sm"
+                style={{ 
+                  color: 'var(--foreground-primary)',
+                  fontFamily: 'Barlow Condensed, sans-serif'
+                }}
               >
-                <Minimize2 className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
-              </Button>
+                CHAT HISTORY
+              </h3>
+              <p 
+                className="text-xs font-mono mt-1"
+                style={{ color: 'var(--accent-primary)' }}
+              >
+                {targets.find(t => t.id === selectedTargetForChat)?.phone_number || 'Select target'}
+              </p>
             </div>
 
             {/* Chat Messages */}
