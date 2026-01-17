@@ -79,6 +79,8 @@ class Target(BaseModel):
     location: Optional[dict] = None
     data: Optional[dict] = None
     error: Optional[str] = None
+    reghp_data: Optional[dict] = None
+    reghp_status: str = "not_started"  # not_started, processing, completed, error
 
 class QueryStatus(BaseModel):
     target_id: str
