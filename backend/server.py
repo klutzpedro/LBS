@@ -728,6 +728,9 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             await telegram_client.start()
             logging.info("Telegram client started")
         
+        # Create unique token for this query
+        query_token = f"CP_{phone_number}_{target_id[:8]}"
+        
         await asyncio.sleep(1)
         
         # Update status: querying
@@ -737,9 +740,10 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         )
         
         try:
-            # Send phone number to bot
-            await telegram_client.send_message(BOT_USERNAME, phone_number)
-            logging.info(f"[TARGET {target_id}] Sent phone number {phone_number} to {BOT_USERNAME}")
+            # Send phone number with token marker
+            message_text = f"{phone_number}"
+            await telegram_client.send_message(BOT_USERNAME, message_text)
+            logging.info(f"[TARGET {target_id}] [{query_token}] Sent phone number {phone_number} to {BOT_USERNAME}")
             
             # Save sent message to chat history
             await db.chat_messages.insert_one({
@@ -824,17 +828,21 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             
             # Get the response after clicking CP - get more messages
             response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
-            logging.info(f"[TARGET {target_id}] Retrieved {len(response_messages)} messages for parsing")
+            logging.info(f"[TARGET {target_id}] [{query_token}] Retrieved {len(response_messages)} messages for parsing")
             
             # Log all messages for debugging
             for idx, msg in enumerate(response_messages):
                 if msg.text:
-                    logging.info(f"[TARGET {target_id}] Response {idx}: {msg.text[:200]}...")
+                    # Check if message contains the phone number we queried (tokenization)
+                    if phone_number in msg.text:
+                        logging.info(f"[TARGET {target_id}] [{query_token}] ✓ Response matched (contains {phone_number}): {msg.text[:200]}...")
+                    else:
+                        logging.info(f"[TARGET {target_id}] [{query_token}] Response {idx} (no match): {msg.text[:100]}...")
             
-            # Parse response to extract location data
+            # Parse response to extract location data - ONLY from messages containing our phone number
             location_data = None
             for msg in response_messages:
-                if msg.text:
+                if msg.text and phone_number in msg.text:
                     text = msg.text
                     
                     # Look for the specific format from your bot
