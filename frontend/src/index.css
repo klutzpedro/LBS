@@ -119,6 +119,11 @@
   }
 }
 
+.custom-marker-label {
+  background: transparent !important;
+  border: none !important;
+}
+
 /* Hide all Emergent watermarks */
 #emergent-badge,
 #emergent-watermark,
