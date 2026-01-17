@@ -322,6 +322,35 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
     
     return {"message": "Reghp query started", "target_id": target_id}
 
+@api_router.post("/targets/{target_id}/nik")
+async def query_nik(target_id: str, nik_data: dict, username: str = Depends(verify_token)):
+    """Query NIK detail dengan foto"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    nik = nik_data.get('nik')
+    if not nik:
+        raise HTTPException(status_code=400, detail="NIK required")
+    
+    # Initialize nik_queries if not exists
+    if not target.get('nik_queries'):
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"nik_queries": {}}}
+        )
+    
+    # Update NIK status to processing
+    await db.targets.update_one(
+        {"id": target_id},
+        {"$set": {f"nik_queries.{nik}.status": "processing"}}
+    )
+    
+    # Start background task
+    asyncio.create_task(query_telegram_nik(target_id, nik))
+    
+    return {"message": "NIK query started", "nik": nik}
+
 # Dashboard Stats
 @api_router.get("/stats")
 async def get_stats(username: str = Depends(verify_token)):
