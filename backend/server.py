@@ -977,6 +977,116 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             }
         )
 
+async def query_telegram_reghp(target_id: str, phone_number: str):
+    """Query Reghp data for deeper information"""
+    try:
+        global telegram_client
+        
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.start()
+            logging.info("Telegram client started for Reghp query")
+        
+        logging.info(f"[REGHP {target_id}] Starting Reghp query for {phone_number}")
+        
+        # Send phone number to bot
+        await telegram_client.send_message(BOT_USERNAME, phone_number)
+        logging.info(f"[REGHP {target_id}] Sent phone number to bot")
+        
+        await asyncio.sleep(3)
+        
+        # Get messages and look for "Reghp" button
+        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        reghp_clicked = False
+        for msg in messages:
+            if msg.buttons:
+                button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                logging.info(f"[REGHP {target_id}] Buttons found: {button_texts}")
+                
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text and 'REGHP' in button.text.upper():
+                            await button.click()
+                            logging.info(f"[REGHP {target_id}] ✓ Clicked Reghp button")
+                            reghp_clicked = True
+                            break
+                if reghp_clicked:
+                    break
+        
+        if not reghp_clicked:
+            logging.warning(f"[REGHP {target_id}] Reghp button not found")
+        
+        # Wait for response
+        await asyncio.sleep(8)
+        
+        # Get Reghp response
+        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
+        
+        reghp_info = None
+        for msg in response_messages:
+            if msg.text and ('reghp' in msg.text.lower() or 'registration' in msg.text.lower()):
+                logging.info(f"[REGHP {target_id}] Found Reghp response")
+                
+                # Extract all info from response
+                reghp_info = {
+                    "raw_text": msg.text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Try to parse specific fields
+                lines = msg.text.split('\n')
+                parsed_data = {}
+                for line in lines:
+                    if ':' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            parsed_data[key] = value
+                
+                reghp_info['parsed_data'] = parsed_data
+                break
+        
+        if reghp_info:
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "reghp_status": "completed",
+                        "reghp_data": reghp_info
+                    }
+                }
+            )
+            logging.info(f"[REGHP {target_id}] ✓ Reghp data saved")
+        else:
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "reghp_status": "error",
+                        "reghp_data": {"error": "No Reghp response found"}
+                    }
+                }
+            )
+            logging.warning(f"[REGHP {target_id}] No Reghp data found")
+            
+    except Exception as e:
+        logging.error(f"[REGHP {target_id}] Error: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    "reghp_status": "error",
+                    "reghp_data": {"error": str(e)}
+                }
+            }
+        )
+
 # Events
 @app.on_event("startup")
 async def startup():
