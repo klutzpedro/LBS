@@ -1202,16 +1202,6 @@ async def query_telegram_nik(target_id: str, nik: str):
         for msg in response_messages:
             # TOKENIZATION: Only process messages containing our NIK
             if msg.text and nik in msg.text:
-                # Check for photo
-                if msg.photo and not photo_path:
-                    # Download photo
-                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                    if photo_bytes:
-                        import base64
-                        photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
-                        photo_path = f"data:image/jpeg;base64,{photo_base64}"
-                        logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
-                
                 # Check for text data containing NIK
                 if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
                     logging.info(f"[{query_token}] ✓ Found matching NIK response text")
@@ -1240,6 +1230,16 @@ async def query_telegram_nik(target_id: str, nik: str):
                     
                     nik_info['parsed_data'] = parsed_data
                     logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields")
+            
+            # Check for photo in messages near our NIK response
+            if msg.photo and not photo_path:
+                # Download photo
+                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                if photo_bytes:
+                    import base64
+                    photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
+                    photo_path = f"data:image/jpeg;base64,{photo_base64}"
+                    logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
         
         if nik_info or photo_path:
             if not nik_info:
