@@ -81,6 +81,7 @@ const MainApp = () => {
   const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
   const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]);
   const [mapZoom, setMapZoom] = useState(13);
+  const [mapKey, setMapKey] = useState(0); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -216,25 +217,13 @@ const MainApp = () => {
     if (target.data && target.data.latitude && target.data.longitude) {
       setMapCenter([target.data.latitude, target.data.longitude]);
       setMapZoom(16); // Zoom in closer
+      setMapKey(prev => prev + 1); // Force map update
     }
   };
 
   const hasActiveQueries = targets.some(t => 
     ['pending', 'connecting', 'querying', 'processing', 'parsing'].includes(t.status)
   );
-
-  // Component to handle map view changes
-  const MapViewController = ({ center, zoom }) => {
-    const map = useMap();
-    
-    useEffect(() => {
-      if (center && zoom) {
-        map.setView(center, zoom, { animate: true, duration: 1 });
-      }
-    }, [center, zoom, map]);
-    
-    return null;
-  };
 
   const center = targets.filter(t => t.data).length > 0
     ? [targets.filter(t => t.data)[0].data.latitude, targets.filter(t => t.data)[0].data.longitude]
@@ -579,12 +568,11 @@ const MainApp = () => {
             </div>
           ) : (
             <MapContainer
-              key={selectedTileLayer}
+              key={`${selectedTileLayer}-${mapKey}`}
               center={mapCenter}
               zoom={mapZoom}
               style={{ height: '100%', width: '100%' }}
             >
-              <MapViewController center={mapCenter} zoom={mapZoom} />
               <TileLayer
                 key={selectedTileLayer}
                 url={mapTiles[selectedTileLayer].url}
