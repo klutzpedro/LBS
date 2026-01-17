@@ -450,63 +450,67 @@ const MainApp = () => {
             className="absolute top-4 right-4 z-[1000] flex flex-col gap-2"
             style={{ pointerEvents: 'auto' }}
           >
-            {/* Map Type */}
-            <div 
-              className="rounded-lg border p-3"
-              style={{
-                backgroundColor: 'var(--background-elevated)',
-                borderColor: 'var(--borders-default)'
-              }}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Layers className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-                <span className="text-xs font-semibold uppercase" style={{ color: 'var(--foreground-secondary)' }}>
-                  Map Type
-                </span>
+            {/* Map Type - hide when chat panel open */}
+            {!showChatPanel && (
+              <div 
+                className="rounded-lg border p-3"
+                style={{
+                  backgroundColor: 'var(--background-elevated)',
+                  borderColor: 'var(--borders-default)'
+                }}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Layers className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+                  <span className="text-xs font-semibold uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                    Map Type
+                  </span>
+                </div>
+                <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
+                  <SelectTrigger 
+                    className="w-32"
+                    style={{
+                      backgroundColor: 'var(--background-tertiary)',
+                      borderColor: 'var(--borders-default)',
+                      color: 'var(--foreground-primary)'
+                    }}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    style={{
+                      backgroundColor: 'var(--background-elevated)',
+                      borderColor: 'var(--borders-strong)',
+                      color: 'var(--foreground-primary)'
+                    }}
+                  >
+                    {Object.entries(mapTiles).map(([key, tile]) => (
+                      <SelectItem key={key} value={key} style={{ color: 'var(--foreground-primary)' }}>
+                        {tile.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
-                <SelectTrigger 
-                  className="w-32"
-                  style={{
-                    backgroundColor: 'var(--background-tertiary)',
-                    borderColor: 'var(--borders-default)',
-                    color: 'var(--foreground-primary)'
-                  }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent
-                  style={{
-                    backgroundColor: 'var(--background-elevated)',
-                    borderColor: 'var(--borders-strong)',
-                    color: 'var(--foreground-primary)'
-                  }}
-                >
-                  {Object.entries(mapTiles).map(([key, tile]) => (
-                    <SelectItem key={key} value={key} style={{ color: 'var(--foreground-primary)' }}>
-                      {tile.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            )}
 
-            {/* Maximize */}
-            <Button
-              onClick={() => setIsMaximized(!isMaximized)}
-              size="icon"
-              className="w-10 h-10 border"
-              style={{
-                backgroundColor: 'var(--background-elevated)',
-                borderColor: 'var(--borders-default)',
-                color: 'var(--accent-primary)'
-              }}
-            >
-              {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </Button>
+            {/* Maximize - hide when chat panel open */}
+            {!showChatPanel && (
+              <Button
+                onClick={() => setIsMaximized(!isMaximized)}
+                size="icon"
+                className="w-10 h-10 border"
+                style={{
+                  backgroundColor: 'var(--background-elevated)',
+                  borderColor: 'var(--borders-default)',
+                  color: 'var(--accent-primary)'
+                }}
+              >
+                {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </Button>
+            )}
 
-            {/* Add Target (Floating) */}
-            {selectedCase && (
+            {/* Add Target (Floating) - hide when chat panel open */}
+            {selectedCase && !showChatPanel && (
               <Button
                 onClick={() => setAddTargetDialog(true)}
                 data-testid="floating-add-target"
@@ -520,32 +524,34 @@ const MainApp = () => {
               </Button>
             )}
 
-            {/* Chat History Toggle */}
-            <div className="relative">
-              <Button
-                onClick={() => setShowChatPanel(!showChatPanel)}
-                data-testid="toggle-chat-button"
-                className="w-12 h-12 rounded-full shadow-lg"
-                style={{
-                  backgroundColor: showChatPanel ? 'var(--accent-primary)' : 'var(--background-elevated)',
-                  color: showChatPanel ? 'var(--background-primary)' : 'var(--accent-primary)',
-                  border: '2px solid var(--accent-primary)'
-                }}
-              >
-                <MessageSquare className="w-6 h-6" />
-              </Button>
-              {/* Red blinking indicator for active queries - positioned on top center */}
-              {hasActiveQueries && !showChatPanel && (
-                <div 
-                  className="absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full animate-pulse"
-                  style={{ 
-                    top: '-6px',
-                    backgroundColor: 'var(--status-error)',
-                    boxShadow: '0 0 12px var(--status-error)'
+            {/* Chat History Toggle - hide when panel is open */}
+            {!showChatPanel && (
+              <div className="relative">
+                <Button
+                  onClick={() => setShowChatPanel(true)}
+                  data-testid="toggle-chat-button"
+                  className="w-12 h-12 rounded-full shadow-lg"
+                  style={{
+                    backgroundColor: 'var(--background-elevated)',
+                    color: 'var(--accent-primary)',
+                    border: '2px solid var(--accent-primary)'
                   }}
-                />
-              )}
-            </div>
+                >
+                  <MessageSquare className="w-6 h-6" />
+                </Button>
+                {/* Red blinking indicator for active queries - positioned on top center */}
+                {hasActiveQueries && (
+                  <div 
+                    className="absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full animate-pulse"
+                    style={{ 
+                      top: '-6px',
+                      backgroundColor: 'var(--status-error)',
+                      boxShadow: '0 0 12px var(--status-error)'
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
           {targets.filter(t => t.data).length === 0 ? (
             <div className="h-full flex items-center justify-center">
