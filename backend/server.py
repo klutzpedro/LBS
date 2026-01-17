@@ -794,6 +794,12 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             
             # Get the response after clicking CP - get more messages
             response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            logging.info(f"[TARGET {target_id}] Retrieved {len(response_messages)} messages for parsing")
+            
+            # Log all messages for debugging
+            for idx, msg in enumerate(response_messages):
+                if msg.text:
+                    logging.info(f"[TARGET {target_id}] Response {idx}: {msg.text[:200]}...")
             
             # Parse response to extract location data
             location_data = None
