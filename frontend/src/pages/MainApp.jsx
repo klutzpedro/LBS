@@ -122,7 +122,8 @@ const MainApp = () => {
   const [reghpDialogOpen, setReghpDialogOpen] = useState(false);
   const [selectedReghpTarget, setSelectedReghpTarget] = useState(null);
   const [nikDialogOpen, setNikDialogOpen] = useState(false);
-  const [selectedNikData, setSelectedNikData] = useState(null); // Force map re-render
+  const [selectedNikData, setSelectedNikData] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -316,6 +317,26 @@ const MainApp = () => {
     setNikDialogOpen(true);
   };
 
+  // Filter targets based on search query
+  const filteredTargets = targets.filter(target => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const phone = target.phone_number.toLowerCase();
+    const address = target.data?.address?.toLowerCase() || '';
+    const name = target.data?.name?.toLowerCase() || '';
+    
+    // Search in NIK data
+    let nikMatch = false;
+    if (target.nik_queries) {
+      Object.keys(target.nik_queries).forEach(nik => {
+        if (nik.includes(query)) nikMatch = true;
+      });
+    }
+    
+    return phone.includes(query) || address.includes(query) || name.includes(query) || nikMatch;
+  });
+
   const center = targets.filter(t => t.data).length > 0
     ? [targets.filter(t => t.data)[0].data.latitude, targets.filter(t => t.data)[0].data.longitude]
     : [-6.2088, 106.8456];
@@ -452,12 +473,29 @@ const MainApp = () => {
 
         {/* Targets Section */}
         <div className="flex-1 overflow-y-auto p-4">
+          {/* Search Bar */}
+          <div className="mb-3">
+            <div className="relative">
+              <Search 
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                style={{ color: 'var(--foreground-muted)' }}
+              />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search phone, nama, NIK..."
+                className="pl-10 bg-background-tertiary border-borders-default text-xs"
+                style={{ color: '#000000' }}
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-3">
             <h2 
               className="text-sm uppercase tracking-wide font-semibold"
               style={{ color: 'var(--foreground-secondary)', fontFamily: 'Rajdhani, sans-serif' }}
             >
-              Targets
+              Targets {searchQuery && `(${filteredTargets.length})`}
             </h2>
             {selectedCase && (
               <Button
@@ -474,7 +512,7 @@ const MainApp = () => {
             )}
           </div>
           <div className="space-y-2">
-            {targets.map((target) => (
+            {filteredTargets.map((target) => (
               <div
                 key={target.id}
                 onClick={() => handleTargetClick(target)}
@@ -524,7 +562,12 @@ const MainApp = () => {
                 Pilih case terlebih dahulu
               </p>
             )}
-            {selectedCase && targets.length === 0 && (
+            {selectedCase && filteredTargets.length === 0 && searchQuery && (
+              <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
+                Tidak ditemukan untuk "{searchQuery}"
+              </p>
+            )}
+            {selectedCase && filteredTargets.length === 0 && !searchQuery && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
                 Belum ada target
               </p>
