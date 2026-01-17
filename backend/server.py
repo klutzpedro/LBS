@@ -1213,7 +1213,7 @@ async def query_telegram_nik(target_id: str, nik: str):
                         logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
                 
                 # Check for text data containing NIK
-                if 'identity' in msg.text.lower() or 'nama' in msg.text.lower():
+                if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
                     logging.info(f"[{query_token}] ✓ Found matching NIK response text")
                     
                     nik_info = {
@@ -1222,18 +1222,24 @@ async def query_telegram_nik(target_id: str, nik: str):
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                     
-                    # Parse fields
+                    # Parse fields with better structure
                     lines = msg.text.split('\n')
                     parsed_data = {}
+                    
                     for line in lines:
-                        if ':' in line:
+                        line = line.strip()
+                        if ':' in line and not line.startswith('```'):
                             parts = line.split(':', 1)
                             if len(parts) == 2:
                                 key = parts[0].strip()
                                 value = parts[1].strip()
-                                parsed_data[key] = value
+                                
+                                # Clean up common fields
+                                if key and value and key != 'Identity of':
+                                    parsed_data[key] = value
                     
                     nik_info['parsed_data'] = parsed_data
+                    logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields")
         
         if nik_info or photo_path:
             if not nik_info:
