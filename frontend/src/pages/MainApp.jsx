@@ -444,9 +444,9 @@ const MainApp = () => {
       )}
 
       {/* Main Map Area */}
-      <main className="flex-1 relative flex">
+      <main className="flex-1 relative flex" style={{ height: '100%' }}>
         {/* Map */}
-        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} h-full transition-all duration-300`}>
+        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} style={{ height: '100%' }}>
           {/* Map Controls */}
           <div 
             className="absolute top-4 z-[1000] flex flex-col gap-2"
