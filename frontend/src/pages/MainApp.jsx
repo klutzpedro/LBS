@@ -1075,6 +1075,118 @@ const MainApp = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* NIK Info Dialog */}
+      <Dialog open={nikDialogOpen} onOpenChange={setNikDialogOpen}>
+        <DialogContent 
+          className="z-[9999] max-w-3xl max-h-[90vh] overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-strong)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle 
+              className="text-2xl font-bold"
+              style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+            >
+              INFO PENDALAMAN NIK
+            </DialogTitle>
+          </DialogHeader>
+          {selectedNikData && (
+            <div className="space-y-4 mt-4">
+              {/* NIK */}
+              <div>
+                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                  NIK
+                </p>
+                <p className="font-mono text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
+                  {selectedNikData.nik}
+                </p>
+              </div>
+
+              {/* Photo */}
+              {selectedNikData.photo && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                    Foto KTP
+                  </p>
+                  <div 
+                    className="rounded-lg border overflow-hidden"
+                    style={{ borderColor: 'var(--borders-default)' }}
+                  >
+                    <img 
+                      src={selectedNikData.photo} 
+                      alt="KTP" 
+                      className="w-full"
+                      style={{ maxHeight: '400px', objectFit: 'contain', backgroundColor: 'var(--background-tertiary)' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Parsed Data */}
+              {selectedNikData.parsed_data && Object.keys(selectedNikData.parsed_data).length > 0 && (
+                <div 
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                >
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
+                    Identity Details
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(selectedNikData.parsed_data).map(([key, value]) => (
+                      <div key={key}>
+                        <p className="text-xs mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                          {key}
+                        </p>
+                        <p className="text-sm font-mono" style={{ color: 'var(--foreground-primary)' }}>
+                          {value}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Raw Response */}
+              {selectedNikData.raw_text && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                    Raw Response
+                  </p>
+                  <div 
+                    className="p-3 rounded border font-mono text-xs whitespace-pre-wrap"
+                    style={{
+                      backgroundColor: 'var(--background-tertiary)',
+                      borderColor: 'var(--borders-subtle)',
+                      color: 'var(--foreground-secondary)',
+                      maxHeight: '300px',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    {selectedNikData.raw_text}
+                  </div>
+                </div>
+              )}
+
+              <Button
+                onClick={() => setNikDialogOpen(false)}
+                className="w-full py-6"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)'
+                }}
+              >
+                CLOSE
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
