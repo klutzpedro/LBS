@@ -1089,6 +1089,17 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 break
         
         if reghp_info:
+            # Parse multiple NIK entries
+            niks = []
+            nik_pattern = re.compile(r'NIK:\s*(\d{16})', re.IGNORECASE)
+            for match in nik_pattern.finditer(reghp_info['raw_text']):
+                nik_value = match.group(1)
+                if nik_value not in niks:
+                    niks.append(nik_value)
+            
+            reghp_info['niks'] = niks
+            logging.info(f"[REGHP {target_id}] Found {len(niks)} unique NIKs: {niks}")
+            
             await db.targets.update_one(
                 {"id": target_id},
                 {
