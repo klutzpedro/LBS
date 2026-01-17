@@ -1223,33 +1223,47 @@ const MainApp = () => {
                 </div>
               )}
 
-              {/* Parsed Data */}
+              {/* Parsed Data - Format Tabel Rapi */}
               {selectedNikData.parsed_data && Object.keys(selectedNikData.parsed_data).length > 0 && (
-                <div 
-                  className="p-4 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--background-tertiary)',
-                    borderColor: 'var(--borders-default)'
-                  }}
-                >
-                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
-                    Data Diri Lengkap
+                <div>
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                    DATA DIRI LENGKAP
                   </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    {Object.entries(selectedNikData.parsed_data).map(([key, value]) => (
-                      <div 
-                        key={key}
-                        className="pb-2 border-b"
-                        style={{ borderColor: 'var(--borders-subtle)' }}
-                      >
-                        <p className="text-xs mb-1" style={{ color: 'var(--foreground-muted)' }}>
-                          {key}
-                        </p>
-                        <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                          {value}
-                        </p>
-                      </div>
-                    ))}
+                  <div 
+                    className="rounded-lg border overflow-hidden"
+                    style={{
+                      backgroundColor: 'var(--background-tertiary)',
+                      borderColor: 'var(--borders-default)'
+                    }}
+                  >
+                    <table className="w-full">
+                      <tbody>
+                        {Object.entries(selectedNikData.parsed_data).map(([key, value], idx) => (
+                          <tr 
+                            key={idx}
+                            className="border-b"
+                            style={{ borderColor: 'var(--borders-subtle)' }}
+                          >
+                            <td 
+                              className="p-3 text-sm font-medium"
+                              style={{ 
+                                color: 'var(--foreground-secondary)',
+                                width: '40%',
+                                backgroundColor: 'rgba(0, 217, 255, 0.05)'
+                              }}
+                            >
+                              {key}
+                            </td>
+                            <td 
+                              className="p-3 text-sm"
+                              style={{ color: 'var(--foreground-primary)' }}
+                            >
+                              {value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
