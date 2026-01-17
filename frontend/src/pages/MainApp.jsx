@@ -614,7 +614,7 @@ const MainApp = () => {
                   icon={customIcon}
                 >
                   <Popup>
-                    <div className="p-2" style={{ color: 'var(--foreground-primary)' }}>
+                    <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '200px' }}>
                       <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
                         {target.data.name}
                       </p>
@@ -647,6 +647,39 @@ const MainApp = () => {
                           Open in Google Maps
                         </a>
                       )}
+                      
+                      {/* Pendalaman / Info Button */}
+                      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
+                        {target.reghp_status === 'completed' ? (
+                          <button
+                            onClick={() => handleShowReghpInfo(target)}
+                            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+                            style={{
+                              backgroundColor: 'var(--accent-secondary)',
+                              color: 'var(--background-primary)'
+                            }}
+                          >
+                            📋 Info Pendalaman
+                          </button>
+                        ) : target.reghp_status === 'processing' ? (
+                          <div className="text-center py-2">
+                            <p className="text-xs" style={{ color: 'var(--status-processing)' }}>
+                              ⏳ Pendalaman sedang diproses...
+                            </p>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handlePendalaman(target)}
+                            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+                            style={{
+                              backgroundColor: 'var(--status-warning)',
+                              color: 'var(--background-primary)'
+                            }}
+                          >
+                            🔍 Pendalaman (Reghp)
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </Popup>
                 </Marker>
