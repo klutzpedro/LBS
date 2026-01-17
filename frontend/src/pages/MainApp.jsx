@@ -154,6 +154,7 @@ const MainApp = () => {
   const fetchChatMessages = async (targetId) => {
     try {
       const response = await axios.get(`${API}/targets/${targetId}/chat`);
+      console.log(`Chat messages for ${targetId}:`, response.data);
       setChatMessages(response.data);
     } catch (error) {
       console.error('Failed to load chat:', error);
