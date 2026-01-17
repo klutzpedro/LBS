@@ -81,7 +81,9 @@ const MainApp = () => {
   const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
   const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]);
   const [mapZoom, setMapZoom] = useState(13);
-  const [mapKey, setMapKey] = useState(0); // Force map re-render
+  const [mapKey, setMapKey] = useState(0);
+  const [reghpDialogOpen, setReghpDialogOpen] = useState(false);
+  const [selectedReghpTarget, setSelectedReghpTarget] = useState(null); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -224,6 +226,21 @@ const MainApp = () => {
   const hasActiveQueries = targets.some(t => 
     ['pending', 'connecting', 'querying', 'processing', 'parsing'].includes(t.status)
   );
+
+  const handlePendalaman = async (target) => {
+    try {
+      await axios.post(`${API}/targets/${target.id}/reghp`);
+      toast.success('Pendalaman query dimulai!');
+      fetchTargets(selectedCase.id);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to start pendalaman');
+    }
+  };
+
+  const handleShowReghpInfo = (target) => {
+    setSelectedReghpTarget(target);
+    setReghpDialogOpen(true);
+  };
 
   const center = targets.filter(t => t.data).length > 0
     ? [targets.filter(t => t.data)[0].data.latitude, targets.filter(t => t.data)[0].data.longitude]
