@@ -534,13 +534,14 @@ const MainApp = () => {
               >
                 <MessageSquare className="w-6 h-6" />
               </Button>
-              {/* Red blinking indicator for active queries */}
+              {/* Red blinking indicator for active queries - positioned on top center */}
               {hasActiveQueries && !showChatPanel && (
                 <div 
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full animate-pulse"
+                  className="absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full animate-pulse"
                   style={{ 
+                    top: '-6px',
                     backgroundColor: 'var(--status-error)',
-                    boxShadow: '0 0 10px var(--status-error)'
+                    boxShadow: '0 0 12px var(--status-error)'
                   }}
                 />
               )}
