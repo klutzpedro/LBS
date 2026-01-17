@@ -906,6 +906,92 @@ const MainApp = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Reghp Info Dialog */}
+      <Dialog open={reghpDialogOpen} onOpenChange={setReghpDialogOpen}>
+        <DialogContent 
+          className="z-[9999] max-w-2xl max-h-[80vh] overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-strong)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle 
+              className="text-2xl font-bold"
+              style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+            >
+              INFO PENDALAMAN (REGHP)
+            </DialogTitle>
+          </DialogHeader>
+          {selectedReghpTarget?.reghp_data && (
+            <div className="space-y-4 mt-4">
+              {/* Phone Number */}
+              <div>
+                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                  Phone Number
+                </p>
+                <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                  {selectedReghpTarget.phone_number}
+                </p>
+              </div>
+
+              {/* Parsed Data */}
+              {selectedReghpTarget.reghp_data.parsed_data && (
+                <div 
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                >
+                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
+                    Registration Info
+                  </p>
+                  <div className="space-y-2">
+                    {Object.entries(selectedReghpTarget.reghp_data.parsed_data).map(([key, value]) => (
+                      <div key={key} className="flex justify-between text-xs">
+                        <span style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
+                        <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Raw Response */}
+              <div>
+                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                  Raw Response
+                </p>
+                <div 
+                  className="p-3 rounded border font-mono text-xs whitespace-pre-wrap"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-subtle)',
+                    color: 'var(--foreground-secondary)',
+                    maxHeight: '300px',
+                    overflowY: 'auto'
+                  }}
+                >
+                  {selectedReghpTarget.reghp_data.raw_text}
+                </div>
+              </div>
+
+              <Button
+                onClick={() => setReghpDialogOpen(false)}
+                className="w-full py-6"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)'
+                }}
+              >
+                CLOSE
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
