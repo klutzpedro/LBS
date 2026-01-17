@@ -239,7 +239,7 @@ const MainApp = () => {
   };
 
   return (
-    <div className={`flex ${isMaximized ? 'fixed inset-0 z-50' : 'h-screen'}`} style={{ backgroundColor: 'var(--background-primary)' }}>
+    <div className={`flex ${isMaximized ? 'fixed inset-0 z-50' : ''}`} style={{ height: '100vh', backgroundColor: 'var(--background-primary)' }}>
       {/* Sidebar - hide when maximized */}
       {!isMaximized && (
         <aside 
