@@ -300,6 +300,27 @@ async def get_target_chat(target_id: str, username: str = Depends(verify_token))
     
     return chat_messages
 
+@api_router.post("/targets/{target_id}/reghp")
+async def query_reghp(target_id: str, username: str = Depends(verify_token)):
+    """Query Reghp (pendalaman) untuk target"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    if target['status'] != 'completed':
+        raise HTTPException(status_code=400, detail="Target must be completed first")
+    
+    # Update reghp_status to processing
+    await db.targets.update_one(
+        {"id": target_id},
+        {"$set": {"reghp_status": "processing"}}
+    )
+    
+    # Start background task
+    asyncio.create_task(query_telegram_reghp(target_id, target['phone_number']))
+    
+    return {"message": "Reghp query started", "target_id": target_id}
+
 # Dashboard Stats
 @api_router.get("/stats")
 async def get_stats(username: str = Depends(verify_token)):
