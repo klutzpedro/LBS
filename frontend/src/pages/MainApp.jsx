@@ -1190,40 +1190,23 @@ const MainApp = () => {
                   }}
                 >
                   <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
-                    Identity Details
+                    Data Diri Lengkap
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {Object.entries(selectedNikData.parsed_data).map(([key, value]) => (
-                      <div key={key}>
+                      <div 
+                        key={key}
+                        className="pb-2 border-b"
+                        style={{ borderColor: 'var(--borders-subtle)' }}
+                      >
                         <p className="text-xs mb-1" style={{ color: 'var(--foreground-muted)' }}>
                           {key}
                         </p>
-                        <p className="text-sm font-mono" style={{ color: 'var(--foreground-primary)' }}>
+                        <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
                           {value}
                         </p>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Raw Response */}
-              {selectedNikData.raw_text && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
-                    Raw Response
-                  </p>
-                  <div 
-                    className="p-3 rounded border font-mono text-xs whitespace-pre-wrap"
-                    style={{
-                      backgroundColor: 'var(--background-tertiary)',
-                      borderColor: 'var(--borders-subtle)',
-                      color: 'var(--foreground-secondary)',
-                      maxHeight: '300px',
-                      overflowY: 'auto'
-                    }}
-                  >
-                    {selectedNikData.raw_text}
                   </div>
                 </div>
               )}
