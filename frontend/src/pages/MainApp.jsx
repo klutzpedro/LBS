@@ -239,15 +239,16 @@ const MainApp = () => {
   };
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: 'var(--background-primary)' }}>
-      {/* Sidebar */}
-      <aside 
-        className="w-80 flex flex-col border-r"
-        style={{ 
-          backgroundColor: 'var(--background-secondary)',
-          borderColor: 'var(--borders-default)'
-        }}
-      >
+    <div className={`flex ${isMaximized ? 'fixed inset-0 z-50' : 'h-screen'}`} style={{ backgroundColor: 'var(--background-primary)' }}>
+      {/* Sidebar - hide when maximized */}
+      {!isMaximized && (
+        <aside 
+          className="w-80 flex flex-col border-r"
+          style={{ 
+            backgroundColor: 'var(--background-secondary)',
+            borderColor: 'var(--borders-default)'
+          }}
+        >
         {/* Header */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
           <div className="flex items-center justify-between mb-4">
@@ -447,8 +448,12 @@ const MainApp = () => {
         <div className={`${showChatPanel ? 'flex-1' : 'w-full'} h-full transition-all duration-300`}>
           {/* Map Controls */}
           <div 
-            className="absolute top-4 right-4 z-[1000] flex flex-col gap-2"
-            style={{ pointerEvents: 'auto' }}
+            className="absolute top-4 z-[1000] flex flex-col gap-2"
+            style={{ 
+              pointerEvents: 'auto',
+              right: showChatPanel ? '400px' : '16px',
+              transition: 'right 300ms'
+            }}
           >
             {/* Map Type - hide when chat panel open */}
             {!showChatPanel && (
@@ -493,21 +498,20 @@ const MainApp = () => {
               </div>
             )}
 
-            {/* Maximize - hide when chat panel open */}
-            {!showChatPanel && (
-              <Button
-                onClick={() => setIsMaximized(!isMaximized)}
-                size="icon"
-                className="w-10 h-10 border"
-                style={{
-                  backgroundColor: 'var(--background-elevated)',
-                  borderColor: 'var(--borders-default)',
-                  color: 'var(--accent-primary)'
-                }}
-              >
-                {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-              </Button>
-            )}
+            {/* Maximize - always visible */}
+            <Button
+              onClick={() => setIsMaximized(!isMaximized)}
+              data-testid="maximize-map-button"
+              size="icon"
+              className="w-10 h-10 border"
+              style={{
+                backgroundColor: 'var(--background-elevated)',
+                borderColor: 'var(--borders-default)',
+                color: 'var(--accent-primary)'
+              }}
+            >
+              {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </Button>
 
             {/* Add Target (Floating) - hide when chat panel open */}
             {selectedCase && !showChatPanel && (
