@@ -1123,6 +1123,134 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             }
         )
 
+async def query_telegram_nik(target_id: str, nik: str):
+    """Query NIK detail dengan foto dari bot"""
+    try:
+        global telegram_client
+        
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.start()
+            logging.info("Telegram client started for NIK query")
+        
+        logging.info(f"[NIK {nik}] Starting NIK query for target {target_id}")
+        
+        # Send NIK to bot
+        await telegram_client.send_message(BOT_USERNAME, nik)
+        logging.info(f"[NIK {nik}] Sent NIK to bot")
+        
+        await asyncio.sleep(3)
+        
+        # Get messages and look for "NIK" button
+        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        nik_clicked = False
+        for msg in messages:
+            if msg.buttons:
+                button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                logging.info(f"[NIK {nik}] Buttons found: {button_texts}")
+                
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text and 'NIK' in button.text.upper():
+                            await button.click()
+                            logging.info(f"[NIK {nik}] ✓ Clicked NIK button")
+                            nik_clicked = True
+                            break
+                if nik_clicked:
+                    break
+        
+        if not nik_clicked:
+            logging.warning(f"[NIK {nik}] NIK button not found")
+        
+        # Wait for response with photo
+        await asyncio.sleep(10)
+        
+        # Get NIK response
+        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
+        
+        nik_info = None
+        photo_path = None
+        
+        for msg in response_messages:
+            # Check for photo
+            if msg.photo and not photo_path:
+                # Download photo
+                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                if photo_bytes:
+                    import base64
+                    photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
+                    photo_path = f"data:image/jpeg;base64,{photo_base64}"
+                    logging.info(f"[NIK {nik}] ✓ Photo downloaded")
+            
+            # Check for text data
+            if msg.text and (nik in msg.text or 'identity' in msg.text.lower() or 'nama' in msg.text.lower()):
+                logging.info(f"[NIK {nik}] Found NIK response text")
+                
+                nik_info = {
+                    "nik": nik,
+                    "raw_text": msg.text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Parse fields
+                lines = msg.text.split('\n')
+                parsed_data = {}
+                for line in lines:
+                    if ':' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            parsed_data[key] = value
+                
+                nik_info['parsed_data'] = parsed_data
+        
+        if nik_info or photo_path:
+            if not nik_info:
+                nik_info = {"nik": nik}
+            
+            if photo_path:
+                nik_info['photo'] = photo_path
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        f"nik_queries.{nik}.status": "completed",
+                        f"nik_queries.{nik}.data": nik_info
+                    }
+                }
+            )
+            logging.info(f"[NIK {nik}] ✓ NIK data saved with photo: {photo_path is not None}")
+        else:
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        f"nik_queries.{nik}.status": "error",
+                        f"nik_queries.{nik}.data": {"error": "No NIK response found"}
+                    }
+                }
+            )
+            logging.warning(f"[NIK {nik}] No NIK data found")
+            
+    except Exception as e:
+        logging.error(f"[NIK {nik}] Error: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    f"nik_queries.{nik}.status": "error",
+                    f"nik_queries.{nik}.data": {"error": str(e)}
+                }
+            }
+        )
+
 # Events
 @app.on_event("startup")
 async def startup():
