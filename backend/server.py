@@ -1065,8 +1065,9 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         
         reghp_info = None
         for msg in response_messages:
-            if msg.text and ('reghp' in msg.text.lower() or 'registration' in msg.text.lower()):
+            if msg.text and ('identity' in msg.text.lower() or 'nik:' in msg.text.lower() or 'operator:' in msg.text.lower()):
                 logging.info(f"[REGHP {target_id}] Found Reghp response")
+                logging.info(f"[REGHP {target_id}] Response preview: {msg.text[:200]}...")
                 
                 # Extract all info from response
                 reghp_info = {
