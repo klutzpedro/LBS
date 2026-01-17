@@ -231,12 +231,19 @@ const MainApp = () => {
   );
 
   const handlePendalaman = async (target) => {
+    // Optimistic update - langsung set status processing
+    const updatedTargets = targets.map(t => 
+      t.id === target.id ? { ...t, reghp_status: 'processing' } : t
+    );
+    setTargets(updatedTargets);
+    
     try {
       await axios.post(`${API}/targets/${target.id}/reghp`);
       toast.success('Pendalaman query dimulai!');
       fetchTargets(selectedCase.id);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start pendalaman');
+      fetchTargets(selectedCase.id); // Revert on error
     }
   };
 
@@ -246,13 +253,24 @@ const MainApp = () => {
   };
 
   const handleNikPendalaman = async (targetId, nik) => {
+    // Optimistic update
+    const updatedTargets = targets.map(t => {
+      if (t.id === targetId) {
+        const nikQueries = { ...(t.nik_queries || {}) };
+        nikQueries[nik] = { status: 'processing', data: null };
+        return { ...t, nik_queries: nikQueries };
+      }
+      return t;
+    });
+    setTargets(updatedTargets);
+    
     try {
       await axios.post(`${API}/targets/${targetId}/nik`, { nik });
       toast.success('NIK query dimulai!');
-      // Refresh target to get updated nik_queries
-      setTimeout(() => fetchTargets(selectedCase.id), 1000);
+      // Refresh will happen via interval
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start NIK query');
+      fetchTargets(selectedCase.id); // Revert on error
     }
   };
 
