@@ -441,6 +441,7 @@ const MainApp = () => {
           </div>
         </div>
       </aside>
+      )}
 
       {/* Main Map Area */}
       <main className="flex-1 relative flex">
