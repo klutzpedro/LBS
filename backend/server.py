@@ -1035,11 +1035,12 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             await telegram_client.start()
             logging.info("Telegram client started for Reghp query")
         
-        logging.info(f"[REGHP {target_id}] Starting Reghp query for {phone_number}")
+        query_token = f"REGHP_{phone_number}_{target_id[:8]}"
+        logging.info(f"[{query_token}] Starting Reghp query for {phone_number}")
         
         # Send phone number to bot
         await telegram_client.send_message(BOT_USERNAME, phone_number)
-        logging.info(f"[REGHP {target_id}] Sent phone number to bot")
+        logging.info(f"[{query_token}] Sent phone number to bot")
         
         await asyncio.sleep(3)
         
@@ -1050,32 +1051,33 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         for msg in messages:
             if msg.buttons:
                 button_texts = [[btn.text for btn in row] for row in msg.buttons]
-                logging.info(f"[REGHP {target_id}] Buttons found: {button_texts}")
+                logging.info(f"[{query_token}] Buttons found: {button_texts}")
                 
                 for row in msg.buttons:
                     for button in row:
                         if button.text and 'REGHP' in button.text.upper():
                             await button.click()
-                            logging.info(f"[REGHP {target_id}] ✓ Clicked Reghp button")
+                            logging.info(f"[{query_token}] ✓ Clicked Reghp button")
                             reghp_clicked = True
                             break
                 if reghp_clicked:
                     break
         
         if not reghp_clicked:
-            logging.warning(f"[REGHP {target_id}] Reghp button not found")
+            logging.warning(f"[{query_token}] Reghp button not found")
         
         # Wait for response
         await asyncio.sleep(8)
         
-        # Get Reghp response
+        # Get Reghp response - ONLY messages containing our phone number
         response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
         
         reghp_info = None
         for msg in response_messages:
-            if msg.text and ('identity' in msg.text.lower() or 'nik:' in msg.text.lower() or 'operator:' in msg.text.lower()):
-                logging.info(f"[REGHP {target_id}] Found Reghp response")
-                logging.info(f"[REGHP {target_id}] Response preview: {msg.text[:200]}...")
+            # TOKENIZATION: Only parse messages that contain our phone number
+            if msg.text and phone_number in msg.text and ('identity' in msg.text.lower() or 'nik:' in msg.text.lower() or 'operator:' in msg.text.lower()):
+                logging.info(f"[{query_token}] ✓ Found matching Reghp response (contains {phone_number})")
+                logging.info(f"[{query_token}] Response preview: {msg.text[:200]}...")
                 
                 # Extract all info from response
                 reghp_info = {
@@ -1098,7 +1100,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 break
         
         if reghp_info:
-            # Parse multiple NIK entries
+            # Parse multiple NIK entries from the MATCHED response
             niks = []
             nik_pattern = re.compile(r'NIK:\s*(\d{16})', re.IGNORECASE)
             for match in nik_pattern.finditer(reghp_info['raw_text']):
@@ -1107,7 +1109,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                     niks.append(nik_value)
             
             reghp_info['niks'] = niks
-            logging.info(f"[REGHP {target_id}] Found {len(niks)} unique NIKs: {niks}")
+            logging.info(f"[{query_token}] ✓ Found {len(niks)} unique NIKs: {niks}")
             
             await db.targets.update_one(
                 {"id": target_id},
@@ -1157,11 +1159,12 @@ async def query_telegram_nik(target_id: str, nik: str):
             await telegram_client.start()
             logging.info("Telegram client started for NIK query")
         
-        logging.info(f"[NIK {nik}] Starting NIK query for target {target_id}")
+        query_token = f"NIK_{nik}_{target_id[:8]}"
+        logging.info(f"[{query_token}] Starting NIK query")
         
         # Send NIK to bot
         await telegram_client.send_message(BOT_USERNAME, nik)
-        logging.info(f"[NIK {nik}] Sent NIK to bot")
+        logging.info(f"[{query_token}] Sent NIK to bot")
         
         await asyncio.sleep(3)
         
@@ -1172,63 +1175,65 @@ async def query_telegram_nik(target_id: str, nik: str):
         for msg in messages:
             if msg.buttons:
                 button_texts = [[btn.text for btn in row] for row in msg.buttons]
-                logging.info(f"[NIK {nik}] Buttons found: {button_texts}")
+                logging.info(f"[{query_token}] Buttons found: {button_texts}")
                 
                 for row in msg.buttons:
                     for button in row:
                         if button.text and 'NIK' in button.text.upper():
                             await button.click()
-                            logging.info(f"[NIK {nik}] ✓ Clicked NIK button")
+                            logging.info(f"[{query_token}] ✓ Clicked NIK button")
                             nik_clicked = True
                             break
                 if nik_clicked:
                     break
         
         if not nik_clicked:
-            logging.warning(f"[NIK {nik}] NIK button not found")
+            logging.warning(f"[{query_token}] NIK button not found")
         
         # Wait for response with photo
         await asyncio.sleep(10)
         
-        # Get NIK response
+        # Get NIK response - ONLY messages containing our NIK
         response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
         
         nik_info = None
         photo_path = None
         
         for msg in response_messages:
-            # Check for photo
-            if msg.photo and not photo_path:
-                # Download photo
-                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                if photo_bytes:
-                    import base64
-                    photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
-                    photo_path = f"data:image/jpeg;base64,{photo_base64}"
-                    logging.info(f"[NIK {nik}] ✓ Photo downloaded")
-            
-            # Check for text data
-            if msg.text and (nik in msg.text or 'identity' in msg.text.lower() or 'nama' in msg.text.lower()):
-                logging.info(f"[NIK {nik}] Found NIK response text")
+            # TOKENIZATION: Only process messages containing our NIK
+            if msg.text and nik in msg.text:
+                # Check for photo
+                if msg.photo and not photo_path:
+                    # Download photo
+                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                    if photo_bytes:
+                        import base64
+                        photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
+                        photo_path = f"data:image/jpeg;base64,{photo_base64}"
+                        logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
                 
-                nik_info = {
-                    "nik": nik,
-                    "raw_text": msg.text,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-                
-                # Parse fields
-                lines = msg.text.split('\n')
-                parsed_data = {}
-                for line in lines:
-                    if ':' in line:
-                        parts = line.split(':', 1)
-                        if len(parts) == 2:
-                            key = parts[0].strip()
-                            value = parts[1].strip()
-                            parsed_data[key] = value
-                
-                nik_info['parsed_data'] = parsed_data
+                # Check for text data containing NIK
+                if 'identity' in msg.text.lower() or 'nama' in msg.text.lower():
+                    logging.info(f"[{query_token}] ✓ Found matching NIK response text")
+                    
+                    nik_info = {
+                        "nik": nik,
+                        "raw_text": msg.text,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    # Parse fields
+                    lines = msg.text.split('\n')
+                    parsed_data = {}
+                    for line in lines:
+                        if ':' in line:
+                            parts = line.split(':', 1)
+                            if len(parts) == 2:
+                                key = parts[0].strip()
+                                value = parts[1].strip()
+                                parsed_data[key] = value
+                    
+                    nik_info['parsed_data'] = parsed_data
         
         if nik_info or photo_path:
             if not nik_info:
