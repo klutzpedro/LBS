@@ -978,6 +978,70 @@ const MainApp = () => {
                 </div>
               )}
 
+              {/* NIK Entries with Pendalaman buttons */}
+              {selectedReghpTarget.reghp_data.niks && selectedReghpTarget.reghp_data.niks.length > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                    NIK Entries ({selectedReghpTarget.reghp_data.niks.length})
+                  </p>
+                  <div className="space-y-2">
+                    {selectedReghpTarget.reghp_data.niks.map((nik) => {
+                      const nikQuery = selectedReghpTarget.nik_queries?.[nik];
+                      const nikStatus = nikQuery?.status || 'not_started';
+                      
+                      return (
+                        <div 
+                          key={nik}
+                          className="p-3 rounded-lg border flex items-center justify-between"
+                          style={{
+                            backgroundColor: 'var(--background-secondary)',
+                            borderColor: 'var(--borders-subtle)'
+                          }}
+                        >
+                          <div>
+                            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                              NIK
+                            </p>
+                            <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                              {nik}
+                            </p>
+                          </div>
+                          <div>
+                            {nikStatus === 'completed' ? (
+                              <Button
+                                size="sm"
+                                onClick={() => handleShowNikInfo(nikQuery.data)}
+                                style={{
+                                  backgroundColor: 'var(--accent-secondary)',
+                                  color: 'var(--background-primary)'
+                                }}
+                              >
+                                📋 Info
+                              </Button>
+                            ) : nikStatus === 'processing' ? (
+                              <div className="text-xs px-3 py-2" style={{ color: 'var(--status-processing)' }}>
+                                ⏳ Processing...
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                onClick={() => handleNikPendalaman(selectedReghpTarget.id, nik)}
+                                style={{
+                                  backgroundColor: 'var(--status-warning)',
+                                  color: 'var(--background-primary)'
+                                }}
+                              >
+                                🔍 Pendalaman
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Raw Response */}
               <div>
                 <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
