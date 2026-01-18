@@ -122,12 +122,18 @@
   - A. Target number/info
   - B. Location with map coordinates and timestamp
   - C. RegHP data (table format)
-  - D. NIK complete data (table format)
-  - E. NKK/Family data (table format)
-  - F. Family tree structure
+  - D. NIK complete data (table format) - Per NIK
+  - E. NKK/Family data (table format) - Per NIK
+  - F. Family tree structure - Per NIK
 - **Icons:** Print icons appear on hover for both Case and Target cards
-- **Libraries:** jspdf, jspdf-autotable, html2canvas
+- **Libraries:** jspdf, jspdf-autotable
 - **Files Created:** `/app/frontend/src/components/main/PDFExport.jsx`
+
+### Family Tree Per-NIK Storage
+- **Issue:** Previously, family tree data was stored at target level, causing all NIKs to share the same family tree
+- **Fix:** Family tree data now stored per-NIK in `nik_queries[nik].family_data`
+- **Impact:** When a phone number has multiple NIKs (e.g., 2 different people registered), each NIK now has its own independent family tree
+- **Files Modified:** `/app/backend/server.py`, `/app/frontend/src/pages/MainApp.jsx`
 
 ### Code Refactoring
 - Extracted reusable components from `MainApp.jsx`
