@@ -62,6 +62,61 @@ import {
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { toast } from 'sonner';
 
+// Countdown Timer Component
+const CountdownTimer = ({ nextRun }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+  
+  useEffect(() => {
+    if (!nextRun) return;
+    
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const target = new Date(nextRun);
+      const diff = target - now;
+      
+      if (diff <= 0) {
+        setTimeLeft('Segera...');
+        return;
+      }
+      
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      if (days > 0) {
+        setTimeLeft(`${days}h ${hours}j ${minutes}m`);
+      } else if (hours > 0) {
+        setTimeLeft(`${hours}j ${minutes}m ${seconds}d`);
+      } else if (minutes > 0) {
+        setTimeLeft(`${minutes}m ${seconds}d`);
+      } else {
+        setTimeLeft(`${seconds} detik`);
+      }
+    };
+    
+    calculateTimeLeft();
+    const interval = setInterval(calculateTimeLeft, 1000);
+    
+    return () => clearInterval(interval);
+  }, [nextRun]);
+  
+  if (!nextRun) return null;
+  
+  return (
+    <div 
+      className="text-center py-1 px-2 rounded text-xs font-mono"
+      style={{ 
+        backgroundColor: 'rgba(255, 184, 0, 0.15)',
+        color: 'var(--status-warning)',
+        border: '1px solid var(--status-warning)'
+      }}
+    >
+      ⏱ {timeLeft}
+    </div>
+  );
+};
+
 // Custom marker with label
 const createMarkerWithLabel = (phoneNumber, timestamp, name, showName) => {
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
