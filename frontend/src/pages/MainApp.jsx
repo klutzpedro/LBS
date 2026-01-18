@@ -1038,6 +1038,7 @@ const MainApp = () => {
             bottom: 0,
             backgroundColor: 'var(--background-primary)'
           }}
+          ref={mapContainerRef}
         >
           {/* Map Controls */}
           {showMapControls && (
