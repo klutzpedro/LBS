@@ -2243,87 +2243,132 @@ const MainApp = () => {
                 return null;
               })}
 
-              {/* Render History Path */}
-              {historyPath.length > 1 && (
-                <Polyline
-                  positions={historyPath.map(p => [p.lat, p.lng])}
-                  pathOptions={{
-                    color: '#FFB800',
-                    weight: 3,
-                    opacity: 0.8,
-                    dashArray: '10, 10'
-                  }}
-                />
-              )}
-              {historyPath.length > 0 && historyPath.map((pos, idx) => {
-                // Format timestamp for display - this is the CP query time from backend
-                const formatTime = (ts) => {
-                  if (!ts) return '';
-                  const date = new Date(ts);
-                  return date.toLocaleString('id-ID', {
-                    day: '2-digit',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                };
+              {/* Render History Paths - Multiple targets supported */}
+              {activeHistoryTargets.map((targetId, targetIdx) => {
+                const historyPath = historyPaths[targetId] || [];
+                if (historyPath.length === 0) return null;
                 
-                // Only newest (endpoint) gets special treatment - others are simple dots on line
-                const isNewest = idx === 0;
+                // Different colors for different targets
+                const colors = ['#FFB800', '#00BFFF', '#FF69B4', '#00FF7F', '#FF6347'];
+                const pathColor = colors[targetIdx % colors.length];
+                
+                // Find target info for display
+                const targetInfo = targets.find(t => t.id === targetId);
+                const phoneLabel = targetInfo?.phone_number?.slice(-6) || targetId.slice(-6);
                 
                 return (
-                  <React.Fragment key={`history-point-${idx}`}>
-                    {/* Small dot attached to line - minimal styling for history points */}
-                    <Circle
-                      center={[pos.lat, pos.lng]}
-                      radius={isNewest ? 8 : 3}
-                      pathOptions={{
-                        color: isNewest ? '#FF3B5C' : '#FFB800',
-                        fillColor: isNewest ? '#FF3B5C' : '#FFB800',
-                        fillOpacity: 1,
-                        weight: isNewest ? 2 : 1
-                      }}
-                    >
-                      <Popup>
-                        <div className="p-2 text-center">
-                          <p className="font-bold text-sm" style={{ color: isNewest ? '#FF3B5C' : '#FFB800' }}>
-                            {isNewest ? '📍 TERBARU' : `📌 ${formatTime(pos.timestamp)}`}
-                          </p>
-                          <p className="text-xs font-mono">{pos.lat?.toFixed(5)}, {pos.lng?.toFixed(5)}</p>
-                          {pos.address && <p className="text-xs mt-1 truncate max-w-[150px]">{pos.address}</p>}
-                        </div>
-                      </Popup>
-                    </Circle>
-                    {/* Arrow + Timestamp label - only for previous positions (not newest) */}
-                    {!isNewest && (
+                  <React.Fragment key={`history-path-${targetId}`}>
+                    {/* Path line */}
+                    {historyPath.length > 1 && (
+                      <Polyline
+                        positions={historyPath.map(p => [p.lat, p.lng])}
+                        pathOptions={{
+                          color: pathColor,
+                          weight: 3,
+                          opacity: 0.8,
+                          dashArray: '10, 10'
+                        }}
+                      />
+                    )}
+                    
+                    {/* History points */}
+                    {historyPath.map((pos, idx) => {
+                      const formatTime = (ts) => {
+                        if (!ts) return '';
+                        const date = new Date(ts);
+                        return date.toLocaleString('id-ID', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        });
+                      };
+                      
+                      const isNewest = idx === 0;
+                      const pointColor = isNewest ? '#FF3B5C' : pathColor;
+                      
+                      return (
+                        <React.Fragment key={`history-point-${targetId}-${idx}`}>
+                          <Circle
+                            center={[pos.lat, pos.lng]}
+                            radius={isNewest ? 8 : 3}
+                            pathOptions={{
+                              color: pointColor,
+                              fillColor: pointColor,
+                              fillOpacity: 1,
+                              weight: isNewest ? 2 : 1
+                            }}
+                          >
+                            <Popup>
+                              <div className="p-2 text-center">
+                                <p className="font-bold text-sm" style={{ color: pointColor }}>
+                                  {isNewest ? `📍 TERBARU (${phoneLabel})` : `📌 ${formatTime(pos.timestamp)}`}
+                                </p>
+                                <p className="text-xs font-mono">{pos.lat?.toFixed(5)}, {pos.lng?.toFixed(5)}</p>
+                                {pos.address && <p className="text-xs mt-1 truncate max-w-[150px]">{pos.address}</p>}
+                              </div>
+                            </Popup>
+                          </Circle>
+                          
+                          {/* Arrow + Timestamp - only for non-newest */}
+                          {!isNewest && (
+                            <Marker
+                              position={[pos.lat, pos.lng]}
+                              icon={L.divIcon({
+                                className: 'history-label-arrow',
+                                html: `<div style="
+                                  display: flex;
+                                  flex-direction: column;
+                                  align-items: center;
+                                  transform: translate(-50%, -32px);
+                                ">
+                                  <div style="
+                                    background: rgba(0,0,0,0.75);
+                                    color: ${pathColor};
+                                    padding: 1px 4px;
+                                    border-radius: 2px;
+                                    font-size: 8px;
+                                    font-weight: 500;
+                                    white-space: nowrap;
+                                    margin-bottom: 1px;
+                                  ">${formatTime(pos.timestamp)}</div>
+                                  <div style="
+                                    width: 0;
+                                    height: 0;
+                                    border-left: 4px solid transparent;
+                                    border-right: 4px solid transparent;
+                                    border-top: 6px solid ${pathColor};
+                                  "></div>
+                                </div>`,
+                                iconSize: [0, 0],
+                                iconAnchor: [0, 0]
+                              })}
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                    
+                    {/* Hide button for this target's history - positioned at newest point */}
+                    {historyPath.length > 0 && (
                       <Marker
-                        position={[pos.lat, pos.lng]}
+                        position={[historyPath[0].lat, historyPath[0].lng]}
                         icon={L.divIcon({
-                          className: 'history-label-arrow',
-                          html: `<div style="
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                            transform: translate(-50%, -32px);
-                          ">
-                            <div style="
-                              background: rgba(0,0,0,0.75);
-                              color: #FFB800;
-                              padding: 1px 4px;
-                              border-radius: 2px;
-                              font-size: 8px;
-                              font-weight: 500;
+                          className: 'history-hide-btn',
+                          html: `<div 
+                            onclick="window.hideTargetHistory && window.hideTargetHistory('${targetId}')"
+                            style="
+                              background: rgba(255,59,92,0.9);
+                              color: white;
+                              padding: 2px 6px;
+                              border-radius: 4px;
+                              font-size: 9px;
+                              font-weight: bold;
+                              cursor: pointer;
+                              transform: translate(-50%, 15px);
                               white-space: nowrap;
-                              margin-bottom: 1px;
-                            ">${formatTime(pos.timestamp)}</div>
-                            <div style="
-                              width: 0;
-                              height: 0;
-                              border-left: 4px solid transparent;
-                              border-right: 4px solid transparent;
-                              border-top: 6px solid #FFB800;
-                            "></div>
-                          </div>`,
+                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                            ">✕ ${phoneLabel}</div>`,
                           iconSize: [0, 0],
                           iconAnchor: [0, 0]
                         })}
