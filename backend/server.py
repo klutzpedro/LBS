@@ -1662,39 +1662,75 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
                             break
         
         if family_info:
+            # Store family data per NIK in nik_queries
+            if source_nik:
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            f"nik_queries.{source_nik}.family_status": "completed",
+                            f"nik_queries.{source_nik}.family_data": family_info
+                        }
+                    }
+                )
+                logging.info(f"[{query_token}] ✓ Family data saved for NIK: {source_nik}")
+            else:
+                # Fallback to target-level for backward compatibility
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            "family_status": "completed",
+                            "family_data": family_info
+                        }
+                    }
+                )
+                logging.info(f"[{query_token}] ✓ Family data saved (target-level)")
+        else:
+            if source_nik:
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            f"nik_queries.{source_nik}.family_status": "error",
+                            f"nik_queries.{source_nik}.family_data": {"error": "No family data found"}
+                        }
+                    }
+                )
+            else:
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {
+                        "$set": {
+                            "family_status": "error",
+                            "family_data": {"error": "No family data found"}
+                        }
+                    }
+                )
+            logging.warning(f"[{query_token}] No family data found")
+    
+    except Exception as e:
+        logging.error(f"[FAMILY {family_id}] Error: {e}")
+        if source_nik:
             await db.targets.update_one(
                 {"id": target_id},
                 {
                     "$set": {
-                        "family_status": "completed",
-                        "family_data": family_info
+                        f"nik_queries.{source_nik}.family_status": "error",
+                        f"nik_queries.{source_nik}.family_data": {"error": str(e)}
                     }
                 }
             )
-            logging.info(f"[{query_token}] ✓ Family data saved")
         else:
             await db.targets.update_one(
                 {"id": target_id},
                 {
                     "$set": {
                         "family_status": "error",
-                        "family_data": {"error": "No family data found"}
+                        "family_data": {"error": str(e)}
                     }
                 }
             )
-            logging.warning(f"[{query_token}] No family data found")
-    
-    except Exception as e:
-        logging.error(f"[FAMILY {family_id}] Error: {e}")
-        await db.targets.update_one(
-            {"id": target_id},
-            {
-                "$set": {
-                    "family_status": "error",
-                    "family_data": {"error": str(e)}
-                }
-            }
-        )
 
 # AI Family Tree Analysis
 class FamilyAnalysisRequest(BaseModel):
