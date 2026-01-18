@@ -1336,7 +1336,7 @@ const MainApp = () => {
                           >
                             📋 Info Pendalaman
                           </button>
-                        ) : target.reghp_status === 'processing' ? (
+                        ) : target.reghp_status === 'processing' || loadingPendalaman === target.id ? (
                           <div className="text-center py-2">
                             <p className="text-xs" style={{ color: 'var(--status-processing)' }}>
                               ⏳ Pendalaman sedang diproses...
@@ -1345,7 +1345,8 @@ const MainApp = () => {
                         ) : (
                           <button
                             onClick={() => handlePendalaman(target)}
-                            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+                            disabled={loadingPendalaman === target.id}
+                            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase disabled:opacity-50"
                             style={{
                               backgroundColor: 'var(--status-warning)',
                               color: 'var(--background-primary)'
