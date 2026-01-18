@@ -2058,12 +2058,15 @@ async def sync_all_positions_to_history(username: str = Depends(verify_token)):
             })
             
             if not existing:
+                # Use timestamp from target data (CP query time)
+                cp_timestamp = target['data'].get('timestamp')
                 await save_position_history(
                     target['id'],
                     target.get('phone_number'),
                     lat,
                     lng,
-                    target['data'].get('address')
+                    target['data'].get('address'),
+                    cp_timestamp
                 )
                 saved_count += 1
     
