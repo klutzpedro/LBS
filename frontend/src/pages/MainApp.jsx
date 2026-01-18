@@ -613,8 +613,7 @@ const MainApp = () => {
             {filteredTargets.map((target) => (
               <div
                 key={target.id}
-                onClick={() => handleTargetClick(target)}
-                className="p-3 rounded-md border cursor-pointer hover:bg-background-elevated transition-all"
+                className="rounded-md border"
                 style={{
                   backgroundColor: selectedTargetForChat === target.id ? 'var(--background-elevated)' : 'var(--background-tertiary)',
                   borderColor: 'var(--borders-subtle)',
@@ -622,37 +621,77 @@ const MainApp = () => {
                   borderLeftColor: getStatusColor(target.status)
                 }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
-                    {target.phone_number}
-                  </p>
-                  {target.status === 'completed' ? (
-                    <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-success)' }} />
-                  ) : target.status === 'not_found' ? (
-                    <XCircle className="w-4 h-4" style={{ color: 'var(--status-warning)' }} />
-                  ) : target.status === 'error' ? (
-                    <XCircle className="w-4 h-4" style={{ color: 'var(--status-error)' }} />
-                  ) : (
-                    <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--status-processing)' }} />
+                {/* Target Info - Clickable */}
+                <div
+                  onClick={() => handleTargetClick(target)}
+                  className="p-3 cursor-pointer hover:bg-background-elevated transition-all"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
+                      {target.phone_number}
+                    </p>
+                    {target.status === 'completed' ? (
+                      <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-success)' }} />
+                    ) : target.status === 'not_found' ? (
+                      <XCircle className="w-4 h-4" style={{ color: 'var(--status-warning)' }} />
+                    ) : target.status === 'error' ? (
+                      <XCircle className="w-4 h-4" style={{ color: 'var(--status-error)' }} />
+                    ) : (
+                      <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--status-processing)' }} />
+                    )}
+                  </div>
+                  {target.data && (
+                    <p className="text-xs line-clamp-1" style={{ color: 'var(--foreground-secondary)' }}>\n                      {target.data.address}
+                    </p>
                   )}
+                  {target.status === 'not_found' && (
+                    <p className="text-xs" style={{ color: 'var(--status-warning)' }}>
+                      Target OFF / Tidak ditemukan
+                    </p>
+                  )}
+                  {target.status === 'error' && (
+                    <p className="text-xs" style={{ color: 'var(--status-error)' }}>
+                      Error: {target.error}
+                    </p>
+                  )}
+                  <p className="text-xs uppercase mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                    {target.status}
+                  </p>
                 </div>
-                {target.data && (
-                  <p className="text-xs line-clamp-1" style={{ color: 'var(--foreground-secondary)' }}>\n                    {target.data.address}
-                  </p>
+                
+                {/* Action Buttons - Only for completed targets */}
+                {target.status === 'completed' && (
+                  <div className="px-3 pb-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePerbaharui(target);
+                      }}
+                      className="flex-1 text-xs"
+                      style={{
+                        backgroundColor: 'var(--status-info)',
+                        color: 'var(--background-primary)'
+                      }}
+                    >
+                      🔄 Perbaharui
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenScheduleDialog(target);
+                      }}
+                      className="flex-1 text-xs"
+                      style={{
+                        backgroundColor: 'var(--status-success)',
+                        color: 'var(--background-primary)'
+                      }}
+                    >
+                      📅 Jadwalkan
+                    </Button>
+                  </div>
                 )}
-                {target.status === 'not_found' && (
-                  <p className="text-xs" style={{ color: 'var(--status-warning)' }}>
-                    Target OFF / Tidak ditemukan
-                  </p>
-                )}
-                {target.status === 'error' && (
-                  <p className="text-xs" style={{ color: 'var(--status-error)' }}>
-                    Error: {target.error}
-                  </p>
-                )}
-                <p className="text-xs uppercase mt-1" style={{ color: 'var(--foreground-muted)' }}>
-                  {target.status}
-                </p>
               </div>
             ))}
             {!selectedCase && (
