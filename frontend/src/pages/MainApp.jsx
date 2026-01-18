@@ -1593,7 +1593,6 @@ const MainApp = () => {
             </Button>
 
             {/* Toggle Marker Names */}
-            {!showChatPanel && (
               <Button
                 onClick={() => setShowMarkerNames(!showMarkerNames)}
                 size="icon"
@@ -1607,10 +1606,8 @@ const MainApp = () => {
               >
                 {showMarkerNames ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </Button>
-            )}
 
             {/* AOI Panel Toggle */}
-            {!showChatPanel && (
               <Button
                 onClick={() => setAoiPanelOpen(true)}
                 size="icon"
@@ -1624,7 +1621,6 @@ const MainApp = () => {
               >
                 <Target className="w-5 h-5" />
               </Button>
-            )}
 
             {/* Clear History Path */}
             {historyPath.length > 0 && (
@@ -1643,8 +1639,8 @@ const MainApp = () => {
               </Button>
             )}
 
-            {/* Add Target (Floating) - hide when chat panel open */}
-            {selectedCase && !showChatPanel && (
+            {/* Add Target (Floating) */}
+            {selectedCase && (
               <Button
                 onClick={() => setAddTargetDialog(true)}
                 data-testid="floating-add-target"
@@ -1658,8 +1654,7 @@ const MainApp = () => {
               </Button>
             )}
 
-            {/* Chat History Toggle - hide when panel is open */}
-            {!showChatPanel && (
+            {/* Chat History Toggle - Opens Popup */}
               <div className="relative">
                 <Button
                   onClick={() => setShowChatPanel(true)}
