@@ -467,8 +467,15 @@ const MainApp = () => {
   );
 
   const handlePendalaman = async (target) => {
-    // Prevent double-click
-    if (loadingPendalaman === target.id) return;
+    // Check if another process is running
+    if (isProcessRunning()) {
+      showBusyNotification();
+      return;
+    }
+    
+    // Set global processing
+    setGlobalProcessing(true);
+    setGlobalProcessType('pendalaman');
     setLoadingPendalaman(target.id);
     
     // Optimistic update - langsung set status processing
@@ -485,12 +492,45 @@ const MainApp = () => {
     try {
       await axios.post(`${API}/targets/${target.id}/reghp`);
       toast.success('Pendalaman query dimulai!');
+      
+      // Poll for completion with timeout (max 60 seconds)
+      let attempts = 0;
+      const maxAttempts = 30;
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const response = await axios.get(`${API}/targets/${target.id}`);
+          const updatedTarget = response.data;
+          
+          if (updatedTarget.reghp_status === 'completed' || updatedTarget.reghp_status === 'error') {
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            setLoadingPendalaman(null);
+            fetchTargets(selectedCase.id);
+            
+            if (updatedTarget.reghp_status === 'completed') {
+              toast.success('Pendalaman selesai!');
+            }
+          } else if (attempts >= maxAttempts) {
+            // Timeout - reset and allow retry
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            setLoadingPendalaman(null);
+            toast.warning('Proses timeout, silakan coba lagi');
+          }
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, 2000);
+      
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start pendalaman');
-      fetchTargets(selectedCase.id); // Revert on error
-    } finally {
-      // Clear loading after a short delay to prevent rapid re-clicks
-      setTimeout(() => setLoadingPendalaman(null), 2000);
+      fetchTargets(selectedCase.id);
+      setGlobalProcessing(false);
+      setGlobalProcessType(null);
+      setLoadingPendalaman(null);
     }
   };
 
