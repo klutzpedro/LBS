@@ -1585,7 +1585,7 @@ const MainApp = () => {
       {/* Reghp Info Dialog */}
       <Dialog open={reghpDialogOpen} onOpenChange={setReghpDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-2xl max-h-[80vh] overflow-y-auto"
+          className="z-[9999] max-w-xl 4k:max-w-md max-h-[70vh] overflow-y-auto"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -1593,7 +1593,7 @@ const MainApp = () => {
         >
           <DialogHeader>
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               INFO PENDALAMAN (REGHP)
@@ -1735,7 +1735,7 @@ const MainApp = () => {
       {/* NIK Info Dialog */}
       <Dialog open={nikDialogOpen} onOpenChange={setNikDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-3xl max-h-[90vh] overflow-y-auto"
+          className="z-[9999] max-w-2xl 4k:max-w-xl max-h-[75vh] overflow-y-auto"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -1743,7 +1743,7 @@ const MainApp = () => {
         >
           <DialogHeader>
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               INFO PENDALAMAN NIK
