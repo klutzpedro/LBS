@@ -1609,6 +1609,7 @@ const MainApp = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent
+                  className="z-[10001]"
                   style={{
                     backgroundColor: 'var(--background-elevated)',
                     borderColor: 'var(--borders-strong)',
