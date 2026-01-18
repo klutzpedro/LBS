@@ -132,14 +132,15 @@
 ### PDF Map Screenshot Bug Fix (January 2026)
 - **Issue:** PDF export captured live map view instead of target's specific location
 - **Root Cause:** Using html2canvas on live DOM captured whatever was displayed on screen
-- **Solution:** 
-  - Removed html2canvas dependency
-  - Implemented `drawLocationMap()` function that draws map directly in PDF using jsPDF
-  - Uses target's specific coordinates (`target.data.latitude`, `target.data.longitude`)
-  - Added `latLngToTile()` function to convert coordinates to OSM tile coordinates
-  - Optional OSM tile preview via `getOsmTileUrl()` (may fail due to CORS)
-- **Result:** Each PDF now contains accurate map representation with correct coordinates
-- **Files Modified:** `/app/frontend/src/components/main/PDFExport.jsx`
+- **Solution (Final):** 
+  - `handlePrintTarget` now programmatically moves map to target's location first
+  - Waits 2 seconds for map tiles to load
+  - Takes screenshot using `html2canvas` of the actual webapp map
+  - Restores previous map position after screenshot
+  - Passes screenshot to `generateTargetPDF(target, mapScreenshot)`
+  - `handlePrintCase` does the same for each target in sequence
+- **Result:** Each PDF now contains actual webapp map screenshot at target's location
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`, `/app/frontend/src/components/main/PDFExport.jsx`
 
 ### Family Tree Per-NIK Storage
 - **Issue:** Previously, family tree data was stored at target level, causing all NIKs to share the same family tree
