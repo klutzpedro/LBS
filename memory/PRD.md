@@ -259,6 +259,16 @@
 - **Migration:** Added `/api/fix-history-timestamps` endpoint to update existing history records
 - **Files Modified:** `/app/backend/server.py`
 
+### 4c. History Dialog Date Fix (January 18, 2026)
+- **Issue:** Date range "Dari" was sometimes larger than "Sampai", and "Muat Data" button didn't work
+- **Fix:** 
+  - Refactored date initialization to use local timezone properly
+  - Created `formatDateTimeLocal()` helper for correct datetime-local format
+  - Split `fetchHistory` into `fetchHistoryWithDates()` for initial load
+  - Added validation to prevent "Dari" > "Sampai"
+- **Default range:** 30 days ago 00:00 → today 23:59
+- **Files Modified:** `/app/frontend/src/components/HistoryDialog.jsx`
+
 ### 5. AOI Panel Search Feature (January 18, 2026)
 - **New search field:** Added search input at top of AOI list to filter by name
 - **Real-time filter:** Filters AOI list as user types
