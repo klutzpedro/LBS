@@ -1558,7 +1558,7 @@ const MainApp = () => {
       {/* Schedule Dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
         <DialogContent 
-          className="z-[9999]"
+          className="z-[10000]"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
