@@ -574,6 +574,7 @@ const MainApp = () => {
             }, 500);
           } else if (nikData?.family_status === 'error' || attempts > 30) {
             clearInterval(checkInterval);
+            setLoadingFamilyPendalaman(null);
             if (nikData?.family_status === 'error') {
               toast.error('Family query gagal');
             }
@@ -586,6 +587,7 @@ const MainApp = () => {
     } catch (error) {
       console.error('Family query error:', error);
       toast.error(error.response?.data?.detail || 'Gagal memulai Family query');
+      setLoadingFamilyPendalaman(null);
     }
   };
 
