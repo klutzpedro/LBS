@@ -1415,7 +1415,6 @@ const MainApp = () => {
           >
             {showMapControls ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
           </Button>
-        )}
       </main>
 
       {/* New Case Dialog */}
