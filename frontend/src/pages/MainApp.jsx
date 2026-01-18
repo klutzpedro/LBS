@@ -1803,48 +1803,60 @@ const MainApp = () => {
                             >
                               <div className="flex items-center gap-1">
                                 <span>{key}</span>
-                                {/* Family ID Button - Dynamic (Family / Info) */}
+                                {/* Family ID Button - Dynamic (Family / Info) - Per NIK */}
                                 {key === 'Family ID' && value && (
-                                  <>
-                                    {selectedReghpTarget?.family_status === 'completed' && selectedReghpTarget?.family_data ? (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleShowFamilyTree(selectedReghpTarget.family_data, selectedNikData.nik)}
-                                        className="ml-auto"
-                                        style={{
-                                          backgroundColor: 'var(--accent-secondary)',
-                                          color: 'var(--background-primary)',
-                                          fontSize: '9px',
-                                          padding: '1px 6px',
-                                          height: 'auto'
-                                        }}
-                                      >
-                                        📋 Info
-                                      </Button>
-                                    ) : selectedReghpTarget?.family_status === 'processing' ? (
-                                      <span 
-                                        className="ml-auto text-xs"
-                                        style={{ color: 'var(--status-processing)' }}
-                                      >
-                                        ⏳
-                                      </span>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
-                                        className="ml-auto"
-                                        style={{
-                                          backgroundColor: 'var(--status-warning)',
-                                          color: 'var(--background-primary)',
-                                          fontSize: '9px',
-                                          padding: '1px 6px',
-                                          height: 'auto'
-                                        }}
-                                      >
-                                        🔍 Family
-                                      </Button>
-                                    )}
-                                  </>
+                                  (() => {
+                                    // Get family data from the specific NIK's data
+                                    const currentNik = selectedNikData.nik;
+                                    const nikQuery = selectedReghpTarget?.nik_queries?.[currentNik];
+                                    const familyStatus = nikQuery?.family_status || 'not_started';
+                                    const familyData = nikQuery?.family_data;
+                                    
+                                    if (familyStatus === 'completed' && familyData) {
+                                      return (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleShowFamilyTree(familyData, currentNik)}
+                                          className="ml-auto"
+                                          style={{
+                                            backgroundColor: 'var(--accent-secondary)',
+                                            color: 'var(--background-primary)',
+                                            fontSize: '9px',
+                                            padding: '1px 6px',
+                                            height: 'auto'
+                                          }}
+                                        >
+                                          📋 Info
+                                        </Button>
+                                      );
+                                    } else if (familyStatus === 'processing') {
+                                      return (
+                                        <span 
+                                          className="ml-auto text-xs"
+                                          style={{ color: 'var(--status-processing)' }}
+                                        >
+                                          ⏳
+                                        </span>
+                                      );
+                                    } else {
+                                      return (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, currentNik)}
+                                          className="ml-auto"
+                                          style={{
+                                            backgroundColor: 'var(--status-warning)',
+                                            color: 'var(--background-primary)',
+                                            fontSize: '9px',
+                                            padding: '1px 6px',
+                                            height: 'auto'
+                                          }}
+                                        >
+                                          🔍 Family
+                                        </Button>
+                                      );
+                                    }
+                                  })()
                                 )}
                               </div>
                             </td>
