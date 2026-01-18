@@ -1964,6 +1964,42 @@ const MainApp = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Family Tree Dialog */}
+      <Dialog open={familyTreeDialogOpen} onOpenChange={setFamilyTreeDialogOpen}>
+        <DialogContent 
+          className="z-[9999] max-w-4xl max-h-[90vh] overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-strong)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle 
+              className="text-2xl font-bold"
+              style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+            >
+              🌳 FAMILY TREE
+            </DialogTitle>
+          </DialogHeader>
+          {selectedFamilyData && (
+            <div className="mt-4">
+              <FamilyTreeViz members={selectedFamilyData.members} targetNik={targetNikForTree} />
+              
+              <Button
+                onClick={() => setFamilyTreeDialogOpen(false)}
+                className="w-full py-6 mt-6"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)'
+                }}
+              >
+                CLOSE
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
