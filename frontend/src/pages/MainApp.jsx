@@ -550,15 +550,22 @@ const MainApp = () => {
   }, [targets, reghpDialogOpen]);
 
   const handleNikPendalaman = async (targetId, nik) => {
-    // Prevent double-click
-    if (loadingNikPendalaman === nik) return;
+    // Check if another process is running
+    if (isProcessRunning()) {
+      showBusyNotification();
+      return;
+    }
+    
+    // Set global processing
+    setGlobalProcessing(true);
+    setGlobalProcessType('nik');
     setLoadingNikPendalaman(nik);
     
     // Optimistic update
     const updatedTargets = targets.map(t => {
       if (t.id === targetId) {
         const nikQueries = { ...(t.nik_queries || {}) };
-        nikQueries[nik] = { status: 'processing', data: null };
+        nikQueries[nik] = { ...(nikQueries[nik] || {}), status: 'processing' };
         return { ...t, nik_queries: nikQueries };
       }
       return t;
@@ -568,19 +575,52 @@ const MainApp = () => {
     // Also update selectedReghpTarget if viewing
     if (selectedReghpTarget?.id === targetId) {
       const nikQueries = { ...(selectedReghpTarget.nik_queries || {}) };
-      nikQueries[nik] = { status: 'processing', data: null };
+      nikQueries[nik] = { ...(nikQueries[nik] || {}), status: 'processing' };
       setSelectedReghpTarget({ ...selectedReghpTarget, nik_queries: nikQueries });
     }
     
     try {
       await axios.post(`${API}/targets/${targetId}/nik`, { nik });
       toast.success('NIK query dimulai!');
+      
+      // Poll for completion with timeout
+      let attempts = 0;
+      const maxAttempts = 30;
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const response = await axios.get(`${API}/targets/${targetId}`);
+          const target = response.data;
+          const nikData = target.nik_queries?.[nik];
+          
+          if (nikData?.status === 'completed' || nikData?.status === 'error') {
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            setLoadingNikPendalaman(null);
+            fetchTargets(selectedCase.id);
+            
+            if (nikData?.status === 'completed') {
+              toast.success('NIK query selesai!');
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            setLoadingNikPendalaman(null);
+            toast.warning('Proses timeout, silakan coba lagi');
+          }
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, 2000);
+      
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start NIK query');
       fetchTargets(selectedCase.id);
-    } finally {
-      // Clear loading after a short delay
-      setTimeout(() => setLoadingNikPendalaman(null), 2000);
+      setGlobalProcessing(false);
+      setGlobalProcessType(null);
+      setLoadingNikPendalaman(null);
     }
   };
 
@@ -590,8 +630,11 @@ const MainApp = () => {
   };
 
   const handleFamilyPendalaman = async (targetId, familyId, sourceNik) => {
-    // Prevent double-click
-    if (loadingFamilyPendalaman === sourceNik) return;
+    // Check if another process is running
+    if (isProcessRunning()) {
+      showBusyNotification();
+      return;
+    }
     
     if (!targetId || !familyId) {
       toast.error('Target ID atau Family ID tidak valid');
