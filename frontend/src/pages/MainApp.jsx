@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTelegram } from '@/context/TelegramContext';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, Polyline, useMapEvents } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
