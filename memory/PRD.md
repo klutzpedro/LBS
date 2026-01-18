@@ -244,11 +244,20 @@
 
 ### 4. History UI Improvements (January 18, 2026)
 - **Minimal markers:** History points use tiny dots (radius 3) attached to line, endpoint uses radius 8
-- **Arrow pointer:** Each history point (except newest) has a small yellow arrow pointing down to the dot
-- **Timestamp above arrow:** Date/time label positioned above the arrow in dark background with yellow text
-- **CP query time:** Timestamps show the actual CP (coordinate position) query time from Telegram bot, not webapp access time
+- **Arrow pointer:** Each history point (except newest) has a small colored arrow pointing down to the dot
+- **Timestamp above arrow:** Date/time label positioned above the arrow with dark background
+- **CP query time:** Timestamps now correctly show the actual CP (coordinate position) query time from Telegram bot
 - **No label on endpoint:** Newest position has no timestamp label (target popup already shows this info)
-- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+- **Multiple history support:** Can display history for multiple targets simultaneously with different colors
+- **Hide individual history:** Each history has a close button (✕ + phone suffix) to hide that specific target's history
+- **Color coding:** Different colors for each target's history path (yellow, cyan, pink, green, orange)
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`, `/app/backend/server.py`
+
+### 4b. History Timestamp Fix (January 18, 2026)
+- **Issue:** History timestamps showed access time instead of actual CP query time
+- **Fix:** Modified `save_position_history()` to accept and use `cp_timestamp` parameter
+- **Migration:** Added `/api/fix-history-timestamps` endpoint to update existing history records
+- **Files Modified:** `/app/backend/server.py`
 
 ### 5. AOI Panel Search Feature (January 18, 2026)
 - **New search field:** Added search input at top of AOI list to filter by name
