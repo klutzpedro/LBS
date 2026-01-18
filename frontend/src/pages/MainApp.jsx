@@ -2213,10 +2213,10 @@ const MainApp = () => {
                 
                 return (
                   <React.Fragment key={`history-point-${idx}`}>
-                    {/* Small circle point at exact position */}
+                    {/* Small circle point at exact position - smaller radius */}
                     <Circle
                       center={[pos.lat, pos.lng]}
-                      radius={12}
+                      radius={6}
                       pathOptions={{
                         color: pointColor,
                         fillColor: pointColor,
@@ -2235,26 +2235,28 @@ const MainApp = () => {
                         </div>
                       </Popup>
                     </Circle>
-                    {/* Timestamp label - positioned slightly above point */}
-                    <Marker
-                      position={[pos.lat, pos.lng]}
-                      icon={L.divIcon({
-                        className: 'history-label',
-                        html: `<div style="
-                          background: #FF3B5C;
-                          color: white;
-                          padding: 2px 5px;
-                          border-radius: 3px;
-                          font-size: 9px;
-                          font-weight: bold;
-                          white-space: nowrap;
-                          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                          transform: translate(-50%, -22px);
-                        ">${formatTime(pos.timestamp)}</div>`,
-                        iconSize: [0, 0],
-                        iconAnchor: [0, 0]
-                      })}
-                    />
+                    {/* Timestamp label - only show for previous positions, NOT for newest (endpoint) */}
+                    {!isNewest && (
+                      <Marker
+                        position={[pos.lat, pos.lng]}
+                        icon={L.divIcon({
+                          className: 'history-label',
+                          html: `<div style="
+                            background: #FF3B5C;
+                            color: white;
+                            padding: 2px 5px;
+                            border-radius: 3px;
+                            font-size: 9px;
+                            font-weight: bold;
+                            white-space: nowrap;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                            transform: translate(-50%, -35px);
+                          ">${formatTime(pos.timestamp)}</div>`,
+                          iconSize: [0, 0],
+                          iconAnchor: [0, 0]
+                        })}
+                      />
+                    )}
                   </React.Fragment>
                 );
               })}
