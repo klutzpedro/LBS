@@ -1845,7 +1845,7 @@ const MainApp = () => {
             {/* Clear History Path */}
             {historyPath.length > 0 && (
               <Button
-                onClick={() => setHistoryPath([])}
+                onClick={clearHistoryPath}
                 size="icon"
                 className="w-10 h-10 border"
                 title="Clear History Path"
