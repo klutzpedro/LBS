@@ -326,16 +326,52 @@ const MainApp = () => {
     }
   };
 
-  // Show history path on map
-  const handleShowHistoryPath = (historyData) => {
+  // Show history path on map - now stores full history data with timestamps
+  const handleShowHistoryPath = (historyData, targetId = null) => {
     if (historyData && historyData.length > 0) {
-      setHistoryPath(historyData.map(h => [h.latitude, h.longitude]));
-      // Center map on first point
+      // Store full history data including timestamps
+      setHistoryPath(historyData.map(h => ({
+        lat: h.latitude,
+        lng: h.longitude,
+        timestamp: h.timestamp,
+        address: h.address
+      })));
+      setHistoryTargetId(targetId);
+      // Center map on most recent point (first in list since sorted desc)
       setMapCenter([historyData[0].latitude, historyData[0].longitude]);
       setMapZoom(14);
       setMapKey(prev => prev + 1);
       toast.success(`Menampilkan ${historyData.length} titik riwayat posisi`);
     }
+  };
+
+  // Refresh history path if currently displayed
+  const refreshHistoryPath = async (targetId) => {
+    if (historyTargetId && historyTargetId === targetId) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API}/targets/${targetId}/history`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.history && response.data.history.length > 0) {
+          setHistoryPath(response.data.history.map(h => ({
+            lat: h.latitude,
+            lng: h.longitude,
+            timestamp: h.timestamp,
+            address: h.address
+          })));
+          toast.info('History path diperbarui dengan posisi terbaru');
+        }
+      } catch (error) {
+        console.error('Failed to refresh history:', error);
+      }
+    }
+  };
+
+  // Clear history path
+  const clearHistoryPath = () => {
+    setHistoryPath([]);
+    setHistoryTargetId(null);
   };
 
   // Handle drawing AOI on map
