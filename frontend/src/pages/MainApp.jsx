@@ -150,7 +150,10 @@ const MainApp = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeSchedules, setActiveSchedules] = useState([]);
   const [showMarkerNames, setShowMarkerNames] = useState(false);
-  const [visibleTargets, setVisibleTargets] = useState(new Set()); // Force map re-render
+  const [visibleTargets, setVisibleTargets] = useState(new Set());
+  const [familyTreeDialogOpen, setFamilyTreeDialogOpen] = useState(false);
+  const [selectedFamilyData, setSelectedFamilyData] = useState(null);
+  const [targetNikForTree, setTargetNikForTree] = useState(null); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -526,6 +529,22 @@ const MainApp = () => {
   const handleShowNikInfo = (nikData) => {
     setSelectedNikData(nikData);
     setNikDialogOpen(true);
+  };
+
+  const handleFamilyPendalaman = async (targetId, familyId, targetNik) => {
+    try {
+      await axios.post(`${API}/targets/${targetId}/family`, { family_id: familyId });
+      toast.success('Family query dimulai!');
+      setTargetNikForTree(targetNik);
+    } catch (error) {
+      toast.error('Gagal memulai Family query');
+    }
+  };
+
+  const handleShowFamilyTree = (familyData, targetNik) => {
+    setSelectedFamilyData(familyData);
+    setTargetNikForTree(targetNik);
+    setFamilyTreeDialogOpen(true);
   };
 
   // Filter targets based on search query - include NIK data
