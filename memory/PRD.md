@@ -87,6 +87,21 @@
 - Reduced font sizes, dialog widths, button padding
 - **Files Modified:** `/app/frontend/src/index.css`, `/app/frontend/src/pages/MainApp.jsx`
 
+### Schedule Countdown Timer
+- **Feature:** Added real-time countdown timer showing time until next scheduled update
+- **Display:** Shows days/hours/minutes/seconds based on interval type
+- **Visibility:** Only visible when a schedule is active (above "Batal Jadwal" button)
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
+### Compact UI for 4K Screens
+- Reduced all dialog sizes (`max-w-sm` to `max-w-lg`)
+- Reduced padding (`p-4` instead of default)
+- Reduced button sizes (`py-2` instead of `py-4`)
+- Reduced table cell padding (`py-1.5 px-2`)
+- NIK photos capped at 180px width, 200px height
+- Raw response sections made collapsible
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
 ## API Endpoints
 - `POST /api/auth/login` - User authentication
 - `GET/POST /api/cases` - Case CRUD
