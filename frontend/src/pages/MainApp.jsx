@@ -409,6 +409,14 @@ const MainApp = () => {
     setActiveHistoryTargets([]);
   };
 
+  // Register hideTargetHistory to window for onclick in divIcon
+  useEffect(() => {
+    window.hideTargetHistory = hideTargetHistory;
+    return () => {
+      delete window.hideTargetHistory;
+    };
+  }, [targets]); // Re-register when targets change
+
   // Handle drawing AOI on map
   const handleStartDrawing = (type) => {
     setDrawingMode(type);
