@@ -243,10 +243,11 @@
 - **Backend:** New `aois` and `aoi_alerts` collections, AOI CRUD endpoints, `check_aoi_alerts()` function
 
 ### 4. History UI Improvements (January 18, 2026)
-- **Minimal markers:** History points now use tiny dots (radius 3) attached to line, endpoint uses radius 8
-- **Simplified colors:** Yellow (#FFB800) for history points, Red (#FF3B5C) for endpoint only
-- **Label styling:** Timestamp labels now use semi-transparent dark background with yellow text, positioned close to dots (-12px offset)
-- **No label on endpoint:** Timestamp labels only shown on previous positions
+- **Minimal markers:** History points use tiny dots (radius 3) attached to line, endpoint uses radius 8
+- **Arrow pointer:** Each history point (except newest) has a small yellow arrow pointing down to the dot
+- **Timestamp above arrow:** Date/time label positioned above the arrow in dark background with yellow text
+- **CP query time:** Timestamps show the actual CP (coordinate position) query time from Telegram bot, not webapp access time
+- **No label on endpoint:** Newest position has no timestamp label (target popup already shows this info)
 - **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
 
 ### 5. AOI Panel Search Feature (January 18, 2026)
