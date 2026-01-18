@@ -328,38 +328,73 @@ const MainApp = () => {
 
   // Show history path on map - now stores full history data with timestamps
   const handleShowHistoryPath = (historyData, targetId = null) => {
-    if (historyData && historyData.length > 0) {
-      // Store full history data including timestamps
-      setHistoryPath(historyData.map(h => ({
+    if (historyData && historyData.length > 0 && targetId) {
+      const pathData = historyData.map(h => ({
         lat: h.latitude,
         lng: h.longitude,
         timestamp: h.timestamp,
         address: h.address
-      })));
-      setHistoryTargetId(targetId);
-      // Center map on most recent point (first in list since sorted desc)
+      }));
+      
+      // Add to history paths (allows multiple targets)
+      setHistoryPaths(prev => ({
+        ...prev,
+        [targetId]: pathData
+      }));
+      
+      // Add to active history targets if not already there
+      setActiveHistoryTargets(prev => {
+        if (!prev.includes(targetId)) {
+          return [...prev, targetId];
+        }
+        return prev;
+      });
+      
+      // Center map on most recent point
       setMapCenter([historyData[0].latitude, historyData[0].longitude]);
       setMapZoom(14);
       setMapKey(prev => prev + 1);
-      toast.success(`Menampilkan ${historyData.length} titik riwayat posisi`);
+      
+      // Find target phone for toast
+      const target = targets.find(t => t.id === targetId);
+      const phone = target?.phone_number?.slice(-6) || targetId.slice(-6);
+      toast.success(`Menampilkan ${historyData.length} titik riwayat posisi (${phone})`);
     }
+  };
+
+  // Remove history for a specific target
+  const hideTargetHistory = (targetId) => {
+    setHistoryPaths(prev => {
+      const newPaths = { ...prev };
+      delete newPaths[targetId];
+      return newPaths;
+    });
+    setActiveHistoryTargets(prev => prev.filter(id => id !== targetId));
+    
+    const target = targets.find(t => t.id === targetId);
+    const phone = target?.phone_number?.slice(-6) || targetId.slice(-6);
+    toast.info(`History ${phone} disembunyikan`);
   };
 
   // Refresh history path if currently displayed
   const refreshHistoryPath = async (targetId) => {
-    if (historyTargetId && historyTargetId === targetId) {
+    if (activeHistoryTargets.includes(targetId)) {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(`${API}/targets/${targetId}/history`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (response.data.history && response.data.history.length > 0) {
-          setHistoryPath(response.data.history.map(h => ({
+          const pathData = response.data.history.map(h => ({
             lat: h.latitude,
             lng: h.longitude,
             timestamp: h.timestamp,
             address: h.address
-          })));
+          }));
+          setHistoryPaths(prev => ({
+            ...prev,
+            [targetId]: pathData
+          }));
           toast.info('History path diperbarui dengan posisi terbaru');
         }
       } catch (error) {
@@ -368,10 +403,10 @@ const MainApp = () => {
     }
   };
 
-  // Clear history path
-  const clearHistoryPath = () => {
-    setHistoryPath([]);
-    setHistoryTargetId(null);
+  // Clear all history paths
+  const clearAllHistoryPaths = () => {
+    setHistoryPaths({});
+    setActiveHistoryTargets([]);
   };
 
   // Handle drawing AOI on map
