@@ -203,6 +203,7 @@
 - Sends phone number to Telegram bot, updates position, saves to history
 - Map auto-centers on new position after update
 - Schedule automatically calculates next_run time based on interval
+- **Button shows "⏳ Memproses..." when target is processing**
 - **Frontend:** CountdownTimer now has `onCountdownEnd` callback
 - **Backend:** New `execute_schedule` endpoint that calls `process_target_query`
 
@@ -211,6 +212,22 @@
 - Dialog shows chat history in a centered modal
 - Map controls no longer affected by chat visibility
 - Cleaner UI without side panel layout changes
+
+### 2d. AOI Drawing on Map (January 2026)
+- Click "Gambar Polygon" or "Gambar Lingkaran" to start drawing
+- Click on map to add points
+- Double-click to finish drawing
+- Right-click to cancel
+- Drawing preview shows in green
+- Drawing indicator shows point count with "Selesai" and "Cancel" buttons
+- AOI saved with `is_visible: false` by default (hidden until activated)
+- **New:** `MapClickHandler` component with `useMapEvents`
+
+### 2e. Position History Fix
+- Added `POST /api/targets/{target_id}/save-current-position` to manually save position
+- Added `POST /api/sync-all-positions-to-history` to migrate existing data
+- History now shows even single position entry
+- All future position updates automatically saved to history
 
 ### 3. AOI (Area of Interest) Feature
 - **AOI Panel:** Create and manage Areas of Interest
