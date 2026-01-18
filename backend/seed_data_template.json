@@ -1,0 +1,63 @@
+{
+  "status": "success",
+  "timestamp": "2026-01-18T10:30:00.000000+00:00",
+  "data": {
+    "users": [],
+    "cases": [
+      {
+        "id": "28d044a2-af2a-48e7-ba85-0a873079b8d6",
+        "name": "Dwijayanto",
+        "description": "",
+        "status": "active",
+        "created_at": "2026-01-18T00:58:31.419269Z",
+        "updated_at": "2026-01-18T00:58:31.419271Z",
+        "target_count": 4
+      },
+      {
+        "id": "3820c8de-540c-48df-a923-3a68103b44a9",
+        "name": "BAIS",
+        "description": "",
+        "status": "active",
+        "created_at": "2026-01-18T09:22:17.264650Z",
+        "updated_at": "2026-01-18T09:22:17.264651Z",
+        "target_count": 0
+      }
+    ],
+    "aois": [
+      {
+        "id": "6ff2377f-a916-4375-827a-417383fd8fa2",
+        "name": "AOI Jakarta Selatan",
+        "aoi_type": "polygon",
+        "coordinates": [
+          [-6.19093339378853, 106.82504653930665],
+          [-6.225256629820678, 106.83689117431642],
+          [-6.237721728178646, 106.80496215820314],
+          [-6.230037798441384, 106.78728103637697],
+          [-6.2015208990907125, 106.78831100463867]
+        ],
+        "radius": null,
+        "monitored_targets": [],
+        "is_visible": false,
+        "alarm_enabled": false,
+        "created_at": "2026-01-18T10:15:06.961193+00:00"
+      },
+      {
+        "id": "ed1496b8-0336-4b86-bad9-bfaea90fe947",
+        "name": "AOI Tangerang",
+        "aoi_type": "circle",
+        "coordinates": [-6.153246499269947, 106.75586700439453],
+        "radius": 2631.0,
+        "monitored_targets": [],
+        "is_visible": false,
+        "alarm_enabled": true,
+        "created_at": "2026-01-18T10:16:24.766742+00:00"
+      }
+    ],
+    "schedules": [],
+    "targets": [],
+    "chat_messages": [],
+    "position_history": [],
+    "aoi_alerts": []
+  },
+  "description": "Seed data for WASKITA LBS - Contains base cases and AOIs. Target data needs to be re-queried via Telegram."
+}
