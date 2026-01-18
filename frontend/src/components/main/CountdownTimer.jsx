@@ -1,8 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // Countdown Timer Component - Real-time with seconds
-export const CountdownTimer = ({ nextRun }) => {
+export const CountdownTimer = ({ nextRun, onCountdownEnd, scheduleId }) => {
   const [timeLeft, setTimeLeft] = useState('');
+  const hasTriggeredRef = useRef(false);
+  
+  useEffect(() => {
+    // Reset trigger flag when nextRun changes
+    hasTriggeredRef.current = false;
+  }, [nextRun]);
   
   useEffect(() => {
     if (!nextRun) return;
@@ -14,6 +20,11 @@ export const CountdownTimer = ({ nextRun }) => {
       
       if (diff <= 0) {
         setTimeLeft('0:00');
+        // Trigger callback only once when countdown ends
+        if (!hasTriggeredRef.current && onCountdownEnd) {
+          hasTriggeredRef.current = true;
+          onCountdownEnd(scheduleId);
+        }
         return;
       }
       
@@ -36,7 +47,7 @@ export const CountdownTimer = ({ nextRun }) => {
     const interval = setInterval(calculateTimeLeft, 1000);
     
     return () => clearInterval(interval);
-  }, [nextRun]);
+  }, [nextRun, onCountdownEnd, scheduleId]);
   
   if (!nextRun) return null;
   
