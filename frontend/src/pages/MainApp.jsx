@@ -2725,6 +2725,35 @@ const MainApp = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* History Dialog */}
+      <HistoryDialog
+        open={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+        target={selectedTargetForHistory}
+        onShowPath={handleShowHistoryPath}
+      />
+
+      {/* AOI Panel */}
+      <AOIPanel
+        open={aoiPanelOpen}
+        onClose={() => setAoiPanelOpen(false)}
+        targets={targets}
+        onStartDrawing={handleStartDrawing}
+        onToggleAOIVisibility={(aoiId, visible) => {
+          setAois(prev => prev.map(a => a.id === aoiId ? {...a, is_visible: visible} : a));
+        }}
+        aois={aois}
+        setAois={setAois}
+        refreshAOIs={fetchAOIs}
+      />
+
+      {/* AOI Alert Notification */}
+      <AOIAlertNotification
+        alerts={aoiAlerts}
+        onAcknowledge={handleAcknowledgeAlert}
+        onAcknowledgeAll={handleAcknowledgeAllAlerts}
+      />
     </div>
   );
 };
