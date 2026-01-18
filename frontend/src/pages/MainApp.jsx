@@ -602,6 +602,14 @@ const MainApp = () => {
   const handleCountdownEnd = async (scheduleId) => {
     if (!scheduleId) return;
     
+    // Check if this schedule is already being executed
+    if (executingSchedulesRef.current.has(scheduleId)) {
+      console.log('[SCHEDULE] Already executing, skipping duplicate:', scheduleId);
+      return;
+    }
+    
+    // Mark as executing
+    executingSchedulesRef.current.add(scheduleId);
     console.log('[SCHEDULE] Countdown ended for schedule:', scheduleId);
     
     try {
