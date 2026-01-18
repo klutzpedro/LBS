@@ -498,6 +498,16 @@ const MainApp = () => {
     setReghpDialogOpen(true);
   };
 
+  useEffect(() => {
+    // Keep selectedReghpTarget in sync with targets updates
+    if (selectedReghpTarget && reghpDialogOpen) {
+      const updatedTarget = targets.find(t => t.id === selectedReghpTarget.id);
+      if (updatedTarget) {
+        setSelectedReghpTarget(updatedTarget);
+      }
+    }
+  }, [targets, reghpDialogOpen]);
+
   const handleNikPendalaman = async (targetId, nik) => {
     // Optimistic update
     const updatedTargets = targets.map(t => {
