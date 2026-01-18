@@ -329,12 +329,19 @@ const MainApp = () => {
   // Show history path on map - now stores full history data with timestamps
   const handleShowHistoryPath = (historyData, targetId = null) => {
     if (historyData && historyData.length > 0 && targetId) {
-      const pathData = historyData.map(h => ({
+      // Sort by timestamp DESCENDING (newest first at index 0)
+      const sortedData = [...historyData].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      
+      const pathData = sortedData.map(h => ({
         lat: h.latitude,
         lng: h.longitude,
         timestamp: h.timestamp,
         address: h.address
       }));
+      
+      console.log('History path data (newest first):', pathData.map((p, i) => `${i}: ${p.timestamp}`));
       
       // Add to history paths (allows multiple targets)
       setHistoryPaths(prev => ({
@@ -350,8 +357,8 @@ const MainApp = () => {
         return prev;
       });
       
-      // Center map on most recent point
-      setMapCenter([historyData[0].latitude, historyData[0].longitude]);
+      // Center map on most recent point (index 0 after sorting)
+      setMapCenter([sortedData[0].latitude, sortedData[0].longitude]);
       setMapZoom(14);
       setMapKey(prev => prev + 1);
       
