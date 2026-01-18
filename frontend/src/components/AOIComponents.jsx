@@ -378,6 +378,10 @@ export const AOIPanel = ({
               <div className="p-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
                 Belum ada AOI. Buat baru dengan tombol di atas.
               </div>
+            ) : aois.filter(aoi => aoi.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+              <div className="p-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
+                Tidak ada AOI dengan nama "{searchQuery}"
+              </div>
             ) : (
               aois
                 .filter(aoi => aoi.name.toLowerCase().includes(searchQuery.toLowerCase()))
