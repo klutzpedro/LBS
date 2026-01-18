@@ -181,6 +181,34 @@
 - **Web App:** admin / Paparoni83
 - **Telegram:** @dwijayanto (API credentials in backend/.env)
 
+## Database Seeding (December 2025)
+
+### How It Works
+- **Auto-seed on startup:** If database is empty, automatically seeds with data from `seed_data.json`
+- **Manual export:** `GET /api/db/export` - Exports all collections to JSON
+- **Manual seed:** `POST /api/db/seed` - Seeds database with provided JSON data
+- **Status check:** `GET /api/db/status` - Shows document counts per collection
+
+### Files Created
+- `/app/backend/seed_database.py` - Seeding script with auto-seed logic
+- `/app/backend/seed_data.json` - Full database export (auto-generated)
+- `/app/backend/seed_data_template.json` - Minimal template for fresh deployments
+
+### API Endpoints
+- `GET /api/db/export` - Export all collections
+- `POST /api/db/seed` - Seed database (body: `{"data": {...}, "clear_existing": false}`)
+- `GET /api/db/status` - Get document counts
+
+### Usage for Deployment
+1. Before deploying: Call `GET /api/db/export` to save current data
+2. After deploying: Call `POST /api/db/seed` with exported data
+3. Or: Auto-seed runs automatically if database is empty
+
+### Important Notes
+- **Targets/chat_messages** may need to be re-queried via Telegram after migration
+- **Position history** is preserved but timestamps are from original queries
+- **Schedules** may need adjustment (next_run times may be outdated)
+
 ## Recent Features (January 2026)
 
 ### 1. Family Tree - DOB-based Child Ordering
