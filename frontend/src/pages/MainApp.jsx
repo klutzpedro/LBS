@@ -82,7 +82,7 @@ const MainApp = () => {
   const [showMapControls, setShowMapControls] = useState(true); // Force map re-render
   const [printingTarget, setPrintingTarget] = useState(null);
   const [printingCase, setPrintingCase] = useState(false);
-  const mapContainerRef = React.useRef(null);
+  const mapContainerRef = useRef(null);
 
   // Handle tile layer change while preserving position
   const handleTileLayerChange = (newTile) => {
