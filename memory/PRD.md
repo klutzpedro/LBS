@@ -87,20 +87,38 @@
 - Reduced font sizes, dialog widths, button padding
 - **Files Modified:** `/app/frontend/src/index.css`, `/app/frontend/src/pages/MainApp.jsx`
 
-### Schedule Countdown Timer
-- **Feature:** Added real-time countdown timer showing time until next scheduled update
-- **Display:** Shows days/hours/minutes/seconds based on interval type
-- **Visibility:** Only visible when a schedule is active (above "Batal Jadwal" button)
-- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+### Schedule Countdown Timer (Real-time)
+- **Feature:** Real-time countdown timer showing time until next scheduled update
+- **Display:** Format `29h 23:51:31` with seconds ticking live
+- **Visibility:** Below "Batal Jadwal" button only when schedule is active
+- **Files Modified:** `/app/frontend/src/components/main/CountdownTimer.jsx`
 
 ### Compact UI for 4K Screens
 - Reduced all dialog sizes (`max-w-sm` to `max-w-lg`)
-- Reduced padding (`p-4` instead of default)
-- Reduced button sizes (`py-2` instead of `py-4`)
-- Reduced table cell padding (`py-1.5 px-2`)
+- Reduced padding and spacing throughout
 - NIK photos capped at 180px width, 200px height
 - Raw response sections made collapsible
 - **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
+### Target List Scroll
+- **Feature:** Target list now scrollable with max 3 visible at a time
+- **Implementation:** Max height 360px with overflow-y-auto
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
+### AI Family Tree Analysis
+- **Feature:** Gemini 3 Flash integration for family tree analysis
+- **Capability:** Generates insights about family structure, relationships, and target position
+- **API:** POST `/api/ai/family-analysis`
+- **Files Modified:** `/app/backend/server.py`, `/app/frontend/src/components/FamilyTreeViz.jsx`
+
+### Code Refactoring
+- Extracted reusable components from `MainApp.jsx`
+- New components location: `/app/frontend/src/components/main/`
+  - `CountdownTimer.jsx` - Real-time countdown display
+  - `MapUtils.jsx` - Map tiles config and marker creation
+  - `MapResizeHandler.jsx` - Leaflet map resize handling
+  - `index.js` - Barrel exports
+- Reduced MainApp.jsx size by ~150 lines
 
 ## API Endpoints
 - `POST /api/auth/login` - User authentication
