@@ -920,9 +920,13 @@ const MainApp = () => {
                 bottom: 0,
                 height: '100%',
                 width: '100%',
-                zIndex: 0
+                zIndex: 0,
+                backgroundColor: 'var(--background-primary)'
               }}
               zoomControl={true}
+              preferCanvas={true}
+              fadeAnimation={false}
+              markerZoomAnimation={false}
             >
               <TileLayer
                 key={selectedTileLayer}
