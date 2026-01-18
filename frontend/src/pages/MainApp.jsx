@@ -1919,13 +1919,13 @@ const MainApp = () => {
               </div>
             )}
 
-            {/* Clear History Path */}
-            {historyPath.length > 0 && (
+            {/* Clear All History Paths */}
+            {activeHistoryTargets.length > 0 && (
               <Button
-                onClick={clearHistoryPath}
+                onClick={clearAllHistoryPaths}
                 size="icon"
                 className="w-10 h-10 border"
-                title="Clear History Path"
+                title="Sembunyikan Semua History"
                 style={{
                   backgroundColor: 'var(--status-warning)',
                   borderColor: 'var(--borders-default)',
