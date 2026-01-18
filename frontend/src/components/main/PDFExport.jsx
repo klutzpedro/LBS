@@ -493,7 +493,7 @@ export const generateTargetPDF = async (target, mapScreenshot = null) => {
 };
 
 // Generate PDF for entire case
-export const generateCasePDF = async (caseName, targets) => {
+export const generateCasePDF = async (caseName, targets, mapScreenshots = {}) => {
   return new Promise(async (resolve, reject) => {
     try {
       const doc = new jsPDF();
@@ -537,7 +537,7 @@ export const generateCasePDF = async (caseName, targets) => {
         margin: { left: 14, right: 14 }
       });
       
-      // Detail per target - EACH TARGET GETS ITS OWN CORRECT MAP
+      // Detail per target - EACH TARGET GETS ITS OWN MAP SCREENSHOT
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
         doc.addPage();
@@ -554,7 +554,7 @@ export const generateCasePDF = async (caseName, targets) => {
         doc.setFont('helvetica', 'normal');
         yPos += 15;
         
-        // Location - USING THIS SPECIFIC TARGET'S COORDINATES
+        // Location - USE MAP SCREENSHOT IF AVAILABLE
         if (target.data?.latitude && target.data?.longitude) {
           const lat = parseFloat(target.data.latitude);
           const lng = parseFloat(target.data.longitude);
@@ -566,8 +566,28 @@ export const generateCasePDF = async (caseName, targets) => {
           doc.text(`Update: ${timestamp}`, 16, yPos + 10);
           yPos += 18;
           
-          // Draw location map with THIS TARGET's coordinates
-          yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
+          // Use map screenshot if available
+          const screenshot = mapScreenshots[target.id];
+          if (screenshot) {
+            const imgWidth = 180;
+            const imgHeight = 80;
+            doc.addImage(screenshot, 'JPEG', 14, yPos, imgWidth, imgHeight);
+            
+            // Add coordinate label overlay
+            doc.setFillColor(0, 0, 0, 0.7);
+            doc.rect(14, yPos + imgHeight - 10, imgWidth, 10, 'F');
+            doc.setTextColor(0, 217, 255);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`📍 ${target.phone_number} | LAT: ${lat.toFixed(6)}, LNG: ${lng.toFixed(6)}`, 18, yPos + imgHeight - 3);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+            
+            yPos += imgHeight + 8;
+          } else {
+            // Fallback to drawn map
+            yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
+          }
         }
         
         // RegHP
