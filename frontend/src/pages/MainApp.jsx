@@ -717,17 +717,35 @@ const MainApp = () => {
                     {caseItem.target_count || 0} targets
                   </p>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteCase(caseItem);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ color: 'var(--status-error)' }}
-                >
-                  <Trash2 className="w-4 h-4" />
+                <div className="flex items-center gap-1">
+                  {/* Print Case Button */}
+                  {selectedCase?.id === caseItem.id && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrintCase();
+                      }}
+                      disabled={printingCase}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
+                      style={{ color: 'var(--accent-secondary)' }}
+                      title="Export Case ke PDF"
+                    >
+                      <Printer className={`w-4 h-4 ${printingCase ? 'animate-pulse' : ''}`} />
+                    </Button>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCase(caseItem);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
+                    style={{ color: 'var(--status-error)' }}
+                  >
+                    <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             ))}
