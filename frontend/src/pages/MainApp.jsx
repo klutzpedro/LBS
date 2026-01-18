@@ -1680,7 +1680,6 @@ const MainApp = () => {
                   />
                 )}
               </div>
-            )}
           </div>
           )}
 
