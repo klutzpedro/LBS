@@ -2160,38 +2160,38 @@ const MainApp = () => {
       {/* Family Tree Dialog */}
       <Dialog open={familyTreeDialogOpen} onOpenChange={setFamilyTreeDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-3xl max-h-[80vh] overflow-y-auto"
+          className="z-[9999] max-w-2xl max-h-[70vh] overflow-y-auto p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               🌳 FAMILY TREE (NKK)
             </DialogTitle>
           </DialogHeader>
           {selectedFamilyData && (
-            <div className="space-y-6 mt-4">
+            <div className="space-y-3">
               {/* Family Tree Visualization */}
               <FamilyTreeViz members={selectedFamilyData.members} targetNik={targetNikForTree} />
               
-              {/* Raw NKK Data Table */}
+              {/* Raw NKK Data Table - Compact */}
               <div>
-                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
                   RAW DATA NKK
                 </p>
                 <div 
-                  className="rounded-lg border overflow-hidden"
+                  className="rounded border overflow-hidden"
                   style={{
                     backgroundColor: 'var(--background-tertiary)',
                     borderColor: 'var(--borders-default)'
                   }}
                 >
-                  <table className="w-full">
+                  <table className="w-full text-xs">
                     <thead 
                       className="border-b"
                       style={{ 
@@ -2200,16 +2200,16 @@ const MainApp = () => {
                       }}
                     >
                       <tr>
-                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>
                           NIK
                         </th>
-                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>
                           Nama
                         </th>
-                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>
                           Relationship
                         </th>
-                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>
                           Gender
                         </th>
                       </tr>
@@ -2224,16 +2224,16 @@ const MainApp = () => {
                             backgroundColor: member.nik === targetNikForTree ? 'rgba(255, 59, 92, 0.1)' : 'transparent'
                           }}
                         >
-                          <td className="p-3 text-sm font-mono" style={{ color: member.nik === targetNikForTree ? 'var(--status-error)' : 'var(--accent-primary)' }}>
+                          <td className="py-1.5 px-2 font-mono" style={{ color: member.nik === targetNikForTree ? 'var(--status-error)' : 'var(--accent-primary)' }}>
                             {member.nik}
                           </td>
-                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-primary)' }}>
                             {member.name || '-'}
                           </td>
-                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-secondary)' }}>
                             {member.relationship || '-'}
                           </td>
-                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-secondary)' }}>
                             {member.gender || '-'}
                           </td>
                         </tr>
@@ -2245,7 +2245,7 @@ const MainApp = () => {
               
               <Button
                 onClick={() => setFamilyTreeDialogOpen(false)}
-                className="w-full py-4"
+                className="w-full py-2 text-sm"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
