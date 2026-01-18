@@ -1,6 +1,5 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
 
 // Helper to add header to PDF
 const addHeader = (doc, title) => {
@@ -34,57 +33,96 @@ const addSectionTitle = (doc, title, y) => {
   return y + 12;
 };
 
-// Capture element as image
-const captureElementAsImage = async (elementId) => {
-  try {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      console.log(`Element ${elementId} not found`);
-      return null;
-    }
-    
-    const canvas = await html2canvas(element, {
-      useCORS: true,
-      allowTaint: true,
-      scale: 2,
-      backgroundColor: '#121212',
-      logging: false
-    });
-    
-    return canvas.toDataURL('image/jpeg', 0.8);
-  } catch (error) {
-    console.error('Capture error:', error);
-    return null;
-  }
+// Generate static map image URL using OpenStreetMap static tiles
+const getStaticMapUrl = (lat, lng, zoom = 15) => {
+  // Using OpenStreetMap static map API
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=400x300&markers=${lat},${lng},red`;
 };
 
-// Capture map area
-const captureMapAsImage = async () => {
-  try {
-    // Try to find the map container
-    const mapContainer = document.querySelector('.leaflet-container');
-    if (!mapContainer) {
-      console.log('Map container not found');
-      return null;
-    }
-    
-    const canvas = await html2canvas(mapContainer, {
-      useCORS: true,
-      allowTaint: true,
-      scale: 1.5,
-      backgroundColor: '#121212',
-      logging: false,
-      ignoreElements: (element) => {
-        // Ignore controls that might cause issues
-        return element.classList?.contains('leaflet-control-container');
+// Load image and convert to base64
+const loadImageAsBase64 = (url) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      } catch (e) {
+        console.log('Image conversion failed:', e);
+        resolve(null);
       }
-    });
-    
-    return canvas.toDataURL('image/jpeg', 0.7);
-  } catch (error) {
-    console.error('Map capture error:', error);
-    return null;
+    };
+    img.onerror = () => {
+      console.log('Image load failed');
+      resolve(null);
+    };
+    // Timeout after 5 seconds
+    setTimeout(() => resolve(null), 5000);
+    img.src = url;
+  });
+};
+
+// Draw location map directly in PDF (no external dependency)
+const drawLocationMap = (doc, lat, lng, phoneNumber, yPos) => {
+  const mapWidth = 100;
+  const mapHeight = 60;
+  const mapX = 14;
+  const mapY = yPos;
+  
+  // Draw map background
+  doc.setFillColor(30, 30, 30);
+  doc.roundedRect(mapX, mapY, mapWidth, mapHeight, 3, 3, 'F');
+  
+  // Draw border
+  doc.setDrawColor(0, 217, 255);
+  doc.setLineWidth(1);
+  doc.roundedRect(mapX, mapY, mapWidth, mapHeight, 3, 3, 'S');
+  
+  // Draw grid lines (simulating map)
+  doc.setDrawColor(50, 50, 50);
+  doc.setLineWidth(0.3);
+  for (let i = 1; i < 5; i++) {
+    doc.line(mapX + (mapWidth/5)*i, mapY, mapX + (mapWidth/5)*i, mapY + mapHeight);
   }
+  for (let i = 1; i < 4; i++) {
+    doc.line(mapX, mapY + (mapHeight/4)*i, mapX + mapWidth, mapY + (mapHeight/4)*i);
+  }
+  
+  // Draw center marker (target position)
+  const centerX = mapX + mapWidth/2;
+  const centerY = mapY + mapHeight/2;
+  
+  // Marker pin
+  doc.setFillColor(255, 59, 92);
+  doc.circle(centerX, centerY - 5, 6, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.circle(centerX, centerY - 5, 3, 'F');
+  
+  // Marker pointer
+  doc.setFillColor(255, 59, 92);
+  doc.triangle(centerX - 4, centerY - 2, centerX + 4, centerY - 2, centerX, centerY + 5, 'F');
+  
+  // Coordinates text
+  doc.setFontSize(8);
+  doc.setTextColor(0, 217, 255);
+  doc.text(`LAT: ${lat.toFixed(6)}`, mapX + 5, mapY + mapHeight - 12);
+  doc.text(`LNG: ${lng.toFixed(6)}`, mapX + 5, mapY + mapHeight - 6);
+  
+  // Phone number label
+  doc.setFillColor(0, 217, 255);
+  doc.roundedRect(mapX + mapWidth - 45, mapY + 5, 40, 10, 2, 2, 'F');
+  doc.setTextColor(18, 18, 18);
+  doc.setFontSize(7);
+  doc.text(phoneNumber.slice(-8), mapX + mapWidth - 43, mapY + 11);
+  
+  doc.setTextColor(0, 0, 0);
+  
+  return yPos + mapHeight + 5;
 };
 
 // Draw simple family tree in PDF
@@ -204,7 +242,7 @@ const drawFamilyTree = (doc, familyData, yPos, targetNik) => {
 };
 
 // Generate PDF for a single target
-export const generateTargetPDF = async (target, mapContainerRef = null) => {
+export const generateTargetPDF = async (target) => {
   return new Promise(async (resolve, reject) => {
     try {
       const doc = new jsPDF();
@@ -220,25 +258,32 @@ export const generateTargetPDF = async (target, mapContainerRef = null) => {
       doc.text(`Created: ${createdAt}`, 16, yPos + 20);
       yPos += 28;
       
-      // B. Location with Map Screenshot
+      // B. Location with Map - USING TARGET'S OWN COORDINATES
       if (target.data?.latitude && target.data?.longitude) {
         yPos = addSectionTitle(doc, 'B. LOKASI TARGET', yPos);
         doc.setFontSize(9);
-        doc.text(`Koordinat: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos + 5);
+        
+        const lat = parseFloat(target.data.latitude);
+        const lng = parseFloat(target.data.longitude);
+        
+        doc.text(`Koordinat: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 16, yPos + 5);
         doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 10);
         const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
         doc.text(`Waktu Update: ${timestamp}`, 16, yPos + 15);
         yPos += 20;
         
-        // Try to capture map screenshot
+        // Draw location map with THIS TARGET's coordinates
+        yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
+        
+        // Try to load static map image
         try {
-          const mapImage = await captureMapAsImage();
+          const mapUrl = getStaticMapUrl(lat, lng, 15);
+          const mapImage = await loadImageAsBase64(mapUrl);
           if (mapImage) {
-            doc.addImage(mapImage, 'JPEG', 14, yPos, 120, 70);
-            yPos += 75;
+            doc.addImage(mapImage, 'JPEG', 120, yPos - 65, 75, 55);
           }
         } catch (e) {
-          console.log('Map screenshot skipped:', e.message);
+          console.log('Static map load skipped:', e.message);
         }
       }
       
@@ -393,14 +438,13 @@ export const generateTargetPDF = async (target, mapContainerRef = null) => {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Target: ${target.phone_number} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
-      // Save PDF without blocking
+      // Save PDF
       const filename = `WASKITA_Target_${target.phone_number}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
-      // Resolve after a short delay to ensure save completes
       setTimeout(() => resolve(true), 100);
       
     } catch (error) {
@@ -411,7 +455,7 @@ export const generateTargetPDF = async (target, mapContainerRef = null) => {
 };
 
 // Generate PDF for entire case
-export const generateCasePDF = async (caseName, targets, mapContainerRef = null) => {
+export const generateCasePDF = async (caseName, targets) => {
   return new Promise(async (resolve, reject) => {
     try {
       const doc = new jsPDF();
@@ -426,21 +470,7 @@ export const generateCasePDF = async (caseName, targets, mapContainerRef = null)
       doc.text(`Generated: ${new Date().toLocaleString('id-ID')}`, 16, yPos + 20);
       yPos += 30;
       
-      // Map overview screenshot
-      try {
-        const mapImage = await captureMapAsImage();
-        if (mapImage) {
-          yPos = addSectionTitle(doc, 'PETA OVERVIEW', yPos);
-          doc.addImage(mapImage, 'JPEG', 14, yPos, 180, 90);
-          yPos += 95;
-        }
-      } catch (e) {
-        console.log('Map screenshot skipped:', e.message);
-      }
-      
       // Target Summary Table
-      doc.addPage();
-      yPos = 20;
       yPos = addSectionTitle(doc, 'DAFTAR TARGET', yPos);
       const targetSummary = targets.map((t, idx) => [
         idx + 1,
@@ -469,7 +499,7 @@ export const generateCasePDF = async (caseName, targets, mapContainerRef = null)
         margin: { left: 14, right: 14 }
       });
       
-      // Detail per target
+      // Detail per target - EACH TARGET GETS ITS OWN CORRECT MAP
       for (let i = 0; i < targets.length; i++) {
         const target = targets[i];
         doc.addPage();
@@ -486,14 +516,20 @@ export const generateCasePDF = async (caseName, targets, mapContainerRef = null)
         doc.setFont('helvetica', 'normal');
         yPos += 15;
         
-        // Location
-        if (target.data?.latitude) {
+        // Location - USING THIS SPECIFIC TARGET'S COORDINATES
+        if (target.data?.latitude && target.data?.longitude) {
+          const lat = parseFloat(target.data.latitude);
+          const lng = parseFloat(target.data.longitude);
+          
           doc.setFontSize(9);
-          doc.text(`Lokasi: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos);
+          doc.text(`Lokasi: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 16, yPos);
           doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 5);
           const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
           doc.text(`Update: ${timestamp}`, 16, yPos + 10);
           yPos += 18;
+          
+          // Draw location map with THIS TARGET's coordinates
+          yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
         }
         
         // RegHP
@@ -560,7 +596,7 @@ export const generateCasePDF = async (caseName, targets, mapContainerRef = null)
                 });
                 yPos = doc.lastAutoTable.finalY + 5;
                 
-                // Family tree visual
+                // Family tree visual for THIS NIK
                 if (yPos > 200) {
                   doc.addPage();
                   yPos = 20;
@@ -582,11 +618,10 @@ export const generateCasePDF = async (caseName, targets, mapContainerRef = null)
         doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
-      // Save PDF without blocking
+      // Save PDF
       const filename = `WASKITA_Case_${caseName}_${new Date().toISOString().split('T')[0]}.pdf`;
       doc.save(filename);
       
-      // Resolve after a short delay
       setTimeout(() => resolve(true), 100);
       
     } catch (error) {
