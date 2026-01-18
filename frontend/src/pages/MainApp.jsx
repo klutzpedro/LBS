@@ -362,6 +362,8 @@ const MainApp = () => {
       return;
     }
 
+    const savedDrawingMode = drawingMode; // Save before clearing
+    
     try {
       const token = localStorage.getItem('token');
       let payload = {
@@ -375,13 +377,15 @@ const MainApp = () => {
       if (drawingMode === 'polygon') {
         if (drawingPoints.length < 3) {
           toast.error('Polygon membutuhkan minimal 3 titik');
+          setDrawingMode(null);
+          setDrawingPoints([]);
           return;
         }
         payload.coordinates = drawingPoints;
       } else if (drawingMode === 'circle') {
         if (drawingPoints.length < 2) {
           toast.error('Klik lagi untuk menentukan radius');
-          return;
+          return; // Don't clear drawing yet
         }
         // First point is center, calculate radius from distance to second point
         const center = drawingPoints[0];
@@ -401,16 +405,23 @@ const MainApp = () => {
         payload.radius = Math.round(radius);
       }
 
-      await axios.post(`${API}/aois`, payload, {
+      // Clear drawing state BEFORE making request
+      setDrawingMode(null);
+      setDrawingPoints([]);
+
+      const response = await axios.post(`${API}/aois`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      toast.success(`AOI ${drawingMode} berhasil dibuat!`);
+      if (response.data && response.data.aoi) {
+        toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
+      } else {
+        toast.success(`AOI berhasil dibuat!`);
+      }
       fetchAOIs();
     } catch (error) {
       console.error('Failed to create AOI:', error);
-      toast.error('Gagal membuat AOI');
-    } finally {
+      toast.error('Gagal membuat AOI: ' + (error.response?.data?.detail || error.message));
       setDrawingMode(null);
       setDrawingPoints([]);
     }
