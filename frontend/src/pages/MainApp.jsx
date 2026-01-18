@@ -1643,25 +1643,25 @@ const MainApp = () => {
       {/* Reghp Info Dialog */}
       <Dialog open={reghpDialogOpen} onOpenChange={setReghpDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-xl 4k:max-w-md max-h-[70vh] overflow-y-auto"
+          className="z-[9999] max-w-md max-h-[65vh] overflow-y-auto p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               INFO PENDALAMAN (REGHP)
             </DialogTitle>
           </DialogHeader>
           {selectedReghpTarget?.reghp_data && (
-            <div className="space-y-4 mt-4">
+            <div className="space-y-2">
               {/* Phone Number */}
               <div>
-                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
                   Phone Number
                 </p>
                 <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
@@ -1672,16 +1672,16 @@ const MainApp = () => {
               {/* Parsed Data */}
               {selectedReghpTarget.reghp_data.parsed_data && (
                 <div 
-                  className="p-4 rounded-lg border"
+                  className="p-2 rounded border"
                   style={{
                     backgroundColor: 'var(--background-tertiary)',
                     borderColor: 'var(--borders-default)'
                   }}
                 >
-                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
                     Registration Info
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {Object.entries(selectedReghpTarget.reghp_data.parsed_data).map(([key, value]) => (
                       <div key={key} className="flex justify-between text-xs">
                         <span style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
@@ -1695,10 +1695,10 @@ const MainApp = () => {
               {/* NIK Entries with Pendalaman buttons */}
               {selectedReghpTarget.reghp_data.niks && selectedReghpTarget.reghp_data.niks.length > 0 && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                  <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
                     NIK Entries ({selectedReghpTarget.reghp_data.niks.length})
                   </p>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {selectedReghpTarget.reghp_data.niks.map((nik) => {
                       const nikQuery = selectedReghpTarget.nik_queries?.[nik];
                       const nikStatus = nikQuery?.status || 'not_started';
@@ -1706,17 +1706,15 @@ const MainApp = () => {
                       return (
                         <div 
                           key={nik}
-                          className="p-3 rounded-lg border flex items-center justify-between"
+                          className="p-2 rounded border flex items-center justify-between"
                           style={{
                             backgroundColor: 'var(--background-secondary)',
                             borderColor: 'var(--borders-subtle)'
                           }}
                         >
                           <div>
-                            <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
-                              NIK
-                            </p>
-                            <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                            <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>NIK</p>
+                            <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
                               {nik}
                             </p>
                           </div>
@@ -1725,6 +1723,7 @@ const MainApp = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleShowNikInfo(nikQuery.data)}
+                                className="text-xs py-1 px-2"
                                 style={{
                                   backgroundColor: 'var(--accent-secondary)',
                                   color: 'var(--background-primary)'
@@ -1733,13 +1732,14 @@ const MainApp = () => {
                                 📋 Info
                               </Button>
                             ) : nikStatus === 'processing' ? (
-                              <div className="text-xs px-3 py-2" style={{ color: 'var(--status-processing)' }}>
-                                ⏳ Processing...
-                              </div>
+                              <span className="text-xs" style={{ color: 'var(--status-processing)' }}>
+                                ⏳
+                              </span>
                             ) : (
                               <Button
                                 size="sm"
                                 onClick={() => handleNikPendalaman(selectedReghpTarget.id, nik)}
+                                className="text-xs py-1 px-2"
                                 style={{
                                   backgroundColor: 'var(--status-warning)',
                                   color: 'var(--background-primary)'
@@ -1756,28 +1756,29 @@ const MainApp = () => {
                 </div>
               )}
 
-              {/* Raw Response */}
-              <div>
-                <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+              {/* Raw Response - Collapsible */}
+              <details className="text-xs">
+                <summary className="cursor-pointer uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
                   Raw Response
-                </p>
+                </summary>
                 <div 
-                  className="p-3 rounded border font-mono text-xs whitespace-pre-wrap"
+                  className="p-2 rounded border font-mono whitespace-pre-wrap mt-1"
                   style={{
                     backgroundColor: 'var(--background-tertiary)',
                     borderColor: 'var(--borders-subtle)',
                     color: 'var(--foreground-secondary)',
-                    maxHeight: '300px',
-                    overflowY: 'auto'
+                    maxHeight: '150px',
+                    overflowY: 'auto',
+                    fontSize: '10px'
                   }}
                 >
                   {selectedReghpTarget.reghp_data.raw_text}
                 </div>
-              </div>
+              </details>
 
               <Button
                 onClick={() => setReghpDialogOpen(false)}
-                className="w-full py-4"
+                className="w-full py-2 text-sm"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
