@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
 
 // Helper to add header to PDF
 const addHeader = (doc, title) => {
@@ -33,250 +34,221 @@ const addSectionTitle = (doc, title, y) => {
   return y + 12;
 };
 
-// Generate PDF for a single target
-export const generateTargetPDF = async (target) => {
+// Capture element as image
+const captureElementAsImage = async (elementId) => {
   try {
-    const doc = new jsPDF();
-    let yPos = addHeader(doc, 'TARGET REPORT');
-    
-    // A. Target Number/Info
-    yPos = addSectionTitle(doc, 'A. INFORMASI TARGET', yPos);
-    doc.setFontSize(10);
-    doc.text(`Phone: ${target.phone_number || 'N/A'}`, 16, yPos + 5);
-    doc.text(`Status: ${(target.status || 'N/A').toUpperCase()}`, 16, yPos + 10);
-    doc.text(`Case ID: ${target.case_id || 'N/A'}`, 16, yPos + 15);
-    const createdAt = target.created_at ? new Date(target.created_at).toLocaleString('id-ID') : 'N/A';
-    doc.text(`Created: ${createdAt}`, 16, yPos + 20);
-    yPos += 28;
-    
-    // B. Location
-    if (target.data?.latitude && target.data?.longitude) {
-      yPos = addSectionTitle(doc, 'B. LOKASI TARGET', yPos);
-      doc.setFontSize(9);
-      doc.text(`Koordinat: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos + 5);
-      doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 10);
-      const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
-      doc.text(`Waktu Update: ${timestamp}`, 16, yPos + 15);
-      yPos += 25;
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.log(`Element ${elementId} not found`);
+      return null;
     }
     
-    // C. RegHP Data
-    if (target.reghp_data?.parsed_data && Object.keys(target.reghp_data.parsed_data).length > 0) {
-      yPos = addSectionTitle(doc, 'C. DATA REGHP', yPos);
-      const reghpData = Object.entries(target.reghp_data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Field', 'Value']],
-        body: reghpData,
-        theme: 'grid',
-        headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-        styles: { fontSize: 8, cellPadding: 2 },
-        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { cellWidth: 130 } },
-        margin: { left: 14, right: 14 }
-      });
-      yPos = doc.lastAutoTable.finalY + 8;
-    }
+    const canvas = await html2canvas(element, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      backgroundColor: '#121212',
+      logging: false
+    });
     
-    // D. NIK Data - Per NIK with their own family data
-    if (target.nik_queries && Object.keys(target.nik_queries).length > 0) {
-      let nikIndex = 1;
-      for (const [nik, nikData] of Object.entries(target.nik_queries)) {
-        if (nikData.data?.parsed_data) {
-          if (yPos > 200) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          yPos = addSectionTitle(doc, `D${nikIndex}. DATA NIK: ${nik}`, yPos);
-          
-          // Photo note
-          if (nikData.data.photo_path) {
-            doc.setFontSize(8);
-            doc.text('[Foto KTP tersedia di sistem]', 16, yPos + 3);
-            yPos += 8;
-          }
-          
-          const nikTableData = Object.entries(nikData.data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
-          autoTable(doc, {
-            startY: yPos,
-            head: [['Field', 'Value']],
-            body: nikTableData,
-            theme: 'grid',
-            headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-            styles: { fontSize: 8, cellPadding: 2 },
-            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { cellWidth: 130 } },
-            margin: { left: 14, right: 14 }
-          });
-          yPos = doc.lastAutoTable.finalY + 5;
-          
-          // E. NKK/Family Data for this specific NIK
-          if (nikData.family_data?.members && nikData.family_data.members.length > 0) {
-            if (yPos > 180) {
-              doc.addPage();
-              yPos = 20;
-            }
-            
-            yPos = addSectionTitle(doc, `E${nikIndex}. DATA KELUARGA (NKK) - NIK: ${nik}`, yPos);
-            doc.setFontSize(9);
-            doc.text(`NKK: ${nikData.family_data.nkk || nikData.family_data.family_id || 'N/A'}`, 16, yPos + 3);
-            doc.text(`Jumlah Anggota: ${nikData.family_data.members.length}`, 16, yPos + 8);
-            yPos += 13;
-            
-            const familyTableData = nikData.family_data.members.map((member, idx) => [
-              idx + 1,
-              member.nik || '-',
-              member.name || '-',
-              member.relationship || '-',
-              member.gender || '-'
-            ]);
-            
-            autoTable(doc, {
-              startY: yPos,
-              head: [['No', 'NIK', 'Nama', 'Hubungan', 'Gender']],
-              body: familyTableData,
-              theme: 'grid',
-              headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-              styles: { fontSize: 7, cellPadding: 2 },
-              columnStyles: { 
-                0: { cellWidth: 10 },
-                1: { cellWidth: 40 },
-                2: { cellWidth: 50 },
-                3: { cellWidth: 45 },
-                4: { cellWidth: 25 }
-              },
-              margin: { left: 14, right: 14 }
-            });
-            yPos = doc.lastAutoTable.finalY + 5;
-            
-            // F. Family Tree Visual for this NIK
-            if (yPos > 220) {
-              doc.addPage();
-              yPos = 20;
-            }
-            
-            yPos = addSectionTitle(doc, `F${nikIndex}. STRUKTUR KELUARGA - NIK: ${nik}`, yPos);
-            doc.setFontSize(9);
-            
-            const head = nikData.family_data.members.find(m => m.relationship?.includes('KEPALA'));
-            const spouse = nikData.family_data.members.find(m => m.relationship?.includes('ISTRI') || m.relationship?.includes('SUAMI'));
-            const children = nikData.family_data.members.filter(m => m.relationship?.includes('ANAK'));
-            
-            let treeY = yPos + 3;
-            if (head) {
-              doc.setFont('helvetica', 'bold');
-              doc.text(`[K] ${head.name} (${head.relationship})`, 16, treeY);
-              treeY += 5;
-            }
-            if (spouse) {
-              doc.setFont('helvetica', 'normal');
-              doc.text(`  └─ [P] ${spouse.name} (${spouse.relationship})`, 16, treeY);
-              treeY += 5;
-            }
-            children.forEach((child, idx) => {
-              doc.text(`      ${idx === children.length - 1 ? '└' : '├'}─ [A] ${child.name} (${child.relationship})`, 16, treeY);
-              treeY += 5;
-            });
-            yPos = treeY + 5;
-          }
-          
-          nikIndex++;
-        }
-      }
-    }
-    
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
-    }
-    
-    // Save
-    const filename = `WASKITA_Target_${target.phone_number}_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
-    return true;
+    return canvas.toDataURL('image/jpeg', 0.8);
   } catch (error) {
-    console.error('PDF Generation Error:', error);
-    throw error;
+    console.error('Capture error:', error);
+    return null;
   }
 };
 
-// Generate PDF for entire case
-export const generateCasePDF = async (caseName, targets) => {
+// Capture map area
+const captureMapAsImage = async () => {
   try {
-    const doc = new jsPDF();
-    let yPos = addHeader(doc, 'CASE REPORT');
+    // Try to find the map container
+    const mapContainer = document.querySelector('.leaflet-container');
+    if (!mapContainer) {
+      console.log('Map container not found');
+      return null;
+    }
     
-    // Case Summary
-    yPos = addSectionTitle(doc, 'RINGKASAN CASE', yPos);
-    doc.setFontSize(10);
-    doc.text(`Nama Case: ${caseName}`, 16, yPos + 5);
-    doc.text(`Total Target: ${targets.length}`, 16, yPos + 10);
-    doc.text(`Completed: ${targets.filter(t => t.status === 'completed').length}`, 16, yPos + 15);
-    doc.text(`Generated: ${new Date().toLocaleString('id-ID')}`, 16, yPos + 20);
-    yPos += 30;
-    
-    // Target Summary Table
-    yPos = addSectionTitle(doc, 'DAFTAR TARGET', yPos);
-    const targetSummary = targets.map((t, idx) => [
-      idx + 1,
-      t.phone_number || 'N/A',
-      (t.status || 'N/A').toUpperCase(),
-      (t.data?.address || 'N/A').substring(0, 35) + (t.data?.address?.length > 35 ? '...' : ''),
-      t.reghp_status === 'completed' ? 'Y' : '-',
-      Object.keys(t.nik_queries || {}).length > 0 ? 'Y' : '-'
-    ]);
-    
-    autoTable(doc, {
-      startY: yPos,
-      head: [['No', 'Phone', 'Status', 'Alamat', 'RegHP', 'NIK']],
-      body: targetSummary,
-      theme: 'grid',
-      headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold', fontSize: 8 },
-      styles: { fontSize: 7, cellPadding: 2 },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 20 },
-        3: { cellWidth: 80 },
-        4: { cellWidth: 15 },
-        5: { cellWidth: 15 }
-      },
-      margin: { left: 14, right: 14 }
+    const canvas = await html2canvas(mapContainer, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 1.5,
+      backgroundColor: '#121212',
+      logging: false,
+      ignoreElements: (element) => {
+        // Ignore controls that might cause issues
+        return element.classList?.contains('leaflet-control-container');
+      }
     });
     
-    // Detail per target
-    for (let i = 0; i < targets.length; i++) {
-      const target = targets[i];
-      doc.addPage();
-      yPos = 20;
-      
-      // Target header
-      doc.setFillColor(255, 59, 92);
-      doc.rect(14, yPos, 182, 10, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`TARGET ${i + 1}: ${target.phone_number}`, 16, yPos + 7);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont('helvetica', 'normal');
-      yPos += 15;
-      
-      // Location
-      if (target.data?.latitude) {
-        doc.setFontSize(9);
-        doc.text(`Lokasi: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos);
-        doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 5);
-        const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
-        doc.text(`Update: ${timestamp}`, 16, yPos + 10);
-        yPos += 18;
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch (error) {
+    console.error('Map capture error:', error);
+    return null;
+  }
+};
+
+// Draw simple family tree in PDF
+const drawFamilyTree = (doc, familyData, yPos, targetNik) => {
+  if (!familyData?.members || familyData.members.length === 0) {
+    return yPos;
+  }
+  
+  const members = familyData.members;
+  const head = members.find(m => m.relationship?.includes('KEPALA'));
+  const spouse = members.find(m => m.relationship?.includes('ISTRI') || m.relationship?.includes('SUAMI'));
+  const children = members.filter(m => m.relationship?.includes('ANAK'));
+  const others = members.filter(m => 
+    !m.relationship?.includes('KEPALA') && 
+    !m.relationship?.includes('ISTRI') && 
+    !m.relationship?.includes('SUAMI') && 
+    !m.relationship?.includes('ANAK')
+  );
+  
+  const boxWidth = 55;
+  const boxHeight = 18;
+  const startX = 14;
+  let currentY = yPos;
+  
+  // Draw head and spouse
+  if (head) {
+    const isTarget = head.nik === targetNik;
+    doc.setFillColor(isTarget ? 255 : 0, isTarget ? 59 : 217, isTarget ? 92 : 255);
+    doc.roundedRect(startX, currentY, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KEPALA KELUARGA', startX + 2, currentY + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(head.name?.substring(0, 20) || 'N/A', startX + 2, currentY + 10);
+    doc.text(head.nik || '', startX + 2, currentY + 15);
+  }
+  
+  if (spouse) {
+    const isTarget = spouse.nik === targetNik;
+    doc.setFillColor(isTarget ? 255 : 100, isTarget ? 59 : 100, isTarget ? 92 : 100);
+    doc.roundedRect(startX + boxWidth + 10, currentY, boxWidth, boxHeight, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(spouse.relationship || 'PASANGAN', startX + boxWidth + 12, currentY + 5);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6);
+    doc.text(spouse.name?.substring(0, 20) || 'N/A', startX + boxWidth + 12, currentY + 10);
+    doc.text(spouse.nik || '', startX + boxWidth + 12, currentY + 15);
+  }
+  
+  currentY += boxHeight + 5;
+  
+  // Draw connection line
+  if (children.length > 0) {
+    doc.setDrawColor(0, 217, 255);
+    doc.setLineWidth(0.5);
+    doc.line(startX + boxWidth/2, currentY - 5, startX + boxWidth/2, currentY + 3);
+    currentY += 5;
+  }
+  
+  // Draw children
+  let childX = startX;
+  children.forEach((child, idx) => {
+    if (childX + boxWidth > 196) {
+      childX = startX;
+      currentY += boxHeight + 5;
+    }
+    
+    const isTarget = child.nik === targetNik;
+    doc.setFillColor(isTarget ? 255 : 50, isTarget ? 59 : 50, isTarget ? 92 : 50);
+    doc.roundedRect(childX, currentY, boxWidth - 5, boxHeight - 2, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`ANAK ${idx + 1}`, childX + 2, currentY + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5);
+    doc.text(child.name?.substring(0, 18) || 'N/A', childX + 2, currentY + 9);
+    doc.text(child.nik || '', childX + 2, currentY + 13);
+    
+    childX += boxWidth;
+  });
+  
+  currentY += boxHeight + 5;
+  
+  // Draw others
+  if (others.length > 0) {
+    let otherX = startX;
+    others.forEach((other) => {
+      if (otherX + boxWidth > 196) {
+        otherX = startX;
+        currentY += boxHeight + 5;
       }
       
-      // RegHP
-      if (target.reghp_data?.parsed_data) {
-        yPos = addSectionTitle(doc, 'DATA REGHP', yPos);
+      const isTarget = other.nik === targetNik;
+      doc.setFillColor(isTarget ? 255 : 80, isTarget ? 59 : 80, isTarget ? 92 : 80);
+      doc.roundedRect(otherX, currentY, boxWidth - 5, boxHeight - 2, 2, 2, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(6);
+      doc.setFont('helvetica', 'bold');
+      doc.text(other.relationship?.substring(0, 15) || 'LAINNYA', otherX + 2, currentY + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(5);
+      doc.text(other.name?.substring(0, 18) || 'N/A', otherX + 2, currentY + 9);
+      doc.text(other.nik || '', otherX + 2, currentY + 13);
+      
+      otherX += boxWidth;
+    });
+    currentY += boxHeight + 5;
+  }
+  
+  doc.setTextColor(0, 0, 0);
+  return currentY;
+};
+
+// Generate PDF for a single target
+export const generateTargetPDF = async (target, mapContainerRef = null) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const doc = new jsPDF();
+      let yPos = addHeader(doc, 'TARGET REPORT');
+      
+      // A. Target Number/Info
+      yPos = addSectionTitle(doc, 'A. INFORMASI TARGET', yPos);
+      doc.setFontSize(10);
+      doc.text(`Phone: ${target.phone_number || 'N/A'}`, 16, yPos + 5);
+      doc.text(`Status: ${(target.status || 'N/A').toUpperCase()}`, 16, yPos + 10);
+      doc.text(`Case ID: ${target.case_id || 'N/A'}`, 16, yPos + 15);
+      const createdAt = target.created_at ? new Date(target.created_at).toLocaleString('id-ID') : 'N/A';
+      doc.text(`Created: ${createdAt}`, 16, yPos + 20);
+      yPos += 28;
+      
+      // B. Location with Map Screenshot
+      if (target.data?.latitude && target.data?.longitude) {
+        yPos = addSectionTitle(doc, 'B. LOKASI TARGET', yPos);
+        doc.setFontSize(9);
+        doc.text(`Koordinat: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos + 5);
+        doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 10);
+        const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
+        doc.text(`Waktu Update: ${timestamp}`, 16, yPos + 15);
+        yPos += 20;
+        
+        // Try to capture map screenshot
+        try {
+          const mapImage = await captureMapAsImage();
+          if (mapImage) {
+            doc.addImage(mapImage, 'JPEG', 14, yPos, 120, 70);
+            yPos += 75;
+          }
+        } catch (e) {
+          console.log('Map screenshot skipped:', e.message);
+        }
+      }
+      
+      // C. RegHP Data
+      if (target.reghp_data?.parsed_data && Object.keys(target.reghp_data.parsed_data).length > 0) {
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 20;
+        }
+        yPos = addSectionTitle(doc, 'C. DATA REGHP', yPos);
         const reghpData = Object.entries(target.reghp_data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
         autoTable(doc, {
           startY: yPos,
@@ -284,22 +256,34 @@ export const generateCasePDF = async (caseName, targets) => {
           body: reghpData,
           theme: 'grid',
           headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-          styles: { fontSize: 7, cellPadding: 1.5 },
-          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 135 } },
+          styles: { fontSize: 8, cellPadding: 2 },
+          columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { cellWidth: 130 } },
           margin: { left: 14, right: 14 }
         });
-        yPos = doc.lastAutoTable.finalY + 5;
+        yPos = doc.lastAutoTable.finalY + 8;
       }
       
-      // NIK Data with per-NIK family data
-      if (target.nik_queries) {
+      // D. NIK Data - Per NIK with their own family data
+      if (target.nik_queries && Object.keys(target.nik_queries).length > 0) {
+        let nikIndex = 1;
         for (const [nik, nikData] of Object.entries(target.nik_queries)) {
           if (nikData.data?.parsed_data) {
             if (yPos > 200) {
               doc.addPage();
               yPos = 20;
             }
-            yPos = addSectionTitle(doc, `DATA NIK: ${nik}`, yPos);
+            
+            yPos = addSectionTitle(doc, `D${nikIndex}. DATA NIK: ${nik}`, yPos);
+            
+            // Photo note
+            if (nikData.data.photo_path) {
+              doc.setFontSize(8);
+              doc.setTextColor(100, 100, 100);
+              doc.text('[Foto KTP tersedia di sistem]', 16, yPos + 3);
+              doc.setTextColor(0, 0, 0);
+              yPos += 8;
+            }
+            
             const nikTableData = Object.entries(nikData.data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
             autoTable(doc, {
               startY: yPos,
@@ -307,19 +291,25 @@ export const generateCasePDF = async (caseName, targets) => {
               body: nikTableData,
               theme: 'grid',
               headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-              styles: { fontSize: 7, cellPadding: 1.5 },
-              columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 135 } },
+              styles: { fontSize: 8, cellPadding: 2 },
+              columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { cellWidth: 130 } },
               margin: { left: 14, right: 14 }
             });
             yPos = doc.lastAutoTable.finalY + 5;
             
-            // Family data for this specific NIK
-            if (nikData.family_data?.members?.length > 0) {
+            // E. NKK/Family Data for this specific NIK
+            if (nikData.family_data?.members && nikData.family_data.members.length > 0) {
               if (yPos > 180) {
                 doc.addPage();
                 yPos = 20;
               }
-              yPos = addSectionTitle(doc, `DATA KELUARGA - NIK: ${nik}`, yPos);
+              
+              yPos = addSectionTitle(doc, `E${nikIndex}. DATA KELUARGA (NKK) - NIK: ${nik}`, yPos);
+              doc.setFontSize(9);
+              doc.text(`NKK: ${nikData.family_data.nkk || nikData.family_data.family_id || 'N/A'}`, 16, yPos + 3);
+              doc.text(`Jumlah Anggota: ${nikData.family_data.members.length}`, 16, yPos + 8);
+              yPos += 13;
+              
               const familyTableData = nikData.family_data.members.map((member, idx) => [
                 idx + 1,
                 member.nik || '-',
@@ -327,37 +317,281 @@ export const generateCasePDF = async (caseName, targets) => {
                 member.relationship || '-',
                 member.gender || '-'
               ]);
+              
               autoTable(doc, {
                 startY: yPos,
                 head: [['No', 'NIK', 'Nama', 'Hubungan', 'Gender']],
                 body: familyTableData,
                 theme: 'grid',
                 headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
-                styles: { fontSize: 7, cellPadding: 1.5 },
+                styles: { fontSize: 7, cellPadding: 2 },
+                columnStyles: { 
+                  0: { cellWidth: 10 },
+                  1: { cellWidth: 40 },
+                  2: { cellWidth: 50 },
+                  3: { cellWidth: 45 },
+                  4: { cellWidth: 25 }
+                },
                 margin: { left: 14, right: 14 }
               });
               yPos = doc.lastAutoTable.finalY + 5;
+              
+              // F. Family Tree Visual for this NIK
+              if (yPos > 200) {
+                doc.addPage();
+                yPos = 20;
+              }
+              
+              yPos = addSectionTitle(doc, `F${nikIndex}. STRUKTUR KELUARGA (VISUAL) - NIK: ${nik}`, yPos);
+              yPos = drawFamilyTree(doc, nikData.family_data, yPos, nik);
+            }
+            
+            nikIndex++;
+          }
+        }
+      }
+      
+      // Also check target-level family data (backward compatibility)
+      if (target.family_data?.members && target.family_data.members.length > 0 && !target.nik_queries) {
+        if (yPos > 180) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        yPos = addSectionTitle(doc, 'E. DATA KELUARGA (NKK)', yPos);
+        const familyTableData = target.family_data.members.map((member, idx) => [
+          idx + 1,
+          member.nik || '-',
+          member.name || '-',
+          member.relationship || '-',
+          member.gender || '-'
+        ]);
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['No', 'NIK', 'Nama', 'Hubungan', 'Gender']],
+          body: familyTableData,
+          theme: 'grid',
+          headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
+          styles: { fontSize: 7, cellPadding: 2 },
+          margin: { left: 14, right: 14 }
+        });
+        yPos = doc.lastAutoTable.finalY + 5;
+        
+        // Family Tree Visual
+        if (yPos > 200) {
+          doc.addPage();
+          yPos = 20;
+        }
+        yPos = addSectionTitle(doc, 'F. STRUKTUR KELUARGA (VISUAL)', yPos);
+        yPos = drawFamilyTree(doc, target.family_data, yPos, null);
+      }
+      
+      // Footer
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+      }
+      
+      // Save PDF without blocking
+      const filename = `WASKITA_Target_${target.phone_number}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+      
+      // Resolve after a short delay to ensure save completes
+      setTimeout(() => resolve(true), 100);
+      
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      reject(error);
+    }
+  });
+};
+
+// Generate PDF for entire case
+export const generateCasePDF = async (caseName, targets, mapContainerRef = null) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const doc = new jsPDF();
+      let yPos = addHeader(doc, 'CASE REPORT');
+      
+      // Case Summary
+      yPos = addSectionTitle(doc, 'RINGKASAN CASE', yPos);
+      doc.setFontSize(10);
+      doc.text(`Nama Case: ${caseName}`, 16, yPos + 5);
+      doc.text(`Total Target: ${targets.length}`, 16, yPos + 10);
+      doc.text(`Completed: ${targets.filter(t => t.status === 'completed').length}`, 16, yPos + 15);
+      doc.text(`Generated: ${new Date().toLocaleString('id-ID')}`, 16, yPos + 20);
+      yPos += 30;
+      
+      // Map overview screenshot
+      try {
+        const mapImage = await captureMapAsImage();
+        if (mapImage) {
+          yPos = addSectionTitle(doc, 'PETA OVERVIEW', yPos);
+          doc.addImage(mapImage, 'JPEG', 14, yPos, 180, 90);
+          yPos += 95;
+        }
+      } catch (e) {
+        console.log('Map screenshot skipped:', e.message);
+      }
+      
+      // Target Summary Table
+      doc.addPage();
+      yPos = 20;
+      yPos = addSectionTitle(doc, 'DAFTAR TARGET', yPos);
+      const targetSummary = targets.map((t, idx) => [
+        idx + 1,
+        t.phone_number || 'N/A',
+        (t.status || 'N/A').toUpperCase(),
+        (t.data?.address || 'N/A').substring(0, 35) + (t.data?.address?.length > 35 ? '...' : ''),
+        t.reghp_status === 'completed' ? 'Y' : '-',
+        Object.keys(t.nik_queries || {}).length > 0 ? 'Y' : '-'
+      ]);
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['No', 'Phone', 'Status', 'Alamat', 'RegHP', 'NIK']],
+        body: targetSummary,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 7, cellPadding: 2 },
+        columnStyles: {
+          0: { cellWidth: 10 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 20 },
+          3: { cellWidth: 80 },
+          4: { cellWidth: 15 },
+          5: { cellWidth: 15 }
+        },
+        margin: { left: 14, right: 14 }
+      });
+      
+      // Detail per target
+      for (let i = 0; i < targets.length; i++) {
+        const target = targets[i];
+        doc.addPage();
+        yPos = 20;
+        
+        // Target header
+        doc.setFillColor(255, 59, 92);
+        doc.rect(14, yPos, 182, 10, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`TARGET ${i + 1}: ${target.phone_number}`, 16, yPos + 7);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', 'normal');
+        yPos += 15;
+        
+        // Location
+        if (target.data?.latitude) {
+          doc.setFontSize(9);
+          doc.text(`Lokasi: ${target.data.latitude}, ${target.data.longitude}`, 16, yPos);
+          doc.text(`Alamat: ${target.data.address || 'N/A'}`, 16, yPos + 5);
+          const timestamp = target.data.timestamp ? new Date(target.data.timestamp).toLocaleString('id-ID') : 'N/A';
+          doc.text(`Update: ${timestamp}`, 16, yPos + 10);
+          yPos += 18;
+        }
+        
+        // RegHP
+        if (target.reghp_data?.parsed_data) {
+          yPos = addSectionTitle(doc, 'DATA REGHP', yPos);
+          const reghpData = Object.entries(target.reghp_data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
+          autoTable(doc, {
+            startY: yPos,
+            head: [['Field', 'Value']],
+            body: reghpData,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
+            styles: { fontSize: 7, cellPadding: 1.5 },
+            columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 135 } },
+            margin: { left: 14, right: 14 }
+          });
+          yPos = doc.lastAutoTable.finalY + 5;
+        }
+        
+        // NIK Data with per-NIK family data
+        if (target.nik_queries) {
+          for (const [nik, nikData] of Object.entries(target.nik_queries)) {
+            if (nikData.data?.parsed_data) {
+              if (yPos > 200) {
+                doc.addPage();
+                yPos = 20;
+              }
+              yPos = addSectionTitle(doc, `DATA NIK: ${nik}`, yPos);
+              const nikTableData = Object.entries(nikData.data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
+              autoTable(doc, {
+                startY: yPos,
+                head: [['Field', 'Value']],
+                body: nikTableData,
+                theme: 'grid',
+                headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
+                styles: { fontSize: 7, cellPadding: 1.5 },
+                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 135 } },
+                margin: { left: 14, right: 14 }
+              });
+              yPos = doc.lastAutoTable.finalY + 5;
+              
+              // Family data for this specific NIK
+              if (nikData.family_data?.members?.length > 0) {
+                if (yPos > 180) {
+                  doc.addPage();
+                  yPos = 20;
+                }
+                yPos = addSectionTitle(doc, `DATA KELUARGA - NIK: ${nik}`, yPos);
+                const familyTableData = nikData.family_data.members.map((member, idx) => [
+                  idx + 1,
+                  member.nik || '-',
+                  member.name || '-',
+                  member.relationship || '-',
+                  member.gender || '-'
+                ]);
+                autoTable(doc, {
+                  startY: yPos,
+                  head: [['No', 'NIK', 'Nama', 'Hubungan', 'Gender']],
+                  body: familyTableData,
+                  theme: 'grid',
+                  headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
+                  styles: { fontSize: 7, cellPadding: 1.5 },
+                  margin: { left: 14, right: 14 }
+                });
+                yPos = doc.lastAutoTable.finalY + 5;
+                
+                // Family tree visual
+                if (yPos > 200) {
+                  doc.addPage();
+                  yPos = 20;
+                }
+                yPos = addSectionTitle(doc, `FAMILY TREE - NIK: ${nik}`, yPos);
+                yPos = drawFamilyTree(doc, nikData.family_data, yPos, nik);
+              }
             }
           }
         }
       }
+      
+      // Footer on all pages
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+      }
+      
+      // Save PDF without blocking
+      const filename = `WASKITA_Case_${caseName}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(filename);
+      
+      // Resolve after a short delay
+      setTimeout(() => resolve(true), 100);
+      
+    } catch (error) {
+      console.error('PDF Generation Error:', error);
+      reject(error);
     }
-    
-    // Footer on all pages
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
-    }
-    
-    // Save
-    const filename = `WASKITA_Case_${caseName}_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(filename);
-    return true;
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
-    throw error;
-  }
+  });
 };
