@@ -62,7 +62,7 @@ import {
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { toast } from 'sonner';
 
-// Countdown Timer Component - Simple text only
+// Countdown Timer Component - Real-time with seconds
 const CountdownTimer = ({ nextRun }) => {
   const [timeLeft, setTimeLeft] = useState('');
   
@@ -75,7 +75,7 @@ const CountdownTimer = ({ nextRun }) => {
       const diff = target - now;
       
       if (diff <= 0) {
-        setTimeLeft('Segera...');
+        setTimeLeft('0:00');
         return;
       }
       
@@ -84,14 +84,13 @@ const CountdownTimer = ({ nextRun }) => {
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
       
+      // Always show seconds for real-time feel
       if (days > 0) {
-        setTimeLeft(`${days}h ${hours}j ${minutes}m`);
+        setTimeLeft(`${days}h ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
       } else if (hours > 0) {
-        setTimeLeft(`${hours}j ${minutes}m ${seconds}d`);
-      } else if (minutes > 0) {
-        setTimeLeft(`${minutes}m ${seconds}d`);
+        setTimeLeft(`${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
       } else {
-        setTimeLeft(`${seconds}d`);
+        setTimeLeft(`${minutes}:${String(seconds).padStart(2, '0')}`);
       }
     };
     
