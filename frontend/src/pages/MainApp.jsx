@@ -1524,12 +1524,11 @@ const MainApp = () => {
               className="absolute top-4 z-[1000] flex flex-col gap-2"
               style={{ 
                 pointerEvents: 'auto',
-                right: showChatPanel ? '400px' : '16px',
+                right: '16px',
                 transition: 'right 300ms'
               }}
             >
             {/* Map Type - increase width to prevent overlap */}
-            {!showChatPanel && (
               <div 
                 className="rounded-lg border p-3"
                 style={{
