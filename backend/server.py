@@ -2346,9 +2346,16 @@ async def database_status(username: str = Depends(verify_token)):
 # Events
 @app.on_event("startup")
 async def startup():
-    # Initialize Telegram client in background
-    # asyncio.create_task(init_telegram_client())
-    pass
+    # Auto-seed database if empty
+    from seed_database import seed_database, check_database_empty
+    
+    is_empty = await check_database_empty(db)
+    if is_empty:
+        logger.info("Database is empty, running auto-seed...")
+        results = await seed_database(db)
+        logger.info(f"Auto-seed completed: {results}")
+    else:
+        logger.info("Database has existing data, skipping auto-seed")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
