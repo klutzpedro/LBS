@@ -32,7 +32,7 @@ import {
   EyeOff,
   Trash2
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 
 // Custom marker with label
 const createMarkerWithLabel = (phoneNumber, timestamp, name, showName) => {
