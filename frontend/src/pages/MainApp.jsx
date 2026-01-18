@@ -4,9 +4,36 @@ import { useAuth } from '@/context/AuthContext';
 import { useTelegram } from '@/context/TelegramContext';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// Component to handle map resize when maximized state changes
+const MapResizeHandler = ({ isMaximized, sidebarCollapsed }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Invalidate map size when maximize state or sidebar state changes
+    const timeoutId = setTimeout(() => {
+      map.invalidateSize({ animate: false });
+    }, 100);
+    
+    // Also add resize observer for dynamic changes
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize({ animate: false });
+    });
+    
+    const container = map.getContainer();
+    resizeObserver.observe(container);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
+  }, [map, isMaximized, sidebarCollapsed]);
+  
+  return null;
+};
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
