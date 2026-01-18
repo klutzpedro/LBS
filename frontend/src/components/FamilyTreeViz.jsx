@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Sparkles, RefreshCw } from 'lucide-react';
 
 export const FamilyTreeViz = ({ members, targetNik }) => {
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(false);
+
   if (!members || members.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p style={{ color: 'var(--foreground-muted)' }}>
+      <div className="text-center py-4">
+        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
           Tidak ada data family
         </p>
       </div>
@@ -22,128 +29,140 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
     !m.relationship?.includes('ANAK')
   );
 
-  const MemberCard = ({ member, isTarget }) => (
+  const fetchAIAnalysis = async () => {
+    setLoadingAI(true);
+    try {
+      const response = await axios.post(`${API}/ai/family-analysis`, {
+        members: members,
+        target_nik: targetNik
+      });
+      if (response.data.success) {
+        setAiAnalysis(response.data.analysis);
+      } else {
+        setAiAnalysis(response.data.analysis || 'Gagal menganalisis');
+      }
+    } catch (error) {
+      console.error('AI Analysis error:', error);
+      setAiAnalysis('Tidak dapat menganalisis keluarga');
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  const MemberCard = ({ member, isTarget, isHead }) => (
     <div 
-      className="p-3 rounded-lg border text-center"
+      className="p-2 rounded border text-center"
       style={{
-        backgroundColor: isTarget ? 'rgba(255, 59, 92, 0.2)' : 'var(--background-tertiary)',
-        borderColor: isTarget ? 'var(--status-error)' : 'var(--borders-default)',
-        borderWidth: isTarget ? '3px' : '1px',
-        minWidth: '180px'
+        backgroundColor: isTarget ? 'rgba(255, 59, 92, 0.15)' : isHead ? 'rgba(0, 217, 255, 0.1)' : 'var(--background-tertiary)',
+        borderColor: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--borders-default)',
+        borderWidth: isTarget || isHead ? '2px' : '1px',
+        minWidth: '120px',
+        maxWidth: '140px'
       }}
     >
-      <div 
-        className="w-3 h-3 rounded-full mx-auto mb-2"
-        style={{ backgroundColor: isTarget ? 'var(--status-error)' : 'var(--foreground-muted)' }}
-      />
       <p 
-        className="text-xs uppercase tracking-wide mb-1"
+        className="text-xs uppercase tracking-wide mb-0.5"
         style={{ 
-          color: isTarget ? 'var(--status-error)' : 'var(--foreground-muted)',
+          color: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--foreground-muted)',
           fontFamily: 'Rajdhani, sans-serif',
-          fontWeight: 'bold'
+          fontWeight: 'bold',
+          fontSize: '9px'
         }}
       >
         {member.relationship || 'MEMBER'}
       </p>
       <p 
-        className="text-sm font-semibold mb-1"
+        className="text-xs font-semibold mb-0.5 truncate"
         style={{ 
           color: 'var(--foreground-primary)',
           fontFamily: 'Barlow Condensed, sans-serif'
         }}
+        title={member.name}
       >
         {member.name || 'Unknown'}
       </p>
       <p 
-        className="text-xs font-mono"
-        style={{ color: isTarget ? 'var(--status-error)' : 'var(--accent-primary)' }}
+        className="font-mono truncate"
+        style={{ 
+          color: isTarget ? 'var(--status-error)' : 'var(--accent-primary)',
+          fontSize: '9px'
+        }}
       >
         {member.nik}
       </p>
-      {member.gender && (
-        <p className="text-xs mt-1" style={{ color: 'var(--foreground-secondary)' }}>
-          {member.gender}
-        </p>
-      )}
     </div>
   );
 
   return (
-    <div className="space-y-6">
-      {/* Legend */}
+    <div className="space-y-3">
+      {/* AI Analysis Section */}
       <div 
-        className="p-3 rounded-lg border flex items-center gap-4 justify-center"
+        className="p-2 rounded border"
         style={{
           backgroundColor: 'var(--background-tertiary)',
           borderColor: 'var(--borders-subtle)'
         }}
       >
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: 'var(--status-error)' }}
-          />
-          <span className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
-            = Target Person
-          </span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Sparkles className="w-3 h-3" style={{ color: 'var(--accent-secondary)' }} />
+            <span className="text-xs font-semibold" style={{ color: 'var(--foreground-primary)' }}>
+              AI Analysis
+            </span>
+          </div>
+          <Button
+            size="sm"
+            onClick={fetchAIAnalysis}
+            disabled={loadingAI}
+            className="h-6 px-2 text-xs"
+            style={{
+              backgroundColor: 'var(--accent-secondary)',
+              color: 'var(--background-primary)'
+            }}
+          >
+            {loadingAI ? (
+              <RefreshCw className="w-3 h-3 animate-spin" />
+            ) : aiAnalysis ? (
+              <RefreshCw className="w-3 h-3" />
+            ) : (
+              'Analisis'
+            )}
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: 'var(--foreground-muted)' }}
-          />
-          <span className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
-            = Family Member
-          </span>
-        </div>
+        {aiAnalysis ? (
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--foreground-secondary)' }}>
+            {aiAnalysis}
+          </p>
+        ) : (
+          <p className="text-xs italic" style={{ color: 'var(--foreground-muted)' }}>
+            Klik "Analisis" untuk mendapatkan insight AI tentang keluarga ini
+          </p>
+        )}
       </div>
 
-      {/* Family Tree Structure */}
-      <div className="space-y-4">
-        {/* Level 1: Kepala Keluarga */}
-        {head && (
+      {/* Family Tree Visual */}
+      <div className="space-y-2">
+        {/* Parents Row */}
+        <div className="flex justify-center gap-3">
+          {head && <MemberCard member={head} isTarget={head.nik === targetNik} isHead={true} />}
+          {spouse && <MemberCard member={spouse} isTarget={spouse.nik === targetNik} isHead={false} />}
+        </div>
+
+        {/* Connection Line */}
+        {(head || spouse) && children.length > 0 && (
           <div className="flex justify-center">
-            <MemberCard member={head} isTarget={head.nik === targetNik} />
+            <div 
+              className="h-4 w-0.5"
+              style={{ backgroundColor: 'var(--borders-default)' }}
+            />
           </div>
         )}
 
-        {/* Connection Line */}
-        {head && (spouse || children.length > 0) && (
-          <div 
-            className="h-8 w-0.5 mx-auto"
-            style={{ backgroundColor: 'var(--borders-default)' }}
-          />
-        )}
-
-        {/* Level 2: Spouse */}
-        {spouse && (
-          <>
-            <div className="flex justify-center">
-              <MemberCard member={spouse} isTarget={spouse.nik === targetNik} />
-            </div>
-            {children.length > 0 && (
-              <div 
-                className="h-8 w-0.5 mx-auto"
-                style={{ backgroundColor: 'var(--borders-default)' }}
-              />
-            )}
-          </>
-        )}
-
-        {/* Level 3: Children */}
+        {/* Children Row */}
         {children.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-2">
             {children.map((child, idx) => (
-              <div key={idx}>
-                {idx > 0 && idx < children.length && (
-                  <div 
-                    className="h-8 w-0.5 mx-auto mb-4"
-                    style={{ backgroundColor: 'var(--borders-default)' }}
-                  />
-                )}
-                <MemberCard member={child} isTarget={child.nik === targetNik} />
-              </div>
+              <MemberCard key={idx} member={child} isTarget={child.nik === targetNik} isHead={false} />
             ))}
           </div>
         )}
@@ -151,40 +170,37 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
         {/* Other Members */}
         {others.length > 0 && (
           <>
-            <div 
-              className="h-8 w-0.5 mx-auto"
-              style={{ backgroundColor: 'var(--borders-default)' }}
-            />
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex justify-center">
+              <div 
+                className="h-4 w-0.5"
+                style={{ backgroundColor: 'var(--borders-default)' }}
+              />
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
               {others.map((member, idx) => (
-                <MemberCard key={idx} member={member} isTarget={member.nik === targetNik} />
+                <MemberCard key={idx} member={member} isTarget={member.nik === targetNik} isHead={false} />
               ))}
             </div>
           </>
         )}
       </div>
 
-      {/* Summary */}
+      {/* Legend */}
       <div 
-        className="p-4 rounded-lg border"
-        style={{
-          backgroundColor: 'var(--background-tertiary)',
-          borderColor: 'var(--borders-default)'
-        }}
+        className="flex items-center justify-center gap-4 py-1"
+        style={{ borderTop: '1px solid var(--borders-subtle)' }}
       >
-        <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-primary)' }}>
-          Family Summary
-        </p>
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span style={{ color: 'var(--foreground-muted)' }}>Total Members:</span>{' '}
-            <span style={{ color: 'var(--foreground-primary)' }}>{members.length}</span>
-          </div>
-          <div>
-            <span style={{ color: 'var(--foreground-muted)' }}>Family ID:</span>{' '}
-            <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>{members[0]?.family_id || 'N/A'}</span>
-          </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded" style={{ backgroundColor: 'var(--accent-primary)' }} />
+          <span className="text-xs" style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}>Kepala</span>
         </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 rounded" style={{ backgroundColor: 'var(--status-error)' }} />
+          <span className="text-xs" style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}>Target</span>
+        </div>
+        <span className="text-xs font-mono" style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}>
+          {members.length} anggota
+        </span>
       </div>
     </div>
   );
