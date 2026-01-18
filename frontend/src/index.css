@@ -134,3 +134,92 @@
   visibility: hidden !important;
   opacity: 0 !important;
 }
+
+/* ==========================================
+   4K Resolution Optimization (3840x2160)
+   ========================================== */
+
+/* Scale down fonts for ultra-high resolution screens */
+@media (min-width: 2560px) {
+  :root {
+    font-size: 14px;
+  }
+  
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
+  h4, h5, h6 { font-size: 1rem !important; }
+  
+  /* Smaller dialog/popup sizes for 4K */
+  [role="dialog"] {
+    max-width: 600px !important;
+    transform: scale(0.85);
+    transform-origin: center center;
+  }
+  
+  /* Smaller buttons */
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Smaller inputs */
+  input, select, textarea {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Smaller marker labels */
+  .custom-marker-label div {
+    font-size: 9px !important;
+  }
+  
+  /* Smaller map controls */
+  .leaflet-control-zoom a {
+    width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* 4K specific adjustments */
+@media (min-width: 3800px) {
+  :root {
+    font-size: 12px;
+  }
+  
+  /* Even smaller dialogs for true 4K */
+  [role="dialog"] {
+    max-width: 500px !important;
+    max-height: 70vh !important;
+    transform: scale(0.75);
+  }
+  
+  /* Compact buttons */
+  button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+  }
+  
+  /* Compact sidebar */
+  aside {
+    max-width: 280px !important;
+  }
+  
+  /* Smaller labels */
+  label {
+    font-size: 0.7rem !important;
+  }
+  
+  /* Compact card padding */
+  .rounded, .rounded-lg {
+    padding: 0.5rem;
+  }
+  
+  /* Smaller icons in sidebar */
+  aside svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
