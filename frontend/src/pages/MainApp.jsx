@@ -83,6 +83,11 @@ const MainApp = () => {
   const [printingTarget, setPrintingTarget] = useState(null);
   const [printingCase, setPrintingCase] = useState(false);
   const mapContainerRef = useRef(null);
+  
+  // Loading states to prevent double-click
+  const [loadingPendalaman, setLoadingPendalaman] = useState(null); // targetId
+  const [loadingNikPendalaman, setLoadingNikPendalaman] = useState(null); // nik
+  const [loadingFamilyPendalaman, setLoadingFamilyPendalaman] = useState(null); // nik
 
   // Handle tile layer change while preserving position
   const handleTileLayerChange = (newTile) => {
