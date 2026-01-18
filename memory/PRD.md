@@ -173,9 +173,8 @@
 - **Telegram:** @dwijayanto (API credentials in backend/.env)
 
 ## Future Tasks (Backlog)
-- [ ] AI-enhanced family tree visualization
-- [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog)
-- [ ] Export data to PDF/Excel
+- [ ] AI-enhanced family tree visualization using graph library (react-flow/D3.js)
+- [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog) - Currently 2000+ lines
 - [ ] Multi-user support
 
 ## Files Reference
