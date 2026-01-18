@@ -509,6 +509,37 @@ async def query_family(target_id: str, family_data_input: dict, username: str = 
     
     return {"message": "Family query started", "target_id": target_id, "source_nik": source_nik}
 
+# Reset stuck processes
+@api_router.post("/targets/{target_id}/reset-stuck")
+async def reset_stuck_processes(target_id: str, username: str = Depends(verify_token)):
+    """Reset any stuck processing status for a target"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    updates = {}
+    
+    # Reset target-level stuck statuses
+    if target.get('reghp_status') == 'processing':
+        updates['reghp_status'] = 'not_started'
+    if target.get('family_status') == 'processing':
+        updates['family_status'] = 'not_started'
+    
+    # Reset NIK-level stuck statuses
+    nik_queries = target.get('nik_queries', {})
+    for nik, nik_data in nik_queries.items():
+        if nik_data.get('status') == 'processing':
+            updates[f'nik_queries.{nik}.status'] = 'not_started'
+        if nik_data.get('family_status') == 'processing':
+            updates[f'nik_queries.{nik}.family_status'] = 'not_started'
+    
+    if updates:
+        await db.targets.update_one({"id": target_id}, {"$set": updates})
+        logging.info(f"Reset stuck processes for target {target_id}: {list(updates.keys())}")
+        return {"message": "Stuck processes reset", "reset_fields": list(updates.keys())}
+    
+    return {"message": "No stuck processes found"}
+
 # Dashboard Stats
 @api_router.get("/stats")
 async def get_stats(username: str = Depends(verify_token)):
