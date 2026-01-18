@@ -95,6 +95,16 @@ const mapTiles = {
     name: 'Terrain',
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap'
+  },
+  light: {
+    name: 'Light',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO'
+  },
+  voyager: {
+    name: 'Voyager',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO'
   }
 };
 
@@ -130,7 +140,8 @@ const MainApp = () => {
   const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedTargetForSchedule, setSelectedTargetForSchedule] = useState(null);
-  const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 }); // Force map re-render
+  const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -449,9 +460,9 @@ const MainApp = () => {
   };
 
   return (
-    <div className={`flex ${isMaximized ? 'fixed inset-0 z-50' : ''}`} style={{ height: '100vh', backgroundColor: 'var(--background-primary)' }}>
-      {/* Sidebar - hide when maximized */}
-      {!isMaximized && (
+    <div className="flex" style={{ height: '100vh', width: '100vw', backgroundColor: 'var(--background-primary)', overflow: 'hidden' }}>
+      {/* Sidebar - collapsible */}
+      {!isMaximized && !sidebarCollapsed && (
         <aside 
           className="w-80 flex flex-col border-r"
           style={{ 
@@ -714,10 +725,54 @@ const MainApp = () => {
       </aside>
       )}
 
+      {/* Sidebar Toggle Button */}
+      {!isMaximized && sidebarCollapsed && (
+        <div 
+          className="absolute left-4 top-4 z-[1000]"
+          style={{ pointerEvents: 'auto' }}
+        >
+          <Button
+            onClick={() => setSidebarCollapsed(false)}
+            size="icon"
+            className="w-10 h-10 rounded-full shadow-lg"
+            style={{
+              backgroundColor: 'var(--background-elevated)',
+              borderColor: 'var(--accent-primary)',
+              color: 'var(--accent-primary)',
+              border: '2px solid'
+            }}
+          >
+            <Maximize2 className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
+
+      {/* Sidebar Collapse Button - Inside sidebar */}
+      {!isMaximized && !sidebarCollapsed && (
+        <div 
+          className="absolute left-80 top-4 z-[1000]"
+          style={{ pointerEvents: 'auto', marginLeft: '4px' }}
+        >
+          <Button
+            onClick={() => setSidebarCollapsed(true)}
+            size="icon"
+            className="w-10 h-10 rounded-full shadow-lg"
+            style={{
+              backgroundColor: 'var(--background-elevated)',
+              borderColor: 'var(--accent-primary)',
+              color: 'var(--accent-primary)',
+              border: '2px solid'
+            }}
+          >
+            <Minimize2 className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
+
       {/* Main Map Area */}
-      <main className="flex-1 relative flex" style={{ height: '100%' }}>
+      <main className="flex-1 relative flex" style={{ height: '100vh', width: '100%', overflow: 'hidden' }}>
         {/* Map */}
-        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} style={{ height: '100%' }}>
+        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} style={{ height: '100vh', position: 'relative' }}>
           {/* Map Controls */}
           <div 
             className="absolute top-4 z-[1000] flex flex-col gap-2"
@@ -854,7 +909,8 @@ const MainApp = () => {
               key={`${selectedTileLayer}-${mapKey}`}
               center={mapCenter}
               zoom={mapZoom}
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              zoomControl={true}
             >
               <TileLayer
                 key={selectedTileLayer}
