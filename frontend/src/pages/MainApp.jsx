@@ -185,7 +185,52 @@ const MainApp = () => {
       // Create a copy of data to avoid mutation during PDF generation
       const targetsCopy = JSON.parse(JSON.stringify(filteredTargets));
       const caseNameCopy = selectedCase.name;
-      await generateCasePDF(caseNameCopy, targetsCopy);
+      
+      // Collect map screenshots for all targets with coordinates
+      const mapScreenshots = {};
+      const prevCenter = mapCenter;
+      const prevZoom = mapZoom;
+      
+      toast.info(`Mengambil screenshot peta untuk ${targetsCopy.length} target...`);
+      
+      for (const target of targetsCopy) {
+        if (target.data?.latitude && target.data?.longitude) {
+          const lat = parseFloat(target.data.latitude);
+          const lng = parseFloat(target.data.longitude);
+          
+          // Move map to target location
+          setMapCenter([lat, lng]);
+          setMapZoom(16);
+          setMapKey(prev => prev + 1);
+          
+          // Wait for map tiles to load
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Take screenshot
+          if (mapContainerRef.current) {
+            try {
+              const canvas = await html2canvas(mapContainerRef.current, {
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#121212',
+                scale: 1,
+                logging: false,
+                imageTimeout: 5000
+              });
+              mapScreenshots[target.id] = canvas.toDataURL('image/jpeg', 0.85);
+            } catch (e) {
+              console.warn('Map screenshot failed for target:', target.id, e);
+            }
+          }
+        }
+      }
+      
+      // Restore previous map position
+      setMapCenter(prevCenter);
+      setMapZoom(prevZoom);
+      setMapKey(prev => prev + 1);
+      
+      await generateCasePDF(caseNameCopy, targetsCopy, mapScreenshots);
       toast.success('PDF Case berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
