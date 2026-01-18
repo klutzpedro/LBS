@@ -105,7 +105,7 @@ const MainApp = () => {
       toast.success('PDF berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      toast.error('Gagal generate PDF: ' + error.message);
+      toast.error('Gagal generate PDF: ' + (error?.message || 'Unknown error'));
     } finally {
       setPrintingTarget(null);
     }
@@ -118,11 +118,14 @@ const MainApp = () => {
     }
     setPrintingCase(true);
     try {
-      await generateCasePDF(selectedCase.name, filteredTargets);
+      // Create a copy of data to avoid mutation during PDF generation
+      const targetsCopy = JSON.parse(JSON.stringify(filteredTargets));
+      const caseNameCopy = selectedCase.name;
+      await generateCasePDF(caseNameCopy, targetsCopy);
       toast.success('PDF Case berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      toast.error('Gagal generate PDF Case: ' + error.message);
+      toast.error('Gagal generate PDF Case: ' + (error?.message || 'Unknown error'));
     } finally {
       setPrintingCase(false);
     }
