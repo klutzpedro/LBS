@@ -168,18 +168,58 @@
 - `POST /api/targets/{id}/family/{family_id}` - Initiate NKK query
 - `POST /api/telegram/setup` - Telegram login flow
 - `POST /api/telegram/reset` - Reset Telegram session
+- `GET /api/targets/{target_id}/history` - Get position history
+- `GET /api/aois` - Get all AOIs
+- `POST /api/aois` - Create AOI
+- `PUT /api/aois/{aoi_id}` - Update AOI
+- `DELETE /api/aois/{aoi_id}` - Delete AOI
+- `GET /api/aoi-alerts` - Get AOI alerts
+- `POST /api/aoi-alerts/{alert_id}/acknowledge` - Acknowledge alert
+- `POST /api/aoi-alerts/acknowledge-all` - Acknowledge all alerts
 
 ## Credentials
 - **Web App:** admin / Paparoni83
 - **Telegram:** @dwijayanto (API credentials in backend/.env)
 
+## Recent Features (January 2026)
+
+### 1. Family Tree - DOB-based Child Ordering
+- Children are now sorted by Date of Birth (oldest = Anak 1)
+- Supports multiple DOB formats: DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY
+- Applied to both FamilyTreeViz component and PDF export
+- **Files Modified:** `/app/frontend/src/components/FamilyTreeViz.jsx`, `/app/frontend/src/components/main/PDFExport.jsx`
+
+### 2. Position History Feature
+- New History icon appears on hover next to Print icon
+- View position history within date/time range
+- Option to display history path as polyline on map
+- Backend stores position each time target is updated
+- **New Files:** `/app/frontend/src/components/HistoryDialog.jsx`
+- **Backend:** New `position_history` collection, `save_position_history()` function
+
+### 3. AOI (Area of Interest) Feature
+- **AOI Panel:** Create and manage Areas of Interest
+- **Drawing Tools:** Draw polygon or circle on map
+- **Manual Input:** Enter coordinates manually
+- **Target Monitoring:** Checklist to select which targets to monitor per AOI
+- **Visibility Toggle:** Show/hide AOI on map
+- **Alarm System:** Enable/disable alarm per AOI
+- **Alert Notification:** Pop-up when monitored target enters AOI
+- **Acknowledge Button:** Dismiss alerts
+- AOI checking triggered when target position is updated
+- **New Files:** `/app/frontend/src/components/AOIComponents.jsx`
+- **Backend:** New `aois` and `aoi_alerts` collections, AOI CRUD endpoints, `check_aoi_alerts()` function
+
 ## Future Tasks (Backlog)
 - [ ] AI-enhanced family tree visualization using graph library (react-flow/D3.js)
 - [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog) - Currently 2000+ lines
 - [ ] Multi-user support
+- [ ] Drawing AOI directly on map (Leaflet Draw integration)
 
 ## Files Reference
 - `/app/frontend/src/pages/MainApp.jsx` - Main application component
 - `/app/backend/server.py` - FastAPI backend with Telethon integration
 - `/app/frontend/src/index.css` - Global styles and 4K media queries
 - `/app/frontend/src/components/FamilyTreeViz.jsx` - Family tree component
+- `/app/frontend/src/components/HistoryDialog.jsx` - Position history dialog
+- `/app/frontend/src/components/AOIComponents.jsx` - AOI panel and alert notification
