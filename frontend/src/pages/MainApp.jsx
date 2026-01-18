@@ -1593,9 +1593,11 @@ const MainApp = () => {
                 required
               />
               <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                {scheduleInterval.type === 'minutes' && `Setiap ${scheduleInterval.value} menit`}
                 {scheduleInterval.type === 'hourly' && `Setiap ${scheduleInterval.value} jam`}
                 {scheduleInterval.type === 'daily' && `Setiap ${scheduleInterval.value} hari`}
                 {scheduleInterval.type === 'weekly' && `Setiap ${scheduleInterval.value} minggu`}
+                {scheduleInterval.type === 'monthly' && `Setiap ${scheduleInterval.value} bulan`}
               </p>
             </div>
 
