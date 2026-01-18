@@ -259,7 +259,86 @@ const MainApp = () => {
   useEffect(() => {
     fetchCases();
     fetchSchedules();
+    fetchAOIs();
+    fetchAOIAlerts();
   }, []);
+
+  // Fetch AOIs
+  const fetchAOIs = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/aois`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAois(response.data.aois || []);
+    } catch (error) {
+      console.error('Failed to fetch AOIs:', error);
+    }
+  };
+
+  // Fetch AOI Alerts (poll every 10 seconds)
+  const fetchAOIAlerts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/aoi-alerts?acknowledged=false`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAoiAlerts(response.data.alerts || []);
+    } catch (error) {
+      console.error('Failed to fetch alerts:', error);
+    }
+  };
+
+  // Poll for alerts
+  useEffect(() => {
+    const interval = setInterval(fetchAOIAlerts, 10000); // Every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle acknowledge alert
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/aoi-alerts/${alertId}/acknowledge`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchAOIAlerts();
+    } catch (error) {
+      console.error('Failed to acknowledge alert:', error);
+    }
+  };
+
+  const handleAcknowledgeAllAlerts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/aoi-alerts/acknowledge-all`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchAOIAlerts();
+      toast.success('Semua alert di-acknowledge');
+    } catch (error) {
+      console.error('Failed to acknowledge all alerts:', error);
+    }
+  };
+
+  // Show history path on map
+  const handleShowHistoryPath = (historyData) => {
+    if (historyData && historyData.length > 0) {
+      setHistoryPath(historyData.map(h => [h.latitude, h.longitude]));
+      // Center map on first point
+      setMapCenter([historyData[0].latitude, historyData[0].longitude]);
+      setMapZoom(14);
+      setMapKey(prev => prev + 1);
+      toast.success(`Menampilkan ${historyData.length} titik riwayat posisi`);
+    }
+  };
+
+  // Handle drawing AOI on map
+  const handleStartDrawing = (type) => {
+    setDrawingMode(type);
+    setDrawingPoints([]);
+    toast.info(`Klik pada peta untuk menggambar ${type}. Klik kanan untuk selesai.`);
+  };
 
   // Function to detect and auto-reset stuck processes (stuck > 2 minutes)
   const checkAndResetStuckProcesses = async () => {
