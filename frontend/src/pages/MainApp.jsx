@@ -1889,7 +1889,7 @@ const MainApp = () => {
       {/* Duplicate Phone Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
         <DialogContent 
-          className="z-[9999]"
+          className="z-[9999] max-w-md"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -1897,7 +1897,7 @@ const MainApp = () => {
         >
           <DialogHeader>
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               NOMOR SUDAH ADA
@@ -1968,7 +1968,7 @@ const MainApp = () => {
       {/* Schedule Dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
         <DialogContent 
-          className="z-[10000]"
+          className="z-[10000] max-w-md"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -1976,7 +1976,7 @@ const MainApp = () => {
         >
           <DialogHeader>
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               JADWALKAN PEMBAHARUAN
@@ -2101,7 +2101,7 @@ const MainApp = () => {
       {/* Family Tree Dialog */}
       <Dialog open={familyTreeDialogOpen} onOpenChange={setFamilyTreeDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="z-[9999] max-w-3xl max-h-[80vh] overflow-y-auto"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
@@ -2109,7 +2109,7 @@ const MainApp = () => {
         >
           <DialogHeader>
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               🌳 FAMILY TREE (NKK)
