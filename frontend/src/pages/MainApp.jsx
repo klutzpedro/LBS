@@ -1857,7 +1857,7 @@ const MainApp = () => {
                                           📋 Info
                                         </Button>
                                       );
-                                    } else if (familyStatus === 'processing') {
+                                    } else if (familyStatus === 'processing' || loadingFamilyPendalaman === currentNik) {
                                       return (
                                         <span 
                                           className="ml-auto text-xs"
@@ -1871,7 +1871,8 @@ const MainApp = () => {
                                         <Button
                                           size="sm"
                                           onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, currentNik)}
-                                          className="ml-auto"
+                                          disabled={loadingFamilyPendalaman === currentNik}
+                                          className="ml-auto disabled:opacity-50"
                                           style={{
                                             backgroundColor: 'var(--status-warning)',
                                             color: 'var(--background-primary)',
@@ -1880,7 +1881,7 @@ const MainApp = () => {
                                             height: 'auto'
                                           }}
                                         >
-                                          🔍 Family
+                                          {loadingFamilyPendalaman === currentNik ? '⏳' : '🔍'} Family
                                         </Button>
                                       );
                                     }
