@@ -1031,7 +1031,7 @@ const MainApp = () => {
                     Map Type
                   </span>
                 </div>
-                <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
+                <Select value={selectedTileLayer} onValueChange={handleTileLayerChange}>
                   <SelectTrigger 
                     className="w-full"
                     style={{
