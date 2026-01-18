@@ -26,19 +26,27 @@ export const HistoryDialog = ({ open, onClose, target, onShowPath }) => {
 
   useEffect(() => {
     if (open && target) {
-      // Set default date range - FROM: 30 days ago at 00:00, TO: today at 23:59
+      // Set default date range
+      // FROM (Dari): tanggal lebih AWAL/MUDA (30 hari lalu, jam 00:00)
+      // TO (Sampai): tanggal lebih AKHIR/TUA (hari ini, jam 23:59)
       const now = new Date();
-      const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
-      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-      startDate.setHours(0, 0, 0, 0);
       
-      const fromStr = formatDateTimeLocal(startDate);
-      const toStr = formatDateTimeLocal(endDate);
+      // TO = hari ini jam 23:59 (tanggal lebih baru/tua)
+      const toDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
+      
+      // FROM = 30 hari sebelumnya jam 00:00 (tanggal lebih lama/muda)
+      const fromDateObj = new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+      fromDateObj.setHours(0, 0, 0, 0);
+      
+      const fromStr = formatDateTimeLocal(fromDateObj);
+      const toStr = formatDateTimeLocal(toDate);
+      
+      console.log('Date range set:', { from: fromStr, to: toStr });
       
       setFromDate(fromStr);
       setToDate(toStr);
       
-      // Fetch with the calculated dates directly (don't rely on state)
+      // Fetch with the calculated dates directly
       fetchHistoryWithDates(fromStr, toStr);
     }
   }, [open, target]);
