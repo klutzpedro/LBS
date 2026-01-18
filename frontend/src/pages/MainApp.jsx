@@ -1690,7 +1690,7 @@ const MainApp = () => {
                               >
                                 📋 Info
                               </Button>
-                            ) : nikStatus === 'processing' ? (
+                            ) : nikStatus === 'processing' || loadingNikPendalaman === nik ? (
                               <span className="text-xs" style={{ color: 'var(--status-processing)' }}>
                                 ⏳
                               </span>
@@ -1698,13 +1698,14 @@ const MainApp = () => {
                               <Button
                                 size="sm"
                                 onClick={() => handleNikPendalaman(selectedReghpTarget.id, nik)}
-                                className="text-xs py-1 px-2"
+                                disabled={loadingNikPendalaman === nik}
+                                className="text-xs py-1 px-2 disabled:opacity-50"
                                 style={{
                                   backgroundColor: 'var(--status-warning)',
                                   color: 'var(--background-primary)'
                                 }}
                               >
-                                🔍 Pendalaman
+                                {loadingNikPendalaman === nik ? '⏳' : '🔍'} Pendalaman
                               </Button>
                             )}
                           </div>
