@@ -2105,7 +2105,7 @@ const MainApp = () => {
             </div>
 
             <div>
-              <Label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+              <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
                 Interval Value
               </Label>
               <Input
@@ -2113,12 +2113,12 @@ const MainApp = () => {
                 min="1"
                 value={scheduleInterval.value}
                 onChange={(e) => setScheduleInterval({ ...scheduleInterval, value: parseInt(e.target.value) })}
-                className="bg-background-tertiary border-borders-default"
+                className="bg-background-tertiary border-borders-default h-9"
                 style={{ color: '#000000' }}
                 placeholder="1"
                 required
               />
-              <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
                 {scheduleInterval.type === 'minutes' && `Setiap ${scheduleInterval.value} menit`}
                 {scheduleInterval.type === 'hourly' && `Setiap ${scheduleInterval.value} jam`}
                 {scheduleInterval.type === 'daily' && `Setiap ${scheduleInterval.value} hari`}
@@ -2127,12 +2127,12 @@ const MainApp = () => {
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 type="button"
                 onClick={() => setScheduleDialogOpen(false)}
                 variant="outline"
-                className="flex-1 py-4"
+                className="flex-1 py-2 text-sm"
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
@@ -2143,7 +2143,7 @@ const MainApp = () => {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 py-4"
+                className="flex-1 py-2 text-sm"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)',
