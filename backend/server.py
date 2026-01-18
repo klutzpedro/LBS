@@ -1304,11 +1304,14 @@ async def query_telegram_nik(target_id: str, nik: str):
         query_token = f"NIK_{nik}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting NIK query")
         
+        # IMPORTANT: Add delay to prevent concurrent queries mixing
+        await asyncio.sleep(2)
+        
         # Send NIK to bot
         await telegram_client.send_message(BOT_USERNAME, nik)
-        logging.info(f"[{query_token}] Sent NIK to bot")
+        logging.info(f"[{query_token}] Sent NIK: {nik} to bot")
         
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)  # Increased wait
         
         # Get messages and look for "NIK" button
         messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
@@ -1332,81 +1335,100 @@ async def query_telegram_nik(target_id: str, nik: str):
         if not nik_clicked:
             logging.warning(f"[{query_token}] NIK button not found")
         
-        # Wait for response with photo
-        await asyncio.sleep(10)
+        # Wait longer for response with photo
+        await asyncio.sleep(12)  # Increased from 10
         
-        # Get NIK response - ONLY messages containing our NIK
-        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
+        # Get NIK response - ONLY messages containing our exact NIK
+        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
         
         nik_info = None
         photo_path = None
+        found_matching_response = False
         
         for msg in response_messages:
-            # TOKENIZATION: Only process messages containing our NIK
+            # STRICT TOKENIZATION: Must contain exact NIK we queried
             if msg.text and nik in msg.text:
-                # Check for text data containing NIK
-                if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
-                    logging.info(f"[{query_token}] ✓ Found matching NIK response text")
+                logging.info(f"[{query_token}] Found message containing NIK {nik}")
+                
+                # Verify this is the RIGHT response (contains our NIK)
+                # Check if it's identity data (not just mention)
+                if ('identity of' in msg.text.lower() and nik in msg.text.lower()) or \
+                   (f'NIK: {nik}' in msg.text or f'NIK:{nik}' in msg.text):
                     
-                    nik_info = {
-                        "nik": nik,
-                        "raw_text": msg.text,
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    }
+                    logging.info(f"[{query_token}] ✓ CONFIRMED: This is response for NIK {nik}")
+                    found_matching_response = True
                     
-                    # Parse fields with improved multi-line handling
-                    lines = msg.text.split('\n')
-                    parsed_data = {}
-                    current_key = None
-                    current_value = ""
-                    
-                    for line in lines:
-                        line = line.strip()
+                    # Parse identity data
+                    if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
+                        logging.info(f"[{query_token}] Parsing identity data...")
                         
-                        # Skip empty lines, code blocks, and disclaimer
-                        if not line or line.startswith('```') or 'not for misuse' in line.lower() or 'search at your own risk' in line.lower() or 'law enforcement only' in line.lower():
-                            continue
+                        nik_info = {
+                            "nik": nik,
+                            "raw_text": msg.text,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
                         
-                        # Skip header line
-                        if line.startswith('Identity of'):
-                            continue
+                        # Parse fields with improved multi-line handling
+                        lines = msg.text.split('\n')
+                        parsed_data = {}
+                        current_key = None
+                        current_value = ""
                         
-                        # Check if line starts a new key-value pair
-                        # Must start with capital letter and have : near beginning (within first 25 chars)
-                        is_new_key = False
-                        if ':' in line:
-                            colon_pos = line.index(':')
-                            # New key if colon is in first part and line doesn't seem like continuation
-                            if colon_pos < 25 and not line.startswith(' ') and line[0].isupper():
-                                potential_key = line.split(':', 1)[0].strip()
-                                # Valid keys are usually short (< 20 chars) and don't have "KOTA" or "RT" etc
-                                if len(potential_key) < 20 and not any(word in potential_key for word in ['KOTA', 'RT.', 'RW.', 'KEL.', 'KEC.', 'KODE POS']):
-                                    is_new_key = True
-                        
-                        if is_new_key:
-                            # Save previous key-value
-                            if current_key:
-                                parsed_data[current_key] = current_value.strip()
+                        for line in lines:
+                            line = line.strip()
                             
-                            # Parse new key-value
-                            parts = line.split(':', 1)
-                            current_key = parts[0].strip()
-                            current_value = parts[1].strip() if len(parts) == 2 else ""
+                            # Skip empty lines, code blocks, and disclaimer
+                            if not line or line.startswith('```') or 'not for misuse' in line.lower() or 'search at your own risk' in line.lower() or 'law enforcement only' in line.lower():
+                                continue
+                            
+                            # Skip header line
+                            if line.startswith('Identity of'):
+                                continue
+                            
+                            # Check if line starts a new key-value pair
+                            # Must start with capital letter and have : near beginning (within first 25 chars)
+                            is_new_key = False
+                            if ':' in line:
+                                colon_pos = line.index(':')
+                                # New key if colon is in first part and line doesn't seem like continuation
+                                if colon_pos < 25 and not line.startswith(' ') and line[0].isupper():
+                                    potential_key = line.split(':', 1)[0].strip()
+                                    # Valid keys are usually short (< 20 chars) and don't have "KOTA" or "RT" etc
+                                    if len(potential_key) < 20 and not any(word in potential_key for word in ['KOTA', 'RT.', 'RW.', 'KEL.', 'KEC.', 'KODE POS']):
+                                        is_new_key = True
+                            
+                            if is_new_key:
+                                # Save previous key-value
+                                if current_key:
+                                    parsed_data[current_key] = current_value.strip()
+                                
+                                # Parse new key-value
+                                parts = line.split(':', 1)
+                                current_key = parts[0].strip()
+                                current_value = parts[1].strip() if len(parts) == 2 else ""
+                            else:
+                                # Continuation line (multi-line value like Address)
+                                if current_key and line:
+                                    current_value += " " + line
+                        
+                        # Save last key-value
+                        if current_key:
+                            parsed_data[current_key] = current_value.strip()
+                        
+                        nik_info['parsed_data'] = parsed_data
+                        logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
+                        
+                        # VERIFY: Check if parsed NIK matches queried NIK
+                        if parsed_data.get('NIK') == nik:
+                            logging.info(f"[{query_token}] ✓✓ NIK VERIFIED: Data matches queried NIK")
                         else:
-                            # Continuation line (multi-line value like Address)
-                            if current_key and line:
-                                current_value += " " + line
-                    
-                    # Save last key-value
-                    if current_key:
-                        parsed_data[current_key] = current_value.strip()
-                    
-                    nik_info['parsed_data'] = parsed_data
-                    logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
+                            logging.error(f"[{query_token}] ✗✗ NIK MISMATCH: Parsed NIK {parsed_data.get('NIK')} != Queried NIK {nik}")
+                            nik_info = None  # Discard wrong data
+                            break
             
-            # Check for photo in messages near our NIK response
-            if msg.photo and not photo_path:
-                # Download photo
+            # Check for photo in messages (must be near our NIK response)
+            if msg.photo and not photo_path and found_matching_response:
+                # Download photo only if we found matching text response
                 photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                 if photo_bytes:
                     import base64
