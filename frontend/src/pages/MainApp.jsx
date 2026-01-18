@@ -1716,22 +1716,48 @@ const MainApp = () => {
                             >
                               <div className="flex items-center gap-2">
                                 <span>{key}</span>
-                                {/* Family ID Pendalaman Button */}
+                                {/* Family ID Button - Dynamic (Family / Info) */}
                                 {key === 'Family ID' && value && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
-                                    className="ml-auto"
-                                    style={{
-                                      backgroundColor: 'var(--status-warning)',
-                                      color: 'var(--background-primary)',
-                                      fontSize: '10px',
-                                      padding: '2px 8px',
-                                      height: 'auto'
-                                    }}
-                                  >
-                                    🔍 Family
-                                  </Button>
+                                  <>
+                                    {selectedReghpTarget?.family_status === 'completed' && selectedReghpTarget?.family_data ? (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleShowFamilyTree(selectedReghpTarget.family_data, selectedNikData.nik)}
+                                        className="ml-auto"
+                                        style={{
+                                          backgroundColor: 'var(--accent-secondary)',
+                                          color: 'var(--background-primary)',
+                                          fontSize: '10px',
+                                          padding: '2px 8px',
+                                          height: 'auto'
+                                        }}
+                                      >
+                                        📋 Info
+                                      </Button>
+                                    ) : selectedReghpTarget?.family_status === 'processing' ? (
+                                      <span 
+                                        className="ml-auto text-xs"
+                                        style={{ color: 'var(--status-processing)' }}
+                                      >
+                                        ⏳ Processing...
+                                      </span>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
+                                        className="ml-auto"
+                                        style={{
+                                          backgroundColor: 'var(--status-warning)',
+                                          color: 'var(--background-primary)',
+                                          fontSize: '10px',
+                                          padding: '2px 8px',
+                                          height: 'auto'
+                                        }}
+                                      >
+                                        🔍 Family
+                                      </Button>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </td>
@@ -1759,20 +1785,6 @@ const MainApp = () => {
               >
                 CLOSE
               </Button>
-              
-              {/* Show Family Tree if available */}
-              {selectedReghpTarget?.family_status === 'completed' && selectedReghpTarget?.family_data && (
-                <Button
-                  onClick={() => handleShowFamilyTree(selectedReghpTarget.family_data, selectedNikData.nik)}
-                  className="w-full py-6 mt-3"
-                  style={{
-                    backgroundColor: 'var(--status-success)',
-                    color: 'var(--background-primary)'
-                  }}
-                >
-                  🌳 LIHAT FAMILY TREE
-                </Button>
-              )}
             </div>
           )}
         </DialogContent>
