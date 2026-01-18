@@ -94,6 +94,7 @@ const MainApp = () => {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedTargetForHistory, setSelectedTargetForHistory] = useState(null);
   const [historyPath, setHistoryPath] = useState([]); // For showing path on map
+  const [historyTargetId, setHistoryTargetId] = useState(null); // Track which target's history is being shown
   
   // AOI states
   const [aoiPanelOpen, setAoiPanelOpen] = useState(false);
