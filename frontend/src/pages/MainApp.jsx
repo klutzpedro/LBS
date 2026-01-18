@@ -1411,7 +1411,11 @@ const MainApp = () => {
                         >
                           ❌ Batal Jadwal
                         </Button>
-                        <CountdownTimer nextRun={getTargetSchedule(target.phone_number).next_run} />
+                        <CountdownTimer 
+                          nextRun={getTargetSchedule(target.phone_number).next_run}
+                          scheduleId={getTargetSchedule(target.phone_number).id}
+                          onCountdownEnd={handleCountdownEnd}
+                        />
                       </div>
                     ) : (
                       <Button
