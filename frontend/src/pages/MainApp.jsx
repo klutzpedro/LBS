@@ -84,10 +84,26 @@ const MainApp = () => {
   const [printingCase, setPrintingCase] = useState(false);
   const mapContainerRef = useRef(null);
   
+  // Global process queue - only one query process at a time
+  const [globalProcessing, setGlobalProcessing] = useState(false);
+  const [globalProcessType, setGlobalProcessType] = useState(null); // 'pendalaman', 'nik', 'family'
+  
   // Loading states to prevent double-click
   const [loadingPendalaman, setLoadingPendalaman] = useState(null); // targetId
   const [loadingNikPendalaman, setLoadingNikPendalaman] = useState(null); // nik
   const [loadingFamilyPendalaman, setLoadingFamilyPendalaman] = useState(null); // nik
+
+  // Check if any process is running
+  const isProcessRunning = () => {
+    return globalProcessing || loadingPendalaman || loadingNikPendalaman || loadingFamilyPendalaman;
+  };
+
+  // Show busy notification
+  const showBusyNotification = () => {
+    toast.warning('PROSES LAIN SEDANG BERLANGSUNG, MOHON MENUNGGU HINGGA SELESAI', {
+      duration: 3000
+    });
+  };
 
   // Handle tile layer change while preserving position
   const handleTileLayerChange = (newTile) => {
