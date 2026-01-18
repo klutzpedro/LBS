@@ -2233,51 +2233,47 @@ const MainApp = () => {
                   });
                 };
                 
-                // Determine color: green=oldest, yellow=middle, red=newest
+                // Only newest (endpoint) gets special treatment - others are simple dots on line
                 const isNewest = idx === 0;
-                const isOldest = idx === historyPath.length - 1;
-                const pointColor = isNewest ? '#FF3B5C' : isOldest ? '#00FF00' : '#FFB800';
                 
                 return (
                   <React.Fragment key={`history-point-${idx}`}>
-                    {/* Small circle point at exact position - smaller radius */}
+                    {/* Small dot attached to line - minimal styling for history points */}
                     <Circle
                       center={[pos.lat, pos.lng]}
-                      radius={6}
+                      radius={isNewest ? 8 : 3}
                       pathOptions={{
-                        color: pointColor,
-                        fillColor: pointColor,
+                        color: isNewest ? '#FF3B5C' : '#FFB800',
+                        fillColor: isNewest ? '#FF3B5C' : '#FFB800',
                         fillOpacity: 1,
-                        weight: 2
+                        weight: isNewest ? 2 : 1
                       }}
                     >
                       <Popup>
                         <div className="p-2 text-center">
-                          <p className="font-bold text-sm" style={{ color: pointColor }}>
-                            {isNewest ? '📍 TERBARU' : isOldest ? '🏁 AWAL' : `📌 Titik ${historyPath.length - idx}`}
+                          <p className="font-bold text-sm" style={{ color: isNewest ? '#FF3B5C' : '#FFB800' }}>
+                            {isNewest ? '📍 TERBARU' : `📌 ${formatTime(pos.timestamp)}`}
                           </p>
-                          <p className="text-xs font-semibold">{formatTime(pos.timestamp)}</p>
                           <p className="text-xs font-mono">{pos.lat?.toFixed(5)}, {pos.lng?.toFixed(5)}</p>
                           {pos.address && <p className="text-xs mt-1 truncate max-w-[150px]">{pos.address}</p>}
                         </div>
                       </Popup>
                     </Circle>
-                    {/* Timestamp label - only show for previous positions, NOT for newest (endpoint) */}
+                    {/* Timestamp label - only for previous positions, close to the line/dot */}
                     {!isNewest && (
                       <Marker
                         position={[pos.lat, pos.lng]}
                         icon={L.divIcon({
                           className: 'history-label',
                           html: `<div style="
-                            background: #FF3B5C;
-                            color: white;
-                            padding: 2px 5px;
-                            border-radius: 3px;
-                            font-size: 9px;
-                            font-weight: bold;
+                            background: rgba(0,0,0,0.7);
+                            color: #FFB800;
+                            padding: 1px 4px;
+                            border-radius: 2px;
+                            font-size: 8px;
+                            font-weight: 500;
                             white-space: nowrap;
-                            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-                            transform: translate(-50%, -35px);
+                            transform: translate(-50%, -12px);
                           ">${formatTime(pos.timestamp)}</div>`,
                           iconSize: [0, 0],
                           iconAnchor: [0, 0]
