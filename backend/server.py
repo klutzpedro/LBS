@@ -1255,13 +1255,14 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                     }
                 )
                 
-                # Save position to history
+                # Save position to history with CP timestamp
                 await save_position_history(
                     target_id, 
                     phone_number, 
                     location_data['latitude'], 
                     location_data['longitude'],
-                    location_data.get('address')
+                    location_data.get('address'),
+                    location_data.get('timestamp')
                 )
                 
                 # Check AOI alerts
