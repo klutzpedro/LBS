@@ -29,7 +29,8 @@ import {
   MessageSquare,
   Search,
   Eye,
-  EyeOff
+  EyeOff,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -271,6 +272,49 @@ const MainApp = () => {
       newVisible.add(targetId);
     }
     setVisibleTargets(newVisible);
+  };
+
+  const handleDeleteCase = async (caseItem) => {
+    if (!window.confirm(`Hapus case "${caseItem.name}"?\n\nSemua target dan data dalam case ini akan terhapus permanent.`)) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/cases/${caseItem.id}`);
+      toast.success('Case berhasil dihapus');
+      fetchCases();
+      if (selectedCase?.id === caseItem.id) {
+        setSelectedCase(null);
+        setTargets([]);
+      }
+    } catch (error) {
+      toast.error('Gagal menghapus case');
+    }
+  };
+
+  const handleDeleteTarget = async (target) => {
+    if (!window.confirm(`Hapus target ${target.phone_number}?\n\nSemua data (lokasi, Reghp, NIK, foto) akan terhapus permanent.`)) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/targets/${target.id}`);
+      toast.success('Target berhasil dihapus');
+      fetchTargets(selectedCase.id);
+      
+      // Remove from visible targets
+      const newVisible = new Set(visibleTargets);
+      newVisible.delete(target.id);
+      setVisibleTargets(newVisible);
+      
+      // If was selected for chat, clear it
+      if (selectedTargetForChat === target.id) {
+        setSelectedTargetForChat(null);
+        setChatMessages([]);
+      }
+    } catch (error) {
+      toast.error('Gagal menghapus target');
+    }
   };
 
   const handleCreateCase = async (e) => {
@@ -611,20 +655,34 @@ const MainApp = () => {
             {cases.map((caseItem) => (
               <div
                 key={caseItem.id}
+                className="p-3 rounded-md border cursor-pointer transition-all flex items-center justify-between group"
                 onClick={() => setSelectedCase(caseItem)}
-                className="p-3 rounded-md border cursor-pointer transition-all"
                 style={{
                   backgroundColor: selectedCase?.id === caseItem.id ? 'var(--background-tertiary)' : 'transparent',
                   borderColor: selectedCase?.id === caseItem.id ? 'var(--accent-primary)' : 'var(--borders-subtle)',
                   borderLeftWidth: '3px'
                 }}
               >
-                <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                  {caseItem.name}
-                </p>
-                <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                  {caseItem.target_count || 0} targets
-                </p>
+                <div className="flex-1">
+                  <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                    {caseItem.name}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                    {caseItem.target_count || 0} targets
+                  </p>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCase(caseItem);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: 'var(--status-error)' }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             ))}
             {cases.length === 0 && (
@@ -679,7 +737,7 @@ const MainApp = () => {
             {filteredTargets.map((target) => (
               <div
                 key={target.id}
-                className="rounded-md border"
+                className="rounded-md border group"
                 style={{
                   backgroundColor: selectedTargetForChat === target.id ? 'var(--background-elevated)' : 'var(--background-tertiary)',
                   borderColor: 'var(--borders-subtle)',
