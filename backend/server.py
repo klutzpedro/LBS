@@ -702,7 +702,7 @@ async def delete_schedule(schedule_id: str, username: str = Depends(verify_token
     return {"message": "Schedule deleted successfully"}
 
 @api_router.post("/schedules/{schedule_id}/execute")
-async def execute_schedule(schedule_id: str, background_tasks: BackgroundTasks, username: str = Depends(verify_token)):
+async def execute_schedule(schedule_id: str, username: str = Depends(verify_token)):
     """Execute a scheduled update immediately - triggered by countdown end"""
     schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
     if not schedule:
