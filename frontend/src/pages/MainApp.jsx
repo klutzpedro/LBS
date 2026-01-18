@@ -1004,21 +1004,28 @@ const MainApp = () => {
 
       {/* Main Map Area */}
       <main 
-        className={`${isMaximized ? 'fixed inset-0 z-[1000]' : 'flex-1 flex'}`}
+        className={isMaximized ? 'fixed' : 'flex-1 flex'}
         style={{ 
+          top: isMaximized ? 0 : 'auto',
+          left: isMaximized ? 0 : 'auto',
+          right: isMaximized ? 0 : 'auto',
+          bottom: isMaximized ? 0 : 'auto',
           height: '100vh', 
           width: isMaximized ? '100vw' : '100%',
           position: isMaximized ? 'fixed' : 'relative',
-          backgroundColor: 'var(--background-primary)'
+          zIndex: isMaximized ? 1000 : 'auto',
+          backgroundColor: 'var(--background-primary)',
+          overflow: 'hidden'
         }}
       >
-        {/* Map Container - Force full width */}
+        {/* Map Container */}
         <div 
-          className="transition-all duration-300"
           style={{ 
-            height: '100vh',
-            width: isMaximized ? '100vw' : (showChatPanel ? 'calc(100% - 384px)' : '100%'),
-            position: 'relative',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: showChatPanel && !isMaximized ? '384px' : 0,
+            bottom: 0,
             backgroundColor: 'var(--background-primary)'
           }}
         >
@@ -1191,8 +1198,8 @@ const MainApp = () => {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: '100%',
                 width: '100%',
+                height: '100%',
                 zIndex: 0,
                 backgroundColor: 'var(--background-primary)'
               }}
@@ -1200,6 +1207,11 @@ const MainApp = () => {
               preferCanvas={true}
               fadeAnimation={false}
               markerZoomAnimation={false}
+              whenReady={(map) => {
+                setTimeout(() => {
+                  map.target.invalidateSize();
+                }, 100);
+              }}
             >
               <TileLayer
                 key={selectedTileLayer}
