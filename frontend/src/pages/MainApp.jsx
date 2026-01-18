@@ -725,54 +725,50 @@ const MainApp = () => {
       </aside>
       )}
 
-      {/* Sidebar Toggle Button */}
+      {/* Sidebar Toggle Button - When collapsed, show at top left */}
       {!isMaximized && sidebarCollapsed && (
-        <div 
-          className="absolute left-4 top-4 z-[1000]"
-          style={{ pointerEvents: 'auto' }}
+        <Button
+          onClick={() => setSidebarCollapsed(false)}
+          size="icon"
+          className="fixed left-4 top-4 z-[2000] w-12 h-12 rounded-full shadow-lg"
+          style={{
+            backgroundColor: 'var(--accent-primary)',
+            color: 'var(--background-primary)',
+            border: '2px solid var(--accent-primary)'
+          }}
         >
-          <Button
-            onClick={() => setSidebarCollapsed(false)}
-            size="icon"
-            className="w-10 h-10 rounded-full shadow-lg"
-            style={{
-              backgroundColor: 'var(--background-elevated)',
-              borderColor: 'var(--accent-primary)',
-              color: 'var(--accent-primary)',
-              border: '2px solid'
-            }}
-          >
-            <Maximize2 className="w-5 h-5" />
-          </Button>
-        </div>
+          <FolderOpen className="w-6 h-6" />
+        </Button>
       )}
 
-      {/* Sidebar Collapse Button - Inside sidebar */}
+      {/* Sidebar Minimize Button - Inside sidebar header */}
       {!isMaximized && !sidebarCollapsed && (
-        <div 
-          className="absolute left-80 top-4 z-[1000]"
-          style={{ pointerEvents: 'auto', marginLeft: '4px' }}
+        <Button
+          onClick={() => setSidebarCollapsed(true)}
+          size="icon"
+          className="fixed left-[304px] top-4 z-[2000] w-10 h-10 rounded-full shadow-lg"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--accent-primary)',
+            color: 'var(--accent-primary)',
+            border: '2px solid'
+          }}
         >
-          <Button
-            onClick={() => setSidebarCollapsed(true)}
-            size="icon"
-            className="w-10 h-10 rounded-full shadow-lg"
-            style={{
-              backgroundColor: 'var(--background-elevated)',
-              borderColor: 'var(--accent-primary)',
-              color: 'var(--accent-primary)',
-              border: '2px solid'
-            }}
-          >
-            <Minimize2 className="w-5 h-5" />
-          </Button>
-        </div>
+          <Minimize2 className="w-5 h-5" />
+        </Button>
       )}
 
       {/* Main Map Area */}
-      <main className="flex-1 relative flex" style={{ height: '100vh', width: '100%', overflow: 'hidden' }}>
-        {/* Map */}
-        <div className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} style={{ height: '100vh', position: 'relative' }}>
+      <main className="flex-1 flex" style={{ height: '100vh', width: '100%', position: 'relative' }}>
+        {/* Map Container */}
+        <div 
+          className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} 
+          style={{ 
+            height: '100vh',
+            width: '100%',
+            position: 'relative'
+          }}
+        >
           {/* Map Controls */}
           <div 
             className="absolute top-4 z-[1000] flex flex-col gap-2"
@@ -909,7 +905,16 @@ const MainApp = () => {
               key={`${selectedTileLayer}-${mapKey}`}
               center={mapCenter}
               zoom={mapZoom}
-              style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              style={{ 
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '100%',
+                width: '100%',
+                zIndex: 0
+              }}
               zoomControl={true}
             >
               <TileLayer
