@@ -169,11 +169,23 @@ const MainApp = () => {
   }, [selectedCase]);
 
   useEffect(() => {
-    // Auto-select first completed target for visibility
+    // Auto-check newly completed targets
     const completedTargets = targets.filter(t => t.status === 'completed' && t.data);
+    
+    // If no targets are visible, auto-check the first completed one
     if (completedTargets.length > 0 && visibleTargets.size === 0) {
       setVisibleTargets(new Set([completedTargets[0].id]));
     }
+    
+    // Auto-check newly completed targets (status changed to completed)
+    completedTargets.forEach(target => {
+      // If target just became completed and not in visible set, add it
+      if (!visibleTargets.has(target.id)) {
+        const newVisible = new Set(visibleTargets);
+        newVisible.add(target.id);
+        setVisibleTargets(newVisible);
+      }
+    });
   }, [targets]);
 
   useEffect(() => {
