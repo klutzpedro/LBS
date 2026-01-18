@@ -449,6 +449,9 @@ const MainApp = () => {
       setDrawingMode(null);
       setDrawingPoints([]);
 
+      // Get current AOI count before creating
+      const currentAOICount = aois.length;
+
       try {
         const response = await axios.post(`${API}/aois`, payload, {
           headers: { Authorization: `Bearer ${token}` },
@@ -457,24 +460,48 @@ const MainApp = () => {
 
         if (response.data && response.data.aoi) {
           toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
+          await fetchAOIs();
         } else {
           toast.success(`AOI berhasil dibuat!`);
+          await fetchAOIs();
         }
       } catch (requestError) {
-        // Even if request fails with 520, check if AOI was created
-        console.log('AOI request error, checking if created anyway...', requestError.message);
+        // Handle timeout/520 errors with polling verification
+        console.log('AOI request error, verifying creation with polling...', requestError.message);
+        
+        // Wait a moment then poll to check if AOI was actually created
+        const verifyAOICreation = async (retries = 3, delay = 1500) => {
+          for (let i = 0; i < retries; i++) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+            try {
+              const checkResponse = await axios.get(`${API}/aois`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              const newAOICount = checkResponse.data?.length || 0;
+              
+              if (newAOICount > currentAOICount) {
+                // AOI was actually created despite the error
+                setAois(checkResponse.data);
+                toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
+                return true;
+              }
+            } catch (pollError) {
+              console.log('Polling attempt failed:', pollError.message);
+            }
+          }
+          return false;
+        };
+        
+        const wasCreated = await verifyAOICreation();
+        if (!wasCreated) {
+          // Only show error if AOI really wasn't created
+          toast.error('Gagal membuat AOI. Silakan coba lagi.');
+        }
       }
-      
-      // Always refresh AOIs - the creation might have succeeded despite error
-      await fetchAOIs();
-      toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
       
     } catch (error) {
       console.error('Failed to create AOI:', error);
-      // Only show error if it's not a timeout/520 error
-      if (error.response?.status !== 520 && error.code !== 'ECONNABORTED') {
-        toast.error('Gagal membuat AOI: ' + (error.response?.data?.detail || error.message));
-      }
+      toast.error('Gagal membuat AOI: ' + (error.response?.data?.detail || error.message));
       setDrawingMode(null);
       setDrawingPoints([]);
       // Still try to refresh
