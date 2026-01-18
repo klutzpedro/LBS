@@ -21,7 +21,39 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
   // Organize members by relationship
   const head = members.find(m => m.relationship?.includes('KEPALA'));
   const spouse = members.find(m => m.relationship?.includes('ISTRI') || m.relationship?.includes('SUAMI'));
-  const children = members.filter(m => m.relationship?.includes('ANAK'));
+  
+  // Sort children by DOB (oldest first = Anak 1)
+  const children = members
+    .filter(m => m.relationship?.includes('ANAK'))
+    .sort((a, b) => {
+      // Parse DOB - common formats: "DD-MM-YYYY", "YYYY-MM-DD", "DD/MM/YYYY"
+      const parseDOB = (dob) => {
+        if (!dob) return new Date(9999, 11, 31); // No DOB = put at end
+        const str = String(dob).trim();
+        // Try DD-MM-YYYY or DD/MM/YYYY
+        let match = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+        if (match) {
+          return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+        }
+        // Try YYYY-MM-DD
+        match = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+        if (match) {
+          return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+        }
+        // Fallback: try native Date parse
+        const parsed = new Date(str);
+        return isNaN(parsed) ? new Date(9999, 11, 31) : parsed;
+      };
+      
+      const dobA = parseDOB(a.dob || a.birth_date || a.tanggal_lahir);
+      const dobB = parseDOB(b.dob || b.birth_date || b.tanggal_lahir);
+      return dobA - dobB; // Oldest first
+    })
+    .map((child, idx) => ({
+      ...child,
+      childOrder: idx + 1 // Add child order for display
+    }));
+  
   const others = members.filter(m => 
     !m.relationship?.includes('KEPALA') && 
     !m.relationship?.includes('ISTRI') && 
