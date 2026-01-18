@@ -106,6 +106,9 @@ const MainApp = () => {
   const [globalProcessing, setGlobalProcessing] = useState(false);
   const [globalProcessType, setGlobalProcessType] = useState(null); // 'pendalaman', 'nik', 'family'
   
+  // Track executing schedules to prevent duplicates
+  const executingSchedulesRef = useRef(new Set());
+  
   // Loading states to prevent double-click
   const [loadingPendalaman, setLoadingPendalaman] = useState(null); // targetId
   const [loadingNikPendalaman, setLoadingNikPendalaman] = useState(null); // nik
