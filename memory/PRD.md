@@ -243,12 +243,19 @@
 - **Backend:** New `aois` and `aoi_alerts` collections, AOI CRUD endpoints, `check_aoi_alerts()` function
 
 ### 4. History UI Improvements (January 18, 2026)
-- **Smaller markers:** History point radius reduced from 12 to 6 meters for cleaner visualization
-- **Label offset increased:** Timestamp labels moved further from markers (-35px vs -22px) to prevent overlap
-- **No label on endpoint:** Timestamp labels removed from newest/endpoint marker since target info popup already shows this data
+- **Minimal markers:** History points now use tiny dots (radius 3) attached to line, endpoint uses radius 8
+- **Simplified colors:** Yellow (#FFB800) for history points, Red (#FF3B5C) for endpoint only
+- **Label styling:** Timestamp labels now use semi-transparent dark background with yellow text, positioned close to dots (-12px offset)
+- **No label on endpoint:** Timestamp labels only shown on previous positions
 - **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
 
-### 5. AOI Notification Bug Fix (January 18, 2026)
+### 5. AOI Panel Search Feature (January 18, 2026)
+- **New search field:** Added search input at top of AOI list to filter by name
+- **Real-time filter:** Filters AOI list as user types
+- **Empty state:** Shows "Tidak ada AOI dengan nama X" when no matches
+- **Files Modified:** `/app/frontend/src/components/AOIComponents.jsx`
+
+### 6. AOI Notification Bug Fix (January 18, 2026)
 - **Issue:** "Gagal membuat AOI" error shown even when AOI was successfully created (due to 520 timeout)
 - **Solution:** Implemented polling verification - on error, system waits and re-fetches AOI list to verify creation
 - **Behavior:** If AOI appears in list after error, shows success toast instead of error
