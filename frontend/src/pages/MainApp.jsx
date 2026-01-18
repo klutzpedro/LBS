@@ -120,7 +120,52 @@ const MainApp = () => {
     try {
       // Create a copy of data to avoid mutation during PDF generation
       const targetCopy = JSON.parse(JSON.stringify(target));
-      await generateTargetPDF(targetCopy);
+      
+      let mapScreenshot = null;
+      
+      // If target has coordinates, move map to target location and take screenshot
+      if (target.data?.latitude && target.data?.longitude) {
+        const lat = parseFloat(target.data.latitude);
+        const lng = parseFloat(target.data.longitude);
+        
+        // Save current map position
+        const prevCenter = mapCenter;
+        const prevZoom = mapZoom;
+        
+        // Move map to target location
+        setMapCenter([lat, lng]);
+        setMapZoom(16);
+        setMapKey(prev => prev + 1); // Force re-render
+        
+        toast.info('Mengambil screenshot peta...');
+        
+        // Wait for map tiles to load
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Take screenshot of map container
+        if (mapContainerRef.current) {
+          try {
+            const canvas = await html2canvas(mapContainerRef.current, {
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#121212',
+              scale: 1,
+              logging: false,
+              imageTimeout: 5000
+            });
+            mapScreenshot = canvas.toDataURL('image/jpeg', 0.85);
+          } catch (e) {
+            console.warn('Map screenshot failed:', e);
+          }
+        }
+        
+        // Restore previous map position
+        setMapCenter(prevCenter);
+        setMapZoom(prevZoom);
+        setMapKey(prev => prev + 1);
+      }
+      
+      await generateTargetPDF(targetCopy, mapScreenshot);
       toast.success('PDF berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
