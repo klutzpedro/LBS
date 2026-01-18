@@ -553,10 +553,39 @@ const MainApp = () => {
       toast.success('Family query dimulai! Tunggu ~15 detik...');
       setTargetNikForTree(targetNik);
       
-      // Refresh targets to get updated family_status
-      setTimeout(() => {
-        fetchTargets(selectedCase.id);
-      }, 1000);
+      // Poll for completion and auto-open dialog
+      let attempts = 0;
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        
+        try {
+          const response = await axios.get(`${API}/targets/${targetId}`);
+          const target = response.data;
+          
+          // Update selectedReghpTarget
+          if (selectedReghpTarget?.id === targetId) {
+            setSelectedReghpTarget(target);
+          }
+          
+          if (target.family_status === 'completed' && target.family_data) {
+            clearInterval(checkInterval);
+            toast.success('Family Tree data tersedia!');
+            
+            // Auto-open Family Tree dialog
+            setTimeout(() => {
+              handleShowFamilyTree(target.family_data, targetNik);
+            }, 500);
+          } else if (target.family_status === 'error' || attempts > 30) {
+            clearInterval(checkInterval);
+            if (target.family_status === 'error') {
+              toast.error('Family query gagal');
+            }
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Family query error:', error);
       toast.error(error.response?.data?.detail || 'Gagal memulai Family query');
