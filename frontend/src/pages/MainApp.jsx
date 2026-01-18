@@ -446,6 +446,10 @@ const MainApp = () => {
   );
 
   const handlePendalaman = async (target) => {
+    // Prevent double-click
+    if (loadingPendalaman === target.id) return;
+    setLoadingPendalaman(target.id);
+    
     // Optimistic update - langsung set status processing
     const updatedTargets = targets.map(t => 
       t.id === target.id ? { ...t, reghp_status: 'processing' } : t
@@ -463,6 +467,9 @@ const MainApp = () => {
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start pendalaman');
       fetchTargets(selectedCase.id); // Revert on error
+    } finally {
+      // Clear loading after a short delay to prevent rapid re-clicks
+      setTimeout(() => setLoadingPendalaman(null), 2000);
     }
   };
 
