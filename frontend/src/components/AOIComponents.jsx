@@ -35,6 +35,7 @@ export const AOIPanel = ({
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [newAOI, setNewAOI] = useState({
     name: '',
     aoi_type: 'polygon',
