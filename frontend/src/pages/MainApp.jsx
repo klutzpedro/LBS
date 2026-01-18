@@ -1740,6 +1740,38 @@ const MainApp = () => {
                 <Target className="w-5 h-5" />
               </Button>
 
+            {/* Drawing Mode Indicator */}
+            {drawingMode && (
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                style={{ 
+                  backgroundColor: 'var(--status-success)', 
+                  color: 'white'
+                }}
+              >
+                <span className="text-xs font-semibold">
+                  ✏️ Drawing {drawingMode} ({drawingPoints.length} titik)
+                </span>
+                <Button
+                  size="sm"
+                  onClick={handleFinishDrawing}
+                  className="h-6 px-2 text-xs"
+                  style={{ backgroundColor: 'white', color: 'var(--status-success)' }}
+                >
+                  ✓ Selesai
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleCancelDrawing}
+                  className="h-6 px-2 text-xs"
+                  style={{ color: 'white' }}
+                >
+                  ✕
+                </Button>
+              </div>
+            )}
+
             {/* Clear History Path */}
             {historyPath.length > 0 && (
               <Button
@@ -1758,7 +1790,7 @@ const MainApp = () => {
             )}
 
             {/* Add Target (Floating) */}
-            {selectedCase && (
+            {selectedCase && !drawingMode && (
               <Button
                 onClick={() => setAddTargetDialog(true)}
                 data-testid="floating-add-target"
@@ -1773,6 +1805,7 @@ const MainApp = () => {
             )}
 
             {/* Chat History Toggle - Opens Popup */}
+            {!drawingMode && (
               <div className="relative">
                 <Button
                   onClick={() => setShowChatPanel(true)}
