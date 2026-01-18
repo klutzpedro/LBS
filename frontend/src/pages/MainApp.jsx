@@ -89,6 +89,18 @@ const MainApp = () => {
   const [printingCase, setPrintingCase] = useState(false);
   const mapContainerRef = useRef(null);
   
+  // History states
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [selectedTargetForHistory, setSelectedTargetForHistory] = useState(null);
+  const [historyPath, setHistoryPath] = useState([]); // For showing path on map
+  
+  // AOI states
+  const [aoiPanelOpen, setAoiPanelOpen] = useState(false);
+  const [aois, setAois] = useState([]);
+  const [aoiAlerts, setAoiAlerts] = useState([]);
+  const [drawingMode, setDrawingMode] = useState(null); // 'polygon' or 'circle'
+  const [drawingPoints, setDrawingPoints] = useState([]);
+  
   // Global process queue - only one query process at a time
   const [globalProcessing, setGlobalProcessing] = useState(false);
   const [globalProcessType, setGlobalProcessType] = useState(null); // 'pendalaman', 'nik', 'family'
