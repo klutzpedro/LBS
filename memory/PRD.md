@@ -281,15 +281,92 @@
 - **Behavior:** If AOI appears in list after error, shows success toast instead of error
 - **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
 
+## Major Refactoring (December 2025)
+
+### MainApp.jsx Component Breakdown
+**Completed:** Reduced `MainApp.jsx` from **3253 lines** to **1459 lines** (~55% reduction)
+
+**New Components Created in `/app/frontend/src/components/main/`:**
+
+1. **`Sidebar.jsx`** - Complete sidebar with Cases, Targets, Telegram status
+   - `SidebarHeader` - Logo, settings, logout buttons
+   - `ProcessingIndicator` - Global processing status
+   - `CasesSection` - Case list with CRUD
+   - `TargetsSection` - Target list with search, actions
+   - `TargetCard` - Individual target card with all controls
+
+2. **`ChatDialog.jsx`** - Chat history popup dialog
+   - `ChatMessage` - Individual chat message component
+
+3. **`MapControls.jsx`** - All map control buttons
+   - `MapControls` - Tile selector, maximize, marker names, AOI toggle
+   - `MapControlsToggle` - Show/hide map controls button
+   - `DrawingIndicator` - AOI drawing mode indicator
+
+4. **`HistoryPathRenderer.jsx`** - Multi-target history visualization
+   - Polyline rendering with dotted lines
+   - Circle markers for history points
+   - Timestamp labels with arrows on previous points
+   - Color-coded paths for multiple targets
+
+5. **`AOIRenderer.jsx`** - Area of Interest map overlays
+   - `AOIPopup` - Popup content for AOI shapes
+   - Polygon and Circle rendering with alert highlighting
+
+6. **`DrawingOverlay.jsx`** - AOI drawing preview
+   - Polygon and circle preview during drawing
+   - Point markers for drawing vertices
+
+7. **`TargetMarkers.jsx`** - Target location markers
+   - `TargetPopup` - Popup with target info and Pendalaman button
+
+8. **`TargetDialogs.jsx`** - All modal dialogs
+   - `NewCaseDialog` - Create new case
+   - `AddTargetDialog` - Add new target
+   - `DuplicatePhoneDialog` - Handle duplicate phone numbers
+   - `ScheduleDialog` - Schedule position updates
+   - `ReghpInfoDialog` - Registration HP info display
+   - `NikInfoDialog` - NIK data with photo display
+   - `FamilyTreeDialog` - Family tree visualization
+   - `NikDataRow` - Table row for NIK data with Family button
+
+**Updated `index.js`:** Barrel exports for all new components
+
+**Benefits:**
+- Better code organization and maintainability
+- Easier testing of individual components
+- Reduced cognitive load when reading code
+- Clear separation of concerns
+
 ## Future Tasks (Backlog)
 - [ ] AI-enhanced family tree visualization using graph library (react-flow/D3.js)
-- [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog) - Currently 2500+ lines
+- [x] ~~Refactor MainApp.jsx into smaller components~~ **COMPLETED**
 - [ ] Multi-user support
+- [ ] Add unit tests for new components
 
 ## Files Reference
-- `/app/frontend/src/pages/MainApp.jsx` - Main application component
+
+### Main Files
+- `/app/frontend/src/pages/MainApp.jsx` - Main application component (1459 lines)
 - `/app/backend/server.py` - FastAPI backend with Telethon integration
 - `/app/frontend/src/index.css` - Global styles and 4K media queries
+
+### Refactored Components (`/app/frontend/src/components/main/`)
+- `index.js` - Barrel exports
+- `Sidebar.jsx` - Sidebar with Cases/Targets
+- `ChatDialog.jsx` - Chat history dialog
+- `MapControls.jsx` - Map control buttons
+- `HistoryPathRenderer.jsx` - History path visualization
+- `AOIRenderer.jsx` - AOI shapes rendering
+- `DrawingOverlay.jsx` - Drawing preview
+- `TargetMarkers.jsx` - Target location markers
+- `TargetDialogs.jsx` - All modal dialogs
+- `CountdownTimer.jsx` - Schedule countdown
+- `MapUtils.jsx` - Map tiles and marker utilities
+- `MapResizeHandler.jsx` - Map resize handling
+- `PDFExport.jsx` - PDF generation
+
+### Other Components
 - `/app/frontend/src/components/FamilyTreeViz.jsx` - Family tree component
 - `/app/frontend/src/components/HistoryDialog.jsx` - Position history dialog
 - `/app/frontend/src/components/AOIComponents.jsx` - AOI panel and alert notification
