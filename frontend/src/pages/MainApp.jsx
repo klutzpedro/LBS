@@ -682,6 +682,9 @@ const MainApp = () => {
           // Remove from executing set after completion
           executingSchedulesRef.current.delete(scheduleId);
           
+          // Refresh history path if this target's history is being displayed
+          await refreshHistoryPath(response.data.target_id);
+          
           // Center map on new position if available
           if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
             setMapCenter([
