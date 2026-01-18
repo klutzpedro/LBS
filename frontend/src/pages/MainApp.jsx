@@ -27,7 +27,9 @@ import {
   XCircle,
   Activity,
   MessageSquare,
-  Search
+  Search,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -686,10 +688,30 @@ const MainApp = () => {
                 }}
               >
                 {/* Target Info - Clickable */}
-                <div
-                  onClick={() => handleTargetClick(target)}
-                  className="p-3 cursor-pointer hover:bg-background-elevated transition-all"
-                >
+                <div className="p-3">
+                  {/* Checkbox for visibility + Target info */}
+                  <div className="flex items-start gap-2">
+                    {/* Checkbox */}
+                    {target.status === 'completed' && target.data && (
+                      <input
+                        type="checkbox"
+                        checked={visibleTargets.has(target.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleTargetVisibility(target.id);
+                        }}
+                        className="mt-1 w-4 h-4 cursor-pointer"
+                        style={{
+                          accentColor: 'var(--accent-primary)'
+                        }}
+                      />
+                    )}
+                    
+                    {/* Target Info */}
+                    <div
+                      onClick={() => handleTargetClick(target)}
+                      className="flex-1 cursor-pointer hover:opacity-80 transition-all"
+                    >
                   <div className="flex items-center justify-between mb-1">
                     <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
                       {target.phone_number}
@@ -718,9 +740,11 @@ const MainApp = () => {
                       Error: {target.error}
                     </p>
                   )}
-                  <p className="text-xs uppercase mt-1" style={{ color: 'var(--foreground-muted)' }}>
-                    {target.status}
-                  </p>
+                      <p className="text-xs uppercase mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                        {target.status}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 
                 {/* Action Buttons - Only for completed targets */}
@@ -913,6 +937,23 @@ const MainApp = () => {
               {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
             </Button>
 
+            {/* Toggle Marker Names */}
+            {!showChatPanel && (
+              <Button
+                onClick={() => setShowMarkerNames(!showMarkerNames)}
+                size="icon"
+                className="w-10 h-10 border"
+                title={showMarkerNames ? "Sembunyikan Nama" : "Tampilkan Nama"}
+                style={{
+                  backgroundColor: showMarkerNames ? 'var(--accent-primary)' : 'var(--background-elevated)',
+                  borderColor: 'var(--borders-default)',
+                  color: showMarkerNames ? 'var(--background-primary)' : 'var(--accent-primary)'
+                }}
+              >
+                {showMarkerNames ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </Button>
+            )}
+
             {/* Add Target (Floating) - hide when chat panel open */}
             {selectedCase && !showChatPanel && (
               <Button
@@ -1003,12 +1044,22 @@ const MainApp = () => {
                 url={mapTiles[selectedTileLayer].url}
                 attribution={mapTiles[selectedTileLayer].attribution}
               />
-              {targets.filter(t => t.data && t.data.latitude && t.data.longitude).map((target) => (
-                <Marker
-                  key={target.id}
-                  position={[target.data.latitude, target.data.longitude]}
-                  icon={createMarkerWithLabel(target.phone_number, target.data.timestamp || target.created_at)}
-                >
+              {targets.filter(t => t.data && t.data.latitude && t.data.longitude && visibleTargets.has(t.id)).map((target) => {
+                const targetName = target.nik_queries ? 
+                  Object.values(target.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
+                  target.data?.name;
+                
+                return (
+                  <Marker
+                    key={target.id}
+                    position={[target.data.latitude, target.data.longitude]}
+                    icon={createMarkerWithLabel(
+                      target.phone_number, 
+                      target.data.timestamp || target.created_at,
+                      targetName,
+                      showMarkerNames
+                    )}
+                  >
                   <Popup>
                     <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '200px' }}>
                       <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
@@ -1079,7 +1130,8 @@ const MainApp = () => {
                     </div>
                   </Popup>
                 </Marker>
-              ))}
+              );
+              })}
             </MapContainer>
           )}
         </div>
