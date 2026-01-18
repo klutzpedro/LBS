@@ -2213,13 +2213,14 @@ const MainApp = () => {
                 
                 return (
                   <React.Fragment key={`history-point-${idx}`}>
+                    {/* Small circle point at exact position */}
                     <Circle
                       center={[pos.lat, pos.lng]}
-                      radius={25}
+                      radius={12}
                       pathOptions={{
                         color: pointColor,
                         fillColor: pointColor,
-                        fillOpacity: 0.9,
+                        fillOpacity: 1,
                         weight: 2
                       }}
                     >
@@ -2234,7 +2235,7 @@ const MainApp = () => {
                         </div>
                       </Popup>
                     </Circle>
-                    {/* Permanent label for timestamp - RED color, positioned above point */}
+                    {/* Timestamp label - positioned slightly above point */}
                     <Marker
                       position={[pos.lat, pos.lng]}
                       icon={L.divIcon({
@@ -2242,14 +2243,13 @@ const MainApp = () => {
                         html: `<div style="
                           background: #FF3B5C;
                           color: white;
-                          padding: 3px 8px;
-                          border-radius: 4px;
-                          font-size: 11px;
+                          padding: 2px 5px;
+                          border-radius: 3px;
+                          font-size: 9px;
                           font-weight: bold;
                           white-space: nowrap;
-                          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-                          transform: translate(-50%, -55px);
-                          border: 1px solid #CC2244;
+                          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+                          transform: translate(-50%, -22px);
                         ">${formatTime(pos.timestamp)}</div>`,
                         iconSize: [0, 0],
                         iconAnchor: [0, 0]
