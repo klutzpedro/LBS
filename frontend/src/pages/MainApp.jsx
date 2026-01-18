@@ -1003,13 +1003,21 @@ const MainApp = () => {
       )}
 
       {/* Main Map Area */}
-      <main className="flex-1 flex" style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
+      <main 
+        className={`${isMaximized ? 'fixed inset-0 z-[1000]' : 'flex-1 flex'}`}
+        style={{ 
+          height: '100vh', 
+          width: isMaximized ? '100vw' : '100%',
+          position: isMaximized ? 'fixed' : 'relative',
+          backgroundColor: 'var(--background-primary)'
+        }}
+      >
         {/* Map Container - Force full width */}
         <div 
-          className={`transition-all duration-300`}
+          className="transition-all duration-300"
           style={{ 
             height: '100vh',
-            width: showChatPanel ? 'calc(100% - 384px)' : '100%',
+            width: isMaximized ? '100vw' : (showChatPanel ? 'calc(100% - 384px)' : '100%'),
             position: 'relative',
             backgroundColor: 'var(--background-primary)'
           }}
@@ -1300,8 +1308,8 @@ const MainApp = () => {
           )}
         </div>
 
-        {/* Chat Panel */}
-        {showChatPanel && selectedTargetForChat && (
+        {/* Chat Panel - Hide when map is maximized */}
+        {showChatPanel && !isMaximized && selectedTargetForChat && (
           <div 
             className="w-96 border-l flex flex-col relative"
             style={{
