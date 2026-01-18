@@ -887,7 +887,14 @@ const MainApp = () => {
               </Button>
             )}
           </div>
-          <div className="space-y-2">
+          <div 
+            className="space-y-2 overflow-y-auto pr-1"
+            style={{ 
+              maxHeight: '360px', // Approximately 3 targets visible
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+            }}
+          >
             {filteredTargets.map((target) => (
               <div
                 key={target.id}
