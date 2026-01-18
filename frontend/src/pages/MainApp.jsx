@@ -154,7 +154,8 @@ const MainApp = () => {
   const [visibleTargets, setVisibleTargets] = useState(new Set());
   const [familyTreeDialogOpen, setFamilyTreeDialogOpen] = useState(false);
   const [selectedFamilyData, setSelectedFamilyData] = useState(null);
-  const [targetNikForTree, setTargetNikForTree] = useState(null); // Force map re-render
+  const [targetNikForTree, setTargetNikForTree] = useState(null);
+  const [showMapControls, setShowMapControls] = useState(true); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -1014,14 +1015,15 @@ const MainApp = () => {
           }}
         >
           {/* Map Controls */}
-          <div 
-            className="absolute top-4 z-[1000] flex flex-col gap-2"
-            style={{ 
-              pointerEvents: 'auto',
-              right: showChatPanel ? '400px' : '16px',
-              transition: 'right 300ms'
-            }}
-          >
+          {showMapControls && (
+            <div 
+              className="absolute top-4 z-[1000] flex flex-col gap-2"
+              style={{ 
+                pointerEvents: 'auto',
+                right: showChatPanel ? '400px' : '16px',
+                transition: 'right 300ms'
+              }}
+            >
             {/* Map Type - increase width to prevent overlap */}
             {!showChatPanel && (
               <div 
@@ -1395,6 +1397,22 @@ const MainApp = () => {
               )}
             </div>
           </div>
+          )}
+
+          {/* Toggle Map Controls Button - Always visible */}
+          <Button
+            onClick={() => setShowMapControls(!showMapControls)}
+            size="icon"
+            className="fixed bottom-4 right-4 z-[2000] w-12 h-12 rounded-full shadow-lg"
+            style={{
+              backgroundColor: showMapControls ? 'var(--status-error)' : 'var(--accent-primary)',
+              color: 'var(--background-primary)',
+              border: '2px solid',
+              borderColor: showMapControls ? 'var(--status-error)' : 'var(--accent-primary)'
+            }}
+          >
+            {showMapControls ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
+          </Button>
         )}
       </main>
 
