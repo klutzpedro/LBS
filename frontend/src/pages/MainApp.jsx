@@ -1925,107 +1925,6 @@ const MainApp = () => {
           )}
         </div>
 
-        {/* Chat Panel - Hide when map is maximized */}
-        {showChatPanel && !isMaximized && selectedTargetForChat && (
-          <div 
-            className="w-96 border-l flex flex-col relative"
-            style={{
-              backgroundColor: 'var(--background-secondary)',
-              borderColor: 'var(--borders-default)'
-            }}
-          >
-            {/* Minimize Button - positioned outside chat panel */}
-            <Button
-              onClick={() => setShowChatPanel(false)}
-              data-testid="minimize-chat-button"
-              size="icon"
-              className="absolute -left-12 top-4 w-10 h-10 rounded-full shadow-lg z-[1001]"
-              style={{
-                backgroundColor: 'var(--background-elevated)',
-                color: 'var(--accent-primary)',
-                border: '2px solid var(--accent-primary)'
-              }}
-            >
-              <Minimize2 className="w-5 h-5" />
-            </Button>
-
-            {/* Chat Header */}
-            <div 
-              className="p-4 border-b"
-              style={{ borderColor: 'var(--borders-default)' }}
-            >
-              <h3 
-                className="font-semibold text-sm"
-                style={{ 
-                  color: 'var(--foreground-primary)',
-                  fontFamily: 'Barlow Condensed, sans-serif'
-                }}
-              >
-                CHAT HISTORY
-              </h3>
-              <p 
-                className="text-xs font-mono mt-1"
-                style={{ color: 'var(--accent-primary)' }}
-              >
-                {targets.find(t => t.id === selectedTargetForChat)?.phone_number || 'Select target'}
-              </p>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {chatMessages.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
-                    Belum ada chat
-                  </p>
-                </div>
-              ) : (
-                chatMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3 rounded-lg ${msg.direction === 'sent' ? 'ml-8' : 'mr-8'}`}
-                    style={{
-                      backgroundColor: msg.direction === 'sent' 
-                        ? 'rgba(0, 217, 255, 0.2)' 
-                        : 'var(--background-tertiary)',
-                      borderLeft: msg.direction === 'sent' 
-                        ? '3px solid var(--accent-primary)' 
-                        : '3px solid var(--borders-default)'
-                    }}
-                  >
-                    <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                      {msg.message}
-                    </p>
-                    {msg.has_buttons && msg.buttons && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {msg.buttons.flat().map((btn, i) => (
-                          <span 
-                            key={i}
-                            className="px-2 py-1 rounded text-xs"
-                            style={{
-                              backgroundColor: 'rgba(0, 217, 255, 0.1)',
-                              color: 'var(--accent-primary)',
-                              border: '1px solid var(--accent-primary)'
-                            }}
-                          >
-                            {btn}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <p 
-                      className="text-xs mt-1"
-                      style={{ color: 'var(--foreground-muted)' }}
-                    >
-                      {new Date(msg.timestamp).toLocaleTimeString('id-ID')}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-          )}
-
           {/* Toggle Map Controls Button - Always visible */}
           <Button
             onClick={() => setShowMapControls(!showMapControls)}
@@ -2041,6 +1940,94 @@ const MainApp = () => {
             {showMapControls ? <EyeOff className="w-6 h-6" /> : <Eye className="w-6 h-6" />}
           </Button>
       </main>
+
+      {/* Chat Dialog Popup */}
+      <Dialog open={showChatPanel} onOpenChange={setShowChatPanel}>
+        <DialogContent 
+          className="z-[9999] max-w-md p-0 max-h-[80vh] flex flex-col"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-default)'
+          }}
+        >
+          {/* Chat Header */}
+          <div 
+            className="p-4 border-b shrink-0"
+            style={{ borderColor: 'var(--borders-default)' }}
+          >
+            <DialogTitle>
+              <h3 
+                className="font-semibold text-sm"
+                style={{ 
+                  color: 'var(--foreground-primary)',
+                  fontFamily: 'Barlow Condensed, sans-serif'
+                }}
+              >
+                CHAT HISTORY
+              </h3>
+            </DialogTitle>
+            <p 
+              className="text-xs font-mono mt-1"
+              style={{ color: 'var(--accent-primary)' }}
+            >
+              {targets.find(t => t.id === selectedTargetForChat)?.phone_number || 'Select target'}
+            </p>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ maxHeight: '60vh' }}>
+            {chatMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                  Belum ada chat
+                </p>
+              </div>
+            ) : (
+              chatMessages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-lg ${msg.direction === 'sent' ? 'ml-8' : 'mr-8'}`}
+                  style={{
+                    backgroundColor: msg.direction === 'sent' 
+                      ? 'rgba(0, 217, 255, 0.2)' 
+                      : 'var(--background-tertiary)',
+                    borderLeft: msg.direction === 'sent' 
+                      ? '3px solid var(--accent-primary)' 
+                      : '3px solid var(--borders-default)'
+                  }}
+                >
+                  <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                    {msg.message}
+                  </p>
+                  {msg.has_buttons && msg.buttons && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {msg.buttons.flat().map((btn, i) => (
+                        <span 
+                          key={i}
+                          className="px-2 py-1 rounded text-xs"
+                          style={{
+                            backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                            color: 'var(--accent-primary)',
+                            border: '1px solid var(--accent-primary)'
+                          }}
+                        >
+                          {btn}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p 
+                    className="text-xs mt-1"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  >
+                    {new Date(msg.timestamp).toLocaleTimeString('id-ID')}
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* New Case Dialog */}
       <Dialog open={newCaseDialog} onOpenChange={setNewCaseDialog}>
