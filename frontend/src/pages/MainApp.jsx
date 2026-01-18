@@ -338,7 +338,113 @@ const MainApp = () => {
   const handleStartDrawing = (type) => {
     setDrawingMode(type);
     setDrawingPoints([]);
-    toast.info(`Klik pada peta untuk menggambar ${type}. Klik kanan untuk selesai.`);
+    toast.info(`Klik pada peta untuk menggambar ${type}. Double-click untuk selesai.`, { duration: 5000 });
+  };
+
+  // Handle map click for drawing
+  const handleMapClickForDrawing = (latlng) => {
+    if (!drawingMode) return;
+    
+    const newPoint = [latlng.lat, latlng.lng];
+    setDrawingPoints(prev => [...prev, newPoint]);
+    
+    if (drawingMode === 'circle' && drawingPoints.length === 0) {
+      // For circle, first click is center, second click determines radius
+      toast.info('Klik lagi untuk menentukan radius lingkaran');
+    }
+  };
+
+  // Finish drawing AOI
+  const handleFinishDrawing = async () => {
+    if (!drawingMode || drawingPoints.length === 0) {
+      setDrawingMode(null);
+      setDrawingPoints([]);
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      let payload = {
+        name: `AOI ${new Date().toLocaleString('id-ID')}`,
+        aoi_type: drawingMode,
+        is_visible: false, // Default hidden
+        alarm_enabled: true,
+        monitored_targets: []
+      };
+
+      if (drawingMode === 'polygon') {
+        if (drawingPoints.length < 3) {
+          toast.error('Polygon membutuhkan minimal 3 titik');
+          return;
+        }
+        payload.coordinates = drawingPoints;
+      } else if (drawingMode === 'circle') {
+        if (drawingPoints.length < 2) {
+          toast.error('Klik lagi untuk menentukan radius');
+          return;
+        }
+        // First point is center, calculate radius from distance to second point
+        const center = drawingPoints[0];
+        const edge = drawingPoints[1];
+        const R = 6371000; // Earth radius in meters
+        const lat1 = center[0] * Math.PI / 180;
+        const lat2 = edge[0] * Math.PI / 180;
+        const deltaLat = (edge[0] - center[0]) * Math.PI / 180;
+        const deltaLng = (edge[1] - center[1]) * Math.PI / 180;
+        const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                  Math.cos(lat1) * Math.cos(lat2) *
+                  Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const radius = R * c;
+        
+        payload.coordinates = center;
+        payload.radius = Math.round(radius);
+      }
+
+      await axios.post(`${API}/aois`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      toast.success(`AOI ${drawingMode} berhasil dibuat!`);
+      fetchAOIs();
+    } catch (error) {
+      console.error('Failed to create AOI:', error);
+      toast.error('Gagal membuat AOI');
+    } finally {
+      setDrawingMode(null);
+      setDrawingPoints([]);
+    }
+  };
+
+  // Cancel drawing
+  const handleCancelDrawing = () => {
+    setDrawingMode(null);
+    setDrawingPoints([]);
+    toast.info('Drawing dibatalkan');
+  };
+
+  // Map click event handler component
+  const MapClickHandler = () => {
+    useMapEvents({
+      click: (e) => {
+        if (drawingMode) {
+          handleMapClickForDrawing(e.latlng);
+        }
+      },
+      dblclick: (e) => {
+        if (drawingMode) {
+          e.originalEvent.preventDefault();
+          handleFinishDrawing();
+        }
+      },
+      contextmenu: (e) => {
+        if (drawingMode) {
+          e.originalEvent.preventDefault();
+          handleCancelDrawing();
+        }
+      }
+    });
+    return null;
   };
 
   // Function to detect and auto-reset stuck processes (stuck > 2 minutes)
