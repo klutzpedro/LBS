@@ -1969,8 +1969,8 @@ Format respons dalam paragraf pendek, tidak perlu bullet points."""
 
 # ==================== HISTORY FUNCTIONS ====================
 
-async def save_position_history(target_id: str, phone_number: str, lat: float, lng: float, address: str = None):
-    """Save position to history collection"""
+async def save_position_history(target_id: str, phone_number: str, lat: float, lng: float, address: str = None, cp_timestamp: str = None):
+    """Save position to history collection with actual CP query timestamp"""
     history_entry = {
         "id": str(uuid.uuid4()),
         "target_id": target_id,
@@ -1978,10 +1978,10 @@ async def save_position_history(target_id: str, phone_number: str, lat: float, l
         "latitude": lat,
         "longitude": lng,
         "address": address,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": cp_timestamp if cp_timestamp else datetime.now(timezone.utc).isoformat()
     }
     await db.position_history.insert_one(history_entry)
-    logging.info(f"[HISTORY] Saved position for target {target_id}: {lat}, {lng}")
+    logging.info(f"[HISTORY] Saved position for target {target_id}: {lat}, {lng} at {history_entry['timestamp']}")
 
 @api_router.get("/targets/{target_id}/history")
 async def get_target_history(
