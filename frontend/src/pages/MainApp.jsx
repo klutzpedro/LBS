@@ -1395,7 +1395,19 @@ const MainApp = () => {
                     >
                       🔄 Perbaharui
                     </Button>
-                    {getTargetSchedule(target.phone_number) ? (
+                    {target.status === 'processing' ? (
+                      <Button
+                        size="sm"
+                        disabled
+                        className="flex-1 text-xs"
+                        style={{
+                          backgroundColor: 'var(--status-warning)',
+                          color: 'var(--background-primary)'
+                        }}
+                      >
+                        ⏳ Memproses...
+                      </Button>
+                    ) : getTargetSchedule(target.phone_number) ? (
                       <div className="flex-1 flex flex-col items-center">
                         <Button
                           size="sm"
