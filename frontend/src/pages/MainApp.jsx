@@ -1272,6 +1272,21 @@ const MainApp = () => {
                           <Printer className={`w-4 h-4 ${printingTarget === target.id ? 'animate-pulse' : ''}`} />
                         </button>
                       )}
+                      {/* History Button for Target */}
+                      {target.status === 'completed' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTargetForHistory(target);
+                            setHistoryDialogOpen(true);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                          style={{ color: 'var(--accent-primary)' }}
+                          title="Riwayat Posisi"
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
