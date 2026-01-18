@@ -871,6 +871,26 @@ const MainApp = () => {
           </div>
         </div>
 
+        {/* Global Processing Indicator */}
+        {globalProcessing && (
+          <div 
+            className="p-2 rounded-lg border text-xs animate-pulse"
+            style={{
+              backgroundColor: 'rgba(0, 217, 255, 0.1)',
+              borderColor: 'var(--accent-primary)'
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 animate-spin" style={{ color: 'var(--accent-primary)' }} />
+              <span style={{ color: 'var(--foreground-primary)' }}>
+                {globalProcessType === 'pendalaman' && 'Processing Pendalaman...'}
+                {globalProcessType === 'nik' && 'Processing NIK Query...'}
+                {globalProcessType === 'family' && 'Processing Family Query...'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Cases Section */}
         <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
           <div className="flex items-center justify-between mb-3">
