@@ -2234,21 +2234,22 @@ const MainApp = () => {
                         </div>
                       </Popup>
                     </Circle>
-                    {/* Permanent label for timestamp */}
+                    {/* Permanent label for timestamp - RED color, positioned above point */}
                     <Marker
                       position={[pos.lat, pos.lng]}
                       icon={L.divIcon({
                         className: 'history-label',
                         html: `<div style="
-                          background: ${pointColor};
+                          background: #FF3B5C;
                           color: white;
-                          padding: 2px 6px;
+                          padding: 3px 8px;
                           border-radius: 4px;
-                          font-size: 10px;
+                          font-size: 11px;
                           font-weight: bold;
                           white-space: nowrap;
-                          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                          transform: translate(-50%, -30px);
+                          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+                          transform: translate(-50%, -55px);
+                          border: 1px solid #CC2244;
                         ">${formatTime(pos.timestamp)}</div>`,
                         iconSize: [0, 0],
                         iconAnchor: [0, 0]
