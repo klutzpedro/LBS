@@ -1793,66 +1793,66 @@ const MainApp = () => {
       {/* NIK Info Dialog */}
       <Dialog open={nikDialogOpen} onOpenChange={setNikDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-2xl 4k:max-w-xl max-h-[75vh] overflow-y-auto"
+          className="z-[9999] max-w-lg max-h-[70vh] overflow-y-auto p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               INFO PENDALAMAN NIK
             </DialogTitle>
           </DialogHeader>
           {selectedNikData && (
-            <div className="space-y-4 mt-4">
+            <div className="space-y-2">
               {/* NIK */}
               <div>
-                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
                   NIK
                 </p>
-                <p className="font-mono text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
+                <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
                   {selectedNikData.nik}
                 </p>
               </div>
 
-              {/* Photo */}
+              {/* Photo - Smaller */}
               {selectedNikData.photo && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                  <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
                     Foto KTP
                   </p>
                   <div 
-                    className="rounded-lg border overflow-hidden"
-                    style={{ borderColor: 'var(--borders-default)' }}
+                    className="rounded border overflow-hidden"
+                    style={{ borderColor: 'var(--borders-default)', maxWidth: '180px' }}
                   >
                     <img 
                       src={selectedNikData.photo} 
                       alt="KTP" 
                       className="w-full"
-                      style={{ maxHeight: '400px', objectFit: 'contain', backgroundColor: 'var(--background-tertiary)' }}
+                      style={{ maxHeight: '200px', objectFit: 'contain', backgroundColor: 'var(--background-tertiary)' }}
                     />
                   </div>
                 </div>
               )}
 
-              {/* Parsed Data - Format Tabel Rapi */}
+              {/* Parsed Data - Compact Table */}
               {selectedNikData.parsed_data && Object.keys(selectedNikData.parsed_data).length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
                     DATA DIRI LENGKAP
                   </p>
                   <div 
-                    className="rounded-lg border overflow-hidden"
+                    className="rounded border overflow-hidden"
                     style={{
                       backgroundColor: 'var(--background-tertiary)',
                       borderColor: 'var(--borders-default)'
                     }}
                   >
-                    <table className="w-full">
+                    <table className="w-full text-xs">
                       <tbody>
                         {Object.entries(selectedNikData.parsed_data).map(([key, value], idx) => (
                           <tr 
@@ -1861,14 +1861,14 @@ const MainApp = () => {
                             style={{ borderColor: 'var(--borders-subtle)' }}
                           >
                             <td 
-                              className="p-3 text-sm font-medium"
+                              className="py-1.5 px-2 font-medium"
                               style={{ 
                                 color: 'var(--foreground-secondary)',
-                                width: '40%',
+                                width: '35%',
                                 backgroundColor: 'rgba(0, 217, 255, 0.05)'
                               }}
                             >
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
                                 <span>{key}</span>
                                 {/* Family ID Button - Dynamic (Family / Info) */}
                                 {key === 'Family ID' && value && (
@@ -1881,8 +1881,8 @@ const MainApp = () => {
                                         style={{
                                           backgroundColor: 'var(--accent-secondary)',
                                           color: 'var(--background-primary)',
-                                          fontSize: '10px',
-                                          padding: '2px 8px',
+                                          fontSize: '9px',
+                                          padding: '1px 6px',
                                           height: 'auto'
                                         }}
                                       >
@@ -1893,7 +1893,7 @@ const MainApp = () => {
                                         className="ml-auto text-xs"
                                         style={{ color: 'var(--status-processing)' }}
                                       >
-                                        ⏳ Processing...
+                                        ⏳
                                       </span>
                                     ) : (
                                       <Button
@@ -1903,8 +1903,8 @@ const MainApp = () => {
                                         style={{
                                           backgroundColor: 'var(--status-warning)',
                                           color: 'var(--background-primary)',
-                                          fontSize: '10px',
-                                          padding: '2px 8px',
+                                          fontSize: '9px',
+                                          padding: '1px 6px',
                                           height: 'auto'
                                         }}
                                       >
@@ -1916,7 +1916,7 @@ const MainApp = () => {
                               </div>
                             </td>
                             <td 
-                              className="p-3 text-sm"
+                              className="py-1.5 px-2"
                               style={{ color: 'var(--foreground-primary)' }}
                             >
                               {value}
@@ -1931,7 +1931,7 @@ const MainApp = () => {
 
               <Button
                 onClick={() => setNikDialogOpen(false)}
-                className="w-full py-4"
+                className="w-full py-2 text-sm"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
