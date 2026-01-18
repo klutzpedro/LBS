@@ -1552,17 +1552,21 @@ async def query_telegram_family(target_id: str, family_id: str):
         # Wait for family data response
         await asyncio.sleep(10)
         
-        # Get family response
+        # Get family response - Look for family/household data with multiple members
         response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
         
         family_info = None
         for msg in response_messages:
             if msg.text and family_id in msg.text:
-                # Look for family/NKK data
-                if 'family' in msg.text.lower() or 'kepala' in msg.text.lower() or 'anak' in msg.text.lower() or 'istri' in msg.text.lower() or 'suami' in msg.text.lower():
-                    logging.info(f"[{query_token}] ✓ Found Family response")
+                # Look for NKK/Family Card data (multiple members)
+                # Keywords: "Kartu Keluarga", "NKK", "Household", "Anggota"
+                text_lower = msg.text.lower()
+                
+                if any(keyword in text_lower for keyword in ['kartu keluarga', 'nkk', 'household', 'anggota keluarga', 'family card']):
+                    logging.info(f"[{query_token}] ✓ Found NKK/Family Card response")
                     
-                    # Parse family members
+                    # Parse family members from NKK format
+                    # Format bisa berbeda - bisa list atau table
                     members = []
                     lines = msg.text.split('\n')
                     
@@ -1577,16 +1581,17 @@ async def query_telegram_family(target_id: str, family_id: str):
                             key = parts[0].strip()
                             value = parts[1].strip() if len(parts) == 2 else ""
                             
-                            # Key fields
-                            if key == 'NIK' and value:
-                                if current_member:
+                            # Key fields untuk family member
+                            if key in ['NIK', 'Nik'] and value and len(value) == 16:
+                                # New member starts
+                                if current_member and current_member.get('nik'):
                                     members.append(current_member)
                                 current_member = {'nik': value}
                             elif key in ['Full Name', 'Name', 'Nama'] and value:
                                 current_member['name'] = value
-                            elif key in ['Relationship', 'Hubungan'] and value:
+                            elif key in ['Relationship', 'Hubungan', 'Status'] and value:
                                 current_member['relationship'] = value
-                            elif key in ['Gender', 'Jenis Kelamin'] and value:
+                            elif key in ['Gender', 'Jenis Kelamin', 'JK'] and value:
                                 current_member['gender'] = value
                     
                     # Add last member
@@ -1602,6 +1607,50 @@ async def query_telegram_family(target_id: str, family_id: str):
                         }
                         logging.info(f"[{query_token}] ✓ Parsed {len(members)} family members")
                         break
+                else:
+                    # Fallback: Maybe it's just list of members without "Kartu Keluarga" keyword
+                    # Check if multiple NIK entries exist (sign of family data)
+                    nik_count = msg.text.count('NIK:') + msg.text.count('Nik:')
+                    if nik_count > 1:
+                        logging.info(f"[{query_token}] Found {nik_count} NIK entries - parsing as family data")
+                        
+                        members = []
+                        lines = msg.text.split('\n')
+                        current_member = {}
+                        
+                        for line in lines:
+                            line = line.strip()
+                            if not line or 'not for misuse' in line.lower():
+                                continue
+                            
+                            if ':' in line:
+                                parts = line.split(':', 1)
+                                key = parts[0].strip()
+                                value = parts[1].strip() if len(parts) == 2 else ""
+                                
+                                if key in ['NIK', 'Nik'] and value and len(value) >= 14:
+                                    if current_member and current_member.get('nik'):
+                                        members.append(current_member)
+                                    current_member = {'nik': value}
+                                elif key in ['Full Name', 'Name', 'Nama'] and value:
+                                    current_member['name'] = value
+                                elif key in ['Relationship', 'Hubungan', 'Status'] and value:
+                                    current_member['relationship'] = value
+                                elif key in ['Gender', 'Jenis Kelamin', 'JK'] and value:
+                                    current_member['gender'] = value
+                        
+                        if current_member and current_member.get('nik'):
+                            members.append(current_member)
+                        
+                        if members and len(members) > 0:
+                            family_info = {
+                                "family_id": family_id,
+                                "members": members,
+                                "raw_text": msg.text,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            }
+                            logging.info(f"[{query_token}] ✓ Parsed {len(members)} members from multi-NIK response")
+                            break
         
         if family_info:
             await db.targets.update_one(
