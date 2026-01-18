@@ -1240,6 +1240,7 @@ const MainApp = () => {
                 }, 100);
               }}
             >
+              <MapResizeHandler isMaximized={isMaximized} sidebarCollapsed={sidebarCollapsed} />
               <TileLayer
                 key={selectedTileLayer}
                 url={mapTiles[selectedTileLayer].url}
