@@ -352,6 +352,20 @@ export const AOIPanel = ({
           )}
 
           {/* AOI List */}
+          <div className="space-y-2">
+            {/* Search AOI */}
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--foreground-muted)' }} />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari nama AOI..."
+                className="pl-8 h-8 text-sm"
+                style={{ backgroundColor: 'var(--background-secondary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+          </div>
+
           <div 
             className="border rounded-lg overflow-hidden"
             style={{ borderColor: 'var(--borders-default)', maxHeight: '300px', overflowY: 'auto' }}
@@ -365,7 +379,9 @@ export const AOIPanel = ({
                 Belum ada AOI. Buat baru dengan tombol di atas.
               </div>
             ) : (
-              aois.map((aoi, idx) => (
+              aois
+                .filter(aoi => aoi.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((aoi, idx) => (
                 <div 
                   key={aoi.id}
                   className="p-3 border-b last:border-b-0"
