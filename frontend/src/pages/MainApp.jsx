@@ -2289,14 +2289,15 @@ const MainApp = () => {
                         });
                       };
                       
-                      // idx 0 = newest (sorted descending from backend)
-                      // So we want arrow on idx > 0 (older points), NOT on idx 0 (newest)
-                      const isNewest = idx === 0;
+                      // Check if this point matches target's CURRENT location (that's the newest)
+                      // Use coordinate comparison instead of array index
+                      const isAtCurrentLocation = currentLat && currentLng && 
+                        Math.abs(pos.lat - currentLat) < 0.0001 && 
+                        Math.abs(pos.lng - currentLng) < 0.0001;
+                      
+                      const isNewest = isAtCurrentLocation || idx === 0;
                       const isOldest = idx === historyPath.length - 1;
                       const pointColor = isNewest ? '#FF3B5C' : pathColor;
-                      
-                      // DEBUG: Log to verify order
-                      console.log(`History point ${idx}: isNewest=${isNewest}, timestamp=${pos.timestamp}`);
                       
                       return (
                         <React.Fragment key={`history-point-${targetId}-${idx}`}>
