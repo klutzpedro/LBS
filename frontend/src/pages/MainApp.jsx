@@ -32,13 +32,15 @@ import {
 import { toast } from 'sonner';
 
 // Custom marker with label
-const createMarkerWithLabel = (phoneNumber, timestamp) => {
+const createMarkerWithLabel = (phoneNumber, timestamp, name, showName) => {
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
     hour: '2-digit', 
     minute: '2-digit' 
   });
+  
+  const nameDisplay = showName && name ? `<div style="color: var(--foreground-primary); font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
   
   return new DivIcon({
     className: 'custom-marker-label',
@@ -59,6 +61,7 @@ const createMarkerWithLabel = (phoneNumber, timestamp) => {
           color: var(--foreground-primary);
           box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         ">
+          ${nameDisplay}
           <div style="color: var(--accent-primary); font-weight: bold;">${phoneNumber}</div>
           <div style="color: var(--foreground-muted); font-size: 9px;">${timeStr}</div>
         </div>
