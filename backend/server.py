@@ -1874,6 +1874,219 @@ Format respons dalam paragraf pendek, tidak perlu bullet points."""
             "error": str(e)
         }
 
+# ==================== HISTORY FUNCTIONS ====================
+
+async def save_position_history(target_id: str, phone_number: str, lat: float, lng: float, address: str = None):
+    """Save position to history collection"""
+    history_entry = {
+        "id": str(uuid.uuid4()),
+        "target_id": target_id,
+        "phone_number": phone_number,
+        "latitude": lat,
+        "longitude": lng,
+        "address": address,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    await db.position_history.insert_one(history_entry)
+    logging.info(f"[HISTORY] Saved position for target {target_id}: {lat}, {lng}")
+
+@api_router.get("/targets/{target_id}/history")
+async def get_target_history(
+    target_id: str,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    username: str = Depends(verify_token)
+):
+    """Get position history for a target within date range"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    query = {"target_id": target_id}
+    
+    if from_date or to_date:
+        query["timestamp"] = {}
+        if from_date:
+            query["timestamp"]["$gte"] = from_date
+        if to_date:
+            query["timestamp"]["$lte"] = to_date
+    
+    history = await db.position_history.find(query, {"_id": 0}).sort("timestamp", -1).to_list(1000)
+    return {"target_id": target_id, "phone_number": target.get("phone_number"), "history": history}
+
+# ==================== AOI FUNCTIONS ====================
+
+import math
+
+def point_in_polygon(lat: float, lng: float, polygon: list) -> bool:
+    """Check if a point is inside a polygon using ray casting algorithm"""
+    n = len(polygon)
+    inside = False
+    
+    p1_lat, p1_lng = polygon[0]
+    for i in range(1, n + 1):
+        p2_lat, p2_lng = polygon[i % n]
+        if lat > min(p1_lat, p2_lat):
+            if lat <= max(p1_lat, p2_lat):
+                if lng <= max(p1_lng, p2_lng):
+                    if p1_lat != p2_lat:
+                        lng_intersect = (lat - p1_lat) * (p2_lng - p1_lng) / (p2_lat - p1_lat) + p1_lng
+                    if p1_lng == p2_lng or lng <= lng_intersect:
+                        inside = not inside
+        p1_lat, p1_lng = p2_lat, p2_lng
+    
+    return inside
+
+def point_in_circle(lat: float, lng: float, center_lat: float, center_lng: float, radius_meters: float) -> bool:
+    """Check if a point is inside a circle using Haversine formula"""
+    R = 6371000  # Earth's radius in meters
+    
+    lat1 = math.radians(center_lat)
+    lat2 = math.radians(lat)
+    delta_lat = math.radians(lat - center_lat)
+    delta_lng = math.radians(lng - center_lng)
+    
+    a = math.sin(delta_lat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(delta_lng/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    distance = R * c
+    
+    return distance <= radius_meters
+
+def is_target_in_aoi(lat: float, lng: float, aoi: dict) -> bool:
+    """Check if a target position is inside an AOI"""
+    if aoi['aoi_type'] == 'polygon':
+        return point_in_polygon(lat, lng, aoi['coordinates'])
+    elif aoi['aoi_type'] == 'circle':
+        center = aoi['coordinates']
+        return point_in_circle(lat, lng, center[0], center[1], aoi.get('radius', 1000))
+    return False
+
+async def check_aoi_alerts(target_id: str, phone_number: str, lat: float, lng: float):
+    """Check if target is inside any monitored AOI and create alerts"""
+    # Get all AOIs that monitor this target
+    aois = await db.aois.find({
+        "monitored_targets": target_id,
+        "alarm_enabled": True
+    }, {"_id": 0}).to_list(100)
+    
+    triggered_aois = []
+    for aoi in aois:
+        if is_target_in_aoi(lat, lng, aoi):
+            triggered_aois.append(aoi)
+    
+    if triggered_aois:
+        for aoi in triggered_aois:
+            # Check if there's already an unacknowledged alert for this AOI and target
+            existing_alert = await db.aoi_alerts.find_one({
+                "aoi_id": aoi['id'],
+                "target_ids": target_id,
+                "acknowledged": False
+            })
+            
+            if not existing_alert:
+                # Create new alert
+                alert = {
+                    "id": str(uuid.uuid4()),
+                    "aoi_id": aoi['id'],
+                    "aoi_name": aoi['name'],
+                    "target_ids": [target_id],
+                    "target_phones": [phone_number],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "acknowledged": False,
+                    "acknowledged_at": None
+                }
+                await db.aoi_alerts.insert_one(alert)
+                logging.info(f"[AOI ALERT] Target {phone_number} entered AOI '{aoi['name']}'")
+    
+    return triggered_aois
+
+# AOI CRUD Endpoints
+@api_router.post("/aois")
+async def create_aoi(aoi_data: AOICreate, username: str = Depends(verify_token)):
+    """Create a new AOI"""
+    aoi = AOI(**aoi_data.model_dump())
+    doc = aoi.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.aois.insert_one(doc)
+    return {"message": "AOI created", "aoi": doc}
+
+@api_router.get("/aois")
+async def get_aois(username: str = Depends(verify_token)):
+    """Get all AOIs"""
+    aois = await db.aois.find({}, {"_id": 0}).to_list(100)
+    return {"aois": aois}
+
+@api_router.get("/aois/{aoi_id}")
+async def get_aoi(aoi_id: str, username: str = Depends(verify_token)):
+    """Get a specific AOI"""
+    aoi = await db.aois.find_one({"id": aoi_id}, {"_id": 0})
+    if not aoi:
+        raise HTTPException(status_code=404, detail="AOI not found")
+    return aoi
+
+@api_router.put("/aois/{aoi_id}")
+async def update_aoi(aoi_id: str, update_data: dict, username: str = Depends(verify_token)):
+    """Update an AOI"""
+    aoi = await db.aois.find_one({"id": aoi_id})
+    if not aoi:
+        raise HTTPException(status_code=404, detail="AOI not found")
+    
+    allowed_fields = ['name', 'coordinates', 'radius', 'monitored_targets', 'is_visible', 'alarm_enabled']
+    update_fields = {k: v for k, v in update_data.items() if k in allowed_fields}
+    
+    if update_fields:
+        await db.aois.update_one({"id": aoi_id}, {"$set": update_fields})
+    
+    updated_aoi = await db.aois.find_one({"id": aoi_id}, {"_id": 0})
+    return {"message": "AOI updated", "aoi": updated_aoi}
+
+@api_router.delete("/aois/{aoi_id}")
+async def delete_aoi(aoi_id: str, username: str = Depends(verify_token)):
+    """Delete an AOI"""
+    result = await db.aois.delete_one({"id": aoi_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="AOI not found")
+    # Also delete related alerts
+    await db.aoi_alerts.delete_many({"aoi_id": aoi_id})
+    return {"message": "AOI deleted"}
+
+# AOI Alerts Endpoints
+@api_router.get("/aoi-alerts")
+async def get_aoi_alerts(acknowledged: Optional[bool] = None, username: str = Depends(verify_token)):
+    """Get AOI alerts, optionally filtered by acknowledged status"""
+    query = {}
+    if acknowledged is not None:
+        query["acknowledged"] = acknowledged
+    
+    alerts = await db.aoi_alerts.find(query, {"_id": 0}).sort("timestamp", -1).to_list(100)
+    return {"alerts": alerts}
+
+@api_router.post("/aoi-alerts/{alert_id}/acknowledge")
+async def acknowledge_aoi_alert(alert_id: str, username: str = Depends(verify_token)):
+    """Acknowledge an AOI alert"""
+    result = await db.aoi_alerts.update_one(
+        {"id": alert_id},
+        {"$set": {
+            "acknowledged": True,
+            "acknowledged_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"message": "Alert acknowledged"}
+
+@api_router.post("/aoi-alerts/acknowledge-all")
+async def acknowledge_all_alerts(username: str = Depends(verify_token)):
+    """Acknowledge all unacknowledged alerts"""
+    result = await db.aoi_alerts.update_many(
+        {"acknowledged": False},
+        {"$set": {
+            "acknowledged": True,
+            "acknowledged_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    return {"message": f"Acknowledged {result.modified_count} alerts"}
+
 # Events
 @app.on_event("startup")
 async def startup():
