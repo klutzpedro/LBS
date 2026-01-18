@@ -1548,6 +1548,40 @@ const MainApp = () => {
               </Button>
             )}
 
+            {/* AOI Panel Toggle */}
+            {!showChatPanel && (
+              <Button
+                onClick={() => setAoiPanelOpen(true)}
+                size="icon"
+                className="w-10 h-10 border"
+                title="Area of Interest (AOI)"
+                style={{
+                  backgroundColor: aoiAlerts.length > 0 ? 'var(--status-error)' : 'var(--background-elevated)',
+                  borderColor: 'var(--borders-default)',
+                  color: aoiAlerts.length > 0 ? 'white' : 'var(--accent-secondary)'
+                }}
+              >
+                <Target className="w-5 h-5" />
+              </Button>
+            )}
+
+            {/* Clear History Path */}
+            {historyPath.length > 0 && (
+              <Button
+                onClick={() => setHistoryPath([])}
+                size="icon"
+                className="w-10 h-10 border"
+                title="Clear History Path"
+                style={{
+                  backgroundColor: 'var(--status-warning)',
+                  borderColor: 'var(--borders-default)',
+                  color: 'white'
+                }}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            )}
+
             {/* Add Target (Floating) - hide when chat panel open */}
             {selectedCase && !showChatPanel && (
               <Button
