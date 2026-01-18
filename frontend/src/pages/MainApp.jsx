@@ -1831,6 +1831,7 @@ const MainApp = () => {
                   />
                 )}
               </div>
+            )}
           </div>
           )}
 
