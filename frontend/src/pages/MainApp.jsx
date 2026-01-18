@@ -997,20 +997,23 @@ const MainApp = () => {
                       🔄 Perbaharui
                     </Button>
                     {getTargetSchedule(target.phone_number) ? (
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCancelSchedule(getTargetSchedule(target.phone_number).id);
-                        }}
-                        className="flex-1 text-xs"
-                        style={{
-                          backgroundColor: 'var(--status-error)',
-                          color: 'white'
-                        }}
-                      >
-                        ❌ Batal Jadwal
-                      </Button>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <CountdownTimer nextRun={getTargetSchedule(target.phone_number).next_run} />
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelSchedule(getTargetSchedule(target.phone_number).id);
+                          }}
+                          className="w-full text-xs"
+                          style={{
+                            backgroundColor: 'var(--status-error)',
+                            color: 'white'
+                          }}
+                        >
+                          ❌ Batal Jadwal
+                        </Button>
+                      </div>
                     ) : (
                       <Button
                         size="sm"
