@@ -1336,13 +1336,14 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 }
             )
             
-            # Save position to history (even for mock data)
+            # Save position to history (even for mock data) with timestamp
             await save_position_history(
                 target_id, 
                 phone_number, 
                 mock_data['latitude'], 
                 mock_data['longitude'],
-                mock_data.get('address')
+                mock_data.get('address'),
+                mock_data.get('timestamp')
             )
             
             # Check AOI alerts
