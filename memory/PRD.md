@@ -246,10 +246,10 @@
 - **Minimal markers:** History points use tiny dots (radius 3) attached to line, endpoint uses radius 8
 - **Arrow pointer:** Each history point (except newest) has a small colored arrow pointing down to the dot
 - **Timestamp above arrow:** Date/time label positioned above the arrow with dark background
-- **CP query time:** Timestamps now correctly show the actual CP (coordinate position) query time from Telegram bot
-- **No label on endpoint:** Newest position has no timestamp label (target popup already shows this info)
+- **No label on endpoint:** Newest position has NO timestamp label or arrow (only history points have labels)
 - **Multiple history support:** Can display history for multiple targets simultaneously with different colors
-- **Hide individual history:** Each history has a close button (✕ + phone suffix) to hide that specific target's history
+- **Toggle history:** Click history icon once to show, click again to hide (no separate X button)
+- **Icon color change:** History icon turns green when active for that target
 - **Color coding:** Different colors for each target's history path (yellow, cyan, pink, green, orange)
 - **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`, `/app/backend/server.py`
 
