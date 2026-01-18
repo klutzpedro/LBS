@@ -89,7 +89,7 @@ export const AOIPanel = ({
         coordinates: coords,
         radius: newAOI.aoi_type === 'circle' ? parseFloat(newAOI.radius) : null,
         monitored_targets: newAOI.monitored_targets,
-        is_visible: true,
+        is_visible: false, // Default hidden
         alarm_enabled: true
       };
 
