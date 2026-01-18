@@ -2278,14 +2278,21 @@ const MainApp = () => {
                         });
                       };
                       
+                      // idx 0 = newest (sorted descending from backend)
+                      // So we want arrow on idx > 0 (older points), NOT on idx 0 (newest)
                       const isNewest = idx === 0;
+                      const isOldest = idx === historyPath.length - 1;
                       const pointColor = isNewest ? '#FF3B5C' : pathColor;
+                      
+                      // DEBUG: Log to verify order
+                      console.log(`History point ${idx}: isNewest=${isNewest}, timestamp=${pos.timestamp}`);
                       
                       return (
                         <React.Fragment key={`history-point-${targetId}-${idx}`}>
+                          {/* Circle marker for the point */}
                           <Circle
                             center={[pos.lat, pos.lng]}
-                            radius={isNewest ? 8 : 3}
+                            radius={isNewest ? 8 : 4}
                             pathOptions={{
                               color: pointColor,
                               fillColor: pointColor,
@@ -2296,16 +2303,16 @@ const MainApp = () => {
                             <Popup>
                               <div className="p-2 text-center">
                                 <p className="font-bold text-sm" style={{ color: pointColor }}>
-                                  {isNewest ? `📍 TERBARU (${phoneLabel})` : `📌 ${formatTime(pos.timestamp)}`}
+                                  {isNewest ? `📍 TERBARU` : isOldest ? `🏁 AWAL` : `📌 Titik ${idx}`}
                                 </p>
+                                <p className="text-xs">{formatTime(pos.timestamp)}</p>
                                 <p className="text-xs font-mono">{pos.lat?.toFixed(5)}, {pos.lng?.toFixed(5)}</p>
-                                {pos.address && <p className="text-xs mt-1 truncate max-w-[150px]">{pos.address}</p>}
                               </div>
                             </Popup>
                           </Circle>
                           
-                          {/* Arrow + Timestamp - only for non-newest (history points only) */}
-                          {!isNewest && (
+                          {/* Arrow + Timestamp - ONLY on older points (NOT newest) */}
+                          {!isNewest && historyPath.length > 1 && (
                             <Marker
                               position={[pos.lat, pos.lng]}
                               icon={L.divIcon({
