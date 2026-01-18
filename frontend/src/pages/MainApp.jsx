@@ -725,12 +725,12 @@ const MainApp = () => {
       </aside>
       )}
 
-      {/* Sidebar Toggle Button - When collapsed, show at top left */}
+      {/* Sidebar Toggle Button - When collapsed, show at middle left */}
       {!isMaximized && sidebarCollapsed && (
         <Button
           onClick={() => setSidebarCollapsed(false)}
           size="icon"
-          className="fixed left-4 top-4 z-[2000] w-12 h-12 rounded-full shadow-lg"
+          className="fixed left-4 top-1/2 transform -translate-y-1/2 z-[2000] w-12 h-12 rounded-full shadow-lg"
           style={{
             backgroundColor: 'var(--accent-primary)',
             color: 'var(--background-primary)',
@@ -741,12 +741,12 @@ const MainApp = () => {
         </Button>
       )}
 
-      {/* Sidebar Minimize Button - Inside sidebar header */}
+      {/* Sidebar Minimize Button - At middle right of sidebar */}
       {!isMaximized && !sidebarCollapsed && (
         <Button
           onClick={() => setSidebarCollapsed(true)}
           size="icon"
-          className="fixed left-[304px] top-4 z-[2000] w-10 h-10 rounded-full shadow-lg"
+          className="fixed left-[304px] top-1/2 transform -translate-y-1/2 z-[2000] w-10 h-10 rounded-full shadow-lg"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--accent-primary)',
@@ -778,13 +778,14 @@ const MainApp = () => {
               transition: 'right 300ms'
             }}
           >
-            {/* Map Type - hide when chat panel open */}
+            {/* Map Type - increase width to prevent overlap */}
             {!showChatPanel && (
               <div 
                 className="rounded-lg border p-3"
                 style={{
                   backgroundColor: 'var(--background-elevated)',
-                  borderColor: 'var(--borders-default)'
+                  borderColor: 'var(--borders-default)',
+                  minWidth: '180px'
                 }}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -795,7 +796,7 @@ const MainApp = () => {
                 </div>
                 <Select value={selectedTileLayer} onValueChange={setSelectedTileLayer}>
                   <SelectTrigger 
-                    className="w-32"
+                    className="w-full"
                     style={{
                       backgroundColor: 'var(--background-tertiary)',
                       borderColor: 'var(--borders-default)',
@@ -805,10 +806,16 @@ const MainApp = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent
+                    position="popper"
+                    side="bottom"
+                    align="start"
+                    sideOffset={5}
+                    className="z-[10001]"
                     style={{
                       backgroundColor: 'var(--background-elevated)',
                       borderColor: 'var(--borders-strong)',
-                      color: 'var(--foreground-primary)'
+                      color: 'var(--foreground-primary)',
+                      minWidth: '180px'
                     }}
                   >
                     {Object.entries(mapTiles).map(([key, tile]) => (
