@@ -2295,8 +2295,9 @@ const MainApp = () => {
                         Math.abs(pos.lat - currentLat) < 0.0001 && 
                         Math.abs(pos.lng - currentLng) < 0.0001;
                       
-                      const isNewest = isAtCurrentLocation || idx === 0;
-                      const isOldest = idx === historyPath.length - 1;
+                      // Only mark as newest if it matches current location
+                      const isNewest = isAtCurrentLocation;
+                      const isOldest = !isNewest && idx === historyPath.length - 1;
                       const pointColor = isNewest ? '#FF3B5C' : pathColor;
                       
                       return (
