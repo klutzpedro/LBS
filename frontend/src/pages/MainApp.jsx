@@ -36,7 +36,8 @@ import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { toast } from 'sonner';
 
 // Import refactored components
-import { CountdownTimer, createMarkerWithLabel, mapTiles, MapResizeHandler } from '@/components/main';
+import { CountdownTimer, createMarkerWithLabel, mapTiles, MapResizeHandler, generateTargetPDF, generateCasePDF } from '@/components/main';
+import { Printer } from 'lucide-react';
 
 const MainApp = () => {
   const { username, logout } = useAuth();
