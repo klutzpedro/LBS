@@ -78,14 +78,15 @@ const loadImageAsBase64 = (url) => {
 };
 
 // Draw location map directly in PDF (no external dependency)
+// This uses the TARGET's SPECIFIC coordinates, NOT the live screen view
 const drawLocationMap = (doc, lat, lng, phoneNumber, yPos) => {
   const mapWidth = 100;
   const mapHeight = 60;
   const mapX = 14;
   const mapY = yPos;
   
-  // Draw map background
-  doc.setFillColor(30, 30, 30);
+  // Draw map background with gradient-like effect
+  doc.setFillColor(25, 35, 45);
   doc.roundedRect(mapX, mapY, mapWidth, mapHeight, 3, 3, 'F');
   
   // Draw border
@@ -93,46 +94,64 @@ const drawLocationMap = (doc, lat, lng, phoneNumber, yPos) => {
   doc.setLineWidth(1);
   doc.roundedRect(mapX, mapY, mapWidth, mapHeight, 3, 3, 'S');
   
-  // Draw grid lines (simulating map)
-  doc.setDrawColor(50, 50, 50);
-  doc.setLineWidth(0.3);
-  for (let i = 1; i < 5; i++) {
-    doc.line(mapX + (mapWidth/5)*i, mapY, mapX + (mapWidth/5)*i, mapY + mapHeight);
+  // Draw grid lines (simulating map grid)
+  doc.setDrawColor(45, 55, 65);
+  doc.setLineWidth(0.2);
+  for (let i = 1; i < 6; i++) {
+    doc.line(mapX + (mapWidth/6)*i, mapY, mapX + (mapWidth/6)*i, mapY + mapHeight);
   }
-  for (let i = 1; i < 4; i++) {
-    doc.line(mapX, mapY + (mapHeight/4)*i, mapX + mapWidth, mapY + (mapHeight/4)*i);
+  for (let i = 1; i < 5; i++) {
+    doc.line(mapX, mapY + (mapHeight/5)*i, mapX + mapWidth, mapY + (mapHeight/5)*i);
   }
   
-  // Draw center marker (target position)
+  // Draw center marker (target position) - more prominent
   const centerX = mapX + mapWidth/2;
   const centerY = mapY + mapHeight/2;
   
-  // Marker pin
+  // Outer glow effect
+  doc.setFillColor(255, 59, 92, 0.3);
+  doc.circle(centerX, centerY - 3, 10, 'F');
+  
+  // Marker pin body
   doc.setFillColor(255, 59, 92);
-  doc.circle(centerX, centerY - 5, 6, 'F');
+  doc.circle(centerX, centerY - 5, 7, 'F');
+  
+  // White inner circle
   doc.setFillColor(255, 255, 255);
-  doc.circle(centerX, centerY - 5, 3, 'F');
+  doc.circle(centerX, centerY - 5, 3.5, 'F');
   
-  // Marker pointer
+  // Marker pointer (triangle pointing down)
   doc.setFillColor(255, 59, 92);
-  doc.triangle(centerX - 4, centerY - 2, centerX + 4, centerY - 2, centerX, centerY + 5, 'F');
+  doc.triangle(centerX - 5, centerY - 1, centerX + 5, centerY - 1, centerX, centerY + 7, 'F');
   
-  // Coordinates text
-  doc.setFontSize(8);
-  doc.setTextColor(0, 217, 255);
-  doc.text(`LAT: ${lat.toFixed(6)}`, mapX + 5, mapY + mapHeight - 12);
-  doc.text(`LNG: ${lng.toFixed(6)}`, mapX + 5, mapY + mapHeight - 6);
-  
-  // Phone number label
+  // Title label at top
   doc.setFillColor(0, 217, 255);
-  doc.roundedRect(mapX + mapWidth - 45, mapY + 5, 40, 10, 2, 2, 'F');
+  doc.roundedRect(mapX + 3, mapY + 3, 35, 8, 1, 1, 'F');
   doc.setTextColor(18, 18, 18);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.text('LOKASI TARGET', mapX + 5, mapY + 8);
+  
+  // Coordinates display box at bottom
+  doc.setFillColor(18, 18, 18);
+  doc.roundedRect(mapX + 3, mapY + mapHeight - 18, 55, 15, 1, 1, 'F');
   doc.setFontSize(7);
-  doc.text(phoneNumber.slice(-8), mapX + mapWidth - 43, mapY + 11);
+  doc.setTextColor(0, 217, 255);
+  doc.text(`LAT: ${lat.toFixed(6)}`, mapX + 5, mapY + mapHeight - 11);
+  doc.text(`LNG: ${lng.toFixed(6)}`, mapX + 5, mapY + mapHeight - 5);
+  
+  // Phone number label at top right
+  doc.setFillColor(255, 59, 92);
+  doc.roundedRect(mapX + mapWidth - 38, mapY + 3, 35, 8, 1, 1, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(6);
+  doc.setFont('helvetica', 'bold');
+  doc.text(phoneNumber.slice(-10), mapX + mapWidth - 36, mapY + 8);
   
   doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'normal');
   
-  return yPos + mapHeight + 5;
+  return yPos + mapHeight + 8;
 };
 
 // Draw simple family tree in PDF
