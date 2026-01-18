@@ -197,6 +197,21 @@
 - **New Files:** `/app/frontend/src/components/HistoryDialog.jsx`
 - **Backend:** New `position_history` collection, `save_position_history()` function
 
+### 2b. Schedule Auto-Execute on Countdown End
+- When countdown timer reaches zero, automatically triggers position update
+- Backend endpoint `POST /api/schedules/{schedule_id}/execute` handles execution
+- Sends phone number to Telegram bot, updates position, saves to history
+- Map auto-centers on new position after update
+- Schedule automatically calculates next_run time based on interval
+- **Frontend:** CountdownTimer now has `onCountdownEnd` callback
+- **Backend:** New `execute_schedule` endpoint that calls `process_target_query`
+
+### 2c. Chat Panel Changed to Popup Dialog
+- Chat button now opens a popup dialog instead of side panel
+- Dialog shows chat history in a centered modal
+- Map controls no longer affected by chat visibility
+- Cleaner UI without side panel layout changes
+
 ### 3. AOI (Area of Interest) Feature
 - **AOI Panel:** Create and manage Areas of Interest
 - **Drawing Tools:** Draw polygon or circle on map
