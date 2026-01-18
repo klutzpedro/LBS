@@ -2072,6 +2072,25 @@ async def sync_all_positions_to_history(username: str = Depends(verify_token)):
     
     return {"message": f"Synced {saved_count} positions to history", "count": saved_count}
 
+@api_router.post("/fix-history-timestamps")
+async def fix_history_timestamps(username: str = Depends(verify_token)):
+    """Fix history timestamps by updating from target data CP timestamps"""
+    history_entries = await db.position_history.find({}).to_list(10000)
+    fixed_count = 0
+    
+    for entry in history_entries:
+        target = await db.targets.find_one({"id": entry.get("target_id")})
+        if target and target.get('data') and target['data'].get('timestamp'):
+            # Update history entry with correct CP timestamp from target
+            cp_timestamp = target['data']['timestamp']
+            await db.position_history.update_one(
+                {"id": entry.get("id")},
+                {"$set": {"timestamp": cp_timestamp}}
+            )
+            fixed_count += 1
+    
+    return {"message": f"Fixed {fixed_count} history timestamps", "count": fixed_count}
+
 # ==================== AOI FUNCTIONS ====================
 
 import math
