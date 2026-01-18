@@ -774,15 +774,27 @@ const MainApp = () => {
                     <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
                       {target.phone_number}
                     </p>
-                    {target.status === 'completed' ? (
-                      <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-success)' }} />
-                    ) : target.status === 'not_found' ? (
-                      <XCircle className="w-4 h-4" style={{ color: 'var(--status-warning)' }} />
-                    ) : target.status === 'error' ? (
-                      <XCircle className="w-4 h-4" style={{ color: 'var(--status-error)' }} />
-                    ) : (
-                      <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--status-processing)' }} />
-                    )}
+                    <div className="flex items-center gap-2">
+                      {target.status === 'completed' ? (
+                        <CheckCircle className="w-4 h-4" style={{ color: 'var(--status-success)' }} />
+                      ) : target.status === 'not_found' ? (
+                        <XCircle className="w-4 h-4" style={{ color: 'var(--status-warning)' }} />
+                      ) : target.status === 'error' ? (
+                        <XCircle className="w-4 h-4" style={{ color: 'var(--status-error)' }} />
+                      ) : (
+                        <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--status-processing)' }} />
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTarget(target);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                        style={{ color: 'var(--status-error)' }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                   {target.data && (
                     <p className="text-xs line-clamp-1" style={{ color: 'var(--foreground-secondary)' }}>\n                      {target.data.address}
