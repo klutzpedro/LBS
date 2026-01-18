@@ -242,11 +242,22 @@
 - **New Files:** `/app/frontend/src/components/AOIComponents.jsx`
 - **Backend:** New `aois` and `aoi_alerts` collections, AOI CRUD endpoints, `check_aoi_alerts()` function
 
+### 4. History UI Improvements (January 18, 2026)
+- **Smaller markers:** History point radius reduced from 12 to 6 meters for cleaner visualization
+- **Label offset increased:** Timestamp labels moved further from markers (-35px vs -22px) to prevent overlap
+- **No label on endpoint:** Timestamp labels removed from newest/endpoint marker since target info popup already shows this data
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
+### 5. AOI Notification Bug Fix (January 18, 2026)
+- **Issue:** "Gagal membuat AOI" error shown even when AOI was successfully created (due to 520 timeout)
+- **Solution:** Implemented polling verification - on error, system waits and re-fetches AOI list to verify creation
+- **Behavior:** If AOI appears in list after error, shows success toast instead of error
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
 ## Future Tasks (Backlog)
 - [ ] AI-enhanced family tree visualization using graph library (react-flow/D3.js)
-- [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog) - Currently 2000+ lines
+- [ ] Refactor MainApp.jsx into smaller components (Sidebar, MapControls, TargetDialog) - Currently 2500+ lines
 - [ ] Multi-user support
-- [ ] Drawing AOI directly on map (Leaflet Draw integration)
 
 ## Files Reference
 - `/app/frontend/src/pages/MainApp.jsx` - Main application component
