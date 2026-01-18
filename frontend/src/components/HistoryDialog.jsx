@@ -51,7 +51,7 @@ export const HistoryDialog = ({ open, onClose, target, onShowPath }) => {
 
   const handleShowOnMap = () => {
     if (history.length > 0 && onShowPath) {
-      onShowPath(history);
+      onShowPath(history, target?.id); // Pass target ID for auto-refresh
       onClose();
     }
   };
