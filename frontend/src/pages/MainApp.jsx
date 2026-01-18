@@ -112,13 +112,6 @@ const MainApp = () => {
       setPrintingTarget(null);
     }
   };
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      toast.error('Gagal generate PDF: ' + (error?.message || 'Unknown error'));
-    } finally {
-      setPrintingTarget(null);
-    }
-  };
 
   const handlePrintCase = async () => {
     if (!selectedCase || filteredTargets.length === 0) {
