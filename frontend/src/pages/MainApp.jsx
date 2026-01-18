@@ -1734,6 +1734,20 @@ const MainApp = () => {
               >
                 CLOSE
               </Button>
+              
+              {/* Show Family Tree if available */}
+              {selectedReghpTarget?.family_status === 'completed' && selectedReghpTarget?.family_data && (
+                <Button
+                  onClick={() => handleShowFamilyTree(selectedReghpTarget.family_data, selectedNikData.nik)}
+                  className="w-full py-6 mt-3"
+                  style={{
+                    backgroundColor: 'var(--status-success)',
+                    color: 'var(--background-primary)'
+                  }}
+                >
+                  🌳 LIHAT FAMILY TREE
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>
