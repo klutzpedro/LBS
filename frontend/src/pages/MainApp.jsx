@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
 
 // Import refactored components
 import { CountdownTimer, createMarkerWithLabel, mapTiles, MapResizeHandler, generateTargetPDF, generateCasePDF } from '@/components/main';
