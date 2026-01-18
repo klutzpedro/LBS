@@ -141,10 +141,12 @@ const MainApp = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedTargetForSchedule, setSelectedTargetForSchedule] = useState(null);
   const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Force map re-render
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [activeSchedules, setActiveSchedules] = useState([]); // Force map re-render
 
   useEffect(() => {
     fetchCases();
+    fetchSchedules();
   }, []);
 
   useEffect(() => {
@@ -216,6 +218,33 @@ const MainApp = () => {
       setChatMessages(response.data);
     } catch (error) {
       console.error('Failed to load chat:', error);
+    }
+  };
+
+  const fetchSchedules = async () => {
+    try {
+      const response = await axios.get(`${API}/schedules`);
+      setActiveSchedules(response.data);
+    } catch (error) {
+      console.error('Failed to load schedules:', error);
+    }
+  };
+
+  const getTargetSchedule = (phoneNumber) => {
+    return activeSchedules.find(s => s.phone_number === phoneNumber && s.active);
+  };
+
+  const handleCancelSchedule = async (scheduleId) => {
+    if (!window.confirm('Batalkan penjadwalan?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/schedules/${scheduleId}`);
+      toast.success('Penjadwalan dibatalkan');
+      fetchSchedules();
+    } catch (error) {
+      toast.error('Gagal membatalkan penjadwalan');
     }
   };
 
@@ -342,6 +371,7 @@ const MainApp = () => {
       toast.success('Jadwal berhasil dibuat!');
       setScheduleDialogOpen(false);
       setScheduleInterval({ type: 'hourly', value: 1 });
+      fetchSchedules();
     } catch (error) {
       toast.error('Gagal membuat jadwal');
     }
@@ -687,20 +717,37 @@ const MainApp = () => {
                     >
                       🔄 Perbaharui
                     </Button>
-                    <Button
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenScheduleDialog(target);
-                      }}
-                      className="flex-1 text-xs"
-                      style={{
-                        backgroundColor: 'var(--status-success)',
-                        color: 'var(--background-primary)'
-                      }}
-                    >
-                      📅 Jadwalkan
-                    </Button>
+                    {getTargetSchedule(target.phone_number) ? (
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCancelSchedule(getTargetSchedule(target.phone_number).id);
+                        }}
+                        className="flex-1 text-xs"
+                        style={{
+                          backgroundColor: 'var(--status-error)',
+                          color: 'white'
+                        }}
+                      >
+                        ❌ Batal Jadwal
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenScheduleDialog(target);
+                        }}
+                        className="flex-1 text-xs"
+                        style={{
+                          backgroundColor: 'var(--status-success)',
+                          color: 'var(--background-primary)'
+                        }}
+                      >
+                        📅 Jadwalkan
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
