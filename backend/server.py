@@ -2264,6 +2264,85 @@ async def acknowledge_all_alerts(username: str = Depends(verify_token)):
     )
     return {"message": f"Acknowledged {result.modified_count} alerts"}
 
+# =====================================================
+# DATABASE EXPORT & SEEDING ENDPOINTS
+# =====================================================
+
+@api_router.get("/db/export")
+async def export_database(username: str = Depends(verify_token)):
+    """Export all database collections for migration/seeding"""
+    collections_to_export = [
+        'users', 'cases', 'targets', 'chat_messages', 
+        'position_history', 'schedules', 'aois', 'aoi_alerts'
+    ]
+    
+    export_data = {}
+    
+    for col_name in collections_to_export:
+        try:
+            docs = await db[col_name].find({}, {"_id": 0}).to_list(length=None)
+            export_data[col_name] = docs
+            logger.info(f"Exported {len(docs)} documents from {col_name}")
+        except Exception as e:
+            logger.error(f"Error exporting {col_name}: {e}")
+            export_data[col_name] = []
+    
+    return {
+        "status": "success",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "data": export_data
+    }
+
+class SeedRequest(BaseModel):
+    data: dict
+    clear_existing: bool = False
+
+@api_router.post("/db/seed")
+async def seed_database(request: SeedRequest, username: str = Depends(verify_token)):
+    """Seed database with exported data"""
+    results = {}
+    
+    for col_name, documents in request.data.items():
+        if not documents:
+            results[col_name] = {"status": "skipped", "count": 0}
+            continue
+            
+        try:
+            # Clear existing data if requested
+            if request.clear_existing:
+                deleted = await db[col_name].delete_many({})
+                logger.info(f"Cleared {deleted.deleted_count} documents from {col_name}")
+            
+            # Insert new documents
+            if documents:
+                await db[col_name].insert_many(documents)
+                results[col_name] = {"status": "success", "count": len(documents)}
+                logger.info(f"Seeded {len(documents)} documents to {col_name}")
+        except Exception as e:
+            logger.error(f"Error seeding {col_name}: {e}")
+            results[col_name] = {"status": "error", "message": str(e)}
+    
+    return {
+        "status": "completed",
+        "results": results
+    }
+
+@api_router.get("/db/status")
+async def database_status(username: str = Depends(verify_token)):
+    """Get database status and document counts"""
+    collections = await db.list_collection_names()
+    status = {}
+    
+    for col_name in collections:
+        count = await db[col_name].count_documents({})
+        status[col_name] = count
+    
+    return {
+        "database": os.environ.get('DB_NAME', 'waskita_lbs'),
+        "collections": status,
+        "total_documents": sum(status.values())
+    }
+
 # Events
 @app.on_event("startup")
 async def startup():
