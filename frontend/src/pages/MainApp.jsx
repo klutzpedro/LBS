@@ -62,7 +62,7 @@ import {
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { toast } from 'sonner';
 
-// Countdown Timer Component
+// Countdown Timer Component - Simple text only
 const CountdownTimer = ({ nextRun }) => {
   const [timeLeft, setTimeLeft] = useState('');
   
@@ -91,7 +91,7 @@ const CountdownTimer = ({ nextRun }) => {
       } else if (minutes > 0) {
         setTimeLeft(`${minutes}m ${seconds}d`);
       } else {
-        setTimeLeft(`${seconds} detik`);
+        setTimeLeft(`${seconds}d`);
       }
     };
     
@@ -104,16 +104,9 @@ const CountdownTimer = ({ nextRun }) => {
   if (!nextRun) return null;
   
   return (
-    <div 
-      className="text-center py-1 px-2 rounded text-xs font-mono"
-      style={{ 
-        backgroundColor: 'rgba(255, 184, 0, 0.15)',
-        color: 'var(--status-warning)',
-        border: '1px solid var(--status-warning)'
-      }}
-    >
+    <span className="text-xs font-mono" style={{ color: 'var(--status-warning)' }}>
       ⏱ {timeLeft}
-    </div>
+    </span>
   );
 };
 
