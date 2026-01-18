@@ -96,11 +96,11 @@ const MainApp = () => {
   const handlePrintTarget = async (target) => {
     setPrintingTarget(target.id);
     try {
-      await generateTargetPDF(target, mapContainerRef.current);
+      await generateTargetPDF(target);
       toast.success('PDF berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      toast.error('Gagal generate PDF');
+      toast.error('Gagal generate PDF: ' + error.message);
     } finally {
       setPrintingTarget(null);
     }
@@ -113,11 +113,11 @@ const MainApp = () => {
     }
     setPrintingCase(true);
     try {
-      await generateCasePDF(selectedCase.name, filteredTargets, mapContainerRef.current);
+      await generateCasePDF(selectedCase.name, filteredTargets);
       toast.success('PDF Case berhasil di-download');
     } catch (error) {
       console.error('PDF generation failed:', error);
-      toast.error('Gagal generate PDF Case');
+      toast.error('Gagal generate PDF Case: ' + error.message);
     } finally {
       setPrintingCase(false);
     }
