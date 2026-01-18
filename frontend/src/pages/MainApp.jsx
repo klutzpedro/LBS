@@ -1499,7 +1499,7 @@ const MainApp = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full py-6"
+              className="w-full py-4"
               style={{
                 backgroundColor: 'var(--accent-primary)',
                 color: 'var(--background-primary)',
@@ -1569,7 +1569,7 @@ const MainApp = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full py-6"
+              className="w-full py-4"
               style={{
                 backgroundColor: 'var(--accent-primary)',
                 color: 'var(--background-primary)',
@@ -1719,7 +1719,7 @@ const MainApp = () => {
 
               <Button
                 onClick={() => setReghpDialogOpen(false)}
-                className="w-full py-6"
+                className="w-full py-4"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
@@ -1873,7 +1873,7 @@ const MainApp = () => {
 
               <Button
                 onClick={() => setNikDialogOpen(false)}
-                className="w-full py-6"
+                className="w-full py-4"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
@@ -1940,7 +1940,7 @@ const MainApp = () => {
               <Button
                 onClick={handleUseExisting}
                 variant="outline"
-                className="flex-1 py-6"
+                className="flex-1 py-4"
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
@@ -1951,7 +1951,7 @@ const MainApp = () => {
               </Button>
               <Button
                 onClick={handleRefreshLocation}
-                className="flex-1 py-6"
+                className="flex-1 py-4"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)',
@@ -2073,7 +2073,7 @@ const MainApp = () => {
                 type="button"
                 onClick={() => setScheduleDialogOpen(false)}
                 variant="outline"
-                className="flex-1 py-6"
+                className="flex-1 py-4"
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
@@ -2084,7 +2084,7 @@ const MainApp = () => {
               </Button>
               <Button
                 type="submit"
-                className="flex-1 py-6"
+                className="flex-1 py-4"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)',
@@ -2186,7 +2186,7 @@ const MainApp = () => {
               
               <Button
                 onClick={() => setFamilyTreeDialogOpen(false)}
-                className="w-full py-6"
+                className="w-full py-4"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
