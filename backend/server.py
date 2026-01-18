@@ -760,7 +760,14 @@ async def telegram_status(username: str = Depends(verify_token)):
         }
     
     try:
-        if telegram_client is None:
+        # Recreate client if needed
+        if telegram_client is None or not telegram_client.is_connected():
+            if telegram_client is not None:
+                try:
+                    await telegram_client.disconnect()
+                except:
+                    pass
+            
             telegram_client = TelegramClient(
                 '/app/backend/northarch_session',
                 TELEGRAM_API_ID,
@@ -785,7 +792,17 @@ async def telegram_status(username: str = Depends(verify_token)):
                 "message": "Session expired atau belum login"
             }
     except Exception as e:
+        error_msg = str(e)
         logging.error(f"Error checking Telegram status: {e}")
+        
+        # If duplicate session error, suggest reset
+        if "authorization key" in error_msg.lower() or "duplicate" in error_msg.lower():
+            return {
+                "authorized": False,
+                "message": "Session conflict - Please reset connection in Settings",
+                "error_type": "duplicate_session"
+            }
+        
         return {
             "authorized": False,
             "message": str(e)
