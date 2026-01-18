@@ -2318,7 +2318,7 @@ const MainApp = () => {
                             </Popup>
                           </Circle>
                           
-                          {/* Arrow + Timestamp - only for non-newest */}
+                          {/* Arrow + Timestamp - only for non-newest (history points only) */}
                           {!isNewest && (
                             <Marker
                               position={[pos.lat, pos.lng]}
@@ -2356,32 +2356,6 @@ const MainApp = () => {
                         </React.Fragment>
                       );
                     })}
-                    
-                    {/* Hide button for this target's history - positioned at newest point */}
-                    {historyPath.length > 0 && (
-                      <Marker
-                        position={[historyPath[0].lat, historyPath[0].lng]}
-                        icon={L.divIcon({
-                          className: 'history-hide-btn',
-                          html: `<div 
-                            onclick="window.hideTargetHistory && window.hideTargetHistory('${targetId}')"
-                            style="
-                              background: rgba(255,59,92,0.9);
-                              color: white;
-                              padding: 2px 6px;
-                              border-radius: 4px;
-                              font-size: 9px;
-                              font-weight: bold;
-                              cursor: pointer;
-                              transform: translate(-50%, 15px);
-                              white-space: nowrap;
-                              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                            ">✕ ${phoneLabel}</div>`,
-                          iconSize: [0, 0],
-                          iconAnchor: [0, 0]
-                        })}
-                      />
-                    )}
                   </React.Fragment>
                 );
               })}
