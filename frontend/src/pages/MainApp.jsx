@@ -2027,30 +2027,30 @@ const MainApp = () => {
       {/* Schedule Dialog */}
       <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
         <DialogContent 
-          className="z-[10000] max-w-md"
+          className="z-[10000] max-w-sm p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               JADWALKAN PEMBAHARUAN
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateSchedule} className="space-y-4 mt-4">
+          <form onSubmit={handleCreateSchedule} className="space-y-3">
             {selectedTargetForSchedule && (
               <div 
-                className="p-3 rounded-lg border"
+                className="p-2 rounded border"
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)'
                 }}
               >
-                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
                   Target
                 </p>
                 <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
@@ -2060,7 +2060,7 @@ const MainApp = () => {
             )}
 
             <div>
-              <Label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+              <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
                 Interval Type
               </Label>
               <Select 
@@ -2068,7 +2068,7 @@ const MainApp = () => {
                 onValueChange={(value) => setScheduleInterval({ ...scheduleInterval, type: value })}
               >
                 <SelectTrigger 
-                  className="w-full"
+                  className="w-full h-9"
                   style={{
                     backgroundColor: 'var(--background-tertiary)',
                     borderColor: 'var(--borders-default)',
