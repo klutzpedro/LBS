@@ -641,6 +641,9 @@ const MainApp = () => {
       return;
     }
     
+    // Set global processing
+    setGlobalProcessing(true);
+    setGlobalProcessType('family');
     setLoadingFamilyPendalaman(sourceNik);
     
     try {
@@ -654,6 +657,7 @@ const MainApp = () => {
       
       // Poll for completion and auto-open dialog
       let attempts = 0;
+      const maxAttempts = 30;
       const checkInterval = setInterval(async () => {
         attempts++;
         
@@ -670,17 +674,25 @@ const MainApp = () => {
           const nikData = target.nik_queries?.[sourceNik];
           if (nikData?.family_status === 'completed' && nikData?.family_data) {
             clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            setLoadingFamilyPendalaman(null);
             toast.success('Family Tree data tersedia!');
             
             // Auto-open Family Tree dialog with NIK-specific family data
             setTimeout(() => {
               handleShowFamilyTree(nikData.family_data, sourceNik);
             }, 500);
-          } else if (nikData?.family_status === 'error' || attempts > 30) {
+          } else if (nikData?.family_status === 'error' || attempts >= maxAttempts) {
             clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
             setLoadingFamilyPendalaman(null);
+            
             if (nikData?.family_status === 'error') {
               toast.error('Family query gagal');
+            } else if (attempts >= maxAttempts) {
+              toast.warning('Proses timeout, silakan coba lagi');
             }
           }
         } catch (err) {
@@ -691,6 +703,8 @@ const MainApp = () => {
     } catch (error) {
       console.error('Family query error:', error);
       toast.error(error.response?.data?.detail || 'Gagal memulai Family query');
+      setGlobalProcessing(false);
+      setGlobalProcessType(null);
       setLoadingFamilyPendalaman(null);
     }
   };
@@ -699,6 +713,10 @@ const MainApp = () => {
     setSelectedFamilyData(familyData);
     setTargetNikForTree(targetNik);
     setFamilyTreeDialogOpen(true);
+    // Clear global processing when dialog opens (process completed)
+    setGlobalProcessing(false);
+    setGlobalProcessType(null);
+    setLoadingFamilyPendalaman(null);
   };
 
   // Filter targets based on search query - include NIK data
