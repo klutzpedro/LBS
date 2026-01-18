@@ -14,45 +14,79 @@ export const HistoryDialog = ({ open, onClose, target, onShowPath }) => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
+  // Format date for datetime-local input (YYYY-MM-DDTHH:MM)
+  const formatDateTimeLocal = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   useEffect(() => {
     if (open && target) {
-      // Set default date range (last 30 days to be safe)
-      const today = new Date();
-      today.setHours(23, 59, 59);
-      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      monthAgo.setHours(0, 0, 0);
-      setToDate(today.toISOString().slice(0, 16)); // Format: YYYY-MM-DDTHH:MM
-      setFromDate(monthAgo.toISOString().slice(0, 16));
-      fetchHistory();
+      // Set default date range - FROM: 30 days ago at 00:00, TO: today at 23:59
+      const now = new Date();
+      const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59);
+      const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const fromStr = formatDateTimeLocal(startDate);
+      const toStr = formatDateTimeLocal(endDate);
+      
+      setFromDate(fromStr);
+      setToDate(toStr);
+      
+      // Fetch with the calculated dates directly (don't rely on state)
+      fetchHistoryWithDates(fromStr, toStr);
     }
   }, [open, target]);
 
-  const fetchHistory = async () => {
+  const fetchHistoryWithDates = async (from, to) => {
     if (!target) return;
     
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      // Fetch all history first without date filter to ensure we get data
       let url = `${API}/targets/${target.id}/history`;
       
-      // Only add date filters if both are set
-      if (fromDate && toDate) {
-        const fromISO = new Date(fromDate).toISOString();
-        const toISO = new Date(toDate).toISOString();
+      // Add date filters if provided
+      if (from && to) {
+        const fromISO = new Date(from).toISOString();
+        const toISO = new Date(to).toISOString();
         url += `?from_date=${encodeURIComponent(fromISO)}&to_date=${encodeURIComponent(toISO)}`;
       }
 
+      console.log('Fetching history:', url);
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('History response:', response.data);
       setHistory(response.data.history || []);
+      
+      if ((response.data.history || []).length === 0) {
+        toast.info('Tidak ada data history dalam rentang waktu ini');
+      }
     } catch (error) {
       console.error('Failed to fetch history:', error);
-      toast.error('Gagal memuat history');
+      toast.error('Gagal memuat history: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchHistory = () => {
+    // Validate date range
+    if (fromDate && toDate) {
+      const from = new Date(fromDate);
+      const to = new Date(toDate);
+      if (from > to) {
+        toast.error('Tanggal awal harus lebih kecil dari tanggal akhir');
+        return;
+      }
+    }
+    fetchHistoryWithDates(fromDate, toDate);
   };
 
   const handleShowOnMap = () => {
