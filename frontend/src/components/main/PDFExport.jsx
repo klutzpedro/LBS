@@ -285,15 +285,21 @@ export const generateTargetPDF = async (target) => {
         // Draw location map with THIS TARGET's coordinates
         yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
         
-        // Try to load static map image
+        // Try to load OSM tile image as supplementary map
         try {
-          const mapUrl = getStaticMapUrl(lat, lng, 15);
-          const mapImage = await loadImageAsBase64(mapUrl);
-          if (mapImage) {
-            doc.addImage(mapImage, 'JPEG', 120, yPos - 65, 75, 55);
+          const tileUrl = getOsmTileUrl(lat, lng, 15);
+          const tileImage = await loadImageAsBase64(tileUrl);
+          if (tileImage) {
+            // Add a small tile preview next to the drawn map
+            doc.addImage(tileImage, 'PNG', 120, yPos - 65, 35, 35);
+            // Label it
+            doc.setFontSize(7);
+            doc.setTextColor(128, 128, 128);
+            doc.text('OSM Tile', 137.5, yPos - 27, { align: 'center' });
+            doc.setTextColor(0, 0, 0);
           }
         } catch (e) {
-          console.log('Static map load skipped:', e.message);
+          console.log('OSM tile load skipped:', e.message);
         }
       }
       
