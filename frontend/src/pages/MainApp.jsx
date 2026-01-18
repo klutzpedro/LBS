@@ -837,6 +837,21 @@ const MainApp = () => {
                       ) : (
                         <Activity className="w-4 h-4 animate-pulse" style={{ color: 'var(--status-processing)' }} />
                       )}
+                      {/* Print Button for Target */}
+                      {target.status === 'completed' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrintTarget(target);
+                          }}
+                          disabled={printingTarget === target.id}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                          style={{ color: 'var(--accent-secondary)' }}
+                          title="Export PDF"
+                        >
+                          <Printer className={`w-4 h-4 ${printingTarget === target.id ? 'animate-pulse' : ''}`} />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
