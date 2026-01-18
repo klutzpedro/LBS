@@ -2034,7 +2034,9 @@ async def save_current_position_to_history(target_id: str, username: str = Depen
     if existing:
         return {"message": "Position already in history", "existing": True}
     
-    await save_position_history(target_id, phone_number, lat, lng, address)
+    # Get timestamp from target data if available
+    cp_timestamp = target.get('data', {}).get('timestamp')
+    await save_position_history(target_id, phone_number, lat, lng, address, cp_timestamp)
     return {"message": "Position saved to history", "saved": True}
 
 @api_router.post("/sync-all-positions-to-history")
