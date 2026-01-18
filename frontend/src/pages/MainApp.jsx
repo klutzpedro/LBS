@@ -2253,9 +2253,13 @@ const MainApp = () => {
                 const colors = ['#FFB800', '#00BFFF', '#FF69B4', '#00FF7F', '#FF6347'];
                 const pathColor = colors[targetIdx % colors.length];
                 
-                // Find target info for display
+                // Find target info for display and get current location
                 const targetInfo = targets.find(t => t.id === targetId);
                 const phoneLabel = targetInfo?.phone_number?.slice(-6) || targetId.slice(-6);
+                
+                // Get target's current location to identify the newest point
+                const currentLat = targetInfo?.data?.latitude || targetInfo?.location?.coordinates?.[1];
+                const currentLng = targetInfo?.data?.longitude || targetInfo?.location?.coordinates?.[0];
                 
                 return (
                   <React.Fragment key={`history-path-${targetId}`}>
