@@ -1127,7 +1127,17 @@ const MainApp = () => {
                 url={mapTiles[selectedTileLayer].url}
                 attribution={mapTiles[selectedTileLayer].attribution}
               />
-              {targets.filter(t => t.data && t.data.latitude && t.data.longitude && visibleTargets.has(t.id)).map((target) => {
+              {targets.filter(t => {
+                const hasData = t.data && t.data.latitude && t.data.longitude;
+                const isVisible = visibleTargets.has(t.id);
+                
+                // Debug log
+                if (hasData && !isVisible) {
+                  console.log(`Target ${t.phone_number} has data but not visible (not checked)`);
+                }
+                
+                return hasData && isVisible;
+              }).map((target) => {
                 const targetName = target.nik_queries ? 
                   Object.values(target.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
                   target.data?.name;
