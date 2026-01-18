@@ -1285,15 +1285,25 @@ async def query_telegram_nik(target_id: str, nik: str):
                     
                     for line in lines:
                         line = line.strip()
-                        if ':' in line and not line.startswith('```'):
+                        # Skip empty lines, code blocks, and disclaimer
+                        if not line or line.startswith('```') or line.startswith('Not for misuse'):
+                            continue
+                        
+                        if ':' in line:
                             parts = line.split(':', 1)
                             if len(parts) == 2:
                                 key = parts[0].strip()
                                 value = parts[1].strip()
                                 
-                                # Clean up common fields
-                                if key and value and key != 'Identity of':
+                                # Skip header line and empty values
+                                if key and value and not key.startswith('Identity of'):
                                     parsed_data[key] = value
+                        elif parsed_data:
+                            # Handle multi-line values (like Address)
+                            last_key = list(parsed_data.keys())[-1] if parsed_data else None
+                            if last_key and line:
+                                # Append to last value
+                                parsed_data[last_key] += ' ' + line
                     
                     nik_info['parsed_data'] = parsed_data
                     logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields")
