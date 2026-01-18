@@ -205,7 +205,13 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
         {children.length > 0 && (
           <div className="flex flex-wrap justify-center gap-2">
             {children.map((child, idx) => (
-              <MemberCard key={idx} member={child} isTarget={child.nik === targetNik} isHead={false} />
+              <MemberCard 
+                key={idx} 
+                member={child} 
+                isTarget={child.nik === targetNik} 
+                isHead={false}
+                childOrder={child.childOrder}
+              />
             ))}
           </div>
         )}
