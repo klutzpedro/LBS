@@ -853,14 +853,15 @@ const MainApp = () => {
       )}
 
       {/* Main Map Area */}
-      <main className="flex-1 flex" style={{ height: '100vh', width: '100%', position: 'relative' }}>
-        {/* Map Container */}
+      <main className="flex-1 flex" style={{ height: '100vh', width: '100%', position: 'relative', overflow: 'hidden' }}>
+        {/* Map Container - Force full width */}
         <div 
-          className={`${showChatPanel ? 'flex-1' : 'w-full'} transition-all duration-300`} 
+          className={`transition-all duration-300`}
           style={{ 
             height: '100vh',
-            width: '100%',
-            position: 'relative'
+            width: showChatPanel ? 'calc(100% - 384px)' : '100%',
+            position: 'relative',
+            backgroundColor: 'var(--background-primary)'
           }}
         >
           {/* Map Controls */}
