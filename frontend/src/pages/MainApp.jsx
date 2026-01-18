@@ -1150,7 +1150,9 @@ const MainApp = () => {
               </div>
             )}
           </div>
-          {targets.filter(t => t.data).length === 0 ? (
+          )}
+
+          {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <MapPin className="w-16 h-16 mx-auto mb-4" style={{ color: 'var(--foreground-muted)' }} />
