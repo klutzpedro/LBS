@@ -154,6 +154,47 @@ const MainApp = () => {
     fetchSchedules();
   }, []);
 
+  // Function to detect and auto-reset stuck processes (stuck > 2 minutes)
+  const checkAndResetStuckProcesses = async () => {
+    for (const target of targets) {
+      let hasStuck = false;
+      
+      // Check target-level stuck
+      if (target.reghp_status === 'processing' || target.family_status === 'processing') {
+        hasStuck = true;
+      }
+      
+      // Check NIK-level stuck
+      const nikQueries = target.nik_queries || {};
+      for (const [nik, nikData] of Object.entries(nikQueries)) {
+        if (nikData.status === 'processing' || nikData.family_status === 'processing') {
+          hasStuck = true;
+          break;
+        }
+      }
+      
+      if (hasStuck) {
+        try {
+          await axios.post(`${API}/targets/${target.id}/reset-stuck`);
+          console.log(`Reset stuck processes for ${target.phone_number}`);
+        } catch (error) {
+          console.error('Reset stuck error:', error);
+        }
+      }
+    }
+  };
+
+  // Check for stuck processes every 2 minutes
+  useEffect(() => {
+    const stuckCheckInterval = setInterval(() => {
+      if (!globalProcessing) {
+        checkAndResetStuckProcesses();
+      }
+    }, 120000); // 2 minutes
+    
+    return () => clearInterval(stuckCheckInterval);
+  }, [targets, globalProcessing]);
+
   useEffect(() => {
     if (selectedCase) {
       fetchTargets(selectedCase.id);
