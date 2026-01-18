@@ -990,8 +990,7 @@ const MainApp = () => {
                       🔄 Perbaharui
                     </Button>
                     {getTargetSchedule(target.phone_number) ? (
-                      <div className="flex-1 flex flex-col gap-1">
-                        <CountdownTimer nextRun={getTargetSchedule(target.phone_number).next_run} />
+                      <div className="flex-1 flex flex-col items-center">
                         <Button
                           size="sm"
                           onClick={(e) => {
@@ -1006,6 +1005,7 @@ const MainApp = () => {
                         >
                           ❌ Batal Jadwal
                         </Button>
+                        <CountdownTimer nextRun={getTargetSchedule(target.phone_number).next_run} />
                       </div>
                     ) : (
                       <Button
