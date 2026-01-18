@@ -701,6 +701,65 @@ async def delete_schedule(schedule_id: str, username: str = Depends(verify_token
         raise HTTPException(status_code=404, detail="Schedule not found")
     return {"message": "Schedule deleted successfully"}
 
+@api_router.post("/schedules/{schedule_id}/execute")
+async def execute_schedule(schedule_id: str, background_tasks: BackgroundTasks, username: str = Depends(verify_token)):
+    """Execute a scheduled update immediately - triggered by countdown end"""
+    schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    phone_number = schedule.get('phone_number')
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="No phone number in schedule")
+    
+    # Find the target with this phone number
+    target = await db.targets.find_one({"phone_number": phone_number}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    target_id = target['id']
+    
+    # Update schedule with last_run and calculate next_run
+    now = datetime.now(timezone.utc)
+    interval_type = schedule.get('interval_type', 'hourly')
+    interval_value = schedule.get('interval_value', 1)
+    
+    if interval_type == 'minutes':
+        next_run = now + timedelta(minutes=interval_value)
+    elif interval_type == 'hourly':
+        next_run = now + timedelta(hours=interval_value)
+    elif interval_type == 'daily':
+        next_run = now + timedelta(days=interval_value)
+    elif interval_type == 'weekly':
+        next_run = now + timedelta(weeks=interval_value)
+    else:
+        next_run = now + timedelta(days=interval_value * 30)
+    
+    await db.schedules.update_one(
+        {"id": schedule_id},
+        {"$set": {
+            "last_run": now.isoformat(),
+            "next_run": next_run.isoformat()
+        }}
+    )
+    
+    # Set target to processing state
+    await db.targets.update_one(
+        {"id": target_id},
+        {"$set": {"status": "processing"}}
+    )
+    
+    # Process in background - update position via Telegram
+    background_tasks.add_task(process_target_query, target_id, phone_number)
+    
+    logging.info(f"[SCHEDULE] Executing scheduled update for {phone_number} (schedule: {schedule_id})")
+    
+    return {
+        "message": f"Updating position for {phone_number}",
+        "target_id": target_id,
+        "next_run": next_run.isoformat()
+    }
+
 # Settings Routes
 @api_router.post("/settings/telegram-credentials")
 async def update_telegram_credentials(credentials: dict, username: str = Depends(verify_token)):
