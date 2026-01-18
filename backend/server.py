@@ -1510,8 +1510,8 @@ async def query_telegram_nik(target_id: str, nik: str):
             }
         )
 
-async def query_telegram_family(target_id: str, family_id: str):
-    """Query Family (NKK) data dengan Family ID"""
+async def query_telegram_family(target_id: str, family_id: str, source_nik: str = None):
+    """Query Family (NKK) data dengan Family ID - Stores per NIK"""
     try:
         global telegram_client
         
@@ -1525,7 +1525,7 @@ async def query_telegram_family(target_id: str, family_id: str):
             logging.info("Telegram client started for Family query")
         
         query_token = f"FAMILY_{family_id}_{target_id[:8]}"
-        logging.info(f"[{query_token}] Starting Family query")
+        logging.info(f"[{query_token}] Starting Family query for NIK: {source_nik}")
         
         # Add delay
         await asyncio.sleep(2)
