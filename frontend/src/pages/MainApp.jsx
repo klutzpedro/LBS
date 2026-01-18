@@ -478,6 +478,63 @@ const MainApp = () => {
     return activeSchedules.find(s => s.phone_number === phoneNumber && s.active);
   };
 
+  // Handler when countdown reaches zero - execute scheduled update
+  const handleCountdownEnd = async (scheduleId) => {
+    if (!scheduleId) return;
+    
+    console.log('[SCHEDULE] Countdown ended for schedule:', scheduleId);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API}/schedules/${scheduleId}/execute`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.info(`Memperbarui posisi ${response.data.target_id ? 'target' : ''}...`, {
+        duration: 5000
+      });
+      
+      // Refresh schedules to get new next_run time
+      fetchSchedules();
+      
+      // Start polling for target update
+      setTimeout(() => {
+        fetchTargets();
+      }, 3000);
+      
+      // Keep polling until completed
+      const pollInterval = setInterval(async () => {
+        const targetsRes = await axios.get(`${API}/targets`);
+        const updatedTarget = targetsRes.data.find(t => t.id === response.data.target_id);
+        
+        if (updatedTarget && updatedTarget.status === 'completed') {
+          clearInterval(pollInterval);
+          fetchTargets();
+          toast.success(`Posisi ${updatedTarget.phone_number} berhasil diperbarui!`);
+          
+          // Center map on new position if available
+          if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
+            setMapCenter([
+              parseFloat(updatedTarget.data.latitude),
+              parseFloat(updatedTarget.data.longitude)
+            ]);
+            setMapZoom(15);
+            setMapKey(prev => prev + 1);
+          }
+        }
+      }, 5000);
+      
+      // Stop polling after 2 minutes
+      setTimeout(() => clearInterval(pollInterval), 120000);
+      
+    } catch (error) {
+      console.error('Failed to execute schedule:', error);
+      toast.error('Gagal memperbarui posisi: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   const handleCancelSchedule = async (scheduleId) => {
     if (!window.confirm('Batalkan penjadwalan?')) {
       return;
