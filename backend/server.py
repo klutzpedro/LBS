@@ -1279,34 +1279,44 @@ async def query_telegram_nik(target_id: str, nik: str):
                         "timestamp": datetime.now(timezone.utc).isoformat()
                     }
                     
-                    # Parse fields with better structure
+                    # Parse fields with improved multi-line handling
                     lines = msg.text.split('\n')
                     parsed_data = {}
+                    current_key = None
+                    current_value = ""
                     
                     for line in lines:
                         line = line.strip()
+                        
                         # Skip empty lines, code blocks, and disclaimer
-                        if not line or line.startswith('```') or line.startswith('Not for misuse'):
+                        if not line or line.startswith('```') or 'not for misuse' in line.lower() or 'search at your own risk' in line.lower() or 'law enforcement only' in line.lower():
                             continue
                         
+                        # Skip header line
+                        if line.startswith('Identity of'):
+                            continue
+                        
+                        # Check if line has a key-value separator
                         if ':' in line:
+                            # Save previous key-value if exists
+                            if current_key:
+                                parsed_data[current_key] = current_value.strip()
+                            
+                            # Parse new key-value
                             parts = line.split(':', 1)
-                            if len(parts) == 2:
-                                key = parts[0].strip()
-                                value = parts[1].strip()
-                                
-                                # Skip header line and empty values
-                                if key and value and not key.startswith('Identity of'):
-                                    parsed_data[key] = value
-                        elif parsed_data:
-                            # Handle multi-line values (like Address)
-                            last_key = list(parsed_data.keys())[-1] if parsed_data else None
-                            if last_key and line:
-                                # Append to last value
-                                parsed_data[last_key] += ' ' + line
+                            current_key = parts[0].strip()
+                            current_value = parts[1].strip() if len(parts) == 2 else ""
+                        else:
+                            # Continuation line (multi-line value like Address)
+                            if current_key and line:
+                                current_value += " " + line
+                    
+                    # Save last key-value
+                    if current_key:
+                        parsed_data[current_key] = current_value.strip()
                     
                     nik_info['parsed_data'] = parsed_data
-                    logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields")
+                    logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
             
             # Check for photo in messages near our NIK response
             if msg.photo and not photo_path:
