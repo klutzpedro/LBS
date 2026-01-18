@@ -1687,6 +1687,73 @@ async def query_telegram_family(target_id: str, family_id: str):
             }
         )
 
+# AI Family Tree Analysis
+class FamilyAnalysisRequest(BaseModel):
+    members: List[dict]
+    target_nik: Optional[str] = None
+
+@api_router.post("/ai/family-analysis")
+async def analyze_family_tree(request: FamilyAnalysisRequest, username: str = Depends(verify_token)):
+    """Use AI to generate family tree analysis and insights"""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        api_key = os.getenv('EMERGENT_LLM_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="AI key not configured")
+        
+        # Build family summary for AI
+        members_text = []
+        target_member = None
+        for m in request.members:
+            member_info = f"- {m.get('name', 'Unknown')} (NIK: {m.get('nik', 'N/A')}, {m.get('relationship', 'Member')}, {m.get('gender', 'Unknown')})"
+            members_text.append(member_info)
+            if m.get('nik') == request.target_nik:
+                target_member = m
+        
+        family_summary = "\n".join(members_text)
+        target_info = f"\nTarget person: {target_member.get('name', 'Unknown')} ({target_member.get('relationship', 'Member')})" if target_member else ""
+        
+        # Create AI prompt
+        prompt = f"""Analisis data keluarga berikut dan berikan insight dalam Bahasa Indonesia:
+
+ANGGOTA KELUARGA:
+{family_summary}
+{target_info}
+
+Berikan analisis singkat (maksimal 100 kata) meliputi:
+1. Struktur keluarga (siapa kepala keluarga, pasangan, anak-anak)
+2. Hubungan target dengan anggota lain
+3. Insight menarik tentang keluarga ini
+
+Format respons dalam paragraf pendek, tidak perlu bullet points."""
+
+        # Initialize AI chat
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"family-analysis-{uuid.uuid4()}",
+            system_message="Kamu adalah analis data keluarga yang membantu menganalisis struktur dan hubungan keluarga. Berikan insight yang berguna dalam Bahasa Indonesia yang singkat dan jelas."
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        # Send message and get response
+        user_message = UserMessage(text=prompt)
+        analysis = await chat.send_message(user_message)
+        
+        return {
+            "success": True,
+            "analysis": analysis,
+            "member_count": len(request.members),
+            "target_name": target_member.get('name') if target_member else None
+        }
+        
+    except Exception as e:
+        logging.error(f"AI Family Analysis error: {e}")
+        return {
+            "success": False,
+            "analysis": f"Tidak dapat menganalisis: {str(e)}",
+            "error": str(e)
+        }
+
 # Events
 @app.on_event("startup")
 async def startup():
