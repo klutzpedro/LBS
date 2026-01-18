@@ -169,24 +169,15 @@ const MainApp = () => {
   }, [selectedCase]);
 
   useEffect(() => {
-    // Auto-check newly completed targets
+    // Auto-check ALL completed targets when case selected or targets update
     const completedTargets = targets.filter(t => t.status === 'completed' && t.data);
     
-    // If no targets are visible, auto-check the first completed one
-    if (completedTargets.length > 0 && visibleTargets.size === 0) {
-      setVisibleTargets(new Set([completedTargets[0].id]));
+    if (completedTargets.length > 0) {
+      // Check all completed targets by default
+      const allCompletedIds = new Set(completedTargets.map(t => t.id));
+      setVisibleTargets(allCompletedIds);
     }
-    
-    // Auto-check newly completed targets (status changed to completed)
-    completedTargets.forEach(target => {
-      // If target just became completed and not in visible set, add it
-      if (!visibleTargets.has(target.id)) {
-        const newVisible = new Set(visibleTargets);
-        newVisible.add(target.id);
-        setVisibleTargets(newVisible);
-      }
-    });
-  }, [targets]);
+  }, [targets, selectedCase]);
 
   useEffect(() => {
     // Monitor target status changes for notifications
@@ -537,7 +528,7 @@ const MainApp = () => {
     setNikDialogOpen(true);
   };
 
-  // Filter targets based on search query
+  // Filter targets based on search query - include NIK data
   const filteredTargets = targets.filter(target => {
     if (!searchQuery) return true;
     
@@ -546,11 +537,17 @@ const MainApp = () => {
     const address = target.data?.address?.toLowerCase() || '';
     const name = target.data?.name?.toLowerCase() || '';
     
-    // Search in NIK data
+    // Search in NIK data (deep search)
     let nikMatch = false;
     if (target.nik_queries) {
-      Object.keys(target.nik_queries).forEach(nik => {
-        if (nik.includes(query)) nikMatch = true;
+      Object.values(target.nik_queries).forEach(nikQuery => {
+        if (nikQuery.data?.parsed_data) {
+          Object.values(nikQuery.data.parsed_data).forEach(value => {
+            if (value && value.toString().toLowerCase().includes(query)) {
+              nikMatch = true;
+            }
+          });
+        }
       });
     }
     
