@@ -101,8 +101,17 @@ const MainApp = () => {
   const handlePrintTarget = async (target) => {
     setPrintingTarget(target.id);
     try {
-      await generateTargetPDF(target);
+      // Create a copy of data to avoid mutation during PDF generation
+      const targetCopy = JSON.parse(JSON.stringify(target));
+      await generateTargetPDF(targetCopy);
       toast.success('PDF berhasil di-download');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Gagal generate PDF: ' + (error?.message || 'Unknown error'));
+    } finally {
+      setPrintingTarget(null);
+    }
+  };
     } catch (error) {
       console.error('PDF generation failed:', error);
       toast.error('Gagal generate PDF: ' + (error?.message || 'Unknown error'));
