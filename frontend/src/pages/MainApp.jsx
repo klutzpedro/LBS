@@ -1526,29 +1526,29 @@ const MainApp = () => {
       {/* New Case Dialog */}
       <Dialog open={newCaseDialog} onOpenChange={setNewCaseDialog}>
         <DialogContent 
-          className="z-[9999]"
+          className="z-[9999] max-w-sm p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-2xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               New Case
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreateCase} className="space-y-4">
+          <form onSubmit={handleCreateCase} className="space-y-3">
             <div>
-              <Label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+              <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
                 Case Name
               </Label>
               <Input
                 value={newCaseName}
                 onChange={(e) => setNewCaseName(e.target.value)}
-                className="bg-background-tertiary border-borders-default"
+                className="bg-background-tertiary border-borders-default h-9"
                 style={{ color: '#000000' }}
                 placeholder="Enter case name"
                 required
@@ -1557,7 +1557,7 @@ const MainApp = () => {
             <Button
               type="submit"
               disabled={submitting}
-              className="w-full py-4"
+              className="w-full py-2 text-sm"
               style={{
                 backgroundColor: 'var(--accent-primary)',
                 color: 'var(--background-primary)',
