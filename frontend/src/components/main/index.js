@@ -3,3 +3,21 @@ export { CountdownTimer } from './CountdownTimer';
 export { createMarkerWithLabel, mapTiles } from './MapUtils';
 export { MapResizeHandler } from './MapResizeHandler';
 export { generateTargetPDF, generateCasePDF } from './PDFExport';
+
+// Refactored components
+export { Sidebar } from './Sidebar';
+export { ChatDialog } from './ChatDialog';
+export { MapControls, MapControlsToggle } from './MapControls';
+export { HistoryPathRenderer } from './HistoryPathRenderer';
+export { AOIRenderer } from './AOIRenderer';
+export { DrawingOverlay } from './DrawingOverlay';
+export { TargetMarkers } from './TargetMarkers';
+export { 
+  NewCaseDialog, 
+  AddTargetDialog, 
+  DuplicatePhoneDialog, 
+  ScheduleDialog, 
+  ReghpInfoDialog, 
+  NikInfoDialog, 
+  FamilyTreeDialog 
+} from './TargetDialogs';
