@@ -90,11 +90,11 @@ const MainApp = () => {
   const [printingCase, setPrintingCase] = useState(false);
   const mapContainerRef = useRef(null);
   
-  // History states
+  // History states - support multiple targets
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedTargetForHistory, setSelectedTargetForHistory] = useState(null);
-  const [historyPath, setHistoryPath] = useState([]); // For showing path on map
-  const [historyTargetId, setHistoryTargetId] = useState(null); // Track which target's history is being shown
+  const [historyPaths, setHistoryPaths] = useState({}); // { targetId: [path points] }
+  const [activeHistoryTargets, setActiveHistoryTargets] = useState([]); // Array of target IDs with active history
   
   // AOI states
   const [aoiPanelOpen, setAoiPanelOpen] = useState(false);
