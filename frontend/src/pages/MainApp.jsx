@@ -124,7 +124,10 @@ const MainApp = () => {
   const [selectedReghpTarget, setSelectedReghpTarget] = useState(null);
   const [nikDialogOpen, setNikDialogOpen] = useState(false);
   const [selectedNikData, setSelectedNikData] = useState(null);
-  const [searchQuery, setSearchQuery] = useState(''); // Force map re-render
+  const [searchQuery, setSearchQuery] = useState('');
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [existingTarget, setExistingTarget] = useState(null);
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState(''); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -229,11 +232,33 @@ const MainApp = () => {
       return;
     }
     
+    // Check if phone already exists in current case
+    const existing = targets.find(t => t.phone_number === newPhoneNumber);
+    
+    if (existing) {
+      // Found duplicate - show dialog
+      setExistingTarget(existing);
+      setPendingPhoneNumber(newPhoneNumber);
+      setDuplicateDialogOpen(true);
+      setAddTargetDialog(false);
+      
+      // Zoom to existing marker if has location
+      if (existing.data?.latitude && existing.data?.longitude) {
+        handleTargetClick(existing);
+      }
+      return;
+    }
+    
+    // No duplicate, proceed with new target
+    await createNewTarget(newPhoneNumber);
+  };
+
+  const createNewTarget = async (phoneNumber) => {
     setSubmitting(true);
     try {
       const response = await axios.post(`${API}/targets`, {
         case_id: selectedCase.id,
-        phone_number: newPhoneNumber
+        phone_number: phoneNumber
       });
       toast.success('Target query dimulai!');
       setAddTargetDialog(false);
@@ -246,6 +271,24 @@ const MainApp = () => {
       toast.error(error.response?.data?.detail || 'Failed to add target');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRefreshLocation = async () => {
+    setDuplicateDialogOpen(false);
+    await createNewTarget(pendingPhoneNumber);
+    setPendingPhoneNumber('');
+  };
+
+  const handleUseExisting = () => {
+    setDuplicateDialogOpen(false);
+    toast.info('Menggunakan data yang sudah ada');
+    setPendingPhoneNumber('');
+    setNewPhoneNumber('');
+    
+    // Show existing data
+    if (existingTarget) {
+      setSelectedTargetForChat(existingTarget.id);
     }
   };
 
