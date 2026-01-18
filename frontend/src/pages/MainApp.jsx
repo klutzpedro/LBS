@@ -746,7 +746,8 @@ const MainApp = () => {
                     style={{ color: 'var(--status-error)' }}
                   >
                     <Trash2 className="w-4 h-4" />
-                </Button>
+                  </Button>
+                </div>
               </div>
             ))}
             {cases.length === 0 && (
