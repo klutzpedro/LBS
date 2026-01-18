@@ -1835,24 +1835,78 @@ const MainApp = () => {
                 width: '100%',
                 height: '100%',
                 zIndex: 0,
-                backgroundColor: 'var(--background-primary)'
+                backgroundColor: 'var(--background-primary)',
+                cursor: drawingMode ? 'crosshair' : 'grab'
               }}
               zoomControl={true}
               preferCanvas={true}
               fadeAnimation={false}
               markerZoomAnimation={false}
+              doubleClickZoom={!drawingMode}
               whenReady={(map) => {
                 setTimeout(() => {
                   map.target.invalidateSize();
                 }, 100);
               }}
             >
+              <MapClickHandler />
               <MapResizeHandler isMaximized={isMaximized} sidebarCollapsed={sidebarCollapsed} />
               <TileLayer
                 key={selectedTileLayer}
                 url={mapTiles[selectedTileLayer].url}
                 attribution={mapTiles[selectedTileLayer].attribution}
               />
+
+              {/* Drawing Preview */}
+              {drawingMode === 'polygon' && drawingPoints.length >= 2 && (
+                <Polyline
+                  positions={drawingPoints}
+                  pathOptions={{ color: '#00FF00', weight: 3, dashArray: '10, 10' }}
+                />
+              )}
+              {drawingMode === 'polygon' && drawingPoints.length >= 3 && (
+                <Polygon
+                  positions={drawingPoints}
+                  pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2, weight: 2 }}
+                />
+              )}
+              {drawingMode === 'circle' && drawingPoints.length === 1 && (
+                <Circle
+                  center={drawingPoints[0]}
+                  radius={100}
+                  pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2, dashArray: '10, 10' }}
+                />
+              )}
+              {drawingMode === 'circle' && drawingPoints.length >= 2 && (
+                <Circle
+                  center={drawingPoints[0]}
+                  radius={(() => {
+                    const center = drawingPoints[0];
+                    const edge = drawingPoints[1];
+                    const R = 6371000;
+                    const lat1 = center[0] * Math.PI / 180;
+                    const lat2 = edge[0] * Math.PI / 180;
+                    const deltaLat = (edge[0] - center[0]) * Math.PI / 180;
+                    const deltaLng = (edge[1] - center[1]) * Math.PI / 180;
+                    const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                              Math.cos(lat1) * Math.cos(lat2) *
+                              Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
+                  })()}
+                  pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2 }}
+                />
+              )}
+              {/* Drawing points markers */}
+              {drawingPoints.map((point, idx) => (
+                <Circle
+                  key={`draw-point-${idx}`}
+                  center={point}
+                  radius={30}
+                  pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 1 }}
+                />
+              ))}
+
               {targets.filter(t => {
                 const hasData = t.data && t.data.latitude && t.data.longitude;
                 const isVisible = visibleTargets.has(t.id);
