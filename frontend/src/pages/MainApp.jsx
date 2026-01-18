@@ -80,6 +80,48 @@ const MainApp = () => {
   const [selectedFamilyData, setSelectedFamilyData] = useState(null);
   const [targetNikForTree, setTargetNikForTree] = useState(null);
   const [showMapControls, setShowMapControls] = useState(true); // Force map re-render
+  const [printingTarget, setPrintingTarget] = useState(null);
+  const [printingCase, setPrintingCase] = useState(false);
+  const mapContainerRef = React.useRef(null);
+
+  // Handle tile layer change while preserving position
+  const handleTileLayerChange = (newTile) => {
+    // Position is preserved via mapCenter and mapZoom states
+    setSelectedTileLayer(newTile);
+    // Force map re-render with same position
+    setMapKey(prev => prev + 1);
+  };
+
+  // PDF Export handlers
+  const handlePrintTarget = async (target) => {
+    setPrintingTarget(target.id);
+    try {
+      await generateTargetPDF(target, mapContainerRef.current);
+      toast.success('PDF berhasil di-download');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Gagal generate PDF');
+    } finally {
+      setPrintingTarget(null);
+    }
+  };
+
+  const handlePrintCase = async () => {
+    if (!selectedCase || filteredTargets.length === 0) {
+      toast.error('Tidak ada target untuk di-export');
+      return;
+    }
+    setPrintingCase(true);
+    try {
+      await generateCasePDF(selectedCase.name, filteredTargets, mapContainerRef.current);
+      toast.success('PDF Case berhasil di-download');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Gagal generate PDF Case');
+    } finally {
+      setPrintingCase(false);
+    }
+  };
 
   useEffect(() => {
     fetchCases();
