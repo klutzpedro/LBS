@@ -701,7 +701,7 @@ const MainApp = () => {
             )}
             {selectedCase && filteredTargets.length === 0 && searchQuery && (
               <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
-                Tidak ditemukan untuk "{searchQuery}"
+                Tidak ditemukan untuk &quot;{searchQuery}&quot;
               </p>
             )}
             {selectedCase && filteredTargets.length === 0 && !searchQuery && (
