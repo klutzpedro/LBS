@@ -111,12 +111,31 @@
 - **API:** POST `/api/ai/family-analysis`
 - **Files Modified:** `/app/backend/server.py`, `/app/frontend/src/components/FamilyTreeViz.jsx`
 
+### Map Position Persistence
+- **Feature:** Map preserves center and zoom position when changing tile layers
+- **Implementation:** `handleTileLayerChange()` function that preserves mapCenter and mapZoom states
+- **Files Modified:** `/app/frontend/src/pages/MainApp.jsx`
+
+### PDF Export Feature
+- **Feature:** Export target or entire case data to PDF
+- **Format:**
+  - A. Target number/info
+  - B. Location with map coordinates and timestamp
+  - C. RegHP data (table format)
+  - D. NIK complete data (table format)
+  - E. NKK/Family data (table format)
+  - F. Family tree structure
+- **Icons:** Print icons appear on hover for both Case and Target cards
+- **Libraries:** jspdf, jspdf-autotable, html2canvas
+- **Files Created:** `/app/frontend/src/components/main/PDFExport.jsx`
+
 ### Code Refactoring
 - Extracted reusable components from `MainApp.jsx`
 - New components location: `/app/frontend/src/components/main/`
   - `CountdownTimer.jsx` - Real-time countdown display
   - `MapUtils.jsx` - Map tiles config and marker creation
   - `MapResizeHandler.jsx` - Leaflet map resize handling
+  - `PDFExport.jsx` - PDF generation for targets and cases
   - `index.js` - Barrel exports
 - Reduced MainApp.jsx size by ~150 lines
 
