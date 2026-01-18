@@ -1938,23 +1938,6 @@ const MainApp = () => {
               </div>
             )}
 
-            {/* Clear All History Paths */}
-            {activeHistoryTargets.length > 0 && (
-              <Button
-                onClick={clearAllHistoryPaths}
-                size="icon"
-                className="w-10 h-10 border"
-                title="Sembunyikan Semua History"
-                style={{
-                  backgroundColor: 'var(--status-warning)',
-                  borderColor: 'var(--borders-default)',
-                  color: 'white'
-                }}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            )}
-
             {/* Add Target (Floating) */}
             {selectedCase && !drawingMode && (
               <Button
