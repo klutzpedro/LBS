@@ -532,12 +532,23 @@ const MainApp = () => {
   };
 
   const handleFamilyPendalaman = async (targetId, familyId, targetNik) => {
+    if (!targetId || !familyId) {
+      toast.error('Target ID atau Family ID tidak valid');
+      return;
+    }
+    
     try {
       await axios.post(`${API}/targets/${targetId}/family`, { family_id: familyId });
-      toast.success('Family query dimulai!');
+      toast.success('Family query dimulai! Tunggu ~15 detik...');
       setTargetNikForTree(targetNik);
+      
+      // Refresh targets to get updated family_status
+      setTimeout(() => {
+        fetchTargets(selectedCase.id);
+      }, 1000);
     } catch (error) {
-      toast.error('Gagal memulai Family query');
+      console.error('Family query error:', error);
+      toast.error(error.response?.data?.detail || 'Gagal memulai Family query');
     }
   };
 
