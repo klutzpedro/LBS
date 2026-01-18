@@ -1501,6 +1501,143 @@ async def query_telegram_nik(target_id: str, nik: str):
             }
         )
 
+async def query_telegram_family(target_id: str, family_id: str):
+    """Query Family (NKK) data dengan Family ID"""
+    try:
+        global telegram_client
+        
+        if telegram_client is None:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.start()
+            logging.info("Telegram client started for Family query")
+        
+        query_token = f"FAMILY_{family_id}_{target_id[:8]}"
+        logging.info(f"[{query_token}] Starting Family query")
+        
+        # Add delay
+        await asyncio.sleep(2)
+        
+        # Send Family ID to bot
+        await telegram_client.send_message(BOT_USERNAME, family_id)
+        logging.info(f"[{query_token}] Sent Family ID: {family_id}")
+        
+        await asyncio.sleep(5)
+        
+        # Look for NKK button
+        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        nkk_clicked = False
+        for msg in messages:
+            if msg.buttons:
+                button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                logging.info(f"[{query_token}] Buttons: {button_texts}")
+                
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text and ('NKK' in button.text.upper() or 'FAMILY' in button.text.upper()):
+                            await button.click()
+                            logging.info(f"[{query_token}] ✓ Clicked NKK button")
+                            nkk_clicked = True
+                            break
+                if nkk_clicked:
+                    break
+        
+        if not nkk_clicked:
+            logging.warning(f"[{query_token}] NKK button not found")
+        
+        # Wait for family data response
+        await asyncio.sleep(10)
+        
+        # Get family response
+        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        
+        family_info = None
+        for msg in response_messages:
+            if msg.text and family_id in msg.text:
+                # Look for family/NKK data
+                if 'family' in msg.text.lower() or 'kepala' in msg.text.lower() or 'anak' in msg.text.lower() or 'istri' in msg.text.lower() or 'suami' in msg.text.lower():
+                    logging.info(f"[{query_token}] ✓ Found Family response")
+                    
+                    # Parse family members
+                    members = []
+                    lines = msg.text.split('\n')
+                    
+                    current_member = {}
+                    for line in lines:
+                        line = line.strip()
+                        if not line or 'not for misuse' in line.lower():
+                            continue
+                        
+                        if ':' in line:
+                            parts = line.split(':', 1)
+                            key = parts[0].strip()
+                            value = parts[1].strip() if len(parts) == 2 else ""
+                            
+                            # Key fields
+                            if key == 'NIK' and value:
+                                if current_member:
+                                    members.append(current_member)
+                                current_member = {'nik': value}
+                            elif key in ['Full Name', 'Name', 'Nama'] and value:
+                                current_member['name'] = value
+                            elif key in ['Relationship', 'Hubungan'] and value:
+                                current_member['relationship'] = value
+                            elif key in ['Gender', 'Jenis Kelamin'] and value:
+                                current_member['gender'] = value
+                    
+                    # Add last member
+                    if current_member and current_member.get('nik'):
+                        members.append(current_member)
+                    
+                    if members:
+                        family_info = {
+                            "family_id": family_id,
+                            "members": members,
+                            "raw_text": msg.text,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                        logging.info(f"[{query_token}] ✓ Parsed {len(members)} family members")
+                        break
+        
+        if family_info:
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "family_status": "completed",
+                        "family_data": family_info
+                    }
+                }
+            )
+            logging.info(f"[{query_token}] ✓ Family data saved")
+        else:
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "family_status": "error",
+                        "family_data": {"error": "No family data found"}
+                    }
+                }
+            )
+            logging.warning(f"[{query_token}] No family data found")
+    
+    except Exception as e:
+        logging.error(f"[FAMILY {family_id}] Error: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    "family_status": "error",
+                    "family_data": {"error": str(e)}
+                }
+            }
+        )
+
 # Events
 @app.on_event("startup")
 async def startup():
