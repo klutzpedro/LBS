@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTelegram } from '@/context/TelegramContext';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, Polyline } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,13 @@ import {
   Search,
   Eye,
   EyeOff,
-  Trash2
+  Trash2,
+  History,
+  Target
 } from 'lucide-react';
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
+import { HistoryDialog } from '@/components/HistoryDialog';
+import { AOIPanel, AOIAlertNotification } from '@/components/AOIComponents';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
 
