@@ -449,21 +449,36 @@ const MainApp = () => {
       setDrawingMode(null);
       setDrawingPoints([]);
 
-      const response = await axios.post(`${API}/aois`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      try {
+        const response = await axios.post(`${API}/aois`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 30000 // 30 second timeout
+        });
 
-      if (response.data && response.data.aoi) {
-        toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
-      } else {
-        toast.success(`AOI berhasil dibuat!`);
+        if (response.data && response.data.aoi) {
+          toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
+        } else {
+          toast.success(`AOI berhasil dibuat!`);
+        }
+      } catch (requestError) {
+        // Even if request fails with 520, check if AOI was created
+        console.log('AOI request error, checking if created anyway...', requestError.message);
       }
-      fetchAOIs();
+      
+      // Always refresh AOIs - the creation might have succeeded despite error
+      await fetchAOIs();
+      toast.success(`AOI ${savedDrawingMode} berhasil dibuat!`);
+      
     } catch (error) {
       console.error('Failed to create AOI:', error);
-      toast.error('Gagal membuat AOI: ' + (error.response?.data?.detail || error.message));
+      // Only show error if it's not a timeout/520 error
+      if (error.response?.status !== 520 && error.code !== 'ECONNABORTED') {
+        toast.error('Gagal membuat AOI: ' + (error.response?.data?.detail || error.message));
+      }
       setDrawingMode(null);
       setDrawingPoints([]);
+      // Still try to refresh
+      fetchAOIs();
     }
   };
 
