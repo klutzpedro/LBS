@@ -311,6 +311,40 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
     if target['status'] != 'completed':
         raise HTTPException(status_code=400, detail="Target must be completed first")
     
+    # Check if phone already has Reghp data in other targets (same case)
+    existing_reghp = await db.targets.find_one({
+        "case_id": target['case_id'],
+        "phone_number": target['phone_number'],
+        "reghp_status": "completed",
+        "reghp_data": {"$exists": True},
+        "id": {"$ne": target_id}  # Not this target
+    }, {"_id": 0})
+    
+    if existing_reghp and existing_reghp.get('reghp_data'):
+        # Reuse existing Reghp data
+        logging.info(f"Reusing Reghp data for {target['phone_number']} from existing target")
+        
+        reghp_data = existing_reghp['reghp_data']
+        nik_queries = existing_reghp.get('nik_queries', {})
+        
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    "reghp_status": "completed",
+                    "reghp_data": reghp_data,
+                    "nik_queries": nik_queries
+                }
+            }
+        )
+        
+        return {
+            "message": "Reusing existing Reghp & NIK data",
+            "target_id": target_id,
+            "reused": True
+        }
+    
+    # No existing data, proceed with new query
     # Update reghp_status to processing
     await db.targets.update_one(
         {"id": target_id},
@@ -320,7 +354,7 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
     # Start background task
     asyncio.create_task(query_telegram_reghp(target_id, target['phone_number']))
     
-    return {"message": "Reghp query started", "target_id": target_id}
+    return {"message": "Reghp query started", "target_id": target_id, "reused": False}
 
 @api_router.post("/targets/{target_id}/nik")
 async def query_nik(target_id: str, nik_data: dict, username: str = Depends(verify_token)):
@@ -333,6 +367,39 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
     if not nik:
         raise HTTPException(status_code=400, detail="NIK required")
     
+    # Check if this NIK already queried in other targets (same phone)
+    existing_nik = await db.targets.find_one({
+        "case_id": target['case_id'],
+        "phone_number": target['phone_number'],
+        f"nik_queries.{nik}.status": "completed",
+        "id": {"$ne": target_id}
+    }, {"_id": 0})
+    
+    if existing_nik and existing_nik.get('nik_queries', {}).get(nik):
+        # Reuse existing NIK data
+        logging.info(f"Reusing NIK {nik} data from existing target")
+        
+        nik_query_data = existing_nik['nik_queries'][nik]
+        
+        # Initialize nik_queries if not exists
+        if not target.get('nik_queries'):
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"nik_queries": {}}}
+            )
+        
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {f"nik_queries.{nik}": nik_query_data}}
+        )
+        
+        return {
+            "message": "Reusing existing NIK data",
+            "nik": nik,
+            "reused": True
+        }
+    
+    # No existing data, proceed with new query
     # Initialize nik_queries if not exists
     if not target.get('nik_queries'):
         await db.targets.update_one(
@@ -349,7 +416,7 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
     # Start background task
     asyncio.create_task(query_telegram_nik(target_id, nik))
     
-    return {"message": "NIK query started", "nik": nik}
+    return {"message": "NIK query started", "nik": nik, "reused": False}
 
 # Dashboard Stats
 @api_router.get("/stats")
