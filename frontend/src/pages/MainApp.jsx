@@ -2169,7 +2169,7 @@ const MainApp = () => {
               {/* Render History Path */}
               {historyPath.length > 1 && (
                 <Polyline
-                  positions={historyPath}
+                  positions={historyPath.map(p => [p.lat, p.lng])}
                   pathOptions={{
                     color: '#FFB800',
                     weight: 3,
@@ -2178,18 +2178,70 @@ const MainApp = () => {
                   }}
                 />
               )}
-              {historyPath.length > 0 && historyPath.map((pos, idx) => (
-                <Circle
-                  key={`history-point-${idx}`}
-                  center={pos}
-                  radius={20}
-                  pathOptions={{
-                    color: idx === 0 ? '#00FF00' : idx === historyPath.length - 1 ? '#FF3B5C' : '#FFB800',
-                    fillColor: idx === 0 ? '#00FF00' : idx === historyPath.length - 1 ? '#FF3B5C' : '#FFB800',
-                    fillOpacity: 0.8
-                  }}
-                />
-              ))}
+              {historyPath.length > 0 && historyPath.map((pos, idx) => {
+                // Format timestamp for display
+                const formatTime = (ts) => {
+                  if (!ts) return '';
+                  const date = new Date(ts);
+                  return date.toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                };
+                
+                // Determine color: green=oldest, yellow=middle, red=newest
+                const isNewest = idx === 0;
+                const isOldest = idx === historyPath.length - 1;
+                const pointColor = isNewest ? '#FF3B5C' : isOldest ? '#00FF00' : '#FFB800';
+                
+                return (
+                  <React.Fragment key={`history-point-${idx}`}>
+                    <Circle
+                      center={[pos.lat, pos.lng]}
+                      radius={25}
+                      pathOptions={{
+                        color: pointColor,
+                        fillColor: pointColor,
+                        fillOpacity: 0.9,
+                        weight: 2
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-2 text-center">
+                          <p className="font-bold text-sm" style={{ color: pointColor }}>
+                            {isNewest ? '📍 TERBARU' : isOldest ? '🏁 AWAL' : `📌 Titik ${historyPath.length - idx}`}
+                          </p>
+                          <p className="text-xs font-semibold">{formatTime(pos.timestamp)}</p>
+                          <p className="text-xs font-mono">{pos.lat?.toFixed(5)}, {pos.lng?.toFixed(5)}</p>
+                          {pos.address && <p className="text-xs mt-1 truncate max-w-[150px]">{pos.address}</p>}
+                        </div>
+                      </Popup>
+                    </Circle>
+                    {/* Permanent label for timestamp */}
+                    <Marker
+                      position={[pos.lat, pos.lng]}
+                      icon={L.divIcon({
+                        className: 'history-label',
+                        html: `<div style="
+                          background: ${pointColor};
+                          color: white;
+                          padding: 2px 6px;
+                          border-radius: 4px;
+                          font-size: 10px;
+                          font-weight: bold;
+                          white-space: nowrap;
+                          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                          transform: translate(-50%, -30px);
+                        ">${formatTime(pos.timestamp)}</div>`,
+                        iconSize: [0, 0],
+                        iconAnchor: [0, 0]
+                      })}
+                    />
+                  </React.Fragment>
+                );
+              })}
             </MapContainer>
           )}
         </div>
