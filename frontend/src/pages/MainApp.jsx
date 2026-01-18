@@ -642,6 +642,9 @@ const MainApp = () => {
           fetchTargets();
           toast.success(`Posisi ${updatedTarget.phone_number} berhasil diperbarui!`);
           
+          // Remove from executing set after completion
+          executingSchedulesRef.current.delete(scheduleId);
+          
           // Center map on new position if available
           if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
             setMapCenter([
@@ -654,12 +657,17 @@ const MainApp = () => {
         }
       }, 5000);
       
-      // Stop polling after 2 minutes
-      setTimeout(() => clearInterval(pollInterval), 120000);
+      // Stop polling after 2 minutes and cleanup
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        executingSchedulesRef.current.delete(scheduleId);
+      }, 120000);
       
     } catch (error) {
       console.error('Failed to execute schedule:', error);
       toast.error('Gagal memperbarui posisi: ' + (error.response?.data?.detail || error.message));
+      // Remove from executing set on error
+      executingSchedulesRef.current.delete(scheduleId);
     }
   };
 
