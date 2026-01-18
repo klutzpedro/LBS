@@ -480,25 +480,34 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
 
 @api_router.post("/targets/{target_id}/family")
 async def query_family(target_id: str, family_data_input: dict, username: str = Depends(verify_token)):
-    """Query Family (NKK) dengan Family ID"""
+    """Query Family (NKK) dengan Family ID - Stores per NIK"""
     target = await db.targets.find_one({"id": target_id}, {"_id": 0})
     if not target:
         raise HTTPException(status_code=404, detail="Target not found")
     
     family_id = family_data_input.get('family_id')
+    source_nik = family_data_input.get('source_nik')  # The NIK that triggered this family query
+    
     if not family_id:
         raise HTTPException(status_code=400, detail="Family ID required")
     
-    # Update family_status to processing
-    await db.targets.update_one(
-        {"id": target_id},
-        {"$set": {"family_status": "processing"}}
-    )
+    # Update family query status in nik_queries for the specific NIK
+    if source_nik and target.get('nik_queries', {}).get(source_nik):
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {f"nik_queries.{source_nik}.family_status": "processing"}}
+        )
+    else:
+        # Fallback to target-level for backward compatibility
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"family_status": "processing"}}
+        )
     
-    # Start background task
-    asyncio.create_task(query_telegram_family(target_id, family_id))
+    # Start background task with source_nik
+    asyncio.create_task(query_telegram_family(target_id, family_id, source_nik))
     
-    return {"message": "Family query started", "target_id": target_id}
+    return {"message": "Family query started", "target_id": target_id, "source_nik": source_nik}
 
 # Dashboard Stats
 @api_router.get("/stats")
