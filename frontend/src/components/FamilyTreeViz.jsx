@@ -81,7 +81,7 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
     }
   };
 
-  const MemberCard = ({ member, isTarget, isHead }) => (
+  const MemberCard = ({ member, isTarget, isHead, childOrder }) => (
     <div 
       className="p-2 rounded border text-center"
       style={{
@@ -101,7 +101,7 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
           fontSize: '9px'
         }}
       >
-        {member.relationship || 'MEMBER'}
+        {childOrder ? `ANAK ${childOrder}` : (member.relationship || 'MEMBER')}
       </p>
       <p 
         className="text-xs font-semibold mb-0.5 truncate"
@@ -113,6 +113,17 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
       >
         {member.name || 'Unknown'}
       </p>
+      {(member.dob || member.birth_date || member.tanggal_lahir) && (
+        <p 
+          className="text-xs mb-0.5"
+          style={{ 
+            color: 'var(--foreground-muted)',
+            fontSize: '8px'
+          }}
+        >
+          {member.dob || member.birth_date || member.tanggal_lahir}
+        </p>
+      )}
       <p 
         className="font-mono truncate"
         style={{ 
