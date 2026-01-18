@@ -1,0 +1,64 @@
+{
+  "summary": "Tested PDF export bug fix for WASKITA LBS. The fix correctly uses target's specific coordinates (target.data.latitude/longitude) instead of capturing live screen view. Login flow works with admin/Paparoni83. PDF export for individual targets and case export both generate successfully with correct coordinates displayed.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "Login flow with admin/Paparoni83 - SUCCESS",
+    "PDF export for individual target - SUCCESS (toast: 'PDF berhasil di-download')",
+    "PDF export for case - SUCCESS (toast: 'PDF Case berhasil di-download')",
+    "Print button appears on hover over target items - VERIFIED",
+    "Clicking print on different targets works independently - VERIFIED",
+    "Code review: generateTargetPDF uses target.data.latitude/longitude - VERIFIED",
+    "Code review: drawLocationMap displays correct LAT/LNG coordinates - VERIFIED",
+    "Code review: handlePrintTarget creates deep copy to avoid mutation - VERIFIED"
+  ],
+  
+  "test_report_links": [
+    "/app/frontend/src/components/main/PDFExport.jsx",
+    "/app/frontend/src/pages/MainApp.jsx"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [
+    "PDF export fix is correctly implemented - uses target.data.latitude and target.data.longitude",
+    "drawLocationMap function properly displays coordinates in the PDF map box",
+    "handlePrintTarget creates a deep copy of target data to prevent mutation during PDF generation",
+    "OSM tile loading may fail due to CORS but the drawn map placeholder always shows correct coordinates"
+  ],
+  
+  "updated_files": [],
+  
+  "success_rate": {
+    "backend": "N/A (skipped per request)",
+    "frontend": "100%"
+  },
+  
+  "test_credentials": {
+    "username": "admin",
+    "password": "Paparoni83"
+  },
+  
+  "seed_data_creation": "None - used existing targets",
+  
+  "existing_targets_tested": [
+    {"phone": "6282244676750", "lat": -6.41165, "lng": 106.94034, "address": "JAWA BARAT, KAB. BOGOR, GUNUNG PUTRI, WANAHERANG"},
+    {"phone": "6281282000661", "lat": -6.28453, "lng": 106.91744, "address": "JAWA BARAT, KOTA BEKASI, PONDOKGEDE, JATIWARINGIN"},
+    {"phone": "6281289134401", "lat": -6.94939, "lng": 107.66647, "address": "JAWA BARAT, KOTA BANDUNG, RANCASARI, MANJAHLEGA"}
+  ],
+  
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  
+  "context_for_next_testing_agent": "PDF export bug fix verified. The fix uses drawLocationMap() which draws directly using target's lat/lng coordinates instead of html2canvas screenshot. Each PDF now uses the target's specific coordinates from target.data.latitude and target.data.longitude. Print button appears on hover over target items in sidebar. Three existing targets available for testing with different coordinates (Bogor, Bekasi, Bandung)."
+}
