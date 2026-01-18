@@ -154,6 +154,22 @@ const drawLocationMap = (doc, lat, lng, phoneNumber, yPos) => {
   return yPos + mapHeight + 8;
 };
 
+// Helper to parse DOB for sorting
+const parseDOB = (dob) => {
+  if (!dob) return new Date(9999, 11, 31);
+  const str = String(dob).trim();
+  let match = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (match) {
+    return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+  }
+  match = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (match) {
+    return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+  }
+  const parsed = new Date(str);
+  return isNaN(parsed) ? new Date(9999, 11, 31) : parsed;
+};
+
 // Draw simple family tree in PDF
 const drawFamilyTree = (doc, familyData, yPos, targetNik) => {
   if (!familyData?.members || familyData.members.length === 0) {
@@ -163,7 +179,16 @@ const drawFamilyTree = (doc, familyData, yPos, targetNik) => {
   const members = familyData.members;
   const head = members.find(m => m.relationship?.includes('KEPALA'));
   const spouse = members.find(m => m.relationship?.includes('ISTRI') || m.relationship?.includes('SUAMI'));
-  const children = members.filter(m => m.relationship?.includes('ANAK'));
+  
+  // Sort children by DOB (oldest first)
+  const children = members
+    .filter(m => m.relationship?.includes('ANAK'))
+    .sort((a, b) => {
+      const dobA = parseDOB(a.dob || a.birth_date || a.tanggal_lahir);
+      const dobB = parseDOB(b.dob || b.birth_date || b.tanggal_lahir);
+      return dobA - dobB;
+    });
+  
   const others = members.filter(m => 
     !m.relationship?.includes('KEPALA') && 
     !m.relationship?.includes('ISTRI') && 
