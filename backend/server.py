@@ -1371,9 +1371,20 @@ async def query_telegram_nik(target_id: str, nik: str):
                         if line.startswith('Identity of'):
                             continue
                         
-                        # Check if line has a key-value separator
+                        # Check if line starts a new key-value pair
+                        # Must start with capital letter and have : near beginning (within first 25 chars)
+                        is_new_key = False
                         if ':' in line:
-                            # Save previous key-value if exists
+                            colon_pos = line.index(':')
+                            # New key if colon is in first part and line doesn't seem like continuation
+                            if colon_pos < 25 and not line.startswith(' ') and line[0].isupper():
+                                potential_key = line.split(':', 1)[0].strip()
+                                # Valid keys are usually short (< 20 chars) and don't have "KOTA" or "RT" etc
+                                if len(potential_key) < 20 and not any(word in potential_key for word in ['KOTA', 'RT.', 'RW.', 'KEL.', 'KEC.', 'KODE POS']):
+                                    is_new_key = True
+                        
+                        if is_new_key:
+                            # Save previous key-value
                             if current_key:
                                 parsed_data[current_key] = current_value.strip()
                             
