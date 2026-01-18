@@ -2221,7 +2221,7 @@ const MainApp = () => {
                 />
               )}
               {historyPath.length > 0 && historyPath.map((pos, idx) => {
-                // Format timestamp for display
+                // Format timestamp for display - this is the CP query time from backend
                 const formatTime = (ts) => {
                   if (!ts) return '';
                   const date = new Date(ts);
@@ -2259,22 +2259,36 @@ const MainApp = () => {
                         </div>
                       </Popup>
                     </Circle>
-                    {/* Timestamp label - only for previous positions, close to the line/dot */}
+                    {/* Arrow + Timestamp label - only for previous positions (not newest) */}
                     {!isNewest && (
                       <Marker
                         position={[pos.lat, pos.lng]}
                         icon={L.divIcon({
-                          className: 'history-label',
+                          className: 'history-label-arrow',
                           html: `<div style="
-                            background: rgba(0,0,0,0.7);
-                            color: #FFB800;
-                            padding: 1px 4px;
-                            border-radius: 2px;
-                            font-size: 8px;
-                            font-weight: 500;
-                            white-space: nowrap;
-                            transform: translate(-50%, -12px);
-                          ">${formatTime(pos.timestamp)}</div>`,
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            transform: translate(-50%, -32px);
+                          ">
+                            <div style="
+                              background: rgba(0,0,0,0.75);
+                              color: #FFB800;
+                              padding: 1px 4px;
+                              border-radius: 2px;
+                              font-size: 8px;
+                              font-weight: 500;
+                              white-space: nowrap;
+                              margin-bottom: 1px;
+                            ">${formatTime(pos.timestamp)}</div>
+                            <div style="
+                              width: 0;
+                              height: 0;
+                              border-left: 4px solid transparent;
+                              border-right: 4px solid transparent;
+                              border-top: 6px solid #FFB800;
+                            "></div>
+                          </div>`,
                           iconSize: [0, 0],
                           iconAnchor: [0, 0]
                         })}
