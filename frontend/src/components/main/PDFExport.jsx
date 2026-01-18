@@ -33,10 +33,20 @@ const addSectionTitle = (doc, title, y) => {
   return y + 12;
 };
 
-// Generate static map image URL using OpenStreetMap static tiles
-const getStaticMapUrl = (lat, lng, zoom = 15) => {
-  // Using OpenStreetMap static map API
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lng}&zoom=${zoom}&size=400x300&markers=${lat},${lng},red`;
+// Convert lat/lng to tile coordinates for OpenStreetMap
+const latLngToTile = (lat, lng, zoom) => {
+  const n = Math.pow(2, zoom);
+  const x = Math.floor((lng + 180) / 360 * n);
+  const latRad = lat * Math.PI / 180;
+  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+  return { x, y };
+};
+
+// Generate static map tile URL from OpenStreetMap
+const getOsmTileUrl = (lat, lng, zoom = 15) => {
+  const tile = latLngToTile(lat, lng, zoom);
+  // Use OSM tile server directly - more reliable than staticmap service
+  return `https://a.tile.openstreetmap.org/${zoom}/${tile.x}/${tile.y}.png`;
 };
 
 // Load image and convert to base64
