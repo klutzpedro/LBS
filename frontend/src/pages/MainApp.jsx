@@ -1706,30 +1706,33 @@ const MainApp = () => {
                             style={{ borderColor: 'var(--borders-subtle)' }}
                           >
                             <td 
-                              className="p-3 text-sm font-medium flex items-center gap-2"
+                              className="p-3 text-sm font-medium"
                               style={{ 
                                 color: 'var(--foreground-secondary)',
                                 width: '40%',
                                 backgroundColor: 'rgba(0, 217, 255, 0.05)'
                               }}
                             >
-                              {key}
-                              {/* Family ID Pendalaman Button */}
-                              {key === 'Family ID' && value && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
-                                  className="ml-2"
-                                  style={{
-                                    backgroundColor: 'var(--status-warning)',
-                                    color: 'var(--background-primary)',
-                                    fontSize: '10px',
-                                    padding: '2px 8px'
-                                  }}
-                                >
-                                  🔍 Family
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <span>{key}</span>
+                                {/* Family ID Pendalaman Button */}
+                                {key === 'Family ID' && value && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
+                                    className="ml-auto"
+                                    style={{
+                                      backgroundColor: 'var(--status-warning)',
+                                      color: 'var(--background-primary)',
+                                      fontSize: '10px',
+                                      padding: '2px 8px',
+                                      height: 'auto'
+                                    }}
+                                  >
+                                    🔍 Family
+                                  </Button>
+                                )}
+                              </div>
                             </td>
                             <td 
                               className="p-3 text-sm"
