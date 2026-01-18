@@ -82,6 +82,8 @@ class Target(BaseModel):
     reghp_data: Optional[dict] = None
     reghp_status: str = "not_started"  # not_started, processing, completed, error
     nik_queries: Optional[dict] = None  # {nik: {status, data, photo}}
+    family_data: Optional[dict] = None  # NKK family tree data
+    family_status: str = "not_started"
 
 class QueryStatus(BaseModel):
     target_id: str
@@ -475,6 +477,28 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
     asyncio.create_task(query_telegram_nik(target_id, nik))
     
     return {"message": "NIK query started", "nik": nik, "reused": False}
+
+@api_router.post("/targets/{target_id}/family")
+async def query_family(target_id: str, family_data_input: dict, username: str = Depends(verify_token)):
+    """Query Family (NKK) dengan Family ID"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    family_id = family_data_input.get('family_id')
+    if not family_id:
+        raise HTTPException(status_code=400, detail="Family ID required")
+    
+    # Update family_status to processing
+    await db.targets.update_one(
+        {"id": target_id},
+        {"$set": {"family_status": "processing"}}
+    )
+    
+    # Start background task
+    asyncio.create_task(query_telegram_family(target_id, family_id))
+    
+    return {"message": "Family query started", "target_id": target_id}
 
 # Dashboard Stats
 @api_router.get("/stats")
