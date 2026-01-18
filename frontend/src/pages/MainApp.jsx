@@ -1591,17 +1591,28 @@ const MainApp = () => {
                           <Printer className={`w-4 h-4 ${printingTarget === target.id ? 'animate-pulse' : ''}`} />
                         </button>
                       )}
-                      {/* History Button for Target */}
+                      {/* History Button for Target - Toggle on/off */}
                       {target.status === 'completed' && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedTargetForHistory(target);
-                            setHistoryDialogOpen(true);
+                            // Check if history for this target is already active
+                            if (activeHistoryTargets.includes(target.id)) {
+                              // Second click - hide history
+                              hideTargetHistory(target.id);
+                            } else {
+                              // First click - open dialog to show history
+                              setSelectedTargetForHistory(target);
+                              setHistoryDialogOpen(true);
+                            }
                           }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                          style={{ color: 'var(--accent-primary)' }}
-                          title="Riwayat Posisi"
+                          style={{ 
+                            color: activeHistoryTargets.includes(target.id) 
+                              ? 'var(--status-success)' 
+                              : 'var(--accent-primary)' 
+                          }}
+                          title={activeHistoryTargets.includes(target.id) ? "Sembunyikan History" : "Riwayat Posisi"}
                         >
                           <History className="w-4 h-4" />
                         </button>
