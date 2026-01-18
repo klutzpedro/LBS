@@ -188,6 +188,34 @@ async def get_case(case_id: str, username: str = Depends(verify_token)):
     
     return case
 
+@api_router.delete("/cases/{case_id}")
+async def delete_case(case_id: str, username: str = Depends(verify_token)):
+    """Delete case and all its targets"""
+    # Get all targets in this case
+    targets = await db.targets.find({"case_id": case_id}, {"_id": 0}).to_list(1000)
+    
+    # Delete all chat messages for these targets
+    target_ids = [t['id'] for t in targets]
+    await db.chat_messages.delete_many({"target_id": {"$in": target_ids}})
+    
+    # Delete all targets in this case
+    result_targets = await db.targets.delete_many({"case_id": case_id})
+    
+    # Delete all schedules for this case
+    await db.schedules.delete_many({"case_id": case_id})
+    
+    # Delete the case
+    result_case = await db.cases.delete_one({"id": case_id})
+    
+    if result_case.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    return {
+        "message": "Case deleted successfully",
+        "deleted_targets": result_targets.deleted_count,
+        "deleted_case": True
+    }
+
 # Target Routes
 @api_router.post("/targets", response_model=Target)
 async def create_target(target_data: TargetCreate, username: str = Depends(verify_token)):
@@ -263,6 +291,36 @@ async def get_target(target_id: str, username: str = Depends(verify_token)):
         target['created_at'] = datetime.fromisoformat(target['created_at'])
     
     return target
+
+@api_router.delete("/targets/{target_id}")
+async def delete_target(target_id: str, username: str = Depends(verify_token)):
+    """Delete target and all associated data"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    # Delete chat messages
+    await db.chat_messages.delete_many({"target_id": target_id})
+    
+    # Delete schedules for this phone
+    await db.schedules.delete_many({
+        "case_id": target['case_id'],
+        "phone_number": target['phone_number']
+    })
+    
+    # Delete the target
+    result = await db.targets.delete_one({"id": target_id})
+    
+    # Update case target count
+    await db.cases.update_one(
+        {"id": target['case_id']},
+        {"$inc": {"target_count": -1}}
+    )
+    
+    return {
+        "message": "Target deleted successfully",
+        "deleted": True
+    }
 
 @api_router.get("/targets/{target_id}/status", response_model=QueryStatus)
 async def get_target_status(target_id: str, username: str = Depends(verify_token)):
