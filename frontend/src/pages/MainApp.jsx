@@ -509,16 +509,20 @@ const MainApp = () => {
     setNikDialogOpen(true);
   };
 
-  const handleFamilyPendalaman = async (targetId, familyId, targetNik) => {
+  const handleFamilyPendalaman = async (targetId, familyId, sourceNik) => {
     if (!targetId || !familyId) {
       toast.error('Target ID atau Family ID tidak valid');
       return;
     }
     
     try {
-      await axios.post(`${API}/targets/${targetId}/family`, { family_id: familyId });
+      // Send source_nik to store family data per NIK
+      await axios.post(`${API}/targets/${targetId}/family`, { 
+        family_id: familyId,
+        source_nik: sourceNik  // The NIK that triggered this query
+      });
       toast.success('Family query dimulai! Tunggu ~15 detik...');
-      setTargetNikForTree(targetNik);
+      setTargetNikForTree(sourceNik);
       
       // Poll for completion and auto-open dialog
       let attempts = 0;
@@ -534,17 +538,19 @@ const MainApp = () => {
             setSelectedReghpTarget(target);
           }
           
-          if (target.family_status === 'completed' && target.family_data) {
+          // Check family data in the specific NIK's data
+          const nikData = target.nik_queries?.[sourceNik];
+          if (nikData?.family_status === 'completed' && nikData?.family_data) {
             clearInterval(checkInterval);
             toast.success('Family Tree data tersedia!');
             
-            // Auto-open Family Tree dialog
+            // Auto-open Family Tree dialog with NIK-specific family data
             setTimeout(() => {
-              handleShowFamilyTree(target.family_data, targetNik);
+              handleShowFamilyTree(nikData.family_data, sourceNik);
             }, 500);
-          } else if (target.family_status === 'error' || attempts > 30) {
+          } else if (nikData?.family_status === 'error' || attempts > 30) {
             clearInterval(checkInterval);
-            if (target.family_status === 'error') {
+            if (nikData?.family_status === 'error') {
               toast.error('Family query gagal');
             }
           }
