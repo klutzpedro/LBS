@@ -16,11 +16,13 @@ export const HistoryDialog = ({ open, onClose, target, onShowPath }) => {
 
   useEffect(() => {
     if (open && target) {
-      // Set default date range (last 7 days)
+      // Set default date range (last 30 days to be safe)
       const today = new Date();
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      setToDate(today.toISOString().split('T')[0] + 'T23:59');
-      setFromDate(weekAgo.toISOString().split('T')[0] + 'T00:00');
+      today.setHours(23, 59, 59);
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      monthAgo.setHours(0, 0, 0);
+      setToDate(today.toISOString().slice(0, 16)); // Format: YYYY-MM-DDTHH:MM
+      setFromDate(monthAgo.toISOString().slice(0, 16));
       fetchHistory();
     }
   }, [open, target]);
