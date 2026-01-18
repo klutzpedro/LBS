@@ -129,6 +129,18 @@
 - **Libraries:** jspdf, jspdf-autotable
 - **Files Created:** `/app/frontend/src/components/main/PDFExport.jsx`
 
+### PDF Map Screenshot Bug Fix (January 2026)
+- **Issue:** PDF export captured live map view instead of target's specific location
+- **Root Cause:** Using html2canvas on live DOM captured whatever was displayed on screen
+- **Solution:** 
+  - Removed html2canvas dependency
+  - Implemented `drawLocationMap()` function that draws map directly in PDF using jsPDF
+  - Uses target's specific coordinates (`target.data.latitude`, `target.data.longitude`)
+  - Added `latLngToTile()` function to convert coordinates to OSM tile coordinates
+  - Optional OSM tile preview via `getOsmTileUrl()` (may fail due to CORS)
+- **Result:** Each PDF now contains accurate map representation with correct coordinates
+- **Files Modified:** `/app/frontend/src/components/main/PDFExport.jsx`
+
 ### Family Tree Per-NIK Storage
 - **Issue:** Previously, family tree data was stored at target level, causing all NIKs to share the same family tree
 - **Fix:** Family tree data now stored per-NIK in `nik_queries[nik].family_data`
