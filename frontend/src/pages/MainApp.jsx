@@ -127,7 +127,10 @@ const MainApp = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [existingTarget, setExistingTarget] = useState(null);
-  const [pendingPhoneNumber, setPendingPhoneNumber] = useState(''); // Force map re-render
+  const [pendingPhoneNumber, setPendingPhoneNumber] = useState('');
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedTargetForSchedule, setSelectedTargetForSchedule] = useState(null);
+  const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 }); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -289,6 +292,47 @@ const MainApp = () => {
     // Show existing data
     if (existingTarget) {
       setSelectedTargetForChat(existingTarget.id);
+    }
+  };
+
+  const handlePerbaharui = async (target) => {
+    if (!window.confirm(`Perbaharui lokasi untuk ${target.phone_number}?`)) {
+      return;
+    }
+    
+    try {
+      const response = await axios.post(`${API}/targets`, {
+        case_id: selectedCase.id,
+        phone_number: target.phone_number
+      });
+      toast.success('Query pembaharuan dimulai!');
+      setSelectedTargetForChat(response.data.id);
+    } catch (error) {
+      toast.error('Gagal memulai pembaharuan');
+    }
+  };
+
+  const handleOpenScheduleDialog = (target) => {
+    setSelectedTargetForSchedule(target);
+    setScheduleDialogOpen(true);
+  };
+
+  const handleCreateSchedule = async (e) => {
+    e.preventDefault();
+    
+    try {
+      await axios.post(`${API}/schedules`, {
+        case_id: selectedTargetForSchedule.case_id,
+        phone_number: selectedTargetForSchedule.phone_number,
+        interval_type: scheduleInterval.type,
+        interval_value: scheduleInterval.value,
+        active: true
+      });
+      toast.success('Jadwal berhasil dibuat!');
+      setScheduleDialogOpen(false);
+      setScheduleInterval({ type: 'hourly', value: 1 });
+    } catch (error) {
+      toast.error('Gagal membuat jadwal');
     }
   };
 
