@@ -2007,6 +2007,64 @@ async def get_target_history(
     history = await db.position_history.find(query, {"_id": 0}).sort("timestamp", -1).to_list(1000)
     return {"target_id": target_id, "phone_number": target.get("phone_number"), "history": history}
 
+@api_router.post("/targets/{target_id}/save-current-position")
+async def save_current_position_to_history(target_id: str, username: str = Depends(verify_token)):
+    """Manually save current target position to history (for existing targets)"""
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    if not target.get('data') or not target['data'].get('latitude') or not target['data'].get('longitude'):
+        raise HTTPException(status_code=400, detail="Target has no position data")
+    
+    lat = float(target['data']['latitude'])
+    lng = float(target['data']['longitude'])
+    address = target['data'].get('address')
+    phone_number = target.get('phone_number')
+    
+    # Check if this exact position is already in history
+    existing = await db.position_history.find_one({
+        "target_id": target_id,
+        "latitude": lat,
+        "longitude": lng
+    })
+    
+    if existing:
+        return {"message": "Position already in history", "existing": True}
+    
+    await save_position_history(target_id, phone_number, lat, lng, address)
+    return {"message": "Position saved to history", "saved": True}
+
+@api_router.post("/sync-all-positions-to-history")
+async def sync_all_positions_to_history(username: str = Depends(verify_token)):
+    """Sync all current target positions to history (one-time migration)"""
+    targets = await db.targets.find({"status": "completed"}, {"_id": 0}).to_list(1000)
+    saved_count = 0
+    
+    for target in targets:
+        if target.get('data') and target['data'].get('latitude') and target['data'].get('longitude'):
+            lat = float(target['data']['latitude'])
+            lng = float(target['data']['longitude'])
+            
+            # Check if already exists
+            existing = await db.position_history.find_one({
+                "target_id": target['id'],
+                "latitude": lat,
+                "longitude": lng
+            })
+            
+            if not existing:
+                await save_position_history(
+                    target['id'],
+                    target.get('phone_number'),
+                    lat,
+                    lng,
+                    target['data'].get('address')
+                )
+                saved_count += 1
+    
+    return {"message": f"Synced {saved_count} positions to history", "count": saved_count}
+
 # ==================== AOI FUNCTIONS ====================
 
 import math
