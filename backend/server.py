@@ -750,7 +750,7 @@ async def execute_schedule(schedule_id: str, background_tasks: BackgroundTasks, 
     )
     
     # Process in background - update position via Telegram
-    background_tasks.add_task(process_target_query, target_id, phone_number)
+    asyncio.create_task(query_telegram_bot(target_id, phone_number))
     
     logging.info(f"[SCHEDULE] Executing scheduled update for {phone_number} (schedule: {schedule_id})")
     
