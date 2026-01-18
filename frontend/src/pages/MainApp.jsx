@@ -1498,6 +1498,130 @@ const MainApp = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Dialog */}
+      <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
+        <DialogContent 
+          className="z-[9999]"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-strong)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle 
+              className="text-2xl font-bold"
+              style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+            >
+              JADWALKAN PEMBAHARUAN
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSchedule} className="space-y-4 mt-4">
+            {selectedTargetForSchedule && (
+              <div 
+                className="p-3 rounded-lg border"
+                style={{
+                  backgroundColor: 'var(--background-tertiary)',
+                  borderColor: 'var(--borders-default)'
+                }}
+              >
+                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                  Target
+                </p>
+                <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                  {selectedTargetForSchedule.phone_number}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                Interval Type
+              </Label>
+              <Select 
+                value={scheduleInterval.type} 
+                onValueChange={(value) => setScheduleInterval({ ...scheduleInterval, type: value })}
+              >
+                <SelectTrigger 
+                  className="w-full"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent
+                  style={{
+                    backgroundColor: 'var(--background-elevated)',
+                    borderColor: 'var(--borders-strong)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
+                  <SelectItem value="hourly" style={{ color: 'var(--foreground-primary)' }}>
+                    Hourly (Per Jam)
+                  </SelectItem>
+                  <SelectItem value="daily" style={{ color: 'var(--foreground-primary)' }}>
+                    Daily (Per Hari)
+                  </SelectItem>
+                  <SelectItem value="weekly" style={{ color: 'var(--foreground-primary)' }}>
+                    Weekly (Per Minggu)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs uppercase tracking-wide mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                Interval Value
+              </Label>
+              <Input
+                type="number"
+                min="1"
+                value={scheduleInterval.value}
+                onChange={(e) => setScheduleInterval({ ...scheduleInterval, value: parseInt(e.target.value) })}
+                className="bg-background-tertiary border-borders-default"
+                style={{ color: '#000000' }}
+                placeholder="1"
+                required
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                {scheduleInterval.type === 'hourly' && `Setiap ${scheduleInterval.value} jam`}
+                {scheduleInterval.type === 'daily' && `Setiap ${scheduleInterval.value} hari`}
+                {scheduleInterval.type === 'weekly' && `Setiap ${scheduleInterval.value} minggu`}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={() => setScheduleDialogOpen(false)}
+                variant="outline"
+                className="flex-1 py-6"
+                style={{
+                  backgroundColor: 'var(--background-tertiary)',
+                  borderColor: 'var(--borders-default)',
+                  color: 'var(--foreground-primary)'
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 py-6"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)',
+                  fontFamily: 'Rajdhani, sans-serif'
+                }}
+              >
+                BUAT JADWAL
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
