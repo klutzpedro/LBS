@@ -271,7 +271,7 @@ const drawFamilyTree = (doc, familyData, yPos, targetNik) => {
 };
 
 // Generate PDF for a single target
-export const generateTargetPDF = async (target) => {
+export const generateTargetPDF = async (target, mapScreenshot = null) => {
   return new Promise(async (resolve, reject) => {
     try {
       const doc = new jsPDF();
@@ -301,24 +301,27 @@ export const generateTargetPDF = async (target) => {
         doc.text(`Waktu Update: ${timestamp}`, 16, yPos + 15);
         yPos += 20;
         
-        // Draw location map with THIS TARGET's coordinates
-        yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
-        
-        // Try to load OSM tile image as supplementary map
-        try {
-          const tileUrl = getOsmTileUrl(lat, lng, 15);
-          const tileImage = await loadImageAsBase64(tileUrl);
-          if (tileImage) {
-            // Add a small tile preview next to the drawn map
-            doc.addImage(tileImage, 'PNG', 120, yPos - 65, 35, 35);
-            // Label it
-            doc.setFontSize(7);
-            doc.setTextColor(128, 128, 128);
-            doc.text('OSM Tile', 137.5, yPos - 27, { align: 'center' });
-            doc.setTextColor(0, 0, 0);
-          }
-        } catch (e) {
-          console.log('OSM tile load skipped:', e.message);
+        // Use map screenshot if provided (from webapp), otherwise draw placeholder
+        if (mapScreenshot) {
+          // Add the webapp map screenshot - full width for better visibility
+          const imgWidth = 180;
+          const imgHeight = 100;
+          doc.addImage(mapScreenshot, 'JPEG', 14, yPos, imgWidth, imgHeight);
+          
+          // Add coordinate label overlay at bottom of screenshot
+          doc.setFillColor(0, 0, 0, 0.7);
+          doc.rect(14, yPos + imgHeight - 12, imgWidth, 12, 'F');
+          doc.setTextColor(0, 217, 255);
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'bold');
+          doc.text(`📍 ${target.phone_number} | LAT: ${lat.toFixed(6)}, LNG: ${lng.toFixed(6)}`, 18, yPos + imgHeight - 4);
+          doc.setTextColor(0, 0, 0);
+          doc.setFont('helvetica', 'normal');
+          
+          yPos += imgHeight + 8;
+        } else {
+          // Fallback: Draw location map placeholder with coordinates
+          yPos = drawLocationMap(doc, lat, lng, target.phone_number, yPos);
         }
       }
       
