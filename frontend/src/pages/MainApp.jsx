@@ -1685,7 +1685,7 @@ const MainApp = () => {
                             style={{ borderColor: 'var(--borders-subtle)' }}
                           >
                             <td 
-                              className="p-3 text-sm font-medium"
+                              className="p-3 text-sm font-medium flex items-center gap-2"
                               style={{ 
                                 color: 'var(--foreground-secondary)',
                                 width: '40%',
@@ -1693,6 +1693,22 @@ const MainApp = () => {
                               }}
                             >
                               {key}
+                              {/* Family ID Pendalaman Button */}
+                              {key === 'Family ID' && value && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleFamilyPendalaman(selectedReghpTarget?.id, value, selectedNikData.nik)}
+                                  className="ml-2"
+                                  style={{
+                                    backgroundColor: 'var(--status-warning)',
+                                    color: 'var(--background-primary)',
+                                    fontSize: '10px',
+                                    padding: '2px 8px'
+                                  }}
+                                >
+                                  🔍 Family
+                                </Button>
+                              )}
                             </td>
                             <td 
                               className="p-3 text-sm"
