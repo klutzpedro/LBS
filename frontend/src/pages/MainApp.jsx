@@ -142,7 +142,9 @@ const MainApp = () => {
   const [selectedTargetForSchedule, setSelectedTargetForSchedule] = useState(null);
   const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeSchedules, setActiveSchedules] = useState([]); // Force map re-render
+  const [activeSchedules, setActiveSchedules] = useState([]);
+  const [showMarkerNames, setShowMarkerNames] = useState(false);
+  const [visibleTargets, setVisibleTargets] = useState(new Set()); // Force map re-render
 
   useEffect(() => {
     fetchCases();
@@ -159,6 +161,14 @@ const MainApp = () => {
       return () => clearInterval(interval);
     }
   }, [selectedCase]);
+
+  useEffect(() => {
+    // Auto-select first completed target for visibility
+    const completedTargets = targets.filter(t => t.status === 'completed' && t.data);
+    if (completedTargets.length > 0 && visibleTargets.size === 0) {
+      setVisibleTargets(new Set([completedTargets[0].id]));
+    }
+  }, [targets]);
 
   useEffect(() => {
     // Monitor target status changes for notifications
@@ -246,6 +256,16 @@ const MainApp = () => {
     } catch (error) {
       toast.error('Gagal membatalkan penjadwalan');
     }
+  };
+
+  const toggleTargetVisibility = (targetId) => {
+    const newVisible = new Set(visibleTargets);
+    if (newVisible.has(targetId)) {
+      newVisible.delete(targetId);
+    } else {
+      newVisible.add(targetId);
+    }
+    setVisibleTargets(newVisible);
   };
 
   const handleCreateCase = async (e) => {
