@@ -1559,6 +1559,9 @@ const MainApp = () => {
                     color: 'var(--foreground-primary)'
                   }}
                 >
+                  <SelectItem value="minutes" style={{ color: 'var(--foreground-primary)' }}>
+                    Minutes (Per Menit)
+                  </SelectItem>
                   <SelectItem value="hourly" style={{ color: 'var(--foreground-primary)' }}>
                     Hourly (Per Jam)
                   </SelectItem>
@@ -1567,6 +1570,9 @@ const MainApp = () => {
                   </SelectItem>
                   <SelectItem value="weekly" style={{ color: 'var(--foreground-primary)' }}>
                     Weekly (Per Minggu)
+                  </SelectItem>
+                  <SelectItem value="monthly" style={{ color: 'var(--foreground-primary)' }}>
+                    Monthly (Per Bulan)
                   </SelectItem>
                 </SelectContent>
               </Select>
