@@ -1948,76 +1948,73 @@ const MainApp = () => {
       {/* Duplicate Phone Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
         <DialogContent 
-          className="z-[9999] max-w-md"
+          className="z-[9999] max-w-sm p-4"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--borders-strong)'
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="pb-2">
             <DialogTitle 
-              className="text-xl font-bold"
+              className="text-lg font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
               NOMOR SUDAH ADA
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
+          <div className="space-y-3">
             <div 
-              className="p-4 rounded-lg border"
+              className="p-2 rounded border"
               style={{
                 backgroundColor: 'rgba(255, 184, 0, 0.1)',
                 borderColor: 'var(--status-warning)'
               }}
             >
-              <p className="text-sm mb-2" style={{ color: 'var(--foreground-primary)' }}>
-                Target dengan nomor <span className="font-mono font-bold" style={{ color: 'var(--accent-primary)' }}>{pendingPhoneNumber}</span> sudah ada dalam case ini.
+              <p className="text-xs mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                Target <span className="font-mono font-bold" style={{ color: 'var(--accent-primary)' }}>{pendingPhoneNumber}</span> sudah ada.
               </p>
               {existingTarget && (
-                <div className="mt-3 text-xs space-y-1" style={{ color: 'var(--foreground-secondary)' }}>
+                <div className="text-xs space-y-0.5" style={{ color: 'var(--foreground-secondary)' }}>
                   <p>Status: <span className="font-semibold">{existingTarget.status}</span></p>
                   {existingTarget.data && (
-                    <>
-                      <p>Address: {existingTarget.data.address}</p>
-                      <p>Last updated: {new Date(existingTarget.data.timestamp || existingTarget.created_at).toLocaleString('id-ID')}</p>
-                    </>
+                    <p>Updated: {new Date(existingTarget.data.timestamp || existingTarget.created_at).toLocaleString('id-ID')}</p>
                   )}
                   {existingTarget.reghp_status === 'completed' && (
-                    <p className="mt-2 font-semibold" style={{ color: 'var(--status-success)' }}>
-                      ✓ Data Reghp & NIK sudah tersedia (akan digunakan)
+                    <p className="font-semibold" style={{ color: 'var(--status-success)' }}>
+                      ✓ Data tersedia
                     </p>
                   )}
                 </div>
               )}
             </div>
 
-            <p className="text-sm" style={{ color: 'var(--foreground-secondary)' }}>
-              Apakah Anda ingin mendeteksi posisi terbaru?
+            <p className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
+              Deteksi posisi terbaru?
             </p>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 onClick={handleUseExisting}
                 variant="outline"
-                className="flex-1 py-4"
+                className="flex-1 py-2 text-xs"
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
                   color: 'var(--foreground-primary)'
                 }}
               >
-                Gunakan Data Lama
+                Data Lama
               </Button>
               <Button
                 onClick={handleRefreshLocation}
-                className="flex-1 py-4"
+                className="flex-1 py-2 text-xs"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)',
                   fontFamily: 'Rajdhani, sans-serif'
                 }}
               >
-                Deteksi Posisi Baru
+                Posisi Baru
               </Button>
             </div>
           </div>
