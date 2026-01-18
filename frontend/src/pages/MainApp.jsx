@@ -2045,16 +2045,81 @@ const MainApp = () => {
               className="text-2xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
-              🌳 FAMILY TREE
+              🌳 FAMILY TREE (NKK)
             </DialogTitle>
           </DialogHeader>
           {selectedFamilyData && (
-            <div className="mt-4">
+            <div className="space-y-6 mt-4">
+              {/* Family Tree Visualization */}
               <FamilyTreeViz members={selectedFamilyData.members} targetNik={targetNikForTree} />
+              
+              {/* Raw NKK Data Table */}
+              <div>
+                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                  RAW DATA NKK
+                </p>
+                <div 
+                  className="rounded-lg border overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                >
+                  <table className="w-full">
+                    <thead 
+                      className="border-b"
+                      style={{ 
+                        backgroundColor: 'var(--background-secondary)',
+                        borderColor: 'var(--borders-default)'
+                      }}
+                    >
+                      <tr>
+                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                          NIK
+                        </th>
+                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                          Nama
+                        </th>
+                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                          Relationship
+                        </th>
+                        <th className="p-3 text-left text-xs uppercase" style={{ color: 'var(--foreground-secondary)' }}>
+                          Gender
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedFamilyData.members.map((member, idx) => (
+                        <tr 
+                          key={idx}
+                          className="border-b"
+                          style={{ 
+                            borderColor: 'var(--borders-subtle)',
+                            backgroundColor: member.nik === targetNikForTree ? 'rgba(255, 59, 92, 0.1)' : 'transparent'
+                          }}
+                        >
+                          <td className="p-3 text-sm font-mono" style={{ color: member.nik === targetNikForTree ? 'var(--status-error)' : 'var(--accent-primary)' }}>
+                            {member.nik}
+                          </td>
+                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                            {member.name || '-'}
+                          </td>
+                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                            {member.relationship || '-'}
+                          </td>
+                          <td className="p-3 text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                            {member.gender || '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               
               <Button
                 onClick={() => setFamilyTreeDialogOpen(false)}
-                className="w-full py-6 mt-6"
+                className="w-full py-6"
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
