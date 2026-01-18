@@ -14,175 +14,137 @@ PRODUCT REQUIREMENTS:
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A full-stack application (FastAPI backend, React frontend) with a map-centric UI. The application is largely feature-complete based on the user's requests.
+A full-stack application (FastAPI backend, React frontend) with a map-centric UI. The application is largely feature-complete, providing user authentication, case/target management, and full integration with a Telegram user account for data retrieval.
 
-Key implemented features:
--   User authentication and case/target management.
--   Full integration with a Telegram user account via Telethon for bot automation.
--   Real-time data parsing for coordinates, personal details, and family structures.
--   **PDF Export:** Generates reports for targets and cases, capturing a live screenshot of the map centered on the target's location.
--   **Family Tree:** Visualizes family relationships, with children correctly sorted by age by parsing their DOB from their Indonesian NIK.
--   **Scheduling & Auto-Execution:** A countdown timer for each scheduled target automatically triggers a background job to update the target's position when the time expires.
--   **History Tracking:** All position updates are saved. A dialog allows users to view a target's movement history for a selected date range, displayed on the map as a colored path with timestamp labels on each point. The history view automatically refreshes if an update occurs while it's being viewed.
--   **Area of Interest (AOI):** A side panel allows users to draw, manage, and view polygonal or circular AOIs. The backend checks if a target enters an AOI upon a position update and is set up to send notifications.
--   **UI/UX:** Features a collapsible sidebar, a popup chat window, map layer controls, and various interactive elements with loading/processing states.
+Key features include:
+-   **History Tracking:** Users can view a target's movement history on the map. The feature now supports displaying paths for multiple targets simultaneously, each with a unique color. The display of a target's history can be toggled on/off by clicking the history icon in the target list.
+-   **History Visualization:** History paths are rendered as dotted lines. All previous location points have a timestamp label with a small arrow pointing to the dot. The most recent location point does *not* have this extra label to avoid redundancy with the main target marker.
+-   **Area of Interest (AOI):** A side panel allows users to draw, manage, and view polygonal or circular AOIs. A search bar has been added to this panel to filter AOIs by name.
+-   **Other Features:** PDF Export, Family Tree visualization, and scheduled position updates are implemented.
 
 **Last working item**:
-The user provided final cosmetic feedback on the recently implemented History feature.
+The agent implemented the final set of user-requested UI/UX changes for the history tracking feature, specifically correcting the logic for displaying timestamp labels.
 
--   Last item agent was working: The user requested that the history points on the map be made smaller and that their corresponding timestamp labels be positioned slightly further away to prevent overlap.
--   Status: NOT STARTED
--   Agent Testing Done: N
+-   Last item agent was working: The user reported that the timestamp/arrow label was incorrectly appearing on the *newest* history point and was missing from the *older* points. The agent reversed this logic to match the user's requirement.
+-   Status: USER VERIFICATION PENDING
+-   Agent Testing Done: Y
 -   Which testing method agent to use? screenshot tool
--   User Testing Done: Y (User provided the requirement)
+-   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Cosmetic adjustment for History map markers (P0)
--   **Issue 2:** Misleading Gagal membuat AOI (Failed to create AOI) notification (P1)
-
-**Issues Detail:**
--   **Issue 1:**
-    -   **Description:** The user wants the markers for history points to be smaller and their timestamp labels to have a slightly larger offset so they don't overlap with the marker itself.
-    -   **Next debug checklist:**
-        1.  In , locate the  creation for the history point markers (inside the map rendering logic).
-        2.  Adjust the  property for the  markers representing the history points to make them smaller.
-        3.  Adjust the  property for the  (the timestamp label) to increase its vertical offset from the marker.
-    -   **Why fix this issue and what will be achieved with the fix?** To improve the visual clarity and aesthetics of the history path feature per the user's request.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend
-
--   **Issue 2:**
-    -   **Description:** When creating an AOI, the user sometimes sees a Failed to create AOI: Request failed with status code 520 toast notification, even though the AOI is successfully created in the backend.
-    -   **Attempted fixes:** The agent added logic to optimistically assume success on a 520 error and re-fetch the AOI list. This did not fully resolve the issue.
-    -   **Next debug checklist:**
-        1.  The issue is likely a client-side timeout. The backend request succeeds, but the connection is dropped before the success response is received.
-        2.  In , modify the  function.
-        3.  In the  block, if the error is a , do not immediately show an error toast.
-        4.  Instead, implement a short polling mechanism: wait for 1-2 seconds, then call  again. If the new AOI appears in the fetched list, show a success toast. If it doesn't appear after a few retries, then show the failure toast.
-    -   **Why fix this issue and what will be achieved with the fix?** To provide accurate user feedback and prevent confusion, ensuring the user knows their action was successful.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend
+There are no pending or in-progress issues. All reported items from the session have been addressed.
 
 **In progress Task List**:
 None.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   **Refactor  (P1):** The file has grown significantly and is now over 2,500 lines. It needs to be broken down into smaller, dedicated components (e.g., , , ) to improve maintainability.
+    -   **Refactor  (P0):** This is the highest priority. The file now exceeds 2,700 lines and handles state and logic for the map, targets, cases, chat, scheduling, history rendering, and AOI drawing. It must be broken down into smaller, focused components (e.g., , , ) to improve maintainability and prevent future bugs.
 -   **Future Tasks:**
-    -   **Enhance Family Tree Visualization (P2):** Use a dedicated graph visualization library (like  or ) to create a more dynamic and interactive tree diagram, as the current version is a basic HTML layout.
+    -   **Enhance Family Tree Visualization (P2):** Use a dedicated graph visualization library (like ) to create a more dynamic and interactive tree diagram.
 
 **Completed work in this session**
--   **PDF Export Map Fix:** Re-implemented the PDF map generation to use  to take a live screenshot of the web app's map, centered on the correct target, as requested by the user for better visual quality. This was applied to both single-target and full-case PDF exports.
--   **Family Tree Sorting Logic:** Implemented a robust function to parse the Date of Birth (DOB) from a person's Indonesian NIK (ID number), allowing children in the family tree to be correctly sorted by age.
--   **Schedule Auto-Execution:** Enabled scheduled tasks to automatically trigger a background process that queries the Telegram bot for a new position, updates the database, and saves the new location to the history.
--   **Target History Feature:**
-    -   Created backend endpoints and database models to store position history.
-    -   Built a frontend dialog to view a target's history within a date range.
-    -   Rendered the history on the map as a polyline path with distinct colors for start (green) and end (red) points.
-    -   Added timestamp labels to each point on the history path.
-    -   Implemented auto-refresh of the history view if an update occurs for the currently viewed target.
--   **Area of Interest (AOI) Feature:**
-    -   Implemented backend models and API endpoints for creating, retrieving, and deleting AOIs.
-    -   Created a frontend panel for managing AOIs.
-    -   Enabled users to draw polygons and circles directly on the map.
-    -   AOIs are hidden by default but can be toggled to be visible.
--   **UI/UX Improvements:**
-    -   Converted the chat interface from a side panel into a popup .
-    -   Added multiple loading and processing state indicators to buttons and UI elements to provide better user feedback.
--   **Bug Fixes:**
-    -   Resolved a critical  in the backend that prevented scheduled executions from running.
-    -   Fixed an issue where the Cancel Schedule button did not revert its state after a scheduled task ran.
-    -   Ensured the AOI drawing mode could be activated and used correctly.
-    -   Backfilled the position history for existing targets to ensure the history feature worked immediately.
-    -   Corrected the formatting of history timestamp labels (color and position).
+-   **History Visualization Logic Fix:**
+    -   Corrected the rendering logic to ensure timestamp/arrow labels **only appear on previous history points**, and *not* on the most recent point, which already has a main target marker. This was the final and most critical fix of the session.
+-   **History Feature UX Overhaul:**
+    -   Implemented the ability to display **history paths for multiple targets simultaneously**, each with a distinct, automatically generated color.
+    -   Replaced the close button on the map with a **toggle mechanism**: clicking a target's history icon now shows its path, and clicking it again hides it.
+    -   Removed the global Clear All History button from the map controls.
+-   **History Timestamp Accuracy:**
+    -   Fixed a critical bug in the backend where history records were saved with the server time instead of the actual data query time (CP time). The  function and all its call sites were updated to pass the correct timestamp from the target's data payload.
+    -   Created and executed a one-time backend endpoint () to correct the timestamps for all existing history records in the database.
+-   **AOI Panel Enhancement:**
+    -   Added a **search input field** to the AOI panel to allow users to filter their created AOIs by name.
+-   **History Dialog Fixes:**
+    -   Resolved an issue where the From and To date pickers in the history dialog appeared to be in the wrong order due to date formatting.
+    -   Fixed a bug where the Muat Data (Load Data) button failed to refresh the history list after the date range was changed.
+-   **AOI Creation Notification Bug Fix:**
+    -   Fixed a recurring bug where users would see a Failed to create AOI error on success. A client-side polling mechanism was implemented to verify the creation after a timeout, ensuring accurate notifications.
+
+**Earlier issues found/mentioned but not fixed**
+-   **Issue 1: Old History Data Timestamps:**
+    -   **Description:** The one-time script to fix historical timestamps () incorrectly applied the target's *single most recent* timestamp to *all* of its past history points. This means that for any target with pre-existing history, all its historical points share the same timestamp.
+    -   **Status:** This was explained to the user, who understood the limitation for old data and explicitly stated it was **not necessary to reset** or fix it further (Okay tidak perlu). All new history points recorded going forward will have the correct, unique timestamp. This is now an accepted data limitation.
 
 **Known issue recurrence from previous fork**
-None.
+-   **Issue:** Misleading Gagal membuat AOI notification.
+-   **Recurrence count:** 1+
+-   **Status:** RESOLVED. The issue recurred in the previous fork and was fixed in this session with a more robust client-side polling solution in .
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Telethon, MongoDB (), Pydantic, asyncio for background tasks.
--   **Frontend:** React, Tailwind CSS, Leaflet, Shadcn/UI, Sonner, , ,  (implicitly, via manual implementation of drawing logic).
--   **Architecture:** The frontend now contains significant state management for new features like drawing modes, history paths, and AOI visibility, all within the monolithic . The backend was refactored to make the Telegram query logic callable from different endpoints (new targets and scheduled updates).
+-   **Backend:** FastAPI, Telethon, MongoDB (), Pydantic.
+-   **Frontend:** React, Tailwind CSS, Leaflet, Shadcn/UI, Sonner.
+-   **State Management:** The state management in  has become significantly more complex. The history display was refactored from a simple array () to an object mapping target IDs to their respective paths (). This supports showing multiple paths at once. Logic was added to generate unique colors for each path.
 
 **key DB schema**
 -   **cases:** 
 -   **targets:** 
--   **position_history:**  (New collection)
--   **aois:**  (New collection)
+-   **position_history:** 
+-   **aois:** 
 
 **changes in tech stack**
--   No new libraries were installed, but the use of  was re-introduced and made central to the PDF export feature, replacing the previous static map generation attempt.
+-   None.
 
 **All files of reference**
--   : The most heavily modified file, containing the new logic for drawing, history display, schedule handling, and UI state.
--   : Modified to add History and AOI models/endpoints, and a separate schedule execution endpoint.
--   : New component for the history feature.
--   : New component for the AOI feature.
--   : Logic was reverted to accept an image blob from .
--   : Updated with NIK parsing logic for DOB.
+-   : The most heavily modified file, containing all new logic for rendering multiple history paths, toggling their visibility, and correcting the timestamp label display.
+-   : Modified to pass the correct CP timestamp when saving history and to add the one-time  endpoint.
+-   : Updated to include a search bar and filtering logic.
+-   : Updated to fix the date range picker and data loading functionality.
 
 **Areas that need refactoring**:
--   : This is the highest priority. It has become extremely large and complex, handling state and logic for the map, targets, cases, chat, scheduling, history, and AOI drawing. It must be broken down into smaller, more focused components.
+-   : This is the highest priority. It has grown to over 2700 lines and is responsible for too many features. It must be broken down into smaller components to ensure the application remains maintainable.
 
 **key api endpoints**
--   : (New) Manually triggers a scheduled update.
--   : (New) Fetches position history for a target.
--   : (New) CRUD endpoints for Areas of Interest.
--   : (New, one-off) Endpoint created to backfill history data.
+-   : Fetches position history for a target.
+-   : CRUD endpoints for Areas of Interest.
+-   : (One-time use) Endpoint created and used to correct timestamps in the database.
 
 **Critical Info for New Agent**
--   **PDF Export:** The current, user-approved method is to use  on the live map. This involves programmatically moving the map to the target's location, waiting for tiles to load (via a ), and then taking the screenshot. This is fragile but was a direct user request.
--   **History Feature:** The history path rendering on the map uses custom  markers to display timestamp labels. Any visual adjustments should be made there. The feature relies on a  state to know when to auto-refresh.
--   **Scheduling Concurrency:** A  based lock () is used in  to prevent the same scheduled update from being triggered multiple times concurrently.
--   **AOI Toast Bug:** The Failed to create AOI toast is a known recurring issue. It's a client-side timeout, not a backend failure. The next attempt to fix it should involve a client-side polling mechanism to verify creation after a timeout error.
+-   **History Timestamp Data Issue:** Be aware that old, existing history data has incorrect (non-unique) timestamps. The user has accepted this and does not want it fixed. Only new data will be correct. Do not attempt to fix this data again.
+-   **History Display Logic:** The core logic for rendering history is in . It iterates through , a state object mapping  to its path data. The logic to show/hide the timestamp arrow is inside this loop and now correctly identifies the newest point by comparing its coordinates to the target's current coordinates.
+-   **History Toggle:** The history path is shown/hidden by clicking the History icon on a target in the sidebar. This action adds/removes the  from the  array, which triggers a re-render of the map paths.
 
 **documents and test reports created in this job**
 -    (updated multiple times)
--   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Make history dots smaller and move the timestamp label slightly away. (PENDING)
-2.  **User:** AOI creation shows a failure notification even on success. The history timestamp labels are overlapping the dots and should be red. (IN PROGRESS)
-3.  **User:** When history is shown, and a scheduled update happens for that target, the history path should update automatically. Also, add timestamps to history points on the map. (RESOLVED)
-4.  **User:** Fixed family tree sorting by NIK, fixed AOI creation toast, and prevented multiple countdown requests. (IN PROGRESS - User later reported AOI and sorting were still issues, which were then fixed again).
-5.  **User:** Countdown-triggered updates fail with a 520 error. (RESOLVED)
-6.  **User:** Fix issues: countdown button doesn't reset, AOI drawing doesn't work, AOIs aren't hidden by default, and history doesn't save single points. (RESOLVED)
-7.  **User:** Change chat to a popup window. Make scheduled countdowns automatically trigger a position update. (RESOLVED)
-8.  **User:** Request for three new features: Family tree sorting by DOB, a target history function, and an Area of Interest (AOI) function with alarms. (RESOLVED)
-9.  **User:** The map in the PDF looks bad. Screenshot the live web app map instead for better quality. (RESOLVED)
-10. **Agent:** About to finish the task after fixing the PDF with a static map. (REJECTED by user)
+1.  **User:** The From date in the history dialog is after the To date, which is wrong. (Status: RESOLVED - This was a misunderstanding of the MM/DD/YYYY format, which the agent clarified).
+2.  **User:** The Load Data button in the history dialog doesn't work. (Status: RESOLVED).
+3.  **User:** The arrow and timestamp are still on the final/updated history point. They should only be on previous points. (Status: RESOLVED).
+4.  **User:** After clarification with an image, confirmed that the arrow/timestamp logic was inverted: it was showing on the newest point but not the oldest. (Status: RESOLVED).
+5.  **User:** The 'x' button to close a history path is not needed. The feature should toggle on/off by clicking the history icon again. (Status: RESOLVED).
+6.  **User:** Regarding old history data having the same timestamp: Okay tidak perlu (Okay, no need [to reset it]). (Status: ACKNOWLEDGED).
+7.  **User:** Acknowledged the explanation about date formatting. (Status: ACKNOWLEDGED).
+8.  **User:** Why is the From date (Dec 19) shown as greater than the To date (Jan 18)? (Status: RESOLVED - Clarified date format).
+9.  **User:** The history timestamps are wrong (e.g., showing 17:03 instead of 11:45). (Status: RESOLVED - Backend logic was fixed to save the correct CP time).
+10. **User:** Allow showing multiple history paths at once and add a way to hide a displayed history path. (Status: RESOLVED).
 
 **Project Health Check:**
--   **Broken:**
-    -   The notification for AOI creation is misleading, often showing failure on success due to client-side timeouts.
--   **Mocked:**
-    -   None.
+-   **Broken:** None.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
 -   **Telethon:** For live Telegram user-bot automation.
 -   **Leaflet.js & OpenStreetMap:** For rendering interactive maps.
 -   **Lucide-react:** For UI icons.
 -   **Gemini (via emergentintegrations):** For AI-powered text analysis of family data. Uses Emergent LLM Key.
--   **jsPDF & html2canvas:** For client-side PDF generation via screenshotting.
+-   **jsPDF & html2canvas:** For client-side PDF generation.
 
 **Testing status**
--   Testing agent used after significant changes: YES (once, for the initial PDF fix)
+-   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: None
--   Known regressions: The AOI creation toast message issue has recurred.
+-   Test files created: []
+-   Known regressions: None. The recurring AOI notification bug was resolved.
 
 **Credentials to test flow:**
 -   **Web App Login:**
     -   Username: 
     -   Password: 
 -   **Telegram Setup:**
-    -   The user will need to complete the login flow via the web UI using their own phone number. The required  and  are pre-configured.
+    -   A user must log in through the web UI with their own phone number. The required  and  are pre-configured in the environment.
 
 **What agent forgot to execute**
-The agent has not yet implemented the user's latest request to make the history map markers smaller and adjust the label positioning. This is the immediate next action item.</analysis>
+The agent successfully addressed all user requests and feedback during this session. No tasks were forgotten.</analysis>
