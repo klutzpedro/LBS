@@ -32,7 +32,8 @@ import {
   EyeOff,
   Trash2,
   History,
-  Target
+  Target,
+  X
 } from 'lucide-react';
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 import { HistoryDialog } from '@/components/HistoryDialog';
