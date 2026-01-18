@@ -123,6 +123,50 @@ class ChatMessage(BaseModel):
     has_buttons: bool = False
     buttons: Optional[list] = None
 
+# Position History Model
+class PositionHistory(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    target_id: str
+    phone_number: str
+    latitude: float
+    longitude: float
+    address: Optional[str] = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# AOI (Area of Interest) Model
+class AOICreate(BaseModel):
+    name: str
+    aoi_type: str  # "polygon" or "circle"
+    coordinates: list  # For polygon: [[lat,lng], ...], For circle: [lat, lng]
+    radius: Optional[float] = None  # Only for circle, in meters
+    monitored_targets: List[str] = []  # List of target IDs
+    is_visible: bool = True
+    alarm_enabled: bool = True
+
+class AOI(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    aoi_type: str
+    coordinates: list
+    radius: Optional[float] = None
+    monitored_targets: List[str] = []
+    is_visible: bool = True
+    alarm_enabled: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AOIAlert(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    aoi_id: str
+    aoi_name: str
+    target_ids: List[str]
+    target_phones: List[str]
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    acknowledged: bool = False
+    acknowledged_at: Optional[datetime] = None
+
 # Authentication
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
