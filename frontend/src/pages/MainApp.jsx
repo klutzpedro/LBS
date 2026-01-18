@@ -489,6 +489,10 @@ const MainApp = () => {
   }, [targets, reghpDialogOpen]);
 
   const handleNikPendalaman = async (targetId, nik) => {
+    // Prevent double-click
+    if (loadingNikPendalaman === nik) return;
+    setLoadingNikPendalaman(nik);
+    
     // Optimistic update
     const updatedTargets = targets.map(t => {
       if (t.id === targetId) {
@@ -513,6 +517,9 @@ const MainApp = () => {
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to start NIK query');
       fetchTargets(selectedCase.id);
+    } finally {
+      // Clear loading after a short delay
+      setTimeout(() => setLoadingNikPendalaman(null), 2000);
     }
   };
 
@@ -522,10 +529,15 @@ const MainApp = () => {
   };
 
   const handleFamilyPendalaman = async (targetId, familyId, sourceNik) => {
+    // Prevent double-click
+    if (loadingFamilyPendalaman === sourceNik) return;
+    
     if (!targetId || !familyId) {
       toast.error('Target ID atau Family ID tidak valid');
       return;
     }
+    
+    setLoadingFamilyPendalaman(sourceNik);
     
     try {
       // Send source_nik to store family data per NIK
