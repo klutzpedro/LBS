@@ -31,11 +31,15 @@ export const HistoryDialog = ({ open, onClose, target, onShowPath }) => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
+      // Fetch all history first without date filter to ensure we get data
       let url = `${API}/targets/${target.id}/history`;
-      const params = [];
-      if (fromDate) params.push(`from_date=${fromDate}:00`);
-      if (toDate) params.push(`to_date=${toDate}:59`);
-      if (params.length > 0) url += '?' + params.join('&');
+      
+      // Only add date filters if both are set
+      if (fromDate && toDate) {
+        const fromISO = new Date(fromDate).toISOString();
+        const toISO = new Date(toDate).toISOString();
+        url += `?from_date=${encodeURIComponent(fromISO)}&to_date=${encodeURIComponent(toISO)}`;
+      }
 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
