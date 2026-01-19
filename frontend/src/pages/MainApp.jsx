@@ -1204,6 +1204,7 @@ const MainApp = () => {
           printingTarget={printingTarget}
           globalProcessing={globalProcessing}
           globalProcessType={globalProcessType}
+          onResetProcessing={handleResetProcessing}
         />
       )}
 
