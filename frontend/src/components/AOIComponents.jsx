@@ -109,7 +109,8 @@ export const AOIPanel = ({
         radius: newAOI.aoi_type === 'circle' ? parseFloat(newAOI.radius) : null,
         monitored_targets: newAOI.monitored_targets,
         is_visible: false, // Default hidden
-        alarm_enabled: true
+        alarm_enabled: true,
+        color: newAOI.color || '#00D9FF'
       };
 
       await axios.post(`${API}/aois`, payload, {
@@ -117,7 +118,7 @@ export const AOIPanel = ({
       });
 
       toast.success('AOI berhasil dibuat');
-      setNewAOI({ name: '', aoi_type: 'polygon', coordinates: '', radius: 500, monitored_targets: [] });
+      setNewAOI({ name: '', aoi_type: 'polygon', coordinates: '', radius: 500, monitored_targets: [], color: '#00D9FF' });
       setShowNewForm(false);
       fetchAOIs();
       if (refreshAOIs) refreshAOIs();
