@@ -728,7 +728,8 @@ export const NikInfoDialog = ({
       )}
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 // NIK Data Row component for the table
 const NikDataRow = ({
