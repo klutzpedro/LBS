@@ -387,8 +387,17 @@ export const ReghpInfoDialog = ({
   selectedTarget,
   onShowNikInfo,
   onNikPendalaman,
-  loadingNikPendalaman
+  loadingNikPendalaman,
+  onRefreshTarget
 }) => {
+  // Refresh target data when dialog opens
+  React.useEffect(() => {
+    if (open && selectedTarget?.id && onRefreshTarget) {
+      console.log('[ReghpInfoDialog] Refreshing target data...');
+      onRefreshTarget(selectedTarget.id);
+    }
+  }, [open, selectedTarget?.id, onRefreshTarget]);
+
   return (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent 
