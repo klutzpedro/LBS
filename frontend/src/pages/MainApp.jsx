@@ -1033,17 +1033,20 @@ const MainApp = () => {
     }
     
     try {
-      const response = await axios.post(`${API}/targets/${targetId}/nik`, { nik });
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      
+      const response = await axios.post(`${API}/targets/${targetId}/nik`, { nik }, { headers });
       console.log('[NIK Pendalaman] API Response:', response.data);
       toast.success('NIK query dimulai!');
       
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 60; // Increased to 2 minutes (60 * 2 seconds)
       const checkInterval = setInterval(async () => {
         attempts++;
         try {
-          const response = await axios.get(`${API}/targets/${targetId}`);
-          const target = response.data;
+          const pollResponse = await axios.get(`${API}/targets/${targetId}`, { headers });
+          const target = pollResponse.data;
           const nikData = target.nik_queries?.[nik];
           
           console.log(`[NIK Pendalaman] Poll ${attempts}/${maxAttempts}, status:`, nikData?.status);
