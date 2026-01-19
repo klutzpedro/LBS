@@ -880,12 +880,12 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
             # Send code
             result = await telegram_client.send_code_request(phone)
             telegram_phone_code_hash = result.phone_code_hash
-        
-        return {
-            "success": True,
-            "message": f"Kode verifikasi telah dikirim ke {phone}",
-            "phone_code_hash": result.phone_code_hash
-        }
+            
+            return {
+                "success": True,
+                "message": f"Kode verifikasi telah dikirim ke {phone}",
+                "phone_code_hash": result.phone_code_hash
+            }
         except Exception as e:
             last_error = e
             logger.warning(f"Send code attempt {attempt} failed: {e}")
