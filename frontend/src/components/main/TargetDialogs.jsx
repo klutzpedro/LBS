@@ -577,11 +577,6 @@ export const NikInfoDialog = ({
   onFamilyPendalaman,
   loadingFamilyPendalaman
 }) => {
-  // Debug: Log the data received
-  console.log('[NikInfoDialog] Received data:', JSON.stringify(selectedNikData, null, 2));
-  console.log('[NikInfoDialog] parsed_data:', selectedNikData?.parsed_data);
-  console.log('[NikInfoDialog] parsed_data keys:', selectedNikData?.parsed_data ? Object.keys(selectedNikData.parsed_data) : 'N/A');
-  
   // Check if data is complete (has the required 15 fields)
   const hasCompleteData = selectedNikData?.parsed_data && 
     Object.keys(selectedNikData.parsed_data).length >= 10;
