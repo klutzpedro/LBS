@@ -903,15 +903,33 @@ const MainApp = () => {
       return;
     }
     
-    // Check if Telegram is connected
-    try {
-      const statusResponse = await axios.get(`${API}/telegram/status`);
-      if (!statusResponse.data.authorized) {
-        toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
-        return;
+    // Check if Telegram is connected with retry
+    let telegramConnected = false;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const token = localStorage.getItem('token');
+        const statusResponse = await axios.get(`${API}/telegram/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (statusResponse.data.authorized) {
+          telegramConnected = true;
+          break;
+        }
+        // Wait before retry
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      } catch (err) {
+        console.error(`Telegram status check attempt ${attempt} failed:`, err);
+        if (attempt < 3) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
       }
-    } catch (err) {
-      console.error('Failed to check Telegram status:', err);
+    }
+    
+    if (!telegramConnected) {
+      toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
+      return;
     }
     
     setGlobalProcessing(true);
