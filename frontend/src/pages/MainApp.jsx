@@ -1175,6 +1175,30 @@ const MainApp = () => {
     setLoadingFamilyPendalaman(null);
   };
 
+  // Refresh single target data (useful when opening dialogs)
+  const refreshTargetData = async (targetId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/targets/${targetId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const updatedTarget = response.data;
+      
+      // Update targets list
+      setTargets(prev => prev.map(t => t.id === targetId ? updatedTarget : t));
+      
+      // Update selectedReghpTarget if it's the same target
+      if (selectedReghpTarget?.id === targetId) {
+        setSelectedReghpTarget(updatedTarget);
+      }
+      
+      return updatedTarget;
+    } catch (error) {
+      console.error('Failed to refresh target:', error);
+      return null;
+    }
+  };
+
   // ============== Filtered Targets ==============
   const filteredTargets = targets.filter(target => {
     if (!searchQuery) return true;
