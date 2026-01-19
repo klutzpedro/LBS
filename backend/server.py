@@ -143,6 +143,7 @@ class AOICreate(BaseModel):
     monitored_targets: List[str] = []  # List of target IDs
     is_visible: bool = True
     alarm_enabled: bool = True
+    color: Optional[str] = None  # Custom color for AOI (hex format, e.g., "#FF5733")
 
 class AOI(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -154,6 +155,7 @@ class AOI(BaseModel):
     monitored_targets: List[str] = []
     is_visible: bool = True
     alarm_enabled: bool = True
+    color: Optional[str] = None  # Custom color for AOI (hex format)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AOIAlert(BaseModel):
