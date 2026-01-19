@@ -46,7 +46,7 @@ const MainApp = () => {
   const [selectedCase, setSelectedCase] = useState(null);
   const [targets, setTargets] = useState([]);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [selectedTileLayer, setSelectedTileLayer] = useState('dark');
+  const [selectedTileLayer, setSelectedTileLayer] = useState('street');
   
   // Dialog states
   const [addTargetDialog, setAddTargetDialog] = useState(false);
