@@ -2639,8 +2639,6 @@ async def startup():
             logger.error(f"Failed to auto-reconnect Telegram: {e}")
     else:
         logger.info("No Telegram session found")
-    else:
-        logger.info("No existing Telegram session found")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
