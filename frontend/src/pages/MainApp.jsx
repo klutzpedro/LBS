@@ -951,14 +951,25 @@ const MainApp = () => {
   }, [targets, reghpDialogOpen]);
 
   const handleNikPendalaman = async (targetId, nik) => {
+    console.log('[NIK Pendalaman] Starting for target:', targetId, 'NIK:', nik);
+    console.log('[NIK Pendalaman] isProcessRunning:', isProcessRunning(), {
+      globalProcessing,
+      loadingPendalaman,
+      loadingNikPendalaman,
+      loadingFamilyPendalaman
+    });
+    
     if (isProcessRunning()) {
       showBusyNotification();
+      console.log('[NIK Pendalaman] Blocked - process is running');
       return;
     }
     
     setGlobalProcessing(true);
     setGlobalProcessType('nik');
     setLoadingNikPendalaman(nik);
+    
+    console.log('[NIK Pendalaman] State set, calling API...');
     
     const updatedTargets = targets.map(t => {
       if (t.id === targetId) {
@@ -977,7 +988,8 @@ const MainApp = () => {
     }
     
     try {
-      await axios.post(`${API}/targets/${targetId}/nik`, { nik });
+      const response = await axios.post(`${API}/targets/${targetId}/nik`, { nik });
+      console.log('[NIK Pendalaman] API Response:', response.data);
       toast.success('NIK query dimulai!');
       
       let attempts = 0;
@@ -988,6 +1000,8 @@ const MainApp = () => {
           const response = await axios.get(`${API}/targets/${targetId}`);
           const target = response.data;
           const nikData = target.nik_queries?.[nik];
+          
+          console.log(`[NIK Pendalaman] Poll ${attempts}/${maxAttempts}, status:`, nikData?.status);
           
           if (nikData?.status === 'completed' || nikData?.status === 'error') {
             clearInterval(checkInterval);
@@ -1012,6 +1026,7 @@ const MainApp = () => {
       }, 2000);
       
     } catch (error) {
+      console.error('[NIK Pendalaman] API Error:', error);
       toast.error(error.response?.data?.detail || 'Failed to start NIK query');
       fetchTargets(selectedCase.id);
       setGlobalProcessing(false);
