@@ -1056,6 +1056,10 @@ const MainApp = () => {
     setGlobalProcessType('nik');
     setLoadingNikPendalaman(nik);
     
+    // Auto-open chat panel and set target for chat
+    setSelectedTargetForChat(targetId);
+    setShowChatPanel(true);
+    
     console.log('[NIK Pendalaman] State set, calling API...');
     
     const updatedTargets = targets.map(t => {
@@ -1080,7 +1084,7 @@ const MainApp = () => {
       
       const response = await axios.post(`${API}/targets/${targetId}/nik`, { nik }, { headers });
       console.log('[NIK Pendalaman] API Response:', response.data);
-      toast.success('NIK query dimulai!');
+      toast.success('NIK query dimulai! Lihat chat untuk progress.');
       
       let attempts = 0;
       const maxAttempts = 60; // Increased to 2 minutes (60 * 2 seconds)
