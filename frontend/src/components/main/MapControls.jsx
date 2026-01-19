@@ -8,10 +8,25 @@ import {
   EyeOff,
   Target,
   Plus,
-  MessageSquare
+  MessageSquare,
+  Palette
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mapTiles } from './MapUtils';
+
+// Predefined color palette for AOI drawing
+const AOI_COLORS = [
+  { name: 'Cyan', value: '#00D9FF' },
+  { name: 'Kuning', value: '#FFB800' },
+  { name: 'Hijau', value: '#10B981' },
+  { name: 'Ungu', value: '#8B5CF6' },
+  { name: 'Pink', value: '#EC4899' },
+  { name: 'Orange', value: '#F97316' },
+  { name: 'Biru', value: '#3B82F6' },
+  { name: 'Merah', value: '#EF4444' },
+  { name: 'Teal', value: '#14B8A6' },
+  { name: 'Lime', value: '#84CC16' }
+];
 
 /**
  * Map control buttons and overlays
@@ -29,6 +44,8 @@ export const MapControls = ({
   onOpenAOIPanel,
   drawingMode,
   drawingPoints = [],
+  drawingColor = '#00D9FF',
+  onDrawingColorChange,
   onFinishDrawing,
   onCancelDrawing,
   selectedCase,
