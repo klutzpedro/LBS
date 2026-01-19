@@ -846,28 +846,40 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
     if not phone:
         raise HTTPException(status_code=400, detail="Phone number required")
     
-    try:
-        # Initialize client if not exists
-        if telegram_client is None:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
-            )
-            await telegram_client.connect()
-        
-        # Check if already authorized
-        if await telegram_client.is_user_authorized():
-            me = await telegram_client.get_me()
-            return {
-                "already_authorized": True,
-                "username": me.username,
-                "phone": me.phone
-            }
-        
-        # Send code
-        result = await telegram_client.send_code_request(phone)
-        telegram_phone_code_hash = result.phone_code_hash
+    max_retries = 3
+    last_error = None
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Initialize client if not exists or reconnect if disconnected
+            if telegram_client is None or not telegram_client.is_connected():
+                # Close existing client if any
+                if telegram_client:
+                    try:
+                        await telegram_client.disconnect()
+                    except:
+                        pass
+                
+                telegram_client = TelegramClient(
+                    '/app/backend/northarch_session',
+                    TELEGRAM_API_ID,
+                    TELEGRAM_API_HASH
+                )
+                await telegram_client.connect()
+                logger.info(f"Telegram client connected (attempt {attempt})")
+            
+            # Check if already authorized
+            if await telegram_client.is_user_authorized():
+                me = await telegram_client.get_me()
+                return {
+                    "already_authorized": True,
+                    "username": me.username,
+                    "phone": me.phone
+                }
+            
+            # Send code
+            result = await telegram_client.send_code_request(phone)
+            telegram_phone_code_hash = result.phone_code_hash
         
         return {
             "success": True,
