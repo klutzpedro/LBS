@@ -1023,6 +1023,11 @@ const MainApp = () => {
             setLoadingNikPendalaman(null);
             fetchTargets(selectedCase.id);
             
+            // IMPORTANT: Update selectedReghpTarget with fresh data
+            if (selectedReghpTarget?.id === targetId) {
+              setSelectedReghpTarget(target);
+            }
+            
             if (nikData?.status === 'completed') {
               toast.success('NIK query selesai!');
             }
