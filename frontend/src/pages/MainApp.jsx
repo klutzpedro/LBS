@@ -604,7 +604,10 @@ const MainApp = () => {
 
   const fetchCases = async () => {
     try {
-      const response = await axios.get(`${API}/cases`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/cases`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const activeCases = response.data.filter(c => c.status === 'active');
       setCases(activeCases);
       if (activeCases.length > 0 && !selectedCase) {
@@ -617,7 +620,10 @@ const MainApp = () => {
 
   const fetchTargets = async (caseId) => {
     try {
-      const response = await axios.get(`${API}/targets?case_id=${caseId}`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/targets?case_id=${caseId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTargets(response.data);
     } catch (error) {
       console.error('Failed to load targets:', error);
