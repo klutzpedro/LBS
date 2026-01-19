@@ -562,7 +562,8 @@ export const ReghpInfoDialog = ({
       )}
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 /**
  * NIK Info Dialog
