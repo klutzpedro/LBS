@@ -2359,7 +2359,7 @@ async def update_aoi(aoi_id: str, update_data: dict, username: str = Depends(ver
     if not aoi:
         raise HTTPException(status_code=404, detail="AOI not found")
     
-    allowed_fields = ['name', 'coordinates', 'radius', 'monitored_targets', 'is_visible', 'alarm_enabled']
+    allowed_fields = ['name', 'coordinates', 'radius', 'monitored_targets', 'is_visible', 'alarm_enabled', 'color']
     update_fields = {k: v for k, v in update_data.items() if k in allowed_fields}
     
     if update_fields:
