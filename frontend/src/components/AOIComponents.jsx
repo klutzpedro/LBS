@@ -331,6 +331,29 @@ export const AOIPanel = ({
                 </div>
               )}
 
+              {/* Color Picker */}
+              <div>
+                <Label className="text-xs flex items-center gap-1" style={{ color: 'var(--foreground-secondary)' }}>
+                  <Palette className="w-3 h-3" /> Warna AOI
+                </Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {AOI_COLORS.map(color => (
+                    <button
+                      key={color.value}
+                      type="button"
+                      onClick={() => setNewAOI({ ...newAOI, color: color.value })}
+                      className="w-7 h-7 rounded-full border-2 transition-transform hover:scale-110"
+                      style={{ 
+                        backgroundColor: color.value,
+                        borderColor: newAOI.color === color.value ? 'white' : 'transparent',
+                        boxShadow: newAOI.color === color.value ? '0 0 0 2px var(--accent-primary)' : 'none'
+                      }}
+                      title={color.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <Label className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>Monitor Target</Label>
                 <div className="flex flex-wrap gap-1 mt-1">
