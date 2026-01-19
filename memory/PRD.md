@@ -213,11 +213,20 @@
 
 ### 0. NIK Info Dialog Bug Fix (January 19, 2026)
 - **Issue:** NIK Info Dialog only displayed 3 fields (Phone, NIK, Operator) instead of full 15 fields
-- **Root Cause:** Not a code bug - data was correctly stored in `nik_queries[nik].data.parsed_data` with 15 fields. The dialog component was working correctly.
-- **Testing Verified:** All 15 fields (NIK, Family ID, Full Name, Address, Dob, Religion, Relationship, Blood, Type of Work, Gender, Marital, Father Name, NIK Father, Mother Name, NIK Mother) display correctly
-- **Tested Targets:** 6281282000661 (2 NIKs), 6281289134401 (1 NIK) - all showing complete data
-- **Minor Design Issue:** Dialog requires scrolling to see last 3 fields (NIK Father, Mother Name, NIK Mother)
-- **Files Reviewed:** `/app/frontend/src/components/main/TargetDialogs.jsx` (NikInfoDialog component, line 565-730)
+- **Root Cause:** Multiple issues identified and fixed:
+  1. State `selectedReghpTarget` was not refreshed after NIK query completed
+  2. "Info" button was shown even when NIK data was incomplete (error status)
+  3. No validation for Telegram connection before starting query
+- **Fixes Applied:**
+  1. Added field count validation - "Info (15)" button only shows if `parsed_data` has ≥5 fields
+  2. Added "🔄 Retry" button for NIK queries with error status
+  3. Added Telegram connection check before REGHP/NIK queries with toast error message
+  4. `selectedReghpTarget` is now updated after NIK query completes
+  5. Field count indicator "(X fields)" shown under each NIK entry
+- **Testing Verified:** NIK Info Dialog now shows all 15 fields correctly
+- **Files Modified:**
+  - `/app/frontend/src/components/main/TargetDialogs.jsx` - ReghpInfoDialog NIK buttons logic
+  - `/app/frontend/src/pages/MainApp.jsx` - handlePendalaman, handleNikPendalaman with Telegram check
 
 ### 0b. AOI Custom Color Feature (January 19, 2026)
 - **Feature:** Users can now set custom colors for each AOI
