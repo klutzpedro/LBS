@@ -1351,7 +1351,7 @@ const MainApp = () => {
               />
 
               {/* Drawing Preview */}
-              <DrawingOverlay drawingMode={drawingMode} drawingPoints={drawingPoints} />
+              <DrawingOverlay drawingMode={drawingMode} drawingPoints={drawingPoints} drawingColor={drawingColor} />
 
               {/* Target Markers */}
               <TargetMarkers
