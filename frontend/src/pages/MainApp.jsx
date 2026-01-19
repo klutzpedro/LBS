@@ -893,6 +893,17 @@ const MainApp = () => {
       return;
     }
     
+    // Check if Telegram is connected
+    try {
+      const statusResponse = await axios.get(`${API}/telegram/status`);
+      if (!statusResponse.data.authorized) {
+        toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to check Telegram status:', err);
+    }
+    
     setGlobalProcessing(true);
     setGlobalProcessType('pendalaman');
     setLoadingPendalaman(target.id);
