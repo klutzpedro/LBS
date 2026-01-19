@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTelegram } from '@/context/TelegramContext';
 import { useAuth } from '@/context/AuthContext';
@@ -7,7 +7,7 @@ import { API } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, Save, Key, AlertCircle, ExternalLink, ArrowLeft, Shield, Send, CheckCircle, LogOut } from 'lucide-react';
+import { Settings as SettingsIcon, Save, Key, AlertCircle, ExternalLink, ArrowLeft, Shield, Send, CheckCircle, LogOut, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Settings = () => {
@@ -18,6 +18,10 @@ const Settings = () => {
   const [apiHash, setApiHash] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
+  // API Status state
+  const [credentialsStatus, setCredentialsStatus] = useState(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  
   // Telegram setup states
   const [setupStep, setSetupStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState('+62');
@@ -25,6 +29,26 @@ const Settings = () => {
   const [password2FA, setPassword2FA] = useState('');
   const [requires2FA, setRequires2FA] = useState(false);
   const [settingUp, setSettingUp] = useState(false);
+
+  // Fetch credentials status on mount
+  useEffect(() => {
+    fetchCredentialsStatus();
+  }, []);
+
+  const fetchCredentialsStatus = async () => {
+    setLoadingStatus(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/telegram/credentials-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCredentialsStatus(response.data);
+    } catch (error) {
+      console.error('Failed to fetch credentials status:', error);
+    } finally {
+      setLoadingStatus(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,9 +69,10 @@ const Settings = () => {
         }, 1000);
       }
       
-      // Clear form
+      // Clear form and refresh status
       setApiId('');
       setApiHash('');
+      fetchCredentialsStatus();
       
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to update credentials');
