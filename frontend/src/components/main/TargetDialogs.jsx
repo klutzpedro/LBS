@@ -570,87 +570,149 @@ export const NikInfoDialog = ({
   onShowFamilyTree,
   onFamilyPendalaman,
   loadingFamilyPendalaman
-}) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent 
-      className="z-[9999] max-w-lg max-h-[70vh] overflow-y-auto p-4"
-      style={{
-        backgroundColor: 'var(--background-elevated)',
-        borderColor: 'var(--borders-strong)'
-      }}
-    >
-      <DialogHeader className="pb-2">
-        <DialogTitle 
-          className="text-lg font-bold"
-          style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
-        >
-          INFO PENDALAMAN NIK
-        </DialogTitle>
-      </DialogHeader>
-      {selectedNikData && (
-        <div className="space-y-2">
-          {/* NIK */}
-          <div>
-            <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
-              NIK
-            </p>
-            <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
-              {selectedNikData.nik}
-            </p>
-          </div>
+}) => {
+  // Check if data is complete (has the required 15 fields)
+  const hasCompleteData = selectedNikData?.parsed_data && 
+    Object.keys(selectedNikData.parsed_data).length >= 10;
+  
+  // Check if this is actually REGHP data mistakenly shown
+  const isReghpData = selectedNikData?.parsed_data && 
+    Object.keys(selectedNikData.parsed_data).some(k => 
+      k.toLowerCase().includes('operator') || k.toLowerCase().includes('phone')
+    ) && !selectedNikData?.parsed_data?.['Full Name'];
 
-          {/* Photo */}
-          {selectedNikData.photo && (
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent 
+        className="z-[9999] max-w-lg max-h-[70vh] overflow-y-auto p-4"
+        style={{
+          backgroundColor: 'var(--background-elevated)',
+          borderColor: 'var(--borders-strong)'
+        }}
+      >
+        <DialogHeader className="pb-2">
+          <DialogTitle 
+            className="text-lg font-bold"
+            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+          >
+            INFO PENDALAMAN NIK
+          </DialogTitle>
+        </DialogHeader>
+        {selectedNikData && (
+          <div className="space-y-2">
+            {/* NIK */}
             <div>
-              <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
-                Foto KTP
+              <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                NIK
               </p>
-              <div 
-                className="rounded border overflow-hidden"
-                style={{ borderColor: 'var(--borders-default)', maxWidth: '180px' }}
-              >
-                <img 
-                  src={selectedNikData.photo} 
-                  alt="KTP" 
-                  className="w-full"
-                  style={{ maxHeight: '200px', objectFit: 'contain', backgroundColor: 'var(--background-tertiary)' }}
-                />
-              </div>
+              <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
+                {selectedNikData.nik}
+              </p>
             </div>
-          )}
 
-          {/* Parsed Data Table */}
-          {selectedNikData.parsed_data && Object.keys(selectedNikData.parsed_data).length > 0 && (
-            <div>
-              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
-                DATA DIRI LENGKAP
-              </p>
+            {/* Error or incomplete data warning */}
+            {selectedNikData.error && (
               <div 
-                className="rounded border overflow-hidden"
+                className="p-3 rounded border text-center"
                 style={{
-                  backgroundColor: 'var(--background-tertiary)',
-                  borderColor: 'var(--borders-default)'
+                  backgroundColor: 'rgba(255, 59, 92, 0.1)',
+                  borderColor: 'var(--status-error)'
                 }}
               >
-                <table className="w-full text-xs">
-                  <tbody>
-                    {Object.entries(selectedNikData.parsed_data).map(([key, value], idx) => (
-                      <NikDataRow 
-                        key={idx}
-                        dataKey={key}
-                        value={value}
-                        selectedNikData={selectedNikData}
-                        selectedReghpTarget={selectedReghpTarget}
-                        onShowFamilyTree={onShowFamilyTree}
-                        onFamilyPendalaman={onFamilyPendalaman}
-                        loadingFamilyPendalaman={loadingFamilyPendalaman}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--status-error)' }}>
+                  ❌ Query NIK Gagal
+                </p>
+                <p className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
+                  {selectedNikData.error}
+                </p>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Warning if data looks like REGHP data */}
+            {isReghpData && (
+              <div 
+                className="p-3 rounded border text-center"
+                style={{
+                  backgroundColor: 'rgba(255, 184, 0, 0.1)',
+                  borderColor: 'var(--status-warning)'
+                }}
+              >
+                <p className="text-sm font-bold mb-1" style={{ color: 'var(--status-warning)' }}>
+                  ⚠️ Data Tidak Lengkap
+                </p>
+                <p className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
+                  Query NIK perlu dijalankan ulang untuk mendapatkan data lengkap.
+                </p>
+              </div>
+            )}
+
+            {/* Photo */}
+            {selectedNikData.photo && (
+              <div>
+                <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                  Foto KTP
+                </p>
+                <div 
+                  className="rounded border overflow-hidden"
+                  style={{ borderColor: 'var(--borders-default)', maxWidth: '180px' }}
+                >
+                  <img 
+                    src={selectedNikData.photo} 
+                    alt="KTP" 
+                    className="w-full"
+                    style={{ maxHeight: '200px', objectFit: 'contain', backgroundColor: 'var(--background-tertiary)' }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Parsed Data Table */}
+            {selectedNikData.parsed_data && Object.keys(selectedNikData.parsed_data).length > 0 && (
+              <div>
+                <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                  DATA DIRI LENGKAP ({Object.keys(selectedNikData.parsed_data).length} fields)
+                </p>
+                <div 
+                  className="rounded border overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                >
+                  <table className="w-full text-xs">
+                    <tbody>
+                      {Object.entries(selectedNikData.parsed_data).map(([key, value], idx) => (
+                        <NikDataRow 
+                          key={idx}
+                          dataKey={key}
+                          value={value}
+                          selectedNikData={selectedNikData}
+                          selectedReghpTarget={selectedReghpTarget}
+                          onShowFamilyTree={onShowFamilyTree}
+                          onFamilyPendalaman={onFamilyPendalaman}
+                          loadingFamilyPendalaman={loadingFamilyPendalaman}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* No data message */}
+            {!selectedNikData.parsed_data && !selectedNikData.error && (
+              <div 
+                className="p-3 rounded border text-center"
+                style={{
+                  backgroundColor: 'rgba(255, 184, 0, 0.1)',
+                  borderColor: 'var(--status-warning)'
+                }}
+              >
+                <p className="text-sm" style={{ color: 'var(--status-warning)' }}>
+                  ⚠️ Data NIK belum tersedia. Silakan jalankan query NIK.
+                </p>
+              </div>
+            )}
 
           <Button
             onClick={() => onOpenChange(false)}
