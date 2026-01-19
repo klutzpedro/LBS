@@ -407,7 +407,8 @@ const MainApp = () => {
         aoi_type: drawingMode,
         is_visible: false,
         alarm_enabled: true,
-        monitored_targets: []
+        monitored_targets: [],
+        color: drawingColor // Include selected color
       };
 
       if (drawingMode === 'polygon') {
