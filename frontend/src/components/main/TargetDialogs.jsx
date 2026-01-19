@@ -417,8 +417,26 @@ export const ReghpInfoDialog = ({
             </p>
           </div>
 
-          {/* Parsed Data */}
-          {selectedTarget.reghp_data.parsed_data && (
+          {/* Data Not Found Message */}
+          {(selectedTarget.reghp_status === 'not_found' || selectedTarget.reghp_data.error === 'Data Not Found') && (
+            <div 
+              className="p-4 rounded border text-center"
+              style={{
+                backgroundColor: 'rgba(255, 184, 0, 0.1)',
+                borderColor: 'var(--status-warning)'
+              }}
+            >
+              <p className="text-lg font-bold mb-2" style={{ color: 'var(--status-warning)' }}>
+                ⚠️ DATA NOT FOUND
+              </p>
+              <p className="text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                {selectedTarget.reghp_data.message || 'Data REGHP tidak ditemukan untuk nomor ini'}
+              </p>
+            </div>
+          )}
+
+          {/* Parsed Data - Only show if not "Data Not Found" */}
+          {selectedTarget.reghp_data.parsed_data && !selectedTarget.reghp_data.error && (
             <div 
               className="p-2 rounded border"
               style={{
@@ -440,8 +458,8 @@ export const ReghpInfoDialog = ({
             </div>
           )}
 
-          {/* NIK Entries */}
-          {selectedTarget.reghp_data.niks && selectedTarget.reghp_data.niks.length > 0 && (
+          {/* NIK Entries - Only show if not "Data Not Found" */}
+          {selectedTarget.reghp_data.niks && selectedTarget.reghp_data.niks.length > 0 && !selectedTarget.reghp_data.error && (
             <div>
               <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
                 NIK Entries ({selectedTarget.reghp_data.niks.length})
