@@ -4,9 +4,13 @@ import { Polygon, Circle, Polyline } from 'react-leaflet';
 /**
  * Renders the drawing preview overlay when creating new AOIs
  * Shows polygon or circle preview based on drawing mode
+ * Uses the selected color for preview
  */
-export const DrawingOverlay = ({ drawingMode, drawingPoints = [] }) => {
+export const DrawingOverlay = ({ drawingMode, drawingPoints = [], drawingColor = '#00D9FF' }) => {
   if (!drawingMode || drawingPoints.length === 0) return null;
+
+  // Use lighter/brighter version for preview
+  const previewColor = drawingColor || '#00D9FF';
 
   const calculateCircleRadius = () => {
     if (drawingPoints.length < 2) return 100;
@@ -31,13 +35,13 @@ export const DrawingOverlay = ({ drawingMode, drawingPoints = [] }) => {
       {drawingMode === 'polygon' && drawingPoints.length >= 2 && (
         <Polyline
           positions={drawingPoints}
-          pathOptions={{ color: '#00FF00', weight: 3, dashArray: '10, 10' }}
+          pathOptions={{ color: previewColor, weight: 3, dashArray: '10, 10' }}
         />
       )}
       {drawingMode === 'polygon' && drawingPoints.length >= 3 && (
         <Polygon
           positions={drawingPoints}
-          pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2, weight: 2 }}
+          pathOptions={{ color: previewColor, fillColor: previewColor, fillOpacity: 0.3, weight: 2 }}
         />
       )}
       
@@ -46,14 +50,14 @@ export const DrawingOverlay = ({ drawingMode, drawingPoints = [] }) => {
         <Circle
           center={drawingPoints[0]}
           radius={100}
-          pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2, dashArray: '10, 10' }}
+          pathOptions={{ color: previewColor, fillColor: previewColor, fillOpacity: 0.3, dashArray: '10, 10' }}
         />
       )}
       {drawingMode === 'circle' && drawingPoints.length >= 2 && (
         <Circle
           center={drawingPoints[0]}
           radius={calculateCircleRadius()}
-          pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 0.2 }}
+          pathOptions={{ color: previewColor, fillColor: previewColor, fillOpacity: 0.3 }}
         />
       )}
       
@@ -63,7 +67,7 @@ export const DrawingOverlay = ({ drawingMode, drawingPoints = [] }) => {
           key={`draw-point-${idx}`}
           center={point}
           radius={30}
-          pathOptions={{ color: '#00FF00', fillColor: '#00FF00', fillOpacity: 1 }}
+          pathOptions={{ color: previewColor, fillColor: previewColor, fillOpacity: 1 }}
         />
       ))}
     </>
