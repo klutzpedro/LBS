@@ -2602,10 +2602,26 @@ async def startup():
     else:
         logger.info("Database has existing data, skipping auto-seed")
     
-    # Try to reconnect Telegram session if exists
+    # Try to reconnect Telegram session
     session_path = '/app/backend/northarch_session.session'
+    
+    # First, try to restore session from MongoDB if file doesn't exist
+    if not os.path.exists(session_path):
+        logger.info("Session file not found, checking MongoDB backup...")
+        try:
+            import base64
+            session_backup = await db.telegram_sessions.find_one({"type": "main_session"})
+            if session_backup and session_backup.get('session_data'):
+                session_data = base64.b64decode(session_backup['session_data'])
+                with open(session_path, 'wb') as f:
+                    f.write(session_data)
+                logger.info(f"Restored Telegram session from MongoDB backup (user: {session_backup.get('username')})")
+        except Exception as restore_err:
+            logger.warning(f"Failed to restore session from MongoDB: {restore_err}")
+    
+    # Now try to connect
     if os.path.exists(session_path):
-        logger.info("Found existing Telegram session, attempting to reconnect...")
+        logger.info("Found Telegram session, attempting to reconnect...")
         try:
             telegram_client = TelegramClient(
                 '/app/backend/northarch_session',
@@ -2621,6 +2637,8 @@ async def startup():
                 logger.warning("Telegram session exists but not authorized")
         except Exception as e:
             logger.error(f"Failed to auto-reconnect Telegram: {e}")
+    else:
+        logger.info("No Telegram session found")
     else:
         logger.info("No existing Telegram session found")
 
