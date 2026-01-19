@@ -103,7 +103,7 @@ export const Sidebar = ({
 
       {/* Global Processing Indicator */}
       {globalProcessing && (
-        <ProcessingIndicator processType={globalProcessType} />
+        <ProcessingIndicator processType={globalProcessType} onReset={onResetProcessing} />
       )}
 
       {/* Cases Section */}
