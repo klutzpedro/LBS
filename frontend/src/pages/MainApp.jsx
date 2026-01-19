@@ -936,6 +936,10 @@ const MainApp = () => {
     setGlobalProcessType('pendalaman');
     setLoadingPendalaman(target.id);
     
+    // Auto-open chat panel and set target for chat
+    setSelectedTargetForChat(target.id);
+    setShowChatPanel(true);
+    
     const updatedTargets = targets.map(t => 
       t.id === target.id ? { ...t, reghp_status: 'processing' } : t
     );
@@ -946,8 +950,11 @@ const MainApp = () => {
     }
     
     try {
-      await axios.post(`${API}/targets/${target.id}/reghp`);
-      toast.success('Pendalaman query dimulai!');
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/targets/${target.id}/reghp`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Pendalaman query dimulai! Lihat chat untuk progress.');
       
       let attempts = 0;
       const maxAttempts = 30;
