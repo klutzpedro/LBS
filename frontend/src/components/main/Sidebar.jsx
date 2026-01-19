@@ -210,21 +210,36 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
 );
 
 // Processing indicator sub-component
-const ProcessingIndicator = ({ processType }) => (
+const ProcessingIndicator = ({ processType, onReset }) => (
   <div 
-    className="p-2 rounded-lg border text-xs animate-pulse"
+    className="p-2 rounded-lg border text-xs animate-pulse mx-4 mb-2"
     style={{
       backgroundColor: 'rgba(0, 217, 255, 0.1)',
       borderColor: 'var(--accent-primary)'
     }}
   >
-    <div className="flex items-center gap-2">
-      <Activity className="w-4 h-4 animate-spin" style={{ color: 'var(--accent-primary)' }} />
-      <span style={{ color: 'var(--foreground-primary)' }}>
-        {processType === 'pendalaman' && 'Processing Pendalaman...'}
-        {processType === 'nik' && 'Processing NIK Query...'}
-        {processType === 'family' && 'Processing Family Query...'}
-      </span>
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <Activity className="w-4 h-4 animate-spin" style={{ color: 'var(--accent-primary)' }} />
+        <span style={{ color: 'var(--foreground-primary)' }}>
+          {processType === 'pendalaman' && 'Processing Pendalaman...'}
+          {processType === 'nik' && 'Processing NIK Query...'}
+          {processType === 'family' && 'Processing Family Query...'}
+        </span>
+      </div>
+      {onReset && (
+        <button
+          onClick={onReset}
+          className="text-xs px-2 py-1 rounded"
+          style={{ 
+            backgroundColor: 'var(--status-error)', 
+            color: 'white' 
+          }}
+          title="Reset jika stuck"
+        >
+          Reset
+        </button>
+      )}
     </div>
   </div>
 );
