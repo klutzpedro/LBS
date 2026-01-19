@@ -213,16 +213,19 @@ export const AOIPanel = ({
   const handleSaveEdit = async (aoiId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API}/aois/${aoiId}`, {
-        name: editName
-      }, {
+      const updatePayload = { name: editName };
+      if (editColor) {
+        updatePayload.color = editColor;
+      }
+      await axios.put(`${API}/aois/${aoiId}`, updatePayload, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setEditingId(null);
+      setEditColor('');
       fetchAOIs();
       if (refreshAOIs) refreshAOIs();
     } catch (error) {
-      console.error('Failed to update name:', error);
+      console.error('Failed to update AOI:', error);
     }
   };
 
