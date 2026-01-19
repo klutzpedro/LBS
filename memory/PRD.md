@@ -211,6 +211,14 @@
 
 ## Recent Features (January 2026)
 
+### 0. NIK Info Dialog Bug Fix (January 19, 2026)
+- **Issue:** NIK Info Dialog only displayed 3 fields (Phone, NIK, Operator) instead of full 15 fields
+- **Root Cause:** Not a code bug - data was correctly stored in `nik_queries[nik].data.parsed_data` with 15 fields. The dialog component was working correctly.
+- **Testing Verified:** All 15 fields (NIK, Family ID, Full Name, Address, Dob, Religion, Relationship, Blood, Type of Work, Gender, Marital, Father Name, NIK Father, Mother Name, NIK Mother) display correctly
+- **Tested Targets:** 6281282000661 (2 NIKs), 6281289134401 (1 NIK) - all showing complete data
+- **Minor Design Issue:** Dialog requires scrolling to see last 3 fields (NIK Father, Mother Name, NIK Mother)
+- **Files Reviewed:** `/app/frontend/src/components/main/TargetDialogs.jsx` (NikInfoDialog component, line 565-730)
+
 ### 1. Family Tree - DOB-based Child Ordering
 - Children are now sorted by Date of Birth (oldest = Anak 1)
 - Supports multiple DOB formats: DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY
