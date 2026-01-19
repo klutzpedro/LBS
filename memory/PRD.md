@@ -240,6 +240,18 @@
   - `/app/backend/server.py` - startup auto-reconnect, MongoDB session backup
   - `/app/frontend/src/pages/MainApp.jsx` - fetchCases/fetchTargets dengan auth header
 
+### 0d. Multiple Bug Fixes (January 19, 2026)
+- **Issues Fixed:**
+  1. **Mock data dihapus** - Tidak lagi menampilkan data contoh saat Telegram error, sekarang menampilkan error message
+  2. **Telegram status check tidak konsisten** - Ditambahkan retry logic 3x dengan delay 1 detik
+  3. **Chat tidak menampilkan info pendalaman** - Chat panel otomatis terbuka saat pendalaman dimulai
+  4. **API ID/Hash reset tidak stabil** - Ditambahkan retry logic 3x dan client reset saat credentials diupdate
+  5. **"Data Not Found" handling** - Error message ditampilkan dengan jelas di dialog
+- **Files Modified:**
+  - `/app/backend/server.py` - Removed mock data fallback, added retry logic, improved error handling
+  - `/app/frontend/src/pages/MainApp.jsx` - Auto-open chat, retry for status check, auth headers
+  - `/app/frontend/src/components/main/TargetDialogs.jsx` - Error display in REGHP dialog
+
 ### 0b. AOI Custom Color Feature (January 19, 2026)
 - **Feature:** Users can now set custom colors for each AOI
 - **Color Palette:** 10 predefined colors (Cyan, Yellow, Green, Purple, Pink, Orange, Blue, Red, Teal, Lime)
