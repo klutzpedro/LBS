@@ -388,7 +388,12 @@ export const ReghpInfoDialog = ({
   onShowNikInfo,
   onNikPendalaman,
   loadingNikPendalaman
-}) => (
+}) => {
+  // Debug: Log target data
+  console.log('[ReghpInfoDialog] selectedTarget:', selectedTarget?.phone_number);
+  console.log('[ReghpInfoDialog] nik_queries:', selectedTarget?.nik_queries);
+  
+  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent 
       className="z-[9999] max-w-md max-h-[65vh] overflow-y-auto p-4"
