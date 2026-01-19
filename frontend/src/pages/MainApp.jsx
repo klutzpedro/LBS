@@ -1500,6 +1500,7 @@ const MainApp = () => {
         onShowNikInfo={handleShowNikInfo}
         onNikPendalaman={handleNikPendalaman}
         loadingNikPendalaman={loadingNikPendalaman}
+        onRefreshTarget={refreshTargetData}
       />
 
       <NikInfoDialog
