@@ -2436,6 +2436,67 @@ async def database_status(username: str = Depends(verify_token)):
         "total_documents": sum(status.values())
     }
 
+@api_router.get("/telegram/credentials-status")
+async def get_telegram_credentials_status(username: str = Depends(verify_token)):
+    """Get current Telegram API credentials status"""
+    global telegram_client
+    
+    # Read current values from .env file
+    env_path = ROOT_DIR / '.env'
+    current_api_id = None
+    current_api_hash = None
+    
+    if env_path.exists():
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.startswith('TELEGRAM_API_ID='):
+                    current_api_id = line.split('=', 1)[1].strip()
+                elif line.startswith('TELEGRAM_API_HASH='):
+                    current_api_hash = line.split('=', 1)[1].strip()
+    
+    # Check session file
+    session_files = list(ROOT_DIR.glob('*.session'))
+    session_exists = len(session_files) > 0
+    session_info = []
+    for sf in session_files:
+        stat = sf.stat()
+        session_info.append({
+            "name": sf.name,
+            "size": stat.st_size,
+            "modified": datetime.fromtimestamp(stat.st_mtime).isoformat()
+        })
+    
+    # Check if client is connected
+    client_connected = False
+    client_user = None
+    
+    if telegram_client is not None:
+        try:
+            client_connected = telegram_client.is_connected()
+            if client_connected:
+                me = await telegram_client.get_me()
+                if me:
+                    client_user = {
+                        "id": me.id,
+                        "username": me.username,
+                        "phone": me.phone,
+                        "first_name": me.first_name
+                    }
+        except Exception as e:
+            logger.warning(f"Could not get client status: {e}")
+    
+    return {
+        "api_id": current_api_id,
+        "api_hash_preview": f"{current_api_hash[:8]}...{current_api_hash[-4:]}" if current_api_hash and len(current_api_hash) > 12 else current_api_hash,
+        "api_hash_full": current_api_hash,  # For debugging
+        "session_exists": session_exists,
+        "session_files": session_info,
+        "client_connected": client_connected,
+        "client_user": client_user,
+        "runtime_api_id": TELEGRAM_API_ID,
+        "runtime_matches_env": str(TELEGRAM_API_ID) == current_api_id
+    }
+
 # Events
 @app.on_event("startup")
 async def startup():
