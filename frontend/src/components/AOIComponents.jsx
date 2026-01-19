@@ -18,9 +18,24 @@ import {
   Check,
   X,
   MapPin,
-  Search
+  Search,
+  Palette
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Predefined color palette for AOI
+const AOI_COLORS = [
+  { name: 'Cyan', value: '#00D9FF' },
+  { name: 'Kuning', value: '#FFB800' },
+  { name: 'Hijau', value: '#10B981' },
+  { name: 'Ungu', value: '#8B5CF6' },
+  { name: 'Pink', value: '#EC4899' },
+  { name: 'Orange', value: '#F97316' },
+  { name: 'Biru', value: '#3B82F6' },
+  { name: 'Merah', value: '#EF4444' },
+  { name: 'Teal', value: '#14B8A6' },
+  { name: 'Lime', value: '#84CC16' }
+];
 
 export const AOIPanel = ({ 
   open, 
@@ -35,13 +50,15 @@ export const AOIPanel = ({
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [newAOI, setNewAOI] = useState({
     name: '',
     aoi_type: 'polygon',
     coordinates: '',
     radius: 500,
-    monitored_targets: []
+    monitored_targets: [],
+    color: '#00D9FF'
   });
   const [showNewForm, setShowNewForm] = useState(false);
 
