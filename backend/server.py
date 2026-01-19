@@ -903,10 +903,32 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
         # Get user info
         me = await telegram_client.get_me()
         
-        # Verify session file was created
+        # Verify session file was created and backup to MongoDB
         session_path = '/app/backend/northarch_session.session'
-        if os.path.exists(session_path):
+        session_saved = os.path.exists(session_path)
+        
+        if session_saved:
             logging.info(f"Telegram session saved at {session_path}")
+            # Backup session to MongoDB for persistence
+            try:
+                with open(session_path, 'rb') as f:
+                    session_data = f.read()
+                    import base64
+                    encoded_session = base64.b64encode(session_data).decode('utf-8')
+                    await db.telegram_sessions.update_one(
+                        {"type": "main_session"},
+                        {"$set": {
+                            "session_data": encoded_session,
+                            "user_id": me.id,
+                            "username": me.username,
+                            "phone": me.phone,
+                            "updated_at": datetime.now(timezone.utc)
+                        }},
+                        upsert=True
+                    )
+                    logging.info("Telegram session backed up to MongoDB")
+            except Exception as backup_err:
+                logging.warning(f"Failed to backup session to MongoDB: {backup_err}")
         else:
             logging.warning(f"Telegram session file not found at {session_path}")
         
@@ -929,7 +951,8 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
                 "user_id": me.id
             },
             "bot_status": "connected" if bot_active else "not_connected",
-            "session_saved": os.path.exists(session_path)
+            "session_saved": session_saved,
+            "session_backed_up": True
         }
     except Exception as e:
         logging.error(f"Error verifying Telegram code: {e}")
