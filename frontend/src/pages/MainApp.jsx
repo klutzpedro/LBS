@@ -246,12 +246,16 @@ const MainApp = () => {
   };
 
   // ============== Data Fetching ==============
+  // Refresh all data when username changes (login/logout)
   useEffect(() => {
-    fetchCases();
-    fetchSchedules();
-    fetchAOIs();
-    fetchAOIAlerts();
-  }, []);
+    if (username) {
+      console.log('[MainApp] User logged in, fetching data...');
+      fetchCases();
+      fetchSchedules();
+      fetchAOIs();
+      fetchAOIAlerts();
+    }
+  }, [username]);
 
   const fetchAOIs = async () => {
     try {
