@@ -228,6 +228,18 @@
   - `/app/frontend/src/components/main/TargetDialogs.jsx` - ReghpInfoDialog NIK buttons logic
   - `/app/frontend/src/pages/MainApp.jsx` - handlePendalaman, handleNikPendalaman with Telegram check
 
+### 0c. Telegram Session Persistence & Data Loading Fix (January 19, 2026)
+- **Issues Fixed:**
+  1. **Telegram session tidak persistent** - Session hilang setelah server restart
+  2. **Data tidak muncul langsung setelah login** - User harus logout/login ulang
+- **Solutions:**
+  1. **MongoDB Session Backup:** Session di-backup ke MongoDB collection `telegram_sessions` setelah login berhasil
+  2. **Auto-restore dari MongoDB:** Saat startup, server akan restore session dari MongoDB jika file tidak ada
+  3. **Data fetch improvement:** Added `username` dependency dan Authorization header untuk immediate data loading
+- **Files Modified:**
+  - `/app/backend/server.py` - startup auto-reconnect, MongoDB session backup
+  - `/app/frontend/src/pages/MainApp.jsx` - fetchCases/fetchTargets dengan auth header
+
 ### 0b. AOI Custom Color Feature (January 19, 2026)
 - **Feature:** Users can now set custom colors for each AOI
 - **Color Palette:** 10 predefined colors (Cyan, Yellow, Green, Purple, Pink, Orange, Blue, Red, Teal, Lime)
