@@ -424,7 +424,7 @@ export const AOIPanel = ({
               </div>
             ) : aois.filter(aoi => aoi.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
               <div className="p-4 text-center" style={{ color: 'var(--foreground-muted)' }}>
-                Tidak ada AOI dengan nama "{searchQuery}"
+                Tidak ada AOI dengan nama &quot;{searchQuery}&quot;
               </div>
             ) : (
               aois
