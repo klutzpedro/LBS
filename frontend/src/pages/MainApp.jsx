@@ -127,6 +127,17 @@ const MainApp = () => {
     toast.warning('PROSES LAIN SEDANG BERLANGSUNG, MOHON MENUNGGU HINGGA SELESAI', { duration: 3000 });
   };
 
+  // Reset all processing states (for stuck processes)
+  const handleResetProcessing = () => {
+    console.log('[Reset Processing] Resetting all processing states');
+    setGlobalProcessing(false);
+    setGlobalProcessType(null);
+    setLoadingPendalaman(null);
+    setLoadingNikPendalaman(null);
+    setLoadingFamilyPendalaman(null);
+    toast.info('Processing state direset. Silakan coba lagi.');
+  };
+
   // Handle tile layer change
   const handleTileLayerChange = (newTile) => {
     setSelectedTileLayer(newTile);
