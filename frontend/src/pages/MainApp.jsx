@@ -1283,6 +1283,8 @@ const MainApp = () => {
             onOpenAOIPanel={() => setAoiPanelOpen(true)}
             drawingMode={drawingMode}
             drawingPoints={drawingPoints}
+            drawingColor={drawingColor}
+            onDrawingColorChange={setDrawingColor}
             onFinishDrawing={handleFinishDrawing}
             onCancelDrawing={handleCancelDrawing}
             selectedCase={selectedCase}
