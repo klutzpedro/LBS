@@ -809,9 +809,18 @@ async def update_telegram_credentials(credentials: dict, username: str = Depends
                 logger.warning(f"Could not delete session file {sf}: {e}")
         
         # Update global variables (for hot reload)
-        global TELEGRAM_API_ID, TELEGRAM_API_HASH
+        global TELEGRAM_API_ID, TELEGRAM_API_HASH, telegram_client
         TELEGRAM_API_ID = int(api_id)
         TELEGRAM_API_HASH = api_hash
+        
+        # Disconnect existing client if any
+        if telegram_client:
+            try:
+                await telegram_client.disconnect()
+                logger.info("Disconnected old Telegram client")
+            except:
+                pass
+            telegram_client = None
         
         logger.info(f"Updated Telegram credentials: API_ID={api_id}")
         
