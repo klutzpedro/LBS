@@ -31,12 +31,24 @@ const Settings = () => {
     setSubmitting(true);
 
     try {
-      await axios.post(`${API}/settings/telegram-credentials`, {
+      const response = await axios.post(`${API}/settings/telegram-credentials`, {
         api_id: apiId,
         api_hash: apiHash
       });
 
-      toast.success('Credentials updated! Backend perlu restart.');
+      toast.success(response.data.message || 'Credentials updated!');
+      
+      // Show next steps
+      if (response.data.next_steps) {
+        setTimeout(() => {
+          toast.info(response.data.next_steps, { duration: 5000 });
+        }, 1000);
+      }
+      
+      // Clear form
+      setApiId('');
+      setApiHash('');
+      
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to update credentials');
     } finally {
