@@ -217,35 +217,60 @@ export const MapControls = ({
   );
 };
 
-// Drawing mode indicator component
-const DrawingIndicator = ({ drawingMode, drawingPoints, onFinishDrawing, onCancelDrawing }) => (
+// Drawing mode indicator component with color picker
+const DrawingIndicator = ({ drawingMode, drawingPoints, drawingColor, onDrawingColorChange, onFinishDrawing, onCancelDrawing }) => (
   <div 
-    className="flex items-center gap-2 px-3 py-2 rounded-lg"
+    className="flex flex-col gap-2 px-3 py-2 rounded-lg"
     style={{ 
-      backgroundColor: 'var(--status-success)', 
-      color: 'white'
+      backgroundColor: 'var(--background-elevated)', 
+      border: '2px solid',
+      borderColor: drawingColor || '#00D9FF'
     }}
   >
-    <span className="text-xs font-semibold">
-      ✏️ Drawing {drawingMode} ({drawingPoints.length} titik)
-    </span>
-    <Button
-      size="sm"
-      onClick={onFinishDrawing}
-      className="h-6 px-2 text-xs"
-      style={{ backgroundColor: 'white', color: 'var(--status-success)' }}
-    >
-      ✓ Selesai
-    </Button>
-    <Button
-      size="sm"
-      variant="ghost"
-      onClick={onCancelDrawing}
-      className="h-6 px-2 text-xs"
-      style={{ color: 'white' }}
-    >
-      ✕
-    </Button>
+    <div className="flex items-center gap-2">
+      <span className="text-xs font-semibold" style={{ color: 'var(--foreground-primary)' }}>
+        ✏️ Drawing {drawingMode} ({drawingPoints.length} titik)
+      </span>
+    </div>
+    
+    {/* Color Picker */}
+    <div className="flex items-center gap-1">
+      <Palette className="w-3 h-3" style={{ color: 'var(--foreground-muted)' }} />
+      {AOI_COLORS.map(color => (
+        <button
+          key={color.value}
+          type="button"
+          onClick={() => onDrawingColorChange && onDrawingColorChange(color.value)}
+          className="w-5 h-5 rounded-full border transition-transform hover:scale-110"
+          style={{ 
+            backgroundColor: color.value,
+            borderColor: drawingColor === color.value ? 'white' : 'transparent',
+            boxShadow: drawingColor === color.value ? '0 0 0 2px var(--accent-primary)' : 'none'
+          }}
+          title={color.name}
+        />
+      ))}
+    </div>
+    
+    <div className="flex items-center gap-2">
+      <Button
+        size="sm"
+        onClick={onFinishDrawing}
+        className="h-6 px-2 text-xs"
+        style={{ backgroundColor: 'var(--status-success)', color: 'white' }}
+      >
+        ✓ Selesai
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={onCancelDrawing}
+        className="h-6 px-2 text-xs"
+        style={{ color: 'var(--status-error)' }}
+      >
+        ✕ Batal
+      </Button>
+    </div>
   </div>
 );
 
