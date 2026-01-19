@@ -903,6 +903,13 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
         # Get user info
         me = await telegram_client.get_me()
         
+        # Verify session file was created
+        session_path = '/app/backend/northarch_session.session'
+        if os.path.exists(session_path):
+            logging.info(f"Telegram session saved at {session_path}")
+        else:
+            logging.warning(f"Telegram session file not found at {session_path}")
+        
         # Test bot connection
         try:
             await telegram_client.send_message(BOT_USERNAME, '/start')
@@ -921,7 +928,8 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
                 "phone": me.phone,
                 "user_id": me.id
             },
-            "bot_status": "connected" if bot_active else "not_connected"
+            "bot_status": "connected" if bot_active else "not_connected",
+            "session_saved": os.path.exists(session_path)
         }
     except Exception as e:
         logging.error(f"Error verifying Telegram code: {e}")
