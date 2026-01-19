@@ -105,6 +105,7 @@ const MainApp = () => {
   const [aoiAlerts, setAoiAlerts] = useState([]);
   const [drawingMode, setDrawingMode] = useState(null);
   const [drawingPoints, setDrawingPoints] = useState([]);
+  const [drawingColor, setDrawingColor] = useState('#00D9FF'); // Default cyan for AOI drawing
   
   // Global process queue
   const [globalProcessing, setGlobalProcessing] = useState(false);
