@@ -67,7 +67,8 @@ export const Sidebar = ({
   
   // Processing state
   globalProcessing,
-  globalProcessType
+  globalProcessType,
+  onResetProcessing
 }) => {
   const navigate = useNavigate();
 
