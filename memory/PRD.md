@@ -219,6 +219,25 @@
 - **Minor Design Issue:** Dialog requires scrolling to see last 3 fields (NIK Father, Mother Name, NIK Mother)
 - **Files Reviewed:** `/app/frontend/src/components/main/TargetDialogs.jsx` (NikInfoDialog component, line 565-730)
 
+### 0b. AOI Custom Color Feature (January 19, 2026)
+- **Feature:** Users can now set custom colors for each AOI
+- **Color Palette:** 10 predefined colors (Cyan, Yellow, Green, Purple, Pink, Orange, Blue, Red, Teal, Lime)
+- **Implementation:**
+  - Color picker in manual AOI creation form
+  - Color picker in drawing mode (polygon/circle) - shows in map control panel
+  - Color indicator (circle dot) displayed next to AOI name in list
+  - Edit color for existing AOIs via pencil button
+  - AOI shapes on map use the selected custom color
+  - Drawing preview uses selected color in real-time
+- **Backend:** Added `color` field to AOI schema (optional, hex format)
+- **Files Modified:** 
+  - `/app/backend/server.py` - AOICreate and AOI models, update endpoint
+  - `/app/frontend/src/components/AOIComponents.jsx` - Color picker in form and list
+  - `/app/frontend/src/components/main/AOIRenderer.jsx` - Use custom color for map shapes
+  - `/app/frontend/src/components/main/MapControls.jsx` - Color picker in drawing indicator
+  - `/app/frontend/src/components/main/DrawingOverlay.jsx` - Preview with selected color
+  - `/app/frontend/src/pages/MainApp.jsx` - Drawing color state management
+
 ### 1. Family Tree - DOB-based Child Ordering
 - Children are now sorted by Date of Birth (oldest = Anak 1)
 - Supports multiple DOB formats: DD-MM-YYYY, YYYY-MM-DD, DD/MM/YYYY
