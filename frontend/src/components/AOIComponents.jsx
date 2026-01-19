@@ -437,23 +437,52 @@ export const AOIPanel = ({
                 >
                   <div className="flex items-center justify-between mb-2">
                     {editingId === aoi.id ? (
-                      <div className="flex items-center gap-1 flex-1">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="h-6 text-sm flex-1"
-                          style={{ backgroundColor: 'var(--background-tertiary)', color: 'var(--foreground-primary)' }}
-                        />
-                        <Button size="icon" className="h-6 w-6" onClick={() => handleSaveEdit(aoi.id)}>
-                          <Check className="w-3 h-3" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingId(null)}>
-                          <X className="w-3 h-3" />
-                        </Button>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="h-6 text-sm flex-1"
+                            style={{ backgroundColor: 'var(--background-tertiary)', color: 'var(--foreground-primary)' }}
+                          />
+                          <Button size="icon" className="h-6 w-6" onClick={() => handleSaveEdit(aoi.id)}>
+                            <Check className="w-3 h-3" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingId(null); setEditColor(''); }}>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        {/* Color picker for editing */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Warna:</span>
+                          {AOI_COLORS.map(color => (
+                            <button
+                              key={color.value}
+                              type="button"
+                              onClick={() => setEditColor(color.value)}
+                              className="w-5 h-5 rounded-full border transition-transform hover:scale-110"
+                              style={{ 
+                                backgroundColor: color.value,
+                                borderColor: (editColor || aoi.color) === color.value ? 'white' : 'transparent',
+                                boxShadow: (editColor || aoi.color) === color.value ? '0 0 0 2px var(--accent-primary)' : 'none'
+                              }}
+                              title={color.name}
+                            />
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-center gap-2">
+                          {/* Color indicator */}
+                          <div 
+                            className="w-4 h-4 rounded-full border"
+                            style={{ 
+                              backgroundColor: aoi.color || '#00D9FF',
+                              borderColor: 'var(--borders-default)'
+                            }}
+                            title={`Warna: ${aoi.color || '#00D9FF'}`}
+                          />
                           <span 
                             className="font-semibold text-sm"
                             style={{ color: 'var(--foreground-primary)' }}
@@ -472,9 +501,9 @@ export const AOIPanel = ({
                         </div>
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => { setEditingId(aoi.id); setEditName(aoi.name); }}
+                            onClick={() => { setEditingId(aoi.id); setEditName(aoi.name); setEditColor(aoi.color || ''); }}
                             className="p-1 rounded hover:bg-opacity-20"
-                            title="Edit nama"
+                            title="Edit nama & warna"
                           >
                             <Pencil className="w-3 h-3" style={{ color: 'var(--foreground-muted)' }} />
                           </button>
