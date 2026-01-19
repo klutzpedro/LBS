@@ -108,6 +108,17 @@ const TargetPopup = ({
           >
             📋 Info Pendalaman
           </button>
+        ) : target.reghp_status === 'not_found' ? (
+          <button
+            onClick={() => onShowReghpInfo(target)}
+            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+            style={{
+              backgroundColor: 'var(--status-warning)',
+              color: 'var(--background-primary)'
+            }}
+          >
+            ⚠️ Data Not Found
+          </button>
         ) : target.reghp_status === 'processing' || loadingPendalaman === target.id ? (
           <div className="text-center py-2">
             <p className="text-xs" style={{ color: 'var(--status-processing)' }}>
