@@ -388,196 +388,158 @@ export const ReghpInfoDialog = ({
   onShowNikInfo,
   onNikPendalaman,
   loadingNikPendalaman
-}) => {
-  // Parse raw text into lines for better display
-  const parseRawText = (rawText) => {
-    if (!rawText) return [];
-    
-    // Clean up and split by newlines
-    const lines = rawText
-      .replace(/```/g, '')
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-    
-    return lines;
-  };
+}) => (
+  <Dialog open={open} onOpenChange={onOpenChange}>
+    <DialogContent 
+      className="z-[9999] max-w-md max-h-[65vh] overflow-y-auto p-4"
+      style={{
+        backgroundColor: 'var(--background-elevated)',
+        borderColor: 'var(--borders-strong)'
+      }}
+    >
+      <DialogHeader className="pb-2">
+        <DialogTitle 
+          className="text-lg font-bold"
+          style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+        >
+          INFO PENDALAMAN (REGHP)
+        </DialogTitle>
+      </DialogHeader>
+      {selectedTarget?.reghp_data && (
+        <div className="space-y-2">
+          {/* Phone Number */}
+          <div>
+            <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
+              Phone Number
+            </p>
+            <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+              {selectedTarget.phone_number}
+            </p>
+          </div>
 
-  const rawLines = selectedTarget?.reghp_data?.raw_text 
-    ? parseRawText(selectedTarget.reghp_data.raw_text)
-    : [];
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="z-[9999] max-w-lg max-h-[80vh] overflow-y-auto p-4"
-        style={{
-          backgroundColor: 'var(--background-elevated)',
-          borderColor: 'var(--borders-strong)'
-        }}
-      >
-        <DialogHeader className="pb-2">
-          <DialogTitle 
-            className="text-lg font-bold"
-            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
-          >
-            INFO PENDALAMAN (REGHP)
-          </DialogTitle>
-        </DialogHeader>
-        {selectedTarget?.reghp_data && (
-          <div className="space-y-3">
-            {/* Phone Number */}
-            <div>
-              <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
-                Phone Number
-              </p>
-              <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
-                {selectedTarget.phone_number}
-              </p>
-            </div>
-
-            {/* Raw Data Display - Full Content */}
+          {/* Parsed Data */}
+          {selectedTarget.reghp_data.parsed_data && (
             <div 
-              className="p-3 rounded border"
+              className="p-2 rounded border"
               style={{
                 backgroundColor: 'var(--background-tertiary)',
                 borderColor: 'var(--borders-default)'
               }}
             >
-              <p className="text-xs font-semibold mb-2 uppercase" style={{ color: 'var(--foreground-primary)' }}>
-                Data Lengkap ({rawLines.length} baris)
+              <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                Registration Info
               </p>
-              <div 
-                className="space-y-1 font-mono text-xs"
-                style={{ maxHeight: '300px', overflowY: 'auto' }}
-              >
-                {rawLines.map((line, idx) => {
-                  // Check if line contains a colon (key: value format)
-                  const colonIdx = line.indexOf(':');
-                  if (colonIdx > 0 && colonIdx < 30) {
-                    const key = line.substring(0, colonIdx).trim();
-                    const value = line.substring(colonIdx + 1).trim();
-                    return (
-                      <div key={idx} className="flex gap-2 py-0.5 border-b" style={{ borderColor: 'var(--borders-subtle)' }}>
-                        <span className="shrink-0 w-32" style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
-                        <span style={{ color: 'var(--accent-primary)' }}>{value}</span>
-                      </div>
-                    );
-                  }
-                  // Non key-value lines
+              <div className="space-y-1">
+                {Object.entries(selectedTarget.reghp_data.parsed_data).map(([key, value]) => (
+                  <div key={key} className="flex justify-between text-xs">
+                    <span style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
+                    <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* NIK Entries */}
+          {selectedTarget.reghp_data.niks && selectedTarget.reghp_data.niks.length > 0 && (
+            <div>
+              <p className="text-xs uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                NIK Entries ({selectedTarget.reghp_data.niks.length})
+              </p>
+              <div className="space-y-1">
+                {selectedTarget.reghp_data.niks.map((nik) => {
+                  const nikQuery = selectedTarget.nik_queries?.[nik];
+                  const nikStatus = nikQuery?.status || 'not_started';
+                  
                   return (
-                    <div key={idx} className="py-0.5" style={{ color: 'var(--foreground-secondary)' }}>
-                      {line}
+                    <div 
+                      key={nik}
+                      className="p-2 rounded border flex items-center justify-between"
+                      style={{
+                        backgroundColor: 'var(--background-secondary)',
+                        borderColor: 'var(--borders-subtle)'
+                      }}
+                    >
+                      <div>
+                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>NIK</p>
+                        <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
+                          {nik}
+                        </p>
+                      </div>
+                      <div>
+                        {nikStatus === 'completed' ? (
+                          <Button
+                            size="sm"
+                            onClick={() => onShowNikInfo(nikQuery.data)}
+                            className="text-xs py-1 px-2"
+                            style={{
+                              backgroundColor: 'var(--accent-secondary)',
+                              color: 'var(--background-primary)'
+                            }}
+                          >
+                            📋 Info
+                          </Button>
+                        ) : nikStatus === 'processing' || loadingNikPendalaman === nik ? (
+                          <span className="text-xs" style={{ color: 'var(--status-processing)' }}>
+                            ⏳
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => onNikPendalaman(selectedTarget.id, nik)}
+                            disabled={loadingNikPendalaman === nik}
+                            className="text-xs py-1 px-2 disabled:opacity-50"
+                            style={{
+                              backgroundColor: 'var(--status-warning)',
+                              color: 'var(--background-primary)'
+                            }}
+                          >
+                            {loadingNikPendalaman === nik ? '⏳' : '🔍'} Pendalaman
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
+          )}
 
-            {/* NIK Entries */}
-            {selectedTarget.reghp_data.niks && selectedTarget.reghp_data.niks.length > 0 && (
-              <div>
-                <p className="text-xs uppercase tracking-wide mb-2 font-semibold" style={{ color: 'var(--foreground-primary)' }}>
-                  NIK Ditemukan ({selectedTarget.reghp_data.niks.length})
-                </p>
-                <div className="space-y-2">
-                  {selectedTarget.reghp_data.niks.map((nik) => {
-                    const nikQuery = selectedTarget.nik_queries?.[nik];
-                    const nikStatus = nikQuery?.status || 'not_started';
-                    
-                    return (
-                      <div 
-                        key={nik}
-                        className="p-2 rounded border flex items-center justify-between"
-                        style={{
-                          backgroundColor: 'var(--background-secondary)',
-                          borderColor: nikStatus === 'completed' ? 'var(--status-success)' : 'var(--borders-subtle)'
-                        }}
-                      >
-                        <div>
-                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>NIK</p>
-                          <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
-                            {nik}
-                          </p>
-                        </div>
-                        <div>
-                          {nikStatus === 'completed' ? (
-                            <Button
-                              size="sm"
-                              onClick={() => onShowNikInfo(nikQuery.data)}
-                              className="text-xs py-1 px-3"
-                              style={{
-                                backgroundColor: 'var(--accent-secondary)',
-                                color: 'var(--background-primary)'
-                              }}
-                            >
-                              📋 Lihat Data
-                            </Button>
-                          ) : nikStatus === 'processing' || loadingNikPendalaman === nik ? (
-                            <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'var(--status-processing)', color: 'white' }}>
-                              ⏳ Processing...
-                            </span>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => onNikPendalaman(selectedTarget.id, nik)}
-                              disabled={loadingNikPendalaman === nik}
-                              className="text-xs py-1 px-3 disabled:opacity-50"
-                              style={{
-                                backgroundColor: 'var(--status-warning)',
-                                color: 'var(--background-primary)'
-                              }}
-                            >
-                              🔍 Query NIK
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Raw Response (Collapsible) */}
-            <details className="text-xs">
-              <summary 
-                className="cursor-pointer uppercase tracking-wide py-2 font-semibold"
-                style={{ color: 'var(--foreground-muted)' }}
-              >
-                Raw Response (Click to expand)
-              </summary>
-              <div 
-                className="p-2 rounded border font-mono whitespace-pre-wrap mt-1"
-                style={{
-                  backgroundColor: 'var(--background-tertiary)',
-                  borderColor: 'var(--borders-subtle)',
-                  color: 'var(--foreground-secondary)',
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                  fontSize: '10px'
-                }}
-              >
-                {selectedTarget.reghp_data.raw_text}
-              </div>
-            </details>
-
-            <Button
-              onClick={() => onOpenChange(false)}
-              className="w-full py-2 text-sm"
+          {/* Raw Response */}
+          <details className="text-xs">
+            <summary className="cursor-pointer uppercase tracking-wide mb-1" style={{ color: 'var(--foreground-muted)' }}>
+              Raw Response
+            </summary>
+            <div 
+              className="p-2 rounded border font-mono whitespace-pre-wrap mt-1"
               style={{
-                backgroundColor: 'var(--accent-primary)',
-                color: 'var(--background-primary)'
+                backgroundColor: 'var(--background-tertiary)',
+                borderColor: 'var(--borders-subtle)',
+                color: 'var(--foreground-secondary)',
+                maxHeight: '150px',
+                overflowY: 'auto',
+                fontSize: '10px'
               }}
             >
-              TUTUP
-            </Button>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
+              {selectedTarget.reghp_data.raw_text}
+            </div>
+          </details>
+
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="w-full py-2 text-sm"
+            style={{
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--background-primary)'
+            }}
+          >
+            CLOSE
+          </Button>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
+);
 
 /**
  * NIK Info Dialog
@@ -703,80 +665,72 @@ const NikDataRow = ({
   const familyStatus = nikQuery?.family_status || 'not_started';
   const familyData = nikQuery?.family_data;
 
-  // Check if this is Family ID row
-  const isFamilyIdRow = dataKey === 'Family ID' && value;
-
   return (
     <tr 
       className="border-b"
-      style={{ 
-        borderColor: 'var(--borders-subtle)',
-        backgroundColor: isFamilyIdRow ? 'rgba(255, 184, 0, 0.1)' : 'transparent'
-      }}
+      style={{ borderColor: 'var(--borders-subtle)' }}
     >
       <td 
-        className="py-2 px-2 font-medium"
+        className="py-1.5 px-2 font-medium"
         style={{ 
           color: 'var(--foreground-secondary)',
           width: '35%',
           backgroundColor: 'rgba(0, 217, 255, 0.05)'
         }}
       >
-        {dataKey}
-      </td>
-      <td 
-        className="py-2 px-2"
-        style={{ color: 'var(--foreground-primary)' }}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <span className={isFamilyIdRow ? 'font-mono font-bold' : ''}>{value}</span>
-          
-          {/* Family ID Button - Show Query NKK / Family Tree button */}
-          {isFamilyIdRow && (
-            <div className="shrink-0">
+        <div className="flex items-center gap-1">
+          <span>{dataKey}</span>
+          {/* Family ID Button */}
+          {dataKey === 'Family ID' && value && (
+            <>
               {familyStatus === 'completed' && familyData ? (
                 <Button
                   size="sm"
                   onClick={() => onShowFamilyTree(familyData, currentNik)}
-                  className="text-xs"
+                  className="ml-auto"
                   style={{
                     backgroundColor: 'var(--accent-secondary)',
                     color: 'var(--background-primary)',
-                    padding: '4px 10px',
+                    fontSize: '9px',
+                    padding: '1px 6px',
                     height: 'auto'
                   }}
                 >
-                  🌳 Family Tree
+                  📋 Info
                 </Button>
               ) : familyStatus === 'processing' || loadingFamilyPendalaman === currentNik ? (
                 <span 
-                  className="text-xs px-3 py-1 rounded animate-pulse"
-                  style={{ 
-                    backgroundColor: 'var(--status-processing)', 
-                    color: 'white' 
-                  }}
+                  className="ml-auto text-xs"
+                  style={{ color: 'var(--status-processing)' }}
                 >
-                  ⏳ Processing...
+                  ⏳
                 </span>
               ) : (
                 <Button
                   size="sm"
                   onClick={() => onFamilyPendalaman(selectedReghpTarget?.id, value, currentNik)}
                   disabled={loadingFamilyPendalaman === currentNik}
-                  className="text-xs disabled:opacity-50"
+                  className="ml-auto disabled:opacity-50"
                   style={{
                     backgroundColor: 'var(--status-warning)',
                     color: 'var(--background-primary)',
-                    padding: '4px 10px',
+                    fontSize: '9px',
+                    padding: '1px 6px',
                     height: 'auto'
                   }}
                 >
-                  🔍 Query NKK
+                  {loadingFamilyPendalaman === currentNik ? '⏳' : '🔍'} Family
                 </Button>
               )}
-            </div>
+            </>
           )}
         </div>
+      </td>
+      <td 
+        className="py-1.5 px-2"
+        style={{ color: 'var(--foreground-primary)' }}
+      >
+        {value}
       </td>
     </tr>
   );
