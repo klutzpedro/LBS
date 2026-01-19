@@ -1475,9 +1475,40 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
         
         reghp_info = None
+        data_not_found = False
+        
         for msg in response_messages:
-            # TOKENIZATION: Only parse messages that contain our phone number
-            if msg.text and phone_number in msg.text and ('identity' in msg.text.lower() or 'nik:' in msg.text.lower() or 'operator:' in msg.text.lower()):
+            if not msg.text or phone_number not in msg.text:
+                continue
+                
+            msg_lower = msg.text.lower()
+            
+            # Check for "Data Not Found" response
+            if 'not found' in msg_lower or 'data not found' in msg_lower or 'tidak ditemukan' in msg_lower:
+                logging.info(f"[{query_token}] REGHP returned 'Data Not Found'")
+                data_not_found = True
+                
+                # Log data not found
+                await db.chat_messages.insert_one({
+                    "target_id": target_id,
+                    "message": f"[PENDALAMAN] ⚠️ REGHP: Data Not Found",
+                    "direction": "received",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "query_type": "reghp"
+                })
+                break
+            
+            # Check if this is a REAL REGHP response (contains "identity" and NIK pattern)
+            # NOT just Phone Location response
+            is_reghp_response = (
+                'identity' in msg_lower and 
+                ('nik:' in msg_lower or re.search(r'nik:\s*\d{16}', msg_lower))
+            )
+            
+            # Skip Phone Location responses (these have "phone location" in text)
+            is_phone_location = 'phone location' in msg_lower
+            
+            if is_reghp_response and not is_phone_location:
                 logging.info(f"[{query_token}] ✓ Found matching Reghp response (contains {phone_number})")
                 logging.info(f"[{query_token}] Response preview: {msg.text[:200]}...")
                 
@@ -1510,7 +1541,32 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 reghp_info['parsed_data'] = parsed_data
                 break
         
-        if reghp_info:
+        if data_not_found:
+            # REGHP returned "Data Not Found"
+            await db.targets.update_one(
+                {"id": target_id},
+                {
+                    "$set": {
+                        "reghp_status": "not_found",
+                        "reghp_data": {
+                            "error": "Data Not Found",
+                            "message": "Data REGHP tidak ditemukan untuk nomor ini",
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        }
+                    }
+                }
+            )
+            logging.info(f"[REGHP {target_id}] Data Not Found")
+            
+            # Log to chat
+            await db.chat_messages.insert_one({
+                "target_id": target_id,
+                "message": f"[PENDALAMAN] ⚠️ Data REGHP tidak ditemukan untuk {phone_number}",
+                "direction": "received",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "query_type": "reghp"
+            })
+        elif reghp_info:
             # Parse multiple NIK entries from the MATCHED response
             niks = []
             nik_pattern = re.compile(r'NIK:\s*(\d{16})', re.IGNORECASE)
