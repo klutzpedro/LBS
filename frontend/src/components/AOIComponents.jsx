@@ -613,7 +613,7 @@ export const AOIAlertNotification = ({ alerts, onAcknowledge, onAcknowledgeAll }
               className="p-2 rounded bg-white/10"
             >
               <p className="text-white text-sm font-semibold">
-                Target {alert.target_phones?.join(', ')} memasuki AOI "{alert.aoi_name}"
+                Target {alert.target_phones?.join(', ')} memasuki AOI &quot;{alert.aoi_name}&quot;
               </p>
               <p className="text-white/80 text-xs">
                 Waktu: {new Date(alert.timestamp).toLocaleString('id-ID')}
