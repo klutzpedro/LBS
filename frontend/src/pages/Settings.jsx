@@ -343,11 +343,76 @@ const Settings = () => {
             >
               API CREDENTIALS
             </h2>
-            <p className="text-sm mb-4" style={{ color: 'var(--foreground-secondary)' }}>
-              Current: API ID <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>37983970</span>
-            </p>
-            <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-              Credentials sudah benar. Jika perlu update, gunakan form di bawah.
+            
+            {/* Info Box */}
+            <div 
+              className="p-3 rounded border mb-4 text-xs"
+              style={{
+                backgroundColor: 'rgba(0, 217, 255, 0.1)',
+                borderColor: 'var(--accent-primary)',
+                color: 'var(--foreground-secondary)'
+              }}
+            >
+              <p className="font-semibold mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                Cara mendapatkan API Credentials:
+              </p>
+              <ol className="list-decimal ml-4 space-y-1">
+                <li>Buka <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--accent-primary)' }}>my.telegram.org</a></li>
+                <li>Login dengan nomor telepon Anda</li>
+                <li>Klik "API development tools"</li>
+                <li>Buat aplikasi baru (isi nama app bebas)</li>
+                <li>Copy API ID dan API Hash</li>
+              </ol>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label className="text-xs uppercase mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                  API ID
+                </Label>
+                <Input
+                  type="text"
+                  value={apiId}
+                  onChange={(e) => setApiId(e.target.value)}
+                  className="bg-background-tertiary border-borders-default font-mono"
+                  style={{ color: '#000000' }}
+                  placeholder="Contoh: 12345678"
+                  data-testid="api-id-input"
+                  required
+                />
+              </div>
+              <div>
+                <Label className="text-xs uppercase mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                  API Hash
+                </Label>
+                <Input
+                  type="text"
+                  value={apiHash}
+                  onChange={(e) => setApiHash(e.target.value)}
+                  className="bg-background-tertiary border-borders-default font-mono"
+                  style={{ color: '#000000' }}
+                  placeholder="Contoh: a1b2c3d4e5f6g7h8i9j0..."
+                  data-testid="api-hash-input"
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={submitting || !apiId || !apiHash}
+                className="w-full py-6"
+                data-testid="save-credentials-button"
+                style={{
+                  backgroundColor: 'var(--status-warning)',
+                  color: 'var(--background-primary)'
+                }}
+              >
+                <Key className="w-5 h-5 mr-2" />
+                {submitting ? 'SAVING...' : 'UPDATE CREDENTIALS'}
+              </Button>
+            </form>
+
+            <p className="text-xs mt-3 text-center" style={{ color: 'var(--foreground-muted)' }}>
+              ⚠️ Setelah update, koneksi Telegram perlu di-reset dan login ulang
             </p>
           </div>
         </div>
