@@ -703,72 +703,80 @@ const NikDataRow = ({
   const familyStatus = nikQuery?.family_status || 'not_started';
   const familyData = nikQuery?.family_data;
 
+  // Check if this is Family ID row
+  const isFamilyIdRow = dataKey === 'Family ID' && value;
+
   return (
     <tr 
       className="border-b"
-      style={{ borderColor: 'var(--borders-subtle)' }}
+      style={{ 
+        borderColor: 'var(--borders-subtle)',
+        backgroundColor: isFamilyIdRow ? 'rgba(255, 184, 0, 0.1)' : 'transparent'
+      }}
     >
       <td 
-        className="py-1.5 px-2 font-medium"
+        className="py-2 px-2 font-medium"
         style={{ 
           color: 'var(--foreground-secondary)',
           width: '35%',
           backgroundColor: 'rgba(0, 217, 255, 0.05)'
         }}
       >
-        <div className="flex items-center gap-1">
-          <span>{dataKey}</span>
-          {/* Family ID Button */}
-          {dataKey === 'Family ID' && value && (
-            <>
+        {dataKey}
+      </td>
+      <td 
+        className="py-2 px-2"
+        style={{ color: 'var(--foreground-primary)' }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className={isFamilyIdRow ? 'font-mono font-bold' : ''}>{value}</span>
+          
+          {/* Family ID Button - Show Query NKK / Family Tree button */}
+          {isFamilyIdRow && (
+            <div className="shrink-0">
               {familyStatus === 'completed' && familyData ? (
                 <Button
                   size="sm"
                   onClick={() => onShowFamilyTree(familyData, currentNik)}
-                  className="ml-auto"
+                  className="text-xs"
                   style={{
                     backgroundColor: 'var(--accent-secondary)',
                     color: 'var(--background-primary)',
-                    fontSize: '9px',
-                    padding: '1px 6px',
+                    padding: '4px 10px',
                     height: 'auto'
                   }}
                 >
-                  📋 Info
+                  🌳 Family Tree
                 </Button>
               ) : familyStatus === 'processing' || loadingFamilyPendalaman === currentNik ? (
                 <span 
-                  className="ml-auto text-xs"
-                  style={{ color: 'var(--status-processing)' }}
+                  className="text-xs px-3 py-1 rounded animate-pulse"
+                  style={{ 
+                    backgroundColor: 'var(--status-processing)', 
+                    color: 'white' 
+                  }}
                 >
-                  ⏳
+                  ⏳ Processing...
                 </span>
               ) : (
                 <Button
                   size="sm"
                   onClick={() => onFamilyPendalaman(selectedReghpTarget?.id, value, currentNik)}
                   disabled={loadingFamilyPendalaman === currentNik}
-                  className="ml-auto disabled:opacity-50"
+                  className="text-xs disabled:opacity-50"
                   style={{
                     backgroundColor: 'var(--status-warning)',
                     color: 'var(--background-primary)',
-                    fontSize: '9px',
-                    padding: '1px 6px',
+                    padding: '4px 10px',
                     height: 'auto'
                   }}
                 >
-                  {loadingFamilyPendalaman === currentNik ? '⏳' : '🔍'} Family
+                  🔍 Query NKK
                 </Button>
               )}
-            </>
+            </div>
           )}
         </div>
-      </td>
-      <td 
-        className="py-1.5 px-2"
-        style={{ color: 'var(--foreground-primary)' }}
-      >
-        {value}
       </td>
     </tr>
   );
