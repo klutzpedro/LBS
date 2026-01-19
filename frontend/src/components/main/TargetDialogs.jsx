@@ -408,12 +408,25 @@ export const ReghpInfoDialog = ({
       }}
     >
       <DialogHeader className="pb-2">
-        <DialogTitle 
-          className="text-lg font-bold"
-          style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
-        >
-          INFO PENDALAMAN (REGHP)
-        </DialogTitle>
+        <div className="flex items-center justify-between">
+          <DialogTitle 
+            className="text-lg font-bold"
+            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+          >
+            INFO PENDALAMAN (REGHP)
+          </DialogTitle>
+          {onRefreshTarget && selectedTarget?.id && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => onRefreshTarget(selectedTarget.id)}
+              className="h-6 px-2 text-xs"
+              title="Refresh data"
+            >
+              🔄
+            </Button>
+          )}
+        </div>
       </DialogHeader>
       {selectedTarget?.reghp_data && (
         <div className="space-y-2">
