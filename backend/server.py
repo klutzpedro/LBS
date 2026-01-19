@@ -2566,6 +2566,8 @@ async def get_telegram_credentials_status(username: str = Depends(verify_token))
 # Events
 @app.on_event("startup")
 async def startup():
+    global telegram_client
+    
     # Auto-seed database if empty
     from seed_database import seed_database, check_database_empty
     
@@ -2576,6 +2578,28 @@ async def startup():
         logger.info(f"Auto-seed completed: {results}")
     else:
         logger.info("Database has existing data, skipping auto-seed")
+    
+    # Try to reconnect Telegram session if exists
+    session_path = '/app/backend/northarch_session.session'
+    if os.path.exists(session_path):
+        logger.info("Found existing Telegram session, attempting to reconnect...")
+        try:
+            telegram_client = TelegramClient(
+                '/app/backend/northarch_session',
+                TELEGRAM_API_ID,
+                TELEGRAM_API_HASH
+            )
+            await telegram_client.connect()
+            
+            if await telegram_client.is_user_authorized():
+                me = await telegram_client.get_me()
+                logger.info(f"Telegram auto-reconnected as {me.username or me.phone}")
+            else:
+                logger.warning("Telegram session exists but not authorized")
+        except Exception as e:
+            logger.error(f"Failed to auto-reconnect Telegram: {e}")
+    else:
+        logger.info("No existing Telegram session found")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
