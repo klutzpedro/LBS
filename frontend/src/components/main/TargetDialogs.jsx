@@ -470,6 +470,11 @@ export const ReghpInfoDialog = ({
                   const nikQuery = selectedTarget.nik_queries?.[nik];
                   const nikStatus = nikQuery?.status || 'not_started';
                   
+                  // Check if NIK data is truly complete (has parsed_data with more than 5 fields)
+                  // REGHP data only has 3-4 fields, NIK data has 15 fields
+                  const hasCompleteNikData = nikQuery?.data?.parsed_data && 
+                    Object.keys(nikQuery.data.parsed_data).length >= 5;
+                  
                   return (
                     <div 
                       key={nik}
@@ -484,9 +489,15 @@ export const ReghpInfoDialog = ({
                         <p className="font-mono text-xs" style={{ color: 'var(--accent-primary)' }}>
                           {nik}
                         </p>
+                        {/* Show field count for debugging */}
+                        {nikQuery?.data?.parsed_data && (
+                          <p className="text-[10px]" style={{ color: 'var(--foreground-muted)' }}>
+                            ({Object.keys(nikQuery.data.parsed_data).length} fields)
+                          </p>
+                        )}
                       </div>
                       <div>
-                        {nikStatus === 'completed' ? (
+                        {nikStatus === 'completed' && hasCompleteNikData ? (
                           <Button
                             size="sm"
                             onClick={() => onShowNikInfo(nikQuery.data)}
@@ -496,12 +507,25 @@ export const ReghpInfoDialog = ({
                               color: 'var(--background-primary)'
                             }}
                           >
-                            📋 Info
+                            📋 Info ({Object.keys(nikQuery.data.parsed_data).length})
                           </Button>
                         ) : nikStatus === 'processing' || loadingNikPendalaman === nik ? (
                           <span className="text-xs" style={{ color: 'var(--status-processing)' }}>
                             ⏳
                           </span>
+                        ) : nikStatus === 'error' ? (
+                          <Button
+                            size="sm"
+                            onClick={() => onNikPendalaman(selectedTarget.id, nik)}
+                            disabled={loadingNikPendalaman === nik}
+                            className="text-xs py-1 px-2 disabled:opacity-50"
+                            style={{
+                              backgroundColor: 'var(--status-error)',
+                              color: 'white'
+                            }}
+                          >
+                            🔄 Retry
+                          </Button>
                         ) : (
                           <Button
                             size="sm"
