@@ -1394,9 +1394,27 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         query_token = f"REGHP_{phone_number}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting Reghp query for {phone_number}")
         
+        # Log to chat: Starting REGHP query
+        await db.chat_messages.insert_one({
+            "target_id": target_id,
+            "message": f"[PENDALAMAN] 🔍 Memulai query REGHP untuk {phone_number}...",
+            "direction": "sent",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "query_type": "reghp"
+        })
+        
         # Send phone number to bot
         await telegram_client.send_message(BOT_USERNAME, phone_number)
         logging.info(f"[{query_token}] Sent phone number to bot")
+        
+        # Log to chat: Sent to bot
+        await db.chat_messages.insert_one({
+            "target_id": target_id,
+            "message": f"[PENDALAMAN] 📤 Mengirim nomor {phone_number} ke bot...",
+            "direction": "sent",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "query_type": "reghp"
+        })
         
         await asyncio.sleep(3)
         
@@ -1409,11 +1427,30 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 button_texts = [[btn.text for btn in row] for row in msg.buttons]
                 logging.info(f"[{query_token}] Buttons found: {button_texts}")
                 
+                # Log buttons found
+                await db.chat_messages.insert_one({
+                    "target_id": target_id,
+                    "message": f"[PENDALAMAN] 🔘 Tombol ditemukan: {button_texts}",
+                    "direction": "received",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "query_type": "reghp"
+                })
+                
                 for row in msg.buttons:
                     for button in row:
                         if button.text and 'REGHP' in button.text.upper():
                             await button.click()
                             logging.info(f"[{query_token}] ✓ Clicked Reghp button")
+                            
+                            # Log button clicked
+                            await db.chat_messages.insert_one({
+                                "target_id": target_id,
+                                "message": f"[PENDALAMAN] ✅ Klik tombol REGHP...",
+                                "direction": "sent",
+                                "timestamp": datetime.now(timezone.utc).isoformat(),
+                                "query_type": "reghp"
+                            })
+                            
                             reghp_clicked = True
                             break
                 if reghp_clicked:
@@ -1421,6 +1458,15 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         
         if not reghp_clicked:
             logging.warning(f"[{query_token}] Reghp button not found")
+            
+            # Log button not found
+            await db.chat_messages.insert_one({
+                "target_id": target_id,
+                "message": f"[PENDALAMAN] ⚠️ Tombol REGHP tidak ditemukan",
+                "direction": "received",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "query_type": "reghp"
+            })
         
         # Wait for response
         await asyncio.sleep(8)
@@ -1434,6 +1480,15 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             if msg.text and phone_number in msg.text and ('identity' in msg.text.lower() or 'nik:' in msg.text.lower() or 'operator:' in msg.text.lower()):
                 logging.info(f"[{query_token}] ✓ Found matching Reghp response (contains {phone_number})")
                 logging.info(f"[{query_token}] Response preview: {msg.text[:200]}...")
+                
+                # Log response found
+                await db.chat_messages.insert_one({
+                    "target_id": target_id,
+                    "message": f"[PENDALAMAN] 📥 Response REGHP diterima:\n{msg.text[:500]}{'...' if len(msg.text) > 500 else ''}",
+                    "direction": "received",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "query_type": "reghp"
+                })
                 
                 # Extract all info from response
                 reghp_info = {
@@ -1477,6 +1532,15 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 }
             )
             logging.info(f"[REGHP {target_id}] ✓ Reghp data saved")
+            
+            # Log success
+            await db.chat_messages.insert_one({
+                "target_id": target_id,
+                "message": f"[PENDALAMAN] ✅ REGHP selesai! Ditemukan {len(niks)} NIK",
+                "direction": "received",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "query_type": "reghp"
+            })
         else:
             await db.targets.update_one(
                 {"id": target_id},
@@ -1489,6 +1553,15 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             )
             logging.warning(f"[REGHP {target_id}] No Reghp data found")
             
+            # Log error
+            await db.chat_messages.insert_one({
+                "target_id": target_id,
+                "message": f"[PENDALAMAN] ❌ REGHP gagal - tidak ada response",
+                "direction": "received",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "query_type": "reghp"
+            })
+            
     except Exception as e:
         logging.error(f"[REGHP {target_id}] Error: {e}")
         await db.targets.update_one(
@@ -1500,6 +1573,15 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 }
             }
         )
+        
+        # Log error
+        await db.chat_messages.insert_one({
+            "target_id": target_id,
+            "message": f"[PENDALAMAN] ❌ REGHP error: {str(e)}",
+            "direction": "received",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "query_type": "reghp"
+        })
 
 async def query_telegram_nik(target_id: str, nik: str):
     """Query NIK detail dengan foto dari bot"""
