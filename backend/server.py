@@ -886,9 +886,23 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
             "message": f"Kode verifikasi telah dikirim ke {phone}",
             "phone_code_hash": result.phone_code_hash
         }
-    except Exception as e:
-        logging.error(f"Error sending Telegram code: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            last_error = e
+            logger.warning(f"Send code attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                # Reset client for retry
+                if telegram_client:
+                    try:
+                        await telegram_client.disconnect()
+                    except:
+                        pass
+                    telegram_client = None
+                await asyncio.sleep(1)
+            continue
+    
+    # All retries failed
+    logging.error(f"All {max_retries} attempts to send Telegram code failed: {last_error}")
+    raise HTTPException(status_code=500, detail=f"Gagal mengirim kode setelah {max_retries} percobaan: {str(last_error)}")
 
 @api_router.post("/telegram/verify-code")
 async def verify_telegram_code(verify_data: dict, username: str = Depends(verify_token)):
