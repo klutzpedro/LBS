@@ -163,6 +163,8 @@ export const MapControls = ({
         <DrawingIndicator 
           drawingMode={drawingMode}
           drawingPoints={drawingPoints}
+          drawingColor={drawingColor}
+          onDrawingColorChange={onDrawingColorChange}
           onFinishDrawing={onFinishDrawing}
           onCancelDrawing={onCancelDrawing}
         />
