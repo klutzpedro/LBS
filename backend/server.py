@@ -795,18 +795,29 @@ async def update_telegram_credentials(credentials: dict, username: str = Depends
         with open(env_path, 'w') as f:
             f.writelines(env_lines)
         
-        # Delete old session file if exists
-        session_files = [
-            '/app/backend/northarch_session.session',
-            '/app/backend/northarch_session.session-journal'
-        ]
+        # Delete old session files to force re-authentication
+        session_files = list(ROOT_DIR.glob('*.session')) + list(ROOT_DIR.glob('*.session-journal'))
+        deleted_sessions = []
         for sf in session_files:
-            if os.path.exists(sf):
+            try:
                 os.remove(sf)
+                deleted_sessions.append(str(sf.name))
+                logger.info(f"Deleted session file: {sf}")
+            except Exception as e:
+                logger.warning(f"Could not delete session file {sf}: {e}")
+        
+        # Update global variables (for hot reload)
+        global TELEGRAM_API_ID, TELEGRAM_API_HASH
+        TELEGRAM_API_ID = int(api_id)
+        TELEGRAM_API_HASH = api_hash
+        
+        logger.info(f"Updated Telegram credentials: API_ID={api_id}")
         
         return {
             "success": True,
-            "message": "Credentials updated. Please restart backend and setup Telegram again."
+            "message": "Credentials updated successfully!",
+            "deleted_sessions": deleted_sessions,
+            "next_steps": "Silakan klik 'Reset Connection' lalu setup Telegram ulang."
         }
     except Exception as e:
         logging.error(f"Error updating credentials: {e}")
