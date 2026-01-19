@@ -246,6 +246,133 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* API Credentials Status Panel */}
+        <div 
+          className="rounded-lg border mb-6"
+          style={{
+            backgroundColor: 'var(--background-secondary)',
+            borderColor: 'var(--borders-default)'
+          }}
+        >
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 
+                className="text-lg font-bold"
+                style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+              >
+                STATUS API CREDENTIALS
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={fetchCredentialsStatus}
+                disabled={loadingStatus}
+                style={{ color: 'var(--accent-primary)' }}
+              >
+                <RefreshCw className={`w-4 h-4 ${loadingStatus ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
+
+            {credentialsStatus ? (
+              <div className="space-y-3">
+                {/* API ID & Hash */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div 
+                    className="p-3 rounded border"
+                    style={{ backgroundColor: 'var(--background-tertiary)', borderColor: 'var(--borders-subtle)' }}
+                  >
+                    <p className="text-xs uppercase mb-1" style={{ color: 'var(--foreground-muted)' }}>API ID</p>
+                    <p className="font-mono text-sm font-bold" style={{ color: 'var(--accent-primary)' }}>
+                      {credentialsStatus.api_id || 'Not set'}
+                    </p>
+                  </div>
+                  <div 
+                    className="p-3 rounded border"
+                    style={{ backgroundColor: 'var(--background-tertiary)', borderColor: 'var(--borders-subtle)' }}
+                  >
+                    <p className="text-xs uppercase mb-1" style={{ color: 'var(--foreground-muted)' }}>API Hash</p>
+                    <p className="font-mono text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                      {credentialsStatus.api_hash_preview || 'Not set'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Connection Status */}
+                <div 
+                  className="p-3 rounded border flex items-center justify-between"
+                  style={{ 
+                    backgroundColor: credentialsStatus.client_connected ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 59, 92, 0.1)',
+                    borderColor: credentialsStatus.client_connected ? 'var(--status-success)' : 'var(--status-error)'
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    {credentialsStatus.client_connected ? (
+                      <Wifi className="w-5 h-5" style={{ color: 'var(--status-success)' }} />
+                    ) : (
+                      <WifiOff className="w-5 h-5" style={{ color: 'var(--status-error)' }} />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
+                        {credentialsStatus.client_connected ? 'Client Connected' : 'Client Disconnected'}
+                      </p>
+                      {credentialsStatus.client_user && (
+                        <p className="text-xs" style={{ color: 'var(--foreground-secondary)' }}>
+                          @{credentialsStatus.client_user.username} ({credentialsStatus.client_user.phone})
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div 
+                    className={`w-3 h-3 rounded-full ${credentialsStatus.client_connected ? 'animate-pulse' : ''}`}
+                    style={{ backgroundColor: credentialsStatus.client_connected ? 'var(--status-success)' : 'var(--status-error)' }}
+                  />
+                </div>
+
+                {/* Session Info */}
+                <div 
+                  className="p-3 rounded border"
+                  style={{ backgroundColor: 'var(--background-tertiary)', borderColor: 'var(--borders-subtle)' }}
+                >
+                  <p className="text-xs uppercase mb-2" style={{ color: 'var(--foreground-muted)' }}>Session Files</p>
+                  {credentialsStatus.session_files?.length > 0 ? (
+                    <div className="space-y-1">
+                      {credentialsStatus.session_files.map((sf, idx) => (
+                        <div key={idx} className="flex justify-between text-xs">
+                          <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>{sf.name}</span>
+                          <span style={{ color: 'var(--foreground-muted)' }}>{sf.size} bytes</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: 'var(--status-warning)' }}>No session files found</p>
+                  )}
+                </div>
+
+                {/* Runtime Check */}
+                {!credentialsStatus.runtime_matches_env && (
+                  <div 
+                    className="p-2 rounded border text-xs"
+                    style={{ 
+                      backgroundColor: 'rgba(255, 184, 0, 0.1)',
+                      borderColor: 'var(--status-warning)',
+                      color: 'var(--foreground-primary)'
+                    }}
+                  >
+                    ⚠️ Runtime API ID ({credentialsStatus.runtime_api_id}) berbeda dengan .env ({credentialsStatus.api_id}). 
+                    Restart server diperlukan.
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                  {loadingStatus ? 'Loading...' : 'Klik refresh untuk load status'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Telegram Setup */}
           {!telegramAuthorized && (
