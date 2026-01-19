@@ -1354,31 +1354,28 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         
         except Exception as bot_error:
             logging.error(f"Error communicating with Telegram bot: {bot_error}")
-            # Fallback to mock data if Telegram communication fails
-            mock_data = {
-                "name": "Target User",
-                "phone_number": phone_number,
-                "address": "Jl. Contoh No. 123, Jakarta",
-                "latitude": -6.2088 + (hash(phone_number) % 100) / 1000,
-                "longitude": 106.8456 + (hash(phone_number) % 100) / 1000,
-                "additional_phones": [phone_number],
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "note": f"Telegram error: {str(bot_error)}"
-            }
+            error_message = str(bot_error)
             
+            # Set error status instead of using mock data
             await db.targets.update_one(
                 {"id": target_id},
                 {
                     "$set": {
-                        "status": "completed",
-                        "data": mock_data,
-                        "location": {
-                            "type": "Point",
-                            "coordinates": [mock_data['longitude'], mock_data['latitude']]
-                        }
+                        "status": "error",
+                        "error": f"Telegram error: {error_message}"
                     }
                 }
             )
+            
+            # Save error message to chat
+            await db.chat_messages.insert_one({
+                "id": str(uuid.uuid4()),
+                "target_id": target_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "direction": "received",
+                "message": f"❌ Error komunikasi dengan Telegram: {error_message}",
+                "has_buttons": False
+            })
             
             # Save position to history (even for mock data) with timestamp
             await save_position_history(
