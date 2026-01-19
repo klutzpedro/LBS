@@ -440,8 +440,26 @@ export const ReghpInfoDialog = ({
             </p>
           </div>
 
+          {/* Error Message */}
+          {selectedTarget.reghp_status === 'error' && selectedTarget.error && (
+            <div 
+              className="p-4 rounded border text-center"
+              style={{
+                backgroundColor: 'rgba(255, 59, 92, 0.1)',
+                borderColor: 'var(--status-error)'
+              }}
+            >
+              <p className="text-lg font-bold mb-2" style={{ color: 'var(--status-error)' }}>
+                ❌ ERROR
+              </p>
+              <p className="text-sm" style={{ color: 'var(--foreground-secondary)' }}>
+                {selectedTarget.error}
+              </p>
+            </div>
+          )}
+
           {/* Data Not Found Message */}
-          {(selectedTarget.reghp_status === 'not_found' || selectedTarget.reghp_data.error === 'Data Not Found') && (
+          {(selectedTarget.reghp_status === 'not_found' || selectedTarget.reghp_data?.error === 'Data Not Found') && (
             <div 
               className="p-4 rounded border text-center"
               style={{
@@ -453,13 +471,13 @@ export const ReghpInfoDialog = ({
                 ⚠️ DATA NOT FOUND
               </p>
               <p className="text-sm" style={{ color: 'var(--foreground-secondary)' }}>
-                {selectedTarget.reghp_data.message || 'Data REGHP tidak ditemukan untuk nomor ini'}
+                {selectedTarget.reghp_data?.message || 'Data REGHP tidak ditemukan untuk nomor ini'}
               </p>
             </div>
           )}
 
           {/* Parsed Data - Only show if not "Data Not Found" */}
-          {selectedTarget.reghp_data.parsed_data && !selectedTarget.reghp_data.error && (
+          {selectedTarget.reghp_data?.parsed_data && !selectedTarget.reghp_data?.error && (
             <div 
               className="p-2 rounded border"
               style={{
