@@ -3078,15 +3078,8 @@ async def telegram_keepalive_task():
                         logger.info("[Keepalive] ✓ Client recreated and connected")
                         failure_count = 0
             else:
-                # Connection is alive, do a light ping
-                failure_count = 0  # Reset on success
-                
-                try:
-                    if await telegram_client.is_user_authorized():
-                        # Light ping - just check authorization, don't call get_me every time
-                        pass  # is_user_authorized already does a server call
-                except Exception as ping_err:
-                    logger.warning(f"[Keepalive] Auth check failed: {ping_err}")
+                # Connection is alive, reset failure count
+                failure_count = 0
                     
         except asyncio.CancelledError:
             logger.info("[Keepalive] Task cancelled, shutting down")
