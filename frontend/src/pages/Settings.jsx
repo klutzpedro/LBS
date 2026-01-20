@@ -348,8 +348,19 @@ const Settings = () => {
                   )}
                 </div>
 
-                {/* Runtime Check */}
-                {!credentialsStatus.runtime_matches_env && (
+                {/* Runtime Check - Show success message instead of warning */}
+                {credentialsStatus.is_correct ? (
+                  <div 
+                    className="p-2 rounded border text-xs"
+                    style={{ 
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                      borderColor: 'var(--status-success)',
+                      color: 'var(--foreground-primary)'
+                    }}
+                  >
+                    ✅ API Credentials Valid (API ID: {credentialsStatus.runtime_api_id})
+                  </div>
+                ) : (
                   <div 
                     className="p-2 rounded border text-xs"
                     style={{ 
@@ -358,8 +369,7 @@ const Settings = () => {
                       color: 'var(--foreground-primary)'
                     }}
                   >
-                    ⚠️ Runtime API ID ({credentialsStatus.runtime_api_id}) berbeda dengan .env ({credentialsStatus.api_id}). 
-                    Restart server diperlukan.
+                    ⚠️ API Credentials mismatch. Expected: {credentialsStatus.correct_api_id}, Got: {credentialsStatus.runtime_api_id}
                   </div>
                 )}
               </div>
