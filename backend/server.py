@@ -17,7 +17,13 @@ from telethon import TelegramClient, events
 import re
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+env_path = ROOT_DIR / '.env'
+load_dotenv(env_path)
+
+# Log environment loading
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.info(f"Loading .env from: {env_path}, exists: {env_path.exists()}")
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -30,10 +36,18 @@ security = HTTPBearer()
 JWT_SECRET = os.getenv('JWT_SECRET', 'northarch-secret-key-2024')
 JWT_ALGORITHM = "HS256"
 
-# Telegram Client Setup
-TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID', '37983970'))
-TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH', 'd484d8fe3d2f4025f99101caeb070e1a')
+# Telegram Client Setup - PERMANENT VALUES
+# These are the correct API credentials for this application
+DEFAULT_TELEGRAM_API_ID = '37983970'
+DEFAULT_TELEGRAM_API_HASH = 'd484d8fe3d2f4025f99101caeb070e1a'
+
+TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID', DEFAULT_TELEGRAM_API_ID))
+TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH', DEFAULT_TELEGRAM_API_HASH)
 BOT_USERNAME = '@northarch_bot'
+
+# Log Telegram credentials status (not the actual values for security)
+logger.info(f"Telegram API ID loaded: {TELEGRAM_API_ID}")
+logger.info(f"Telegram API ID matches default: {TELEGRAM_API_ID == int(DEFAULT_TELEGRAM_API_ID)}")
 
 telegram_client = None
 
