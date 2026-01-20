@@ -842,17 +842,85 @@ const MainApp = () => {
   };
 
   const handlePerbaharui = async (target) => {
-    if (!window.confirm(`Perbaharui lokasi untuk ${target.phone_number}?`)) return;
+    if (!window.confirm(`Perbaharui lokasi untuk ${target.phone_number}?\n\nData RegHP, NIK, dan NKK akan tetap tersimpan.`)) return;
+    
+    if (isProcessRunning()) {
+      showBusyNotification();
+      return;
+    }
+    
+    setGlobalProcessing(true);
+    setGlobalProcessType('refresh');
     
     try {
-      const response = await axios.post(`${API}/targets`, {
-        case_id: selectedCase.id,
-        phone_number: target.phone_number
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/targets/${target.id}/refresh-position`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Query pembaharuan dimulai!');
-      setSelectedTargetForChat(response.data.id);
+      
+      toast.success('Query pembaharuan posisi dimulai!');
+      setSelectedTargetForChat(target.id);
+      
+      // Poll for completion
+      let attempts = 0;
+      const maxAttempts = 30;
+      let isCompleted = false;
+      
+      const checkInterval = setInterval(async () => {
+        if (isCompleted) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
+        attempts++;
+        try {
+          const pollResponse = await axios.get(`${API}/targets/${target.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const updatedTarget = pollResponse.data;
+          
+          if ((updatedTarget.status === 'completed' || updatedTarget.status === 'not_found' || updatedTarget.status === 'error') && !isCompleted) {
+            isCompleted = true;
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            
+            // Refresh targets list
+            await fetchTargets(selectedCase.id);
+            
+            // Refresh history for this target
+            if (showHistory) {
+              await refreshHistoryPath(target.id);
+            }
+            
+            // Update map center to new position
+            if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
+              setMapCenter([parseFloat(updatedTarget.data.latitude), parseFloat(updatedTarget.data.longitude)]);
+              setMapZoom(15);
+              setMapKey(prev => prev + 1);
+              
+              toast.success(`Posisi ${target.phone_number} berhasil diperbarui!`);
+            } else if (updatedTarget.status === 'not_found') {
+              toast.warning(`Target ${target.phone_number} tidak ditemukan atau sedang OFF`);
+            } else if (updatedTarget.status === 'error') {
+              toast.error(`Gagal memperbarui posisi: ${updatedTarget.error || 'Unknown error'}`);
+            }
+          } else if (attempts >= maxAttempts && !isCompleted) {
+            isCompleted = true;
+            clearInterval(checkInterval);
+            setGlobalProcessing(false);
+            setGlobalProcessType(null);
+            toast.warning('Proses timeout, silakan coba lagi');
+          }
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, 2000);
+      
     } catch (error) {
-      toast.error('Gagal memulai pembaharuan');
+      setGlobalProcessing(false);
+      setGlobalProcessType(null);
+      toast.error(error.response?.data?.detail || 'Gagal memulai pembaharuan');
     }
   };
 
