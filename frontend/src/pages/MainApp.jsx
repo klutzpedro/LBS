@@ -888,8 +888,8 @@ const MainApp = () => {
             // Refresh targets list
             await fetchTargets(selectedCase.id);
             
-            // Refresh history for this target
-            if (showHistory) {
+            // Refresh history for this target if it has history displayed
+            if (historyPaths[target.id]) {
               await refreshHistoryPath(target.id);
             }
             
