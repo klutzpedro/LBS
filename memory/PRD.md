@@ -435,6 +435,19 @@
 
 ## Recent Updates (January 20, 2026)
 
+### Refresh Position Feature Fix (January 20, 2026)
+- **Problem:** When clicking "Perbaharui", it created a NEW target instead of updating the existing one
+- **Fix:** Created new endpoint `POST /api/targets/{target_id}/refresh-position`
+- **Behavior Now:**
+  1. ✅ Old position saved to history BEFORE querying new position
+  2. ✅ All existing data (RegHP, NIK, NKK) preserved - no need to re-query
+  3. ✅ New position saved to history after successful update
+  4. ✅ AOI alerts automatically triggered when new position enters monitored area
+  5. ✅ History path refreshed automatically if displayed
+- **Files Modified:**
+  - `/app/backend/server.py` - New `refresh-position` endpoint, `query_telegram_bot_refresh` function, `parse_cp_response` helper
+  - `/app/frontend/src/pages/MainApp.jsx` - Updated `handlePerbaharui` to use new endpoint with polling
+
 ### PDF Export with Photo (January 20, 2026)
 - **Feature:** PDF export now includes target's photo (from NIK data) if available
 - **Layout:** Photo displayed on the right side of NIK data table (35x45mm portrait format)
