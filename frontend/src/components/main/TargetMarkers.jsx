@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { Marker, Popup } from 'react-leaflet';
-import { createMarkerWithLabel, createBlinkingMarker, createGroupedMarker, groupTargetsByPosition } from './MapUtils';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Marker, Popup, useMap } from 'react-leaflet';
+import { createMarkerWithLabel, createBlinkingMarker, createMarkerWithSelector, createBlinkingMarkerWithSelector, groupTargetsByPosition } from './MapUtils';
 
 /**
  * Renders target markers on the map with popups
- * For overlapping targets at same position, shows numbered selector below marker
+ * For overlapping targets at same position, shows numbered selector BELOW the marker
  */
 export const TargetMarkers = ({ 
   targets = [], 
@@ -15,8 +15,33 @@ export const TargetMarkers = ({
   loadingPendalaman = null,
   aoiAlerts = []
 }) => {
-  // Track which target is selected at each grouped position
+  const map = useMap();
   const [selectedAtPosition, setSelectedAtPosition] = useState({});
+  const containerRef = useRef(null);
+  
+  // Handle clicks on selector buttons
+  useEffect(() => {
+    const handleSelectorClick = (e) => {
+      const btn = e.target.closest('.target-selector-btn');
+      if (btn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const posKey = btn.dataset.pos;
+        const idx = parseInt(btn.dataset.idx, 10);
+        if (posKey && !isNaN(idx)) {
+          setSelectedAtPosition(prev => ({ ...prev, [posKey]: idx }));
+        }
+      }
+    };
+    
+    // Add event listener to map container
+    const mapContainer = map.getContainer();
+    mapContainer.addEventListener('click', handleSelectorClick, true);
+    
+    return () => {
+      mapContainer.removeEventListener('click', handleSelectorClick, true);
+    };
+  }, [map]);
   
   const filteredTargets = targets.filter(t => {
     const hasData = t.data && t.data.latitude && t.data.longitude;
@@ -24,84 +49,87 @@ export const TargetMarkers = ({
     return hasData && isVisible;
   });
   
-  // Get target IDs that have active (unacknowledged) alerts
-  const alertedTargetIds = new Set(
+  // Get target IDs that have active alerts
+  const alertedTargetIds = useMemo(() => new Set(
     aoiAlerts
       .filter(a => !a.acknowledged)
       .flatMap(a => a.target_ids || [])
-  );
+  ), [aoiAlerts]);
   
   // Group targets by position
   const positionGroups = useMemo(() => groupTargetsByPosition(filteredTargets), [filteredTargets]);
   
-  // Render markers - one per unique position
+  // Render markers
   const markers = useMemo(() => {
     const result = [];
     
     Object.entries(positionGroups).forEach(([posKey, groupTargets]) => {
-      if (groupTargets.length === 1) {
-        // Single target - render normally
-        const target = groupTargets[0];
-        const targetName = target.nik_queries ? 
-          Object.values(target.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
-          target.data?.name;
-        const hasActiveAlert = alertedTargetIds.has(target.id);
-        
-        result.push(
-          <Marker
-            key={target.id}
-            position={[target.data.latitude, target.data.longitude]}
-            icon={hasActiveAlert ? 
-              createBlinkingMarker(target.phone_number, target.data.timestamp || target.created_at, targetName, showMarkerNames) :
-              createMarkerWithLabel(target.phone_number, target.data.timestamp || target.created_at, targetName, showMarkerNames)
-            }
-          >
-            <TargetPopup 
-              target={target}
-              onShowReghpInfo={onShowReghpInfo}
-              onPendalaman={onPendalaman}
-              loadingPendalaman={loadingPendalaman}
-            />
-          </Marker>
-        );
+      const selectedIdx = selectedAtPosition[posKey] || 0;
+      const selectedTarget = groupTargets[selectedIdx] || groupTargets[0];
+      
+      const targetName = selectedTarget.nik_queries ? 
+        Object.values(selectedTarget.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
+        selectedTarget.data?.name;
+      
+      const hasActiveAlert = alertedTargetIds.has(selectedTarget.id);
+      const isGrouped = groupTargets.length > 1;
+      
+      let icon;
+      if (isGrouped) {
+        // Multiple targets - use selector marker
+        icon = hasActiveAlert ?
+          createBlinkingMarkerWithSelector(
+            selectedTarget.phone_number,
+            selectedTarget.data.timestamp || selectedTarget.created_at,
+            targetName,
+            showMarkerNames,
+            groupTargets.length,
+            selectedIdx,
+            posKey
+          ) :
+          createMarkerWithSelector(
+            selectedTarget.phone_number,
+            selectedTarget.data.timestamp || selectedTarget.created_at,
+            targetName,
+            showMarkerNames,
+            groupTargets.length,
+            selectedIdx,
+            posKey
+          );
       } else {
-        // Multiple targets at same position - render grouped marker
-        const selectedIdx = selectedAtPosition[posKey] || 0;
-        const selectedTarget = groupTargets[selectedIdx] || groupTargets[0];
-        const targetName = selectedTarget.nik_queries ? 
-          Object.values(selectedTarget.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
-          selectedTarget.data?.name;
-        const hasActiveAlert = alertedTargetIds.has(selectedTarget.id);
-        
-        result.push(
-          <Marker
-            key={`group-${posKey}`}
-            position={[selectedTarget.data.latitude, selectedTarget.data.longitude]}
-            icon={hasActiveAlert ? 
-              createBlinkingMarker(selectedTarget.phone_number, selectedTarget.data.timestamp || selectedTarget.created_at, targetName, showMarkerNames) :
-              createMarkerWithLabel(selectedTarget.phone_number, selectedTarget.data.timestamp || selectedTarget.created_at, targetName, showMarkerNames)
-            }
-            eventHandlers={{
-              click: (e) => {
-                // Don't propagate to map
-                e.originalEvent.stopPropagation();
-              }
-            }}
-          >
-            <GroupedTargetPopup 
-              targets={groupTargets}
-              selectedIndex={selectedIdx}
-              onSelectTarget={(idx) => {
-                setSelectedAtPosition(prev => ({ ...prev, [posKey]: idx }));
-              }}
-              onShowReghpInfo={onShowReghpInfo}
-              onPendalaman={onPendalaman}
-              loadingPendalaman={loadingPendalaman}
-              alertedTargetIds={alertedTargetIds}
-            />
-          </Marker>
-        );
+        // Single target - use normal marker
+        icon = hasActiveAlert ?
+          createBlinkingMarker(
+            selectedTarget.phone_number,
+            selectedTarget.data.timestamp || selectedTarget.created_at,
+            targetName,
+            showMarkerNames
+          ) :
+          createMarkerWithLabel(
+            selectedTarget.phone_number,
+            selectedTarget.data.timestamp || selectedTarget.created_at,
+            targetName,
+            showMarkerNames
+          );
       }
+      
+      result.push(
+        <Marker
+          key={`marker-${posKey}`}
+          position={[selectedTarget.data.latitude, selectedTarget.data.longitude]}
+          icon={icon}
+        >
+          <TargetPopup 
+            target={selectedTarget}
+            onShowReghpInfo={onShowReghpInfo}
+            onPendalaman={onPendalaman}
+            loadingPendalaman={loadingPendalaman}
+            isGrouped={isGrouped}
+            groupCount={groupTargets.length}
+            selectedIndex={selectedIdx}
+          />
+        </Marker>
+      );
     });
     
     return result;
@@ -110,144 +138,29 @@ export const TargetMarkers = ({
   return <>{markers}</>;
 };
 
-// Popup for grouped targets with selector
-const GroupedTargetPopup = ({ 
-  targets,
-  selectedIndex,
-  onSelectTarget,
-  onShowReghpInfo, 
-  onPendalaman,
-  loadingPendalaman,
-  alertedTargetIds
-}) => {
-  const selectedTarget = targets[selectedIndex] || targets[0];
-  
-  return (
-    <Popup>
-      <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '220px' }}>
-        {/* Target Selector */}
-        <div className="mb-3 pb-2 border-b" style={{ borderColor: 'var(--borders-subtle)' }}>
-          <p className="text-xs mb-2 font-semibold" style={{ color: 'var(--foreground-muted)' }}>
-            📍 {targets.length} target di lokasi ini:
-          </p>
-          <div className="flex gap-1 flex-wrap">
-            {targets.map((target, idx) => {
-              const isSelected = idx === selectedIndex;
-              const hasAlert = alertedTargetIds.has(target.id);
-              return (
-                <button
-                  key={target.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectTarget(idx);
-                  }}
-                  className="px-2 py-1 rounded text-xs font-bold transition-all"
-                  style={{
-                    backgroundColor: isSelected ? 'var(--accent-primary)' : (hasAlert ? '#FF3B5C' : 'var(--background-elevated)'),
-                    color: isSelected ? 'var(--background-primary)' : (hasAlert ? '#FFFFFF' : 'var(--foreground-primary)'),
-                    border: isSelected ? '2px solid var(--accent-secondary)' : '1px solid var(--borders-default)'
-                  }}
-                >
-                  {idx + 1}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Selected Target Info */}
-        <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
-          {selectedTarget.data.name}
-        </p>
-        <p className="text-xs mb-1 font-mono" style={{ color: 'var(--accent-primary)' }}>
-          {selectedTarget.phone_number}
-        </p>
-        <p className="text-xs mb-1" style={{ color: 'var(--foreground-secondary)' }}>
-          {selectedTarget.data.address}
-        </p>
-        <div className="text-xs mt-2">
-          <span style={{ color: 'var(--foreground-muted)' }}>Lat:</span>{' '}
-          <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>
-            {selectedTarget.data.latitude.toFixed(6)}
-          </span>
-        </div>
-        <div className="text-xs">
-          <span style={{ color: 'var(--foreground-muted)' }}>Long:</span>{' '}
-          <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>
-            {selectedTarget.data.longitude.toFixed(6)}
-          </span>
-        </div>
-        
-        {selectedTarget.data.maps_link && (
-          <a
-            href={selectedTarget.data.maps_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs mt-2 inline-block hover:underline"
-            style={{ color: 'var(--accent-primary)' }}
-          >
-            Open in Google Maps
-          </a>
-        )}
-        
-        {/* Pendalaman Button */}
-        <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
-          {selectedTarget.reghp_status === 'completed' ? (
-            <button
-              onClick={() => onShowReghpInfo(selectedTarget)}
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
-              style={{
-                backgroundColor: 'var(--accent-secondary)',
-                color: 'var(--background-primary)'
-              }}
-            >
-              📋 Info Pendalaman
-            </button>
-          ) : selectedTarget.reghp_status === 'not_found' ? (
-            <button
-              onClick={() => onShowReghpInfo(selectedTarget)}
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
-              style={{
-                backgroundColor: 'var(--status-warning)',
-                color: 'var(--background-primary)'
-              }}
-            >
-              ⚠️ Data Not Found
-            </button>
-          ) : selectedTarget.reghp_status === 'processing' || loadingPendalaman === selectedTarget.id ? (
-            <div className="text-center py-2">
-              <p className="text-xs" style={{ color: 'var(--status-processing)' }}>
-                ⏳ Pendalaman sedang diproses...
-              </p>
-            </div>
-          ) : (
-            <button
-              onClick={() => onPendalaman(selectedTarget)}
-              disabled={loadingPendalaman === selectedTarget.id}
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase disabled:opacity-50"
-              style={{
-                backgroundColor: 'var(--status-warning)',
-                color: 'var(--background-primary)'
-              }}
-            >
-              🔍 Pendalaman (Reghp)
-            </button>
-          )}
-        </div>
-      </div>
-    </Popup>
-  );
-};
-
-// Popup component for single target markers
+// Popup component for target markers
 const TargetPopup = ({ 
   target, 
   onShowReghpInfo, 
   onPendalaman,
-  loadingPendalaman 
+  loadingPendalaman,
+  isGrouped,
+  groupCount,
+  selectedIndex
 }) => (
   <Popup>
     <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '200px' }}>
+      {/* Group indicator */}
+      {isGrouped && (
+        <div className="mb-2 px-2 py-1 rounded text-xs font-semibold text-center"
+          style={{ 
+            backgroundColor: 'var(--accent-primary)', 
+            color: 'var(--background-primary)' 
+          }}>
+          📍 Target {selectedIndex + 1} dari {groupCount}
+        </div>
+      )}
+      
       <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
         {target.data.name}
       </p>
