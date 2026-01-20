@@ -2635,6 +2635,8 @@ async def get_telegram_credentials_status(username: str = Depends(verify_token))
         "client_connected": client_connected,
         "client_user": client_user,
         "runtime_api_id": TELEGRAM_API_ID,
+        "correct_api_id": CORRECT_TELEGRAM_API_ID,
+        "is_correct": TELEGRAM_API_ID == CORRECT_TELEGRAM_API_ID,
         "runtime_matches_env": str(TELEGRAM_API_ID) == current_api_id
     }
 
