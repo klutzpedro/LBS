@@ -787,16 +787,16 @@ async def execute_schedule(schedule_id: str, username: str = Depends(verify_toke
 # Settings Routes
 @api_router.get("/settings/telegram-credentials")
 async def get_telegram_credentials(username: str = Depends(verify_token)):
-    """Get current Telegram credentials status (not the actual values for security)"""
-    env_api_id = os.getenv('TELEGRAM_API_ID', DEFAULT_TELEGRAM_API_ID)
+    """Get current Telegram credentials status"""
+    env_api_id = os.getenv('TELEGRAM_API_ID', 'not set')
     
     return {
-        "env_api_id": env_api_id,
         "runtime_api_id": str(TELEGRAM_API_ID),
-        "default_api_id": DEFAULT_TELEGRAM_API_ID,
-        "credentials_match": str(TELEGRAM_API_ID) == env_api_id,
-        "using_default": str(TELEGRAM_API_ID) == DEFAULT_TELEGRAM_API_ID,
-        "has_api_hash": bool(os.getenv('TELEGRAM_API_HASH', DEFAULT_TELEGRAM_API_HASH))
+        "correct_api_id": str(CORRECT_TELEGRAM_API_ID),
+        "env_api_id": env_api_id,
+        "is_correct": TELEGRAM_API_ID == CORRECT_TELEGRAM_API_ID,
+        "has_api_hash": bool(TELEGRAM_API_HASH),
+        "status": "OK - Using correct API credentials"
     }
 
 @api_router.post("/settings/telegram-credentials")
