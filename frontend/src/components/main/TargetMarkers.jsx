@@ -1,12 +1,13 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { createMarkerWithLabel, createBlinkingMarker } from './MapUtils';
+import { createMarkerWithLabel, createBlinkingMarker, groupTargetsByPosition } from './MapUtils';
 import { Button } from '@/components/ui/button';
 
 /**
  * Renders target markers on the map with popups
  * Shows location info and pendalaman (deep dive) actions
  * Markers blink when target is inside an AOI with active alert
+ * Handles overlapping markers by stacking labels vertically
  */
 export const TargetMarkers = ({ 
   targets = [], 
@@ -29,6 +30,20 @@ export const TargetMarkers = ({
       .filter(a => !a.acknowledged)
       .flatMap(a => a.target_ids || [])
   );
+  
+  // Group targets by position to handle overlapping
+  const positionGroups = groupTargetsByPosition(filteredTargets);
+  
+  // Create a map of target ID to its position info (index and total at that position)
+  const targetPositionInfo = {};
+  Object.values(positionGroups).forEach(group => {
+    group.forEach((target, index) => {
+      targetPositionInfo[target.id] = {
+        offsetIndex: index,
+        totalAtPosition: group.length
+      };
+    });
+  });
 
   return (
     <>
@@ -38,6 +53,7 @@ export const TargetMarkers = ({
           target.data?.name;
         
         const hasActiveAlert = alertedTargetIds.has(target.id);
+        const posInfo = targetPositionInfo[target.id] || { offsetIndex: 0, totalAtPosition: 1 };
         
         return (
           <Marker
@@ -48,15 +64,20 @@ export const TargetMarkers = ({
                 target.phone_number, 
                 target.data.timestamp || target.created_at,
                 targetName,
-                showMarkerNames
+                showMarkerNames,
+                posInfo.offsetIndex,
+                posInfo.totalAtPosition
               ) :
               createMarkerWithLabel(
                 target.phone_number, 
                 target.data.timestamp || target.created_at,
                 targetName,
-                showMarkerNames
+                showMarkerNames,
+                posInfo.offsetIndex,
+                posInfo.totalAtPosition
               )
             }
+            zIndexOffset={posInfo.offsetIndex * 100}
           >
             <TargetPopup 
               target={target}
@@ -65,6 +86,8 @@ export const TargetMarkers = ({
               onPendalaman={onPendalaman}
               loadingPendalaman={loadingPendalaman}
               hasActiveAlert={hasActiveAlert}
+              positionIndex={posInfo.offsetIndex + 1}
+              totalAtPosition={posInfo.totalAtPosition}
             />
           </Marker>
         );
@@ -78,10 +101,23 @@ const TargetPopup = ({
   target, 
   onShowReghpInfo, 
   onPendalaman,
-  loadingPendalaman 
+  loadingPendalaman,
+  positionIndex,
+  totalAtPosition
 }) => (
   <Popup>
     <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '200px' }}>
+      {/* Position indicator for overlapping targets */}
+      {totalAtPosition > 1 && (
+        <div className="mb-2 px-2 py-1 rounded text-xs font-bold text-center" 
+          style={{ 
+            backgroundColor: 'var(--accent-primary)', 
+            color: 'var(--background-primary)' 
+          }}>
+          📍 Target {positionIndex} dari {totalAtPosition} di lokasi ini
+        </div>
+      )}
+      
       <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
         {target.data.name}
       </p>
