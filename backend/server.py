@@ -1968,26 +1968,40 @@ async def query_telegram_nik(target_id: str, nik: str):
     try:
         global telegram_client
         
+        # Ensure client is connected
         if telegram_client is None:
             telegram_client = TelegramClient(
                 '/app/backend/northarch_session',
                 TELEGRAM_API_ID,
                 TELEGRAM_API_HASH
             )
-            await telegram_client.start()
-            logging.info("Telegram client started for NIK query")
+            await telegram_client.connect()
+            logging.info("Telegram client connected for NIK query")
+        
+        # Check and reconnect if needed
+        if not telegram_client.is_connected():
+            logging.warning("[NIK] Telegram disconnected, reconnecting...")
+            await telegram_client.connect()
+            await asyncio.sleep(1)
         
         query_token = f"NIK_{nik}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting NIK query")
         
-        # IMPORTANT: Add delay to prevent concurrent queries mixing
-        await asyncio.sleep(2)
+        # Short delay to prevent concurrent queries mixing
+        await asyncio.sleep(1)
         
         # Send NIK to bot
         await telegram_client.send_message(BOT_USERNAME, nik)
         logging.info(f"[{query_token}] Sent NIK: {nik} to bot")
         
-        await asyncio.sleep(5)  # Increased wait
+        # Wait for initial response
+        await asyncio.sleep(4)
+        
+        # Check connection before getting messages
+        if not telegram_client.is_connected():
+            logging.warning(f"[{query_token}] Connection lost, reconnecting...")
+            await telegram_client.connect()
+            await asyncio.sleep(1)
         
         # Get messages and look for "NIK" button
         messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
@@ -2011,106 +2025,120 @@ async def query_telegram_nik(target_id: str, nik: str):
         if not nik_clicked:
             logging.warning(f"[{query_token}] NIK button not found")
         
-        # Wait longer for response with photo
-        await asyncio.sleep(12)  # Increased from 10
-        
-        # Get NIK response - ONLY messages containing our exact NIK
-        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
-        
+        # Wait for response with photo - use shorter intervals with connection checks
         nik_info = None
         photo_path = None
         found_matching_response = False
         
-        for msg in response_messages:
-            # STRICT TOKENIZATION: Must contain exact NIK we queried
-            if msg.text and nik in msg.text:
-                logging.info(f"[{query_token}] Found message containing NIK {nik}")
-                
-                # Verify this is the RIGHT response (contains our NIK)
-                # Check if it's identity data (not just mention)
-                if ('identity of' in msg.text.lower() and nik in msg.text.lower()) or \
-                   (f'NIK: {nik}' in msg.text or f'NIK:{nik}' in msg.text):
-                    
-                    logging.info(f"[{query_token}] ✓ CONFIRMED: This is response for NIK {nik}")
-                    found_matching_response = True
-                    
-                    # Parse identity data
-                    if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
-                        logging.info(f"[{query_token}] Parsing identity data...")
-                        
-                        nik_info = {
-                            "nik": nik,
-                            "raw_text": msg.text,
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        }
-                        
-                        # Parse fields with improved multi-line handling
-                        lines = msg.text.split('\n')
-                        parsed_data = {}
-                        current_key = None
-                        current_value = ""
-                        
-                        for line in lines:
-                            line = line.strip()
-                            
-                            # Skip empty lines, code blocks, and disclaimer
-                            if not line or line.startswith('```') or 'not for misuse' in line.lower() or 'search at your own risk' in line.lower() or 'law enforcement only' in line.lower():
-                                continue
-                            
-                            # Skip header line
-                            if line.startswith('Identity of'):
-                                continue
-                            
-                            # Check if line starts a new key-value pair
-                            # Must start with capital letter and have : near beginning (within first 25 chars)
-                            is_new_key = False
-                            if ':' in line:
-                                colon_pos = line.index(':')
-                                # New key if colon is in first part and line doesn't seem like continuation
-                                if colon_pos < 25 and not line.startswith(' ') and line[0].isupper():
-                                    potential_key = line.split(':', 1)[0].strip()
-                                    # Valid keys are usually short (< 20 chars) and don't have "KOTA" or "RT" etc
-                                    if len(potential_key) < 20 and not any(word in potential_key for word in ['KOTA', 'RT.', 'RW.', 'KEL.', 'KEC.', 'KODE POS']):
-                                        is_new_key = True
-                            
-                            if is_new_key:
-                                # Save previous key-value
-                                if current_key:
-                                    parsed_data[current_key] = current_value.strip()
-                                
-                                # Parse new key-value
-                                parts = line.split(':', 1)
-                                current_key = parts[0].strip()
-                                current_value = parts[1].strip() if len(parts) == 2 else ""
-                            else:
-                                # Continuation line (multi-line value like Address)
-                                if current_key and line:
-                                    current_value += " " + line
-                        
-                        # Save last key-value
-                        if current_key:
-                            parsed_data[current_key] = current_value.strip()
-                        
-                        nik_info['parsed_data'] = parsed_data
-                        logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
-                        
-                        # VERIFY: Check if parsed NIK matches queried NIK
-                        if parsed_data.get('NIK') == nik:
-                            logging.info(f"[{query_token}] ✓✓ NIK VERIFIED: Data matches queried NIK")
-                        else:
-                            logging.error(f"[{query_token}] ✗✗ NIK MISMATCH: Parsed NIK {parsed_data.get('NIK')} != Queried NIK {nik}")
-                            nik_info = None  # Discard wrong data
-                            break
+        # Try multiple times to get response (total ~20 seconds)
+        for attempt in range(4):
+            await asyncio.sleep(5)
             
-            # Check for photo in messages (must be near our NIK response)
-            if msg.photo and not photo_path and found_matching_response:
-                # Download photo only if we found matching text response
-                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                if photo_bytes:
-                    import base64
-                    photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
-                    photo_path = f"data:image/jpeg;base64,{photo_base64}"
-                    logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
+            # Check connection before getting messages
+            if not telegram_client.is_connected():
+                logging.warning(f"[{query_token}] Connection lost at attempt {attempt+1}, reconnecting...")
+                await telegram_client.connect()
+                await asyncio.sleep(1)
+            
+            # Get NIK response
+            try:
+                response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            except Exception as get_err:
+                logging.error(f"[{query_token}] Error getting messages: {get_err}")
+                continue
+            
+            for msg in response_messages:
+                # STRICT TOKENIZATION: Must contain exact NIK we queried
+                if msg.text and nik in msg.text:
+                    logging.info(f"[{query_token}] Found message containing NIK {nik}")
+                    
+                    # Verify this is the RIGHT response (contains our NIK)
+                    if ('identity of' in msg.text.lower() and nik in msg.text.lower()) or \
+                       (f'NIK: {nik}' in msg.text or f'NIK:{nik}' in msg.text):
+                        
+                        logging.info(f"[{query_token}] ✓ CONFIRMED: This is response for NIK {nik}")
+                        found_matching_response = True
+                        
+                        # Parse identity data
+                        if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
+                            logging.info(f"[{query_token}] Parsing identity data...")
+                            
+                            nik_info = {
+                                "nik": nik,
+                                "raw_text": msg.text,
+                                "timestamp": datetime.now(timezone.utc).isoformat()
+                            }
+                            
+                            # Parse fields with improved multi-line handling
+                            lines = msg.text.split('\n')
+                            parsed_data = {}
+                            current_key = None
+                            current_value = ""
+                            
+                            for line in lines:
+                                line = line.strip()
+                                
+                                # Skip empty lines, code blocks, and disclaimer
+                                if not line or line.startswith('```') or 'not for misuse' in line.lower() or 'search at your own risk' in line.lower() or 'law enforcement only' in line.lower():
+                                    continue
+                                
+                                # Skip header line
+                                if line.startswith('Identity of'):
+                                    continue
+                                
+                                # Check if line starts a new key-value pair
+                                is_new_key = False
+                                if ':' in line:
+                                    colon_pos = line.index(':')
+                                    if colon_pos < 25 and not line.startswith(' ') and line[0].isupper():
+                                        potential_key = line.split(':', 1)[0].strip()
+                                        if len(potential_key) < 20 and not any(word in potential_key for word in ['KOTA', 'RT.', 'RW.', 'KEL.', 'KEC.', 'KODE POS']):
+                                            is_new_key = True
+                                
+                                if is_new_key:
+                                    if current_key:
+                                        parsed_data[current_key] = current_value.strip()
+                                    
+                                    parts = line.split(':', 1)
+                                    current_key = parts[0].strip()
+                                    current_value = parts[1].strip() if len(parts) == 2 else ""
+                                else:
+                                    if current_key and line:
+                                        current_value += " " + line
+                            
+                            if current_key:
+                                parsed_data[current_key] = current_value.strip()
+                            
+                            nik_info['parsed_data'] = parsed_data
+                            logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
+                            
+                            # VERIFY: Check if parsed NIK matches queried NIK
+                            if parsed_data.get('NIK') == nik:
+                                logging.info(f"[{query_token}] ✓✓ NIK VERIFIED: Data matches queried NIK")
+                            else:
+                                logging.error(f"[{query_token}] ✗✗ NIK MISMATCH: Parsed NIK {parsed_data.get('NIK')} != Queried NIK {nik}")
+                                nik_info = None
+                                continue
+                
+                # Check for photo in messages (must be near our NIK response)
+                if msg.photo and not photo_path and found_matching_response:
+                    try:
+                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                        if photo_bytes:
+                            import base64
+                            photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
+                            photo_path = f"data:image/jpeg;base64,{photo_base64}"
+                            logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
+                    except Exception as photo_err:
+                        logging.error(f"[{query_token}] Error downloading photo: {photo_err}")
+            
+            # If we found data, break out of retry loop
+            if nik_info and photo_path:
+                break
+            elif nik_info:
+                # Got text but waiting for photo, try once more
+                logging.info(f"[{query_token}] Got text data, waiting for photo...")
+                continue
         
         if nik_info or photo_path:
             if not nik_info:
