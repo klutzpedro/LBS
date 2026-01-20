@@ -702,6 +702,39 @@ export const generateCasePDF = async (caseName, targets, mapScreenshots = {}) =>
                 yPos = 20;
               }
               yPos = addSectionTitle(doc, `DATA NIK: ${nik}`, yPos);
+              
+              // Add photo if available
+              const photoData = nikData.data.photo || nikData.data.photo_path;
+              if (photoData) {
+                try {
+                  // Photo dimensions (portrait KTP photo)
+                  const imgWidth = 30;
+                  const imgHeight = 40;
+                  const imgX = 165;
+                  const imgY = yPos;
+                  
+                  // Draw photo frame
+                  doc.setFillColor(40, 40, 40);
+                  doc.roundedRect(imgX - 2, imgY - 2, imgWidth + 4, imgHeight + 4, 2, 2, 'F');
+                  doc.setDrawColor(0, 217, 255);
+                  doc.setLineWidth(0.5);
+                  doc.roundedRect(imgX - 2, imgY - 2, imgWidth + 4, imgHeight + 4, 2, 2, 'S');
+                  
+                  // Add the photo
+                  doc.addImage(photoData, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+                  
+                  // Add label
+                  doc.setFontSize(5);
+                  doc.setTextColor(100, 100, 100);
+                  doc.text('FOTO', imgX + imgWidth/2, imgY + imgHeight + 4, { align: 'center' });
+                  doc.setTextColor(0, 0, 0);
+                } catch (photoErr) {
+                  console.log('Failed to add photo:', photoErr);
+                }
+              }
+              
+              // Table with adjusted width if photo exists
+              const tableWidth = photoData ? 135 : 180;
               const nikTableData = Object.entries(nikData.data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
               autoTable(doc, {
                 startY: yPos,
@@ -710,10 +743,11 @@ export const generateCasePDF = async (caseName, targets, mapScreenshots = {}) =>
                 theme: 'grid',
                 headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
                 styles: { fontSize: 7, cellPadding: 1.5 },
-                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 }, 1: { cellWidth: 135 } },
-                margin: { left: 14, right: 14 }
+                columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 }, 1: { cellWidth: tableWidth - 54 } },
+                margin: { left: 14, right: photoData ? 55 : 14 },
+                tableWidth: tableWidth
               });
-              yPos = doc.lastAutoTable.finalY + 5;
+              yPos = Math.max(doc.lastAutoTable.finalY + 5, photoData ? yPos + 50 : 0);
               
               // Family data for this specific NIK
               if (nikData.family_data?.members?.length > 0) {
