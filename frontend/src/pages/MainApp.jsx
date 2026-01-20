@@ -1081,7 +1081,8 @@ const MainApp = () => {
   useEffect(() => {
     if (selectedReghpTarget && reghpDialogOpen) {
       const updatedTarget = targets.find(t => t.id === selectedReghpTarget.id);
-      if (updatedTarget) {
+      // Only update if there's actually new data and it's different
+      if (updatedTarget && JSON.stringify(updatedTarget.nik_queries) !== JSON.stringify(selectedReghpTarget.nik_queries)) {
         setSelectedReghpTarget(updatedTarget);
       }
     }
