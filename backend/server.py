@@ -429,6 +429,233 @@ async def get_target_chat(target_id: str, username: str = Depends(verify_token))
     
     return chat_messages
 
+@api_router.post("/targets/{target_id}/refresh-position")
+async def refresh_target_position(target_id: str, username: str = Depends(verify_token)):
+    """
+    Refresh/update target position while preserving all existing data (RegHP, NIK, NKK).
+    - Saves current position to history
+    - Queries new position from Telegram
+    - Keeps all existing pendalaman data intact
+    """
+    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    if not target:
+        raise HTTPException(status_code=404, detail="Target not found")
+    
+    phone_number = target.get('phone_number')
+    
+    # Save current position to history BEFORE updating
+    if target.get('data') and target['data'].get('latitude') and target['data'].get('longitude'):
+        lat = float(target['data']['latitude'])
+        lng = float(target['data']['longitude'])
+        address = target['data'].get('address')
+        cp_timestamp = target['data'].get('timestamp')
+        
+        # Check if this exact position is already in history
+        existing = await db.position_history.find_one({
+            "target_id": target_id,
+            "latitude": lat,
+            "longitude": lng
+        })
+        
+        if not existing:
+            await save_position_history(target_id, phone_number, lat, lng, address, cp_timestamp)
+            logging.info(f"[REFRESH] Saved previous position to history for {phone_number}")
+    
+    # Update status to processing but KEEP all other data intact
+    await db.targets.update_one(
+        {"id": target_id},
+        {"$set": {
+            "status": "processing",
+            "previous_position": target.get('data')  # Store previous position for reference
+        }}
+    )
+    
+    logging.info(f"[REFRESH] Starting position refresh for {phone_number} (target: {target_id})")
+    
+    # Start background task to query new position
+    asyncio.create_task(query_telegram_bot_refresh(target_id, phone_number))
+    
+    return {
+        "message": "Position refresh started",
+        "target_id": target_id,
+        "phone_number": phone_number,
+        "previous_position_saved": True
+    }
+
+async def query_telegram_bot_refresh(target_id: str, phone_number: str):
+    """
+    Query Telegram bot for updated position.
+    Similar to query_telegram_bot but updates existing target instead of creating new.
+    """
+    global telegram_client
+    
+    try:
+        if telegram_client is None or not telegram_client.is_connected():
+            logging.error("[REFRESH] Telegram client not connected")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "error", "error": "Telegram tidak terkoneksi"}}
+            )
+            return
+        
+        # Get current target for chat history
+        target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+        
+        bot_username = "northarch_bot"
+        
+        # Send CP query
+        message_text = f"cp {phone_number}"
+        await telegram_client.send_message(bot_username, message_text)
+        logging.info(f"[REFRESH] Sent: {message_text} to @{bot_username}")
+        
+        # Save sent message to chat history
+        await db.chat_messages.insert_one({
+            "target_id": target_id,
+            "direction": "sent",
+            "content": message_text,
+            "timestamp": datetime.now(timezone.utc)
+        })
+        
+        # Wait for response (max 60 seconds)
+        await asyncio.sleep(3)
+        
+        received_response = False
+        for attempt in range(20):  # Try for 60 seconds
+            messages = await telegram_client.get_messages(bot_username, limit=5)
+            
+            for msg in messages:
+                if msg.text and phone_number in msg.text:
+                    logging.info(f"[REFRESH] Got response for {phone_number}")
+                    
+                    # Save to chat history
+                    await db.chat_messages.insert_one({
+                        "target_id": target_id,
+                        "direction": "received",
+                        "content": msg.text,
+                        "timestamp": datetime.now(timezone.utc)
+                    })
+                    
+                    # Parse location from response
+                    lat, lng, address, timestamp = parse_cp_response(msg.text)
+                    
+                    if lat and lng:
+                        # Update target with new position
+                        new_data = {
+                            "latitude": lat,
+                            "longitude": lng,
+                            "address": address or "Alamat tidak tersedia",
+                            "timestamp": timestamp or datetime.now(timezone.utc).isoformat()
+                        }
+                        
+                        await db.targets.update_one(
+                            {"id": target_id},
+                            {"$set": {
+                                "status": "completed",
+                                "data": new_data,
+                                "location": {
+                                    "type": "Point",
+                                    "coordinates": [lng, lat]
+                                },
+                                "last_refresh": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        
+                        # Save new position to history
+                        await save_position_history(target_id, phone_number, lat, lng, address, timestamp)
+                        logging.info(f"[REFRESH] Updated position for {phone_number}: {lat}, {lng}")
+                        
+                        received_response = True
+                        break
+                    else:
+                        # No coordinates found - might be "not found" response
+                        await db.targets.update_one(
+                            {"id": target_id},
+                            {"$set": {
+                                "status": "not_found",
+                                "last_refresh": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        received_response = True
+                        break
+            
+            if received_response:
+                break
+            
+            await asyncio.sleep(3)
+        
+        if not received_response:
+            # Timeout - revert to completed status with previous data
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "status": "completed" if target.get('data') else "error",
+                    "error": "Timeout waiting for bot response"
+                }}
+            )
+            logging.warning(f"[REFRESH] Timeout for {phone_number}")
+            
+    except Exception as e:
+        logging.error(f"[REFRESH] Error: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {
+                "status": "error",
+                "error": str(e)
+            }}
+        )
+
+def parse_cp_response(text: str):
+    """Parse CP response from Telegram bot to extract coordinates"""
+    lat = None
+    lng = None
+    address = None
+    timestamp = None
+    
+    try:
+        lines = text.split('\n')
+        for line in lines:
+            line_lower = line.lower().strip()
+            
+            # Try to find latitude
+            if 'lat' in line_lower or 'latitude' in line_lower:
+                match = re.search(r'[-+]?\d*\.?\d+', line)
+                if match:
+                    lat = float(match.group())
+            
+            # Try to find longitude
+            if 'long' in line_lower or 'lng' in line_lower or 'longitude' in line_lower:
+                match = re.search(r'[-+]?\d*\.?\d+', line)
+                if match:
+                    lng = float(match.group())
+            
+            # Try to find address
+            if 'alamat' in line_lower or 'address' in line_lower:
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    address = parts[1].strip()
+            
+            # Try to find timestamp
+            if 'waktu' in line_lower or 'time' in line_lower or 'tanggal' in line_lower:
+                parts = line.split(':', 1)
+                if len(parts) > 1:
+                    timestamp = parts[1].strip()
+        
+        # Try alternative coordinate format: coordinates in one line
+        if not lat or not lng:
+            coord_match = re.search(r'([-+]?\d+\.?\d*)[,\s]+([-+]?\d+\.?\d*)', text)
+            if coord_match:
+                val1, val2 = float(coord_match.group(1)), float(coord_match.group(2))
+                # Determine which is lat/lng based on Indonesia coordinates
+                if -11 <= val1 <= 6 and 95 <= val2 <= 141:
+                    lat, lng = val1, val2
+                elif -11 <= val2 <= 6 and 95 <= val1 <= 141:
+                    lat, lng = val2, val1
+                    
+    except Exception as e:
+        logging.error(f"Error parsing CP response: {e}")
+    
+    return lat, lng, address, timestamp
+
 @api_router.post("/targets/{target_id}/reghp")
 async def query_reghp(target_id: str, username: str = Depends(verify_token)):
     """Query Reghp (pendalaman) untuk target"""
