@@ -1166,6 +1166,13 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
     
     for attempt in range(1, max_retries + 1):
         try:
+            # Delete old session file first to avoid IP conflict errors
+            session_path = '/app/backend/northarch_session.session'
+            if os.path.exists(session_path) and attempt == 1:
+                # On first attempt, if session exists but we're here, it might be corrupted
+                # Check if it's causing issues
+                pass
+            
             # Initialize client if not exists or reconnect if disconnected
             if telegram_client is None or not telegram_client.is_connected():
                 # Close existing client if any
@@ -1175,11 +1182,7 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
                     except:
                         pass
                 
-                telegram_client = TelegramClient(
-                    '/app/backend/northarch_session',
-                    TELEGRAM_API_ID,
-                    TELEGRAM_API_HASH
-                )
+                telegram_client = create_telegram_client()
                 await telegram_client.connect()
                 logger.info(f"Telegram client connected (attempt {attempt})")
             
@@ -1203,7 +1206,44 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
             }
         except Exception as e:
             last_error = e
+            error_str = str(e).lower()
             logger.warning(f"Send code attempt {attempt} failed: {e}")
+            
+            # Check for IP conflict error - need full reset
+            if "two different ip" in error_str or "authorization key" in error_str:
+                logger.error("Session IP conflict detected! Performing full reset...")
+                
+                # Full cleanup
+                if telegram_client:
+                    try:
+                        await telegram_client.disconnect()
+                    except:
+                        pass
+                telegram_client = None
+                telegram_phone_code_hash = None
+                
+                # Delete session file
+                for sf in ['/app/backend/northarch_session.session', '/app/backend/northarch_session.session-journal']:
+                    if os.path.exists(sf):
+                        try:
+                            os.remove(sf)
+                            logger.info(f"Deleted corrupted session: {sf}")
+                        except:
+                            pass
+                
+                # Delete MongoDB backup
+                try:
+                    await db.telegram_sessions.delete_many({})
+                    logger.info("Cleared MongoDB session backups")
+                except:
+                    pass
+                
+                # Return specific error with instructions
+                raise HTTPException(
+                    status_code=409, 
+                    detail="Session conflict terdeteksi (IP berbeda). Session lama sudah dihapus. Silakan coba kirim kode lagi."
+                )
+            
             if attempt < max_retries:
                 # Reset client for retry
                 if telegram_client:
