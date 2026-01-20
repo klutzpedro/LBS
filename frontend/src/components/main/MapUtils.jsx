@@ -198,8 +198,28 @@ export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName,
   });
 };
 
-// Blinking marker for AOI alerts
-export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => {
+// Blinking marker for AOI alerts - with zoom scaling
+export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, zoom = 14) => {
+  const scale = getScaleFactor(zoom);
+  const showLabel = shouldShowLabel(zoom);
+  
+  // Minimal marker at very low zoom
+  if (scale === 0) {
+    return new DivIcon({
+      className: 'custom-marker-minimal blinking-marker',
+      html: `
+        <style>
+          @keyframes blink-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+          .blink-dot { animation: blink-alert 0.5s ease-in-out infinite; }
+        </style>
+        <div class="blink-dot" style="width: 12px; height: 12px; background: #FF3B5C; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px #FF3B5C;"></div>
+      `,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
+      popupAnchor: [0, -6]
+    });
+  }
+  
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
@@ -207,7 +227,31 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => 
     minute: '2-digit' 
   });
   
-  const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
+  const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: ${11 * scale}px; margin-bottom: 2px;">${name}</div>` : '';
+  const markerSize = Math.round(48 * scale);
+  
+  const labelHtml = showLabel ? `
+    <div style="
+      position: absolute;
+      bottom: ${50 * scale}px;
+      left: 50%;
+      transform: translateX(-50%) scale(${scale});
+      transform-origin: bottom center;
+      background: #FF3B5C;
+      border: 3px solid #FFFFFF;
+      border-radius: 8px;
+      padding: 6px 10px;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #FFFFFF;
+      box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
+    ">
+      ${nameDisplay}
+      <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
+      <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
+    </div>
+  ` : '';
   
   return new DivIcon({
     className: 'custom-marker-label blinking-marker',
@@ -222,26 +266,8 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => 
         }
       </style>
       <div style="position: relative;" class="blinking-marker-inner">
-        <div style="
-          position: absolute;
-          bottom: 50px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #FF3B5C;
-          border: 3px solid #FFFFFF;
-          border-radius: 8px;
-          padding: 6px 10px;
-          white-space: nowrap;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          color: #FFFFFF;
-          box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
-        ">
-          ${nameDisplay}
-          <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
-          <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
-        </div>
-        <svg width="48" height="48" viewBox="0 0 48 48" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9));">
+        ${labelHtml}
+        <svg width="${markerSize}" height="${markerSize}" viewBox="0 0 48 48" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9));">
           <circle cx="24" cy="24" r="24" fill="#FF3B5C" fill-opacity="0.4"/>
           <circle cx="24" cy="24" r="16" fill="#FF3B5C" fill-opacity="0.7"/>
           <circle cx="24" cy="24" r="10" fill="#FF3B5C"/>
@@ -249,9 +275,9 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => 
         </svg>
       </div>
     `,
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
-    popupAnchor: [0, -60]
+    iconSize: [markerSize, markerSize],
+    iconAnchor: [markerSize / 2, markerSize / 2],
+    popupAnchor: [0, showLabel ? Math.round(-60 * scale) : -10]
   });
 };
 
