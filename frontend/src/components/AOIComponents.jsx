@@ -574,61 +574,113 @@ export const AOIPanel = ({
   );
 };
 
-// AOI Alert Notification Component
+// AOI Alert Notification Component - Banner at top with sound
 export const AOIAlertNotification = ({ alerts, onAcknowledge, onAcknowledgeAll }) => {
-  if (!alerts || alerts.length === 0) return null;
-
-  const unacknowledged = alerts.filter(a => !a.acknowledged);
+  const audioRef = React.useRef(null);
+  const [isMuted, setIsMuted] = React.useState(false);
+  
+  const unacknowledged = alerts?.filter(a => !a.acknowledged) || [];
+  
+  // Play beep sound repeatedly until acknowledged
+  React.useEffect(() => {
+    if (unacknowledged.length > 0 && !isMuted) {
+      // Create audio context for beep sound
+      const playBeep = () => {
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800; // Frequency in Hz
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (e) {
+          console.log('Audio not supported:', e);
+        }
+      };
+      
+      // Play immediately
+      playBeep();
+      
+      // Repeat every 3 seconds
+      const interval = setInterval(playBeep, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [unacknowledged.length, isMuted]);
+  
   if (unacknowledged.length === 0) return null;
 
   return (
     <div 
-      className="fixed bottom-4 right-4 z-[2000] max-w-md animate-pulse"
+      className="fixed top-0 left-0 right-0 z-[9999] animate-pulse"
       style={{
-        backgroundColor: 'var(--status-error)',
-        borderRadius: '12px',
+        backgroundColor: '#FF3B5C',
         boxShadow: '0 4px 20px rgba(255, 59, 92, 0.5)'
       }}
     >
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Bell className="w-5 h-5 text-white animate-bounce" />
-            <span className="text-white font-bold">AOI ALERT!</span>
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onAcknowledgeAll}
-            className="text-white hover:bg-white/20"
-          >
-            Acknowledge All
-          </Button>
-        </div>
-        
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {unacknowledged.map(alert => (
-            <div 
-              key={alert.id}
-              className="p-2 rounded bg-white/10"
-            >
-              <p className="text-white text-sm font-semibold">
-                Target {alert.target_phones?.join(', ')} memasuki AOI &quot;{alert.aoi_name}&quot;
-              </p>
-              <p className="text-white/80 text-xs">
-                Waktu: {new Date(alert.timestamp).toLocaleString('id-ID')}
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onAcknowledge(alert.id)}
-                className="mt-1 text-white hover:bg-white/20 h-6 text-xs"
-              >
-                <Check className="w-3 h-3 mr-1" /> OK
-              </Button>
+      <div className="max-w-screen-xl mx-auto p-3">
+        <div className="flex items-center justify-between">
+          {/* Left: Alert Icon and Title */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Bell className="w-6 h-6 text-white animate-bounce" />
+              <span className="absolute -top-1 -right-1 bg-white text-red-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {unacknowledged.length}
+              </span>
             </div>
-          ))}
+            <div>
+              <p className="text-white font-bold text-lg">⚠️ AOI ALERT!</p>
+              <p className="text-white/90 text-sm">
+                {unacknowledged.length} target memasuki area yang dimonitor
+              </p>
+            </div>
+          </div>
+          
+          {/* Center: Alert Details */}
+          <div className="flex-1 mx-4 max-h-16 overflow-y-auto">
+            {unacknowledged.slice(0, 3).map(alert => (
+              <p key={alert.id} className="text-white text-sm">
+                📍 <strong>{alert.target_phones?.join(', ')}</strong> → AOI &quot;{alert.aoi_name}&quot; 
+                <span className="text-white/70 ml-2">({new Date(alert.timestamp).toLocaleTimeString('id-ID')})</span>
+              </p>
+            ))}
+            {unacknowledged.length > 3 && (
+              <p className="text-white/80 text-xs">...dan {unacknowledged.length - 3} alert lainnya</p>
+            )}
+          </div>
+          
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsMuted(!isMuted)}
+              className="text-white hover:bg-white/20"
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+            </Button>
+            <Button
+              size="sm"
+              onClick={onAcknowledgeAll}
+              className="bg-white text-red-600 hover:bg-white/90 font-bold"
+            >
+              <Check className="w-4 h-4 mr-1" /> ACKNOWLEDGE ALL
+            </Button>
+          </div>
         </div>
+      </div>
+    </div>
+  );
       </div>
     </div>
   );
