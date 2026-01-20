@@ -2988,33 +2988,60 @@ async def startup():
                 session_data = base64.b64decode(session_backup['session_data'])
                 with open(session_path, 'wb') as f:
                     f.write(session_data)
-                logger.info(f"Restored Telegram session from MongoDB backup (user: {session_backup.get('username')})")
+                logger.info(f"✓ Restored Telegram session from MongoDB backup (user: {session_backup.get('username')})")
+            else:
+                logger.warning("No session backup found in MongoDB - user needs to login via Settings")
         except Exception as restore_err:
-            logger.warning(f"Failed to restore session from MongoDB: {restore_err}")
+            logger.error(f"Failed to restore session from MongoDB: {restore_err}")
     
-    # Now try to connect
+    # Now try to connect with proper settings
     if os.path.exists(session_path):
         logger.info("Found Telegram session, attempting to reconnect...")
         try:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
-            )
+            # Use helper function with proper settings
+            telegram_client = create_telegram_client()
             await telegram_client.connect()
             
             if await telegram_client.is_user_authorized():
                 me = await telegram_client.get_me()
-                logger.info(f"Telegram auto-reconnected as {me.username or me.phone}")
+                logger.info(f"✓ Telegram auto-reconnected as @{me.username or me.phone}")
+                
+                # Backup session to MongoDB to ensure it's saved
+                try:
+                    import base64
+                    with open(session_path, 'rb') as f:
+                        session_data = f.read()
+                    session_base64 = base64.b64encode(session_data).decode('utf-8')
+                    await db.telegram_sessions.update_one(
+                        {"type": "main_session"},
+                        {"$set": {
+                            "session_data": session_base64,
+                            "username": me.username,
+                            "phone": me.phone,
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }},
+                        upsert=True
+                    )
+                    logger.info("✓ Session backed up to MongoDB")
+                except Exception as backup_err:
+                    logger.warning(f"Failed to backup session: {backup_err}")
             else:
-                logger.warning("Telegram session exists but not authorized")
+                logger.warning("Telegram session exists but not authorized - user needs to re-login")
         except Exception as e:
             logger.error(f"Failed to auto-reconnect Telegram: {e}")
+            # Clear invalid session
+            if "auth key" in str(e).lower() or "security" in str(e).lower():
+                logger.warning("Removing potentially corrupted session file...")
+                try:
+                    os.remove(session_path)
+                except:
+                    pass
     else:
-        logger.info("No Telegram session found")
+        logger.info("No Telegram session found - user needs to login via Settings")
     
     # Start background keep-alive task
     asyncio.create_task(telegram_keepalive_task())
+    logger.info("✓ Telegram keepalive task started")
 
 # Background task to keep Telegram connection alive
 async def telegram_keepalive_task():
