@@ -17,7 +17,7 @@
 - **Frontend:** React, Tailwind CSS, Leaflet.js, Shadcn/UI
 - **Backend:** FastAPI, Telethon (Telegram client)
 - **Database:** MongoDB
-- **Authentication:** JWT-based (admin/Paparoni83)
+- **Authentication:** JWT-based (admin/Paparoni290483#)
 
 ## Key Features Implemented
 
@@ -178,7 +178,7 @@
 - `POST /api/aoi-alerts/acknowledge-all` - Acknowledge all alerts
 
 ## Credentials
-- **Web App:** admin / Paparoni83
+- **Web App:** admin / Paparoni290483#
 - **Telegram:** @dwijayanto (API credentials in backend/.env)
 
 ## Database Seeding (December 2025)
