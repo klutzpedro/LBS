@@ -414,15 +414,41 @@ export const generateTargetPDF = async (target, mapScreenshot = null) => {
             
             yPos = addSectionTitle(doc, `D${nikIndex}. DATA NIK: ${nik}`, yPos);
             
-            // Photo note
-            if (nikData.data.photo_path) {
-              doc.setFontSize(8);
-              doc.setTextColor(100, 100, 100);
-              doc.text('[Foto KTP tersedia di sistem]', 16, yPos + 3);
-              doc.setTextColor(0, 0, 0);
-              yPos += 8;
+            // Add photo if available
+            const photoData = nikData.data.photo || nikData.data.photo_path;
+            let photoWidth = 0;
+            if (photoData) {
+              try {
+                // Photo dimensions (portrait KTP photo)
+                const imgWidth = 35;
+                const imgHeight = 45;
+                const imgX = 160; // Right side position
+                const imgY = yPos;
+                
+                // Draw photo frame
+                doc.setFillColor(40, 40, 40);
+                doc.roundedRect(imgX - 2, imgY - 2, imgWidth + 4, imgHeight + 4, 2, 2, 'F');
+                doc.setDrawColor(0, 217, 255);
+                doc.setLineWidth(0.5);
+                doc.roundedRect(imgX - 2, imgY - 2, imgWidth + 4, imgHeight + 4, 2, 2, 'S');
+                
+                // Add the photo
+                doc.addImage(photoData, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+                
+                // Add label under photo
+                doc.setFontSize(6);
+                doc.setTextColor(100, 100, 100);
+                doc.text('FOTO TARGET', imgX + imgWidth/2, imgY + imgHeight + 5, { align: 'center' });
+                doc.setTextColor(0, 0, 0);
+                
+                photoWidth = imgWidth + 15; // Add margin
+              } catch (photoErr) {
+                console.log('Failed to add photo to PDF:', photoErr);
+              }
             }
             
+            // NIK data table - adjust width if photo exists
+            const tableWidth = photoData ? 125 : 180;
             const nikTableData = Object.entries(nikData.data.parsed_data).map(([key, value]) => [key, String(value || '-')]);
             autoTable(doc, {
               startY: yPos,
@@ -431,10 +457,14 @@ export const generateTargetPDF = async (target, mapScreenshot = null) => {
               theme: 'grid',
               headStyles: { fillColor: [0, 217, 255], textColor: [18, 18, 18], fontStyle: 'bold' },
               styles: { fontSize: 8, cellPadding: 2 },
-              columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 }, 1: { cellWidth: 130 } },
-              margin: { left: 14, right: 14 }
+              columnStyles: { 
+                0: { fontStyle: 'bold', cellWidth: 45 }, 
+                1: { cellWidth: tableWidth - 59 } 
+              },
+              margin: { left: 14, right: photoData ? 60 : 14 },
+              tableWidth: tableWidth
             });
-            yPos = doc.lastAutoTable.finalY + 5;
+            yPos = Math.max(doc.lastAutoTable.finalY + 5, photoData ? yPos + 55 : 0);
             
             // E. NKK/Family Data for this specific NIK
             if (nikData.family_data?.members && nikData.family_data.members.length > 0) {
