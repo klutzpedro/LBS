@@ -576,7 +576,7 @@ const Settings = () => {
               <ol className="list-decimal ml-4 space-y-1">
                 <li>Buka <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--accent-primary)' }}>my.telegram.org</a></li>
                 <li>Login dengan nomor telepon Anda</li>
-                <li>Klik "API development tools"</li>
+                <li>Klik &quot;API development tools&quot;</li>
                 <li>Buat aplikasi baru (isi nama app bebas)</li>
                 <li>Copy API ID dan API Hash</li>
               </ol>
