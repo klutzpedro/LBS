@@ -1,11 +1,12 @@
 import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
-import { createMarkerWithLabel } from './MapUtils';
+import { createMarkerWithLabel, createBlinkingMarker } from './MapUtils';
 import { Button } from '@/components/ui/button';
 
 /**
  * Renders target markers on the map with popups
  * Shows location info and pendalaman (deep dive) actions
+ * Markers blink when target is inside an AOI with active alert
  */
 export const TargetMarkers = ({ 
   targets = [], 
@@ -13,13 +14,21 @@ export const TargetMarkers = ({
   showMarkerNames = false,
   onShowReghpInfo,
   onPendalaman,
-  loadingPendalaman = null
+  loadingPendalaman = null,
+  aoiAlerts = []
 }) => {
   const filteredTargets = targets.filter(t => {
     const hasData = t.data && t.data.latitude && t.data.longitude;
     const isVisible = visibleTargets.has(t.id);
     return hasData && isVisible;
   });
+  
+  // Get target IDs that have active (unacknowledged) alerts
+  const alertedTargetIds = new Set(
+    aoiAlerts
+      .filter(a => !a.acknowledged)
+      .flatMap(a => a.target_ids || [])
+  );
 
   return (
     <>
@@ -28,16 +37,26 @@ export const TargetMarkers = ({
           Object.values(target.nik_queries).find(nq => nq.data?.parsed_data?.['Full Name'])?.data?.parsed_data?.['Full Name'] : 
           target.data?.name;
         
+        const hasActiveAlert = alertedTargetIds.has(target.id);
+        
         return (
           <Marker
             key={target.id}
             position={[target.data.latitude, target.data.longitude]}
-            icon={createMarkerWithLabel(
-              target.phone_number, 
-              target.data.timestamp || target.created_at,
-              targetName,
-              showMarkerNames
-            )}
+            icon={hasActiveAlert ? 
+              createBlinkingMarker(
+                target.phone_number, 
+                target.data.timestamp || target.created_at,
+                targetName,
+                showMarkerNames
+              ) :
+              createMarkerWithLabel(
+                target.phone_number, 
+                target.data.timestamp || target.created_at,
+                targetName,
+                showMarkerNames
+              )
+            }
           >
             <TargetPopup 
               target={target}
@@ -45,6 +64,7 @@ export const TargetMarkers = ({
               onShowReghpInfo={onShowReghpInfo}
               onPendalaman={onPendalaman}
               loadingPendalaman={loadingPendalaman}
+              hasActiveAlert={hasActiveAlert}
             />
           </Marker>
         );
