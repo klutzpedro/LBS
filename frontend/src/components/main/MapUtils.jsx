@@ -47,7 +47,98 @@ export const createMarkerWithLabel = (phoneNumber, timestamp, name, showName) =>
   });
 };
 
-// Blinking marker for AOI alerts - original design
+// Marker with label AND number selector below (for grouped targets)
+export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName, totalCount, selectedIndex, positionKey) => {
+  const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
+    day: '2-digit', 
+    month: 'short', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  const nameDisplay = showName && name ? `<div style="color: var(--foreground-primary); font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
+  
+  // Create number buttons
+  const numberButtons = Array.from({ length: totalCount }, (_, i) => {
+    const isSelected = i === selectedIndex;
+    return `<button 
+      class="target-selector-btn" 
+      data-pos="${positionKey}" 
+      data-idx="${i}"
+      style="
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: ${isSelected ? '#00D9FF' : '#2A2A2A'};
+        color: ${isSelected ? '#121212' : '#FFFFFF'};
+        border: ${isSelected ? '2px solid #00FF88' : '1px solid #555'};
+        font-size: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        font-family: 'JetBrains Mono', monospace;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      "
+    >${i + 1}</button>`;
+  }).join('');
+  
+  return new DivIcon({
+    className: 'custom-marker-with-selector',
+    html: `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        <!-- Label above -->
+        <div style="
+          position: absolute;
+          bottom: 40px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: var(--background-elevated);
+          border: 2px solid var(--accent-primary);
+          border-radius: 8px;
+          padding: 4px 8px;
+          white-space: nowrap;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 10px;
+          color: var(--foreground-primary);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+          z-index: 1000;
+        ">
+          ${nameDisplay}
+          <div style="color: var(--accent-primary); font-weight: bold;">${phoneNumber}</div>
+          <div style="color: var(--foreground-muted); font-size: 9px;">${timeStr}</div>
+        </div>
+        
+        <!-- Marker point -->
+        <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+          <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.2"/>
+          <circle cx="16" cy="16" r="12" fill="#FF3B5C"/>
+          <text x="16" y="20" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="bold" font-family="JetBrains Mono">${totalCount}</text>
+        </svg>
+        
+        <!-- Number selector below marker -->
+        <div style="
+          display: flex;
+          gap: 3px;
+          margin-top: 4px;
+          padding: 4px 6px;
+          background: rgba(18, 18, 18, 0.95);
+          border-radius: 14px;
+          border: 1px solid #444;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        ">
+          ${numberButtons}
+        </div>
+      </div>
+    `,
+    iconSize: [32, 80],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -50]
+  });
+};
+
+// Blinking marker for AOI alerts
 export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => {
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
@@ -104,57 +195,96 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => 
   });
 };
 
-// Marker for grouped targets - shows count and number selector below
-export const createGroupedMarker = (count, selectedIndex) => {
-  // Create number buttons HTML
-  const numberButtons = Array.from({ length: count }, (_, i) => {
+// Blinking marker with selector for grouped AOI alerts
+export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, showName, totalCount, selectedIndex, positionKey) => {
+  const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
+    day: '2-digit', 
+    month: 'short', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
+  
+  // Create number buttons
+  const numberButtons = Array.from({ length: totalCount }, (_, i) => {
     const isSelected = i === selectedIndex;
-    const bgColor = isSelected ? '#00D9FF' : '#2A2A2A';
-    const textColor = isSelected ? '#121212' : '#FFFFFF';
-    const border = isSelected ? '2px solid #FFFFFF' : '1px solid #444';
-    return `<div style="
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: ${bgColor};
-      color: ${textColor};
-      border: ${border};
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
-      font-family: 'JetBrains Mono', monospace;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    " data-index="${i}">${i + 1}</div>`;
+    return `<button 
+      class="target-selector-btn" 
+      data-pos="${positionKey}" 
+      data-idx="${i}"
+      style="
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: ${isSelected ? '#00D9FF' : '#2A2A2A'};
+        color: ${isSelected ? '#121212' : '#FFFFFF'};
+        border: ${isSelected ? '2px solid #00FF88' : '1px solid #555'};
+        font-size: 10px;
+        font-weight: bold;
+        cursor: pointer;
+        font-family: 'JetBrains Mono', monospace;
+      "
+    >${i + 1}</button>`;
   }).join('');
-
+  
   return new DivIcon({
-    className: 'custom-grouped-marker',
+    className: 'custom-marker-label blinking-marker',
     html: `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-        <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-          <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.3"/>
-          <circle cx="16" cy="16" r="12" fill="#FF3B5C"/>
-          <text x="16" y="20" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold" font-family="JetBrains Mono, monospace">${count}</text>
+      <style>
+        @keyframes blink-alert {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.2); }
+        }
+        .blinking-marker-inner {
+          animation: blink-alert 0.5s ease-in-out infinite;
+        }
+      </style>
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center;" class="blinking-marker-inner">
+        <div style="
+          position: absolute;
+          bottom: 50px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #FF3B5C;
+          border: 3px solid #FFFFFF;
+          border-radius: 8px;
+          padding: 6px 10px;
+          white-space: nowrap;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 11px;
+          color: #FFFFFF;
+          box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
+          z-index: 1000;
+        ">
+          ${nameDisplay}
+          <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
+          <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
+        </div>
+        <svg width="48" height="48" viewBox="0 0 48 48" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9));">
+          <circle cx="24" cy="24" r="24" fill="#FF3B5C" fill-opacity="0.4"/>
+          <circle cx="24" cy="24" r="16" fill="#FF3B5C" fill-opacity="0.7"/>
+          <circle cx="24" cy="24" r="10" fill="#FF3B5C"/>
+          <text x="24" y="28" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold">${totalCount}</text>
         </svg>
+        
+        <!-- Number selector below -->
         <div style="
           display: flex;
-          gap: 4px;
+          gap: 3px;
           margin-top: 4px;
-          padding: 3px 6px;
-          background: rgba(18, 18, 18, 0.9);
-          border-radius: 12px;
-          border: 1px solid #333;
+          padding: 4px 6px;
+          background: rgba(18, 18, 18, 0.95);
+          border-radius: 14px;
+          border: 1px solid #444;
         ">
           ${numberButtons}
         </div>
       </div>
     `,
-    iconSize: [32, 60],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -20]
+    iconSize: [48, 90],
+    iconAnchor: [24, 24],
+    popupAnchor: [0, -60]
   });
 };
 
