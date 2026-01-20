@@ -2702,6 +2702,115 @@ async def startup():
             logger.error(f"Failed to auto-reconnect Telegram: {e}")
     else:
         logger.info("No Telegram session found")
+    
+    # Start background keep-alive task
+    asyncio.create_task(telegram_keepalive_task())
+
+# Background task to keep Telegram connection alive
+async def telegram_keepalive_task():
+    """Background task that periodically checks and maintains Telegram connection"""
+    global telegram_client
+    
+    logger.info("Starting Telegram keepalive background task")
+    
+    while True:
+        try:
+            await asyncio.sleep(60)  # Check every 60 seconds
+            
+            if telegram_client is None:
+                continue
+                
+            # Check if connected
+            if not telegram_client.is_connected():
+                logger.warning("[Keepalive] Telegram client disconnected, attempting reconnect...")
+                try:
+                    await telegram_client.connect()
+                    if telegram_client.is_connected():
+                        logger.info("[Keepalive] Telegram reconnected successfully")
+                except Exception as reconnect_err:
+                    logger.error(f"[Keepalive] Reconnect failed: {reconnect_err}")
+            
+            # Ping to keep session alive (only if connected and authorized)
+            if telegram_client.is_connected():
+                try:
+                    if await telegram_client.is_user_authorized():
+                        # Simple ping by getting self
+                        await telegram_client.get_me()
+                        logger.debug("[Keepalive] Telegram session ping successful")
+                except Exception as ping_err:
+                    logger.warning(f"[Keepalive] Ping failed: {ping_err}")
+                    
+        except Exception as e:
+            logger.error(f"[Keepalive] Error in keepalive task: {e}")
+
+@api_router.post("/telegram/force-restore-session")
+async def force_restore_session(username: str = Depends(verify_token)):
+    """Force restore Telegram session from MongoDB backup"""
+    global telegram_client
+    
+    session_path = '/app/backend/northarch_session.session'
+    
+    try:
+        # Disconnect current client
+        if telegram_client is not None:
+            try:
+                await telegram_client.disconnect()
+            except:
+                pass
+            telegram_client = None
+        
+        # Delete current session file
+        if os.path.exists(session_path):
+            os.remove(session_path)
+            logging.info("Deleted existing session file")
+        
+        # Restore from MongoDB
+        import base64
+        session_backup = await db.telegram_sessions.find_one({"type": "main_session"})
+        
+        if not session_backup or not session_backup.get('session_data'):
+            return {
+                "success": False,
+                "message": "No session backup found in database. Please login manually."
+            }
+        
+        # Write session file
+        session_data = base64.b64decode(session_backup['session_data'])
+        with open(session_path, 'wb') as f:
+            f.write(session_data)
+        
+        logging.info(f"Restored session from MongoDB (user: {session_backup.get('username')})")
+        
+        # Try to connect with restored session
+        telegram_client = TelegramClient(
+            '/app/backend/northarch_session',
+            TELEGRAM_API_ID,
+            TELEGRAM_API_HASH
+        )
+        await telegram_client.connect()
+        
+        if await telegram_client.is_user_authorized():
+            me = await telegram_client.get_me()
+            return {
+                "success": True,
+                "message": f"Session restored and connected as @{me.username}",
+                "user": {
+                    "username": me.username,
+                    "phone": me.phone
+                }
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Session restored but authorization expired. Please login again."
+            }
+            
+    except Exception as e:
+        logging.error(f"Force restore session failed: {e}")
+        return {
+            "success": False,
+            "message": f"Restore failed: {str(e)}"
+        }
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
