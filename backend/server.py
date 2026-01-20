@@ -503,8 +503,8 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
         
         bot_username = "northarch_bot"
         
-        # Send CP query
-        message_text = f"cp {phone_number}"
+        # Send phone number query (no prefix needed)
+        message_text = f"{phone_number}"
         await telegram_client.send_message(bot_username, message_text)
         logging.info(f"[REFRESH] Sent: {message_text} to @{bot_username}")
         
