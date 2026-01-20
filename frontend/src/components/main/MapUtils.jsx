@@ -265,7 +265,7 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
           <circle cx="24" cy="24" r="24" fill="#FF3B5C" fill-opacity="0.4"/>
           <circle cx="24" cy="24" r="16" fill="#FF3B5C" fill-opacity="0.7"/>
           <circle cx="24" cy="24" r="10" fill="#FF3B5C"/>
-          <text x="24" y="28" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold">${totalCount}</text>
+          <circle cx="24" cy="24" r="5" fill="#FFFFFF"/>
         </svg>
         
         <!-- Number selector below -->
