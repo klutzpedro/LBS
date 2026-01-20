@@ -431,6 +431,52 @@
 - [x] ~~Refactor MainApp.jsx into smaller components~~ **COMPLETED**
 - [ ] Multi-user support
 - [ ] Add unit tests for new components
+- [ ] AOI opacity slider for adjusting overlay transparency
+
+## Recent Updates (January 20, 2026)
+
+### Real-time Telegram Status Monitoring
+- **Feature:** Telegram connection status is now monitored in real-time with polling every 10 seconds
+- **UI Changes:**
+  - Sidebar shows "● LIVE" indicator when status is being actively monitored
+  - Status shows "Session active, reconnecting..." when authorized but temporarily disconnected
+  - Click on status bar to manually refresh status
+  - Colors: Green = Connected, Yellow = Reconnecting, Red = Disconnected
+- **Backend:** Added `connected` field to `/api/telegram/status` response (separate from `authorized`)
+- **Keepalive Task:** Background task pings Telegram every 60 seconds to maintain connection
+- **Files Modified:**
+  - `/app/frontend/src/context/TelegramContext.jsx` - Polling logic, enhanced status states
+  - `/app/frontend/src/components/main/Sidebar.jsx` - Enhanced status indicator with LIVE badge
+  - `/app/backend/server.py` - Added `connected` field, keepalive task
+
+### Telegram Session Restore Feature
+- **Feature:** "Restore Session dari Backup" button in Settings to recover session from MongoDB backup
+- **Use Case:** When Telegram session is lost after deployment/restart but backup exists in database
+- **Endpoint:** `POST /api/telegram/force-restore-session`
+- **Behavior:**
+  - Disconnects current client
+  - Deletes current session file
+  - Restores session from MongoDB backup
+  - Reconnects and verifies authorization
+- **Files Modified:**
+  - `/app/backend/server.py` - New force-restore endpoint, telegram_keepalive_task
+  - `/app/frontend/src/pages/Settings.jsx` - New restore button and handler
+
+### AOI Alert System (In Progress)
+- **Components:**
+  1. **Red Banner:** Persistent banner at top of screen when target enters AOI
+  2. **Beep Sound:** Repeating beep every 3 seconds until acknowledged
+  3. **Flashing Marker:** Target marker blinks red with "⚠️ ALERT: Dalam AOI" label
+- **Implementation:**
+  - `AOIAlertNotification` component with Web Audio API for beep sound
+  - `createBlinkingMarker` function for animated marker with CSS keyframes
+  - Mute button to silence beep without dismissing alert
+  - "ACKNOWLEDGE ALL" button to dismiss all alerts
+- **Files Modified:**
+  - `/app/frontend/src/components/AOIComponents.jsx` - Alert banner component
+  - `/app/frontend/src/components/main/MapUtils.jsx` - Blinking marker function
+  - `/app/frontend/src/components/main/TargetMarkers.jsx` - Use blinking marker for alerts
+  - `/app/frontend/src/pages/MainApp.jsx` - Pass aoiAlerts to TargetMarkers
 
 ## Files Reference
 
