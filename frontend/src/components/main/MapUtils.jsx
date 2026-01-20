@@ -110,11 +110,11 @@ export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName,
           <div style="color: var(--foreground-muted); font-size: 9px;">${timeStr}</div>
         </div>
         
-        <!-- Marker point -->
+        <!-- Marker point - Red dot with white center -->
         <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
           <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.2"/>
-          <circle cx="16" cy="16" r="12" fill="#FF3B5C"/>
-          <text x="16" y="20" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="bold" font-family="JetBrains Mono">${totalCount}</text>
+          <circle cx="16" cy="16" r="8" fill="#FF3B5C"/>
+          <circle cx="16" cy="16" r="4" fill="#FFFFFF"/>
         </svg>
         
         <!-- Number selector below marker -->
