@@ -648,8 +648,8 @@ const TargetCard = ({
       </div>
     </div>
     
-    {/* Action Buttons - Only for completed targets */}
-    {target.status === 'completed' && (
+    {/* Action Buttons - For completed, not_found, and error targets */}
+    {(target.status === 'completed' || target.status === 'not_found' || target.status === 'error') && (
       <div className="px-3 pb-3 flex gap-2">
         <Button
           size="sm"
@@ -659,9 +659,10 @@ const TargetCard = ({
           }}
           className="flex-1 text-xs"
           style={{
-            backgroundColor: 'var(--status-info)',
+            backgroundColor: target.status === 'completed' ? 'var(--status-info)' : 'var(--status-warning)',
             color: 'var(--background-primary)'
           }}
+          title={target.status === 'not_found' ? 'Coba query ulang - mungkin target sudah ON' : 'Perbaharui lokasi'}
         >
           🔄 Perbaharui
         </Button>
