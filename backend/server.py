@@ -538,7 +538,8 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
     global telegram_client
     
     try:
-        if telegram_client is None or not telegram_client.is_connected():
+        # Ensure connection using helper
+        if not await ensure_telegram_connected():
             logging.error("[REFRESH] Telegram client not connected")
             await db.targets.update_one(
                 {"id": target_id},
