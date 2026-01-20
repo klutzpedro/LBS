@@ -681,7 +681,4 @@ export const AOIAlertNotification = ({ alerts, onAcknowledge, onAcknowledgeAll }
       </div>
     </div>
   );
-      </div>
-    </div>
-  );
 };
