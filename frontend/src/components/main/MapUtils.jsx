@@ -1,7 +1,7 @@
 import { DivIcon } from 'leaflet';
 
-// Custom marker with label - now supports offset for overlapping markers
-export const createMarkerWithLabel = (phoneNumber, timestamp, name, showName, offsetIndex = 0, totalAtPosition = 1) => {
+// Custom marker with label - original design
+export const createMarkerWithLabel = (phoneNumber, timestamp, name, showName) => {
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
@@ -11,32 +11,17 @@ export const createMarkerWithLabel = (phoneNumber, timestamp, name, showName, of
   
   const nameDisplay = showName && name ? `<div style="color: var(--foreground-primary); font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
   
-  // Calculate offset for overlapping markers
-  // Stack labels vertically with 55px spacing
-  const verticalOffset = 40 + (offsetIndex * 55);
-  
-  // Add horizontal stagger for better visibility if more than 2
-  const horizontalOffset = totalAtPosition > 2 ? (offsetIndex % 2 === 0 ? -30 : 30) : 0;
-  
-  // Different border colors for each marker at same position
-  const borderColors = ['#00D9FF', '#00FF88', '#FFB800', '#FF3B5C', '#A855F7', '#EC4899'];
-  const borderColor = borderColors[offsetIndex % borderColors.length];
-  
-  // Show position indicator if multiple at same location
-  const positionIndicator = totalAtPosition > 1 ? 
-    `<div style="position: absolute; top: -8px; right: -8px; background: ${borderColor}; color: #121212; font-size: 9px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${offsetIndex + 1}</div>` : '';
-  
   return new DivIcon({
     className: 'custom-marker-label',
     html: `
       <div style="position: relative;">
         <div style="
           position: absolute;
-          bottom: ${verticalOffset}px;
-          left: calc(50% + ${horizontalOffset}px);
+          bottom: 40px;
+          left: 50%;
           transform: translateX(-50%);
           background: var(--background-elevated);
-          border: 2px solid ${borderColor};
+          border: 2px solid var(--accent-primary);
           border-radius: 8px;
           padding: 4px 8px;
           white-space: nowrap;
@@ -44,31 +29,26 @@ export const createMarkerWithLabel = (phoneNumber, timestamp, name, showName, of
           font-size: 10px;
           color: var(--foreground-primary);
           box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-          z-index: ${1000 + offsetIndex};
         ">
-          ${positionIndicator}
           ${nameDisplay}
-          <div style="color: ${borderColor}; font-weight: bold;">${phoneNumber}</div>
+          <div style="color: var(--accent-primary); font-weight: bold;">${phoneNumber}</div>
           <div style="color: var(--foreground-muted); font-size: 9px;">${timeStr}</div>
         </div>
-        ${offsetIndex === 0 ? `
         <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
           <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.2"/>
           <circle cx="16" cy="16" r="8" fill="#FF3B5C"/>
           <circle cx="16" cy="16" r="4" fill="#FFFFFF"/>
-          ${totalAtPosition > 1 ? `<text x="16" y="20" text-anchor="middle" fill="#FFFFFF" font-size="10" font-weight="bold">${totalAtPosition}</text>` : ''}
         </svg>
-        ` : ''}
       </div>
     `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
-    popupAnchor: [0, -verticalOffset - 10]
+    popupAnchor: [0, -50]
   });
 };
 
-// Blinking marker for AOI alerts - animated with CSS, supports offset
-export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, offsetIndex = 0, totalAtPosition = 1) => {
+// Blinking marker for AOI alerts - original design
+export const createBlinkingMarker = (phoneNumber, timestamp, name, showName) => {
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
@@ -77,14 +57,6 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, off
   });
   
   const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
-  
-  // Calculate offset for overlapping markers
-  const verticalOffset = 50 + (offsetIndex * 60);
-  const horizontalOffset = totalAtPosition > 2 ? (offsetIndex % 2 === 0 ? -30 : 30) : 0;
-  
-  // Position indicator
-  const positionIndicator = totalAtPosition > 1 ? 
-    `<div style="position: absolute; top: -8px; right: -8px; background: #FFFFFF; color: #FF3B5C; font-size: 9px; font-weight: bold; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">${offsetIndex + 1}</div>` : '';
   
   return new DivIcon({
     className: 'custom-marker-label blinking-marker',
@@ -101,8 +73,8 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, off
       <div style="position: relative;" class="blinking-marker-inner">
         <div style="
           position: absolute;
-          bottom: ${verticalOffset}px;
-          left: calc(50% + ${horizontalOffset}px);
+          bottom: 50px;
+          left: 50%;
           transform: translateX(-50%);
           background: #FF3B5C;
           border: 3px solid #FFFFFF;
@@ -113,27 +85,76 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, off
           font-size: 11px;
           color: #FFFFFF;
           box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
-          z-index: ${1000 + offsetIndex};
         ">
-          ${positionIndicator}
           ${nameDisplay}
           <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
           <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
         </div>
-        ${offsetIndex === 0 ? `
         <svg width="48" height="48" viewBox="0 0 48 48" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9));">
           <circle cx="24" cy="24" r="24" fill="#FF3B5C" fill-opacity="0.4"/>
           <circle cx="24" cy="24" r="16" fill="#FF3B5C" fill-opacity="0.7"/>
           <circle cx="24" cy="24" r="10" fill="#FF3B5C"/>
           <circle cx="24" cy="24" r="5" fill="#FFFFFF"/>
-          ${totalAtPosition > 1 ? `<text x="24" y="28" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold">${totalAtPosition}</text>` : ''}
         </svg>
-        ` : ''}
       </div>
     `,
     iconSize: [48, 48],
     iconAnchor: [24, 24],
-    popupAnchor: [0, -verticalOffset - 10]
+    popupAnchor: [0, -60]
+  });
+};
+
+// Marker for grouped targets - shows count and number selector below
+export const createGroupedMarker = (count, selectedIndex) => {
+  // Create number buttons HTML
+  const numberButtons = Array.from({ length: count }, (_, i) => {
+    const isSelected = i === selectedIndex;
+    const bgColor = isSelected ? '#00D9FF' : '#2A2A2A';
+    const textColor = isSelected ? '#121212' : '#FFFFFF';
+    const border = isSelected ? '2px solid #FFFFFF' : '1px solid #444';
+    return `<div style="
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: ${bgColor};
+      color: ${textColor};
+      border: ${border};
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    " data-index="${i}">${i + 1}</div>`;
+  }).join('');
+
+  return new DivIcon({
+    className: 'custom-grouped-marker',
+    html: `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+          <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.3"/>
+          <circle cx="16" cy="16" r="12" fill="#FF3B5C"/>
+          <text x="16" y="20" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="bold" font-family="JetBrains Mono, monospace">${count}</text>
+        </svg>
+        <div style="
+          display: flex;
+          gap: 4px;
+          margin-top: 4px;
+          padding: 3px 6px;
+          background: rgba(18, 18, 18, 0.9);
+          border-radius: 12px;
+          border: 1px solid #333;
+        ">
+          ${numberButtons}
+        </div>
+      </div>
+    `,
+    iconSize: [32, 60],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -20]
   });
 };
 
