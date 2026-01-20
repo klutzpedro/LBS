@@ -3053,6 +3053,7 @@ async def telegram_keepalive_task():
     # Counter to track consecutive failures
     failure_count = 0
     max_failures = 3
+    backup_counter = 0  # Backup session every 10 checks (5 minutes)
     
     while True:
         try:
@@ -3091,14 +3092,7 @@ async def telegram_keepalive_task():
                     except:
                         pass
                     
-                    telegram_client = TelegramClient(
-                        '/app/backend/northarch_session',
-                        TELEGRAM_API_ID,
-                        TELEGRAM_API_HASH,
-                        connection_retries=5,
-                        retry_delay=1,
-                        auto_reconnect=True
-                    )
+                    telegram_client = create_telegram_client()
                     await telegram_client.connect()
                     
                     if telegram_client.is_connected():
@@ -3107,6 +3101,33 @@ async def telegram_keepalive_task():
             else:
                 # Connection is alive, reset failure count
                 failure_count = 0
+                
+                # Periodic session backup to MongoDB (every 5 minutes = 10 * 30 seconds)
+                backup_counter += 1
+                if backup_counter >= 10:
+                    backup_counter = 0
+                    try:
+                        if await telegram_client.is_user_authorized():
+                            session_path = '/app/backend/northarch_session.session'
+                            if os.path.exists(session_path):
+                                import base64
+                                with open(session_path, 'rb') as f:
+                                    session_data = f.read()
+                                session_base64 = base64.b64encode(session_data).decode('utf-8')
+                                me = await telegram_client.get_me()
+                                await db.telegram_sessions.update_one(
+                                    {"type": "main_session"},
+                                    {"$set": {
+                                        "session_data": session_base64,
+                                        "username": me.username,
+                                        "phone": me.phone,
+                                        "updated_at": datetime.now(timezone.utc).isoformat()
+                                    }},
+                                    upsert=True
+                                )
+                                logger.info("[Keepalive] ✓ Session backed up to MongoDB")
+                    except Exception as backup_err:
+                        logger.warning(f"[Keepalive] Backup failed: {backup_err}")
                     
         except asyncio.CancelledError:
             logger.info("[Keepalive] Task cancelled, shutting down")
