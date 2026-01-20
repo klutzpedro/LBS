@@ -257,7 +257,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
     ADMIN_USERNAME = "admin"
-    ADMIN_PASSWORD = "Paparoni83"
+    ADMIN_PASSWORD = "Paparoni290483#"
     
     if request.username != ADMIN_USERNAME or request.password != ADMIN_PASSWORD:
         raise HTTPException(status_code=401, detail="Invalid credentials")
