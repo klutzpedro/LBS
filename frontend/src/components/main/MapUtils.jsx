@@ -236,12 +236,9 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
           animation: blink-alert 0.5s ease-in-out infinite;
         }
       </style>
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center;" class="blinking-marker-inner">
+      <div style="display: flex; flex-direction: column; align-items: center;" class="blinking-marker-inner">
+        <!-- Alert Label above -->
         <div style="
-          position: absolute;
-          bottom: 50px;
-          left: 50%;
-          transform: translateX(-50%);
           background: #FF3B5C;
           border: 3px solid #FFFFFF;
           border-radius: 8px;
@@ -251,17 +248,18 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
           font-size: 11px;
           color: #FFFFFF;
           box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
-          z-index: 1000;
+          margin-bottom: 6px;
         ">
           ${nameDisplay}
           <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
           <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
         </div>
-        <svg width="48" height="48" viewBox="0 0 48 48" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9));">
-          <circle cx="24" cy="24" r="24" fill="#FF3B5C" fill-opacity="0.4"/>
-          <circle cx="24" cy="24" r="16" fill="#FF3B5C" fill-opacity="0.7"/>
-          <circle cx="24" cy="24" r="10" fill="#FF3B5C"/>
-          <circle cx="24" cy="24" r="5" fill="#FFFFFF"/>
+        
+        <!-- RED DOT MARKER - Center position, clearly visible -->
+        <svg width="40" height="40" viewBox="0 0 40 40" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9)); margin: 4px 0;">
+          <circle cx="20" cy="20" r="18" fill="#FF3B5C" fill-opacity="0.4"/>
+          <circle cx="20" cy="20" r="12" fill="#FF3B5C"/>
+          <circle cx="20" cy="20" r="5" fill="#FFFFFF"/>
         </svg>
         
         <!-- Number selector below -->
@@ -273,14 +271,15 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
           background: rgba(18, 18, 18, 0.95);
           border-radius: 14px;
           border: 1px solid #444;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         ">
           ${numberButtons}
         </div>
       </div>
     `,
-    iconSize: [48, 90],
-    iconAnchor: [24, 24],
-    popupAnchor: [0, -60]
+    iconSize: [120, 140],
+    iconAnchor: [60, 70],
+    popupAnchor: [0, -70]
   });
 };
 
