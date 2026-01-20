@@ -701,6 +701,7 @@ const TargetCard = ({
               backgroundColor: 'var(--status-success)',
               color: 'var(--background-primary)'
             }}
+            title={target.status === 'not_found' ? 'Jadwalkan query otomatis - akan mencoba saat target ON' : 'Jadwalkan pembaruan lokasi otomatis'}
           >
             📅 Jadwalkan
           </Button>
