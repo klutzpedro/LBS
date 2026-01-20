@@ -1038,12 +1038,16 @@ async def telegram_status(username: str = Depends(verify_token)):
     if not session_exists:
         return {
             "authorized": False,
+            "connected": False,
             "message": "Belum login ke Telegram"
         }
     
     try:
+        # Check current connection state
+        is_connected = telegram_client is not None and telegram_client.is_connected()
+        
         # Recreate client if needed
-        if telegram_client is None or not telegram_client.is_connected():
+        if telegram_client is None or not is_connected:
             if telegram_client is not None:
                 try:
                     await telegram_client.disconnect()
@@ -1056,11 +1060,13 @@ async def telegram_status(username: str = Depends(verify_token)):
                 TELEGRAM_API_HASH
             )
             await telegram_client.connect()
+            is_connected = telegram_client.is_connected()
         
         if await telegram_client.is_user_authorized():
             me = await telegram_client.get_me()
             return {
                 "authorized": True,
+                "connected": is_connected,
                 "user": {
                     "username": me.username,
                     "first_name": me.first_name,
@@ -1071,6 +1077,7 @@ async def telegram_status(username: str = Depends(verify_token)):
         else:
             return {
                 "authorized": False,
+                "connected": is_connected,
                 "message": "Session expired atau belum login"
             }
     except Exception as e:
@@ -1081,12 +1088,14 @@ async def telegram_status(username: str = Depends(verify_token)):
         if "authorization key" in error_msg.lower() or "duplicate" in error_msg.lower():
             return {
                 "authorized": False,
+                "connected": False,
                 "message": "Session conflict - Please reset connection in Settings",
                 "error_type": "duplicate_session"
             }
         
         return {
             "authorized": False,
+            "connected": False,
             "message": str(e)
         }
 
