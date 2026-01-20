@@ -958,13 +958,22 @@ const MainApp = () => {
       
       let attempts = 0;
       const maxAttempts = 30;
+      let isCompleted = false; // Flag to prevent multiple completions
+      
       const checkInterval = setInterval(async () => {
+        // Skip if already completed
+        if (isCompleted) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
         attempts++;
         try {
           const response = await axios.get(`${API}/targets/${target.id}`);
           const updatedTarget = response.data;
           
-          if (updatedTarget.reghp_status === 'completed' || updatedTarget.reghp_status === 'error') {
+          if ((updatedTarget.reghp_status === 'completed' || updatedTarget.reghp_status === 'error') && !isCompleted) {
+            isCompleted = true; // Set flag BEFORE clearing
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
@@ -974,7 +983,8 @@ const MainApp = () => {
             if (updatedTarget.reghp_status === 'completed') {
               toast.success('Pendalaman selesai!');
             }
-          } else if (attempts >= maxAttempts) {
+          } else if (attempts >= maxAttempts && !isCompleted) {
+            isCompleted = true;
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
