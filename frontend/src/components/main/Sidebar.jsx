@@ -147,68 +147,127 @@ export const Sidebar = ({
   );
 };
 
-// Header sub-component
-const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateSettings }) => (
-  <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
-        <div 
-          className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
-        >
-          <Shield className="w-6 h-6" style={{ color: 'var(--background-primary)' }} />
-        </div>
-        <div>
-          <h1 
-            className="text-xl font-bold"
-            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+// Header sub-component with real-time status indicator
+const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateSettings }) => {
+  // Import useTelegram for enhanced status info
+  const { telegramConnected, lastChecked, status, refreshStatus, loading } = require('@/context/TelegramContext').useTelegram();
+  
+  const getStatusInfo = () => {
+    switch (status) {
+      case 'connected':
+        return {
+          color: 'var(--status-success)',
+          bgColor: 'rgba(0, 255, 136, 0.1)',
+          icon: '🟢',
+          text: `@${telegramUser?.username || 'Connected'}`,
+          subtext: 'Real-time active'
+        };
+      case 'authorized_disconnected':
+        return {
+          color: 'var(--status-warning)',
+          bgColor: 'rgba(255, 184, 0, 0.1)',
+          icon: '🟡',
+          text: 'Session active, reconnecting...',
+          subtext: 'Temporary disconnect'
+        };
+      default:
+        return {
+          color: 'var(--status-error)',
+          bgColor: 'rgba(255, 59, 92, 0.1)',
+          icon: '🔴',
+          text: 'Telegram disconnected',
+          subtext: 'Setup required'
+        };
+    }
+  };
+  
+  const statusInfo = getStatusInfo();
+  
+  return (
+    <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
           >
-            WASKITA LBS
-          </h1>
+            <Shield className="w-6 h-6" style={{ color: 'var(--background-primary)' }} />
+          </div>
+          <div>
+            <h1 
+              className="text-xl font-bold"
+              style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+            >
+              WASKITA LBS
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onNavigateSettings}
+            data-testid="settings-button"
+            title="Settings"
+          >
+            <SettingsIcon className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={onLogout}
+            data-testid="logout-button"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" style={{ color: 'var(--status-error)' }} />
+          </Button>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onNavigateSettings}
-          data-testid="settings-button"
-          title="Settings"
-        >
-          <SettingsIcon className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={onLogout}
-          data-testid="logout-button"
-          title="Logout"
-        >
-          <LogOut className="w-5 h-5" style={{ color: 'var(--status-error)' }} />
-        </Button>
-      </div>
-    </div>
 
-    {/* Telegram Status */}
-    <div 
-      className="p-3 rounded-lg border text-sm"
-      style={{
-        backgroundColor: telegramAuthorized ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 184, 0, 0.1)',
-        borderColor: telegramAuthorized ? 'var(--status-success)' : 'var(--status-warning)'
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <div 
-          className="w-2 h-2 rounded-full"
-          style={{ backgroundColor: telegramAuthorized ? 'var(--status-success)' : 'var(--status-warning)' }}
-        />
-        <span style={{ color: 'var(--foreground-primary)' }}>
-          {telegramAuthorized ? `@${telegramUser?.username}` : 'Telegram disconnected'}
-        </span>
+      {/* Enhanced Telegram Status with Real-time Indicator */}
+      <div 
+        className="p-3 rounded-lg border text-sm cursor-pointer hover:opacity-90 transition-opacity"
+        style={{
+          backgroundColor: statusInfo.bgColor,
+          borderColor: statusInfo.color
+        }}
+        onClick={refreshStatus}
+        title="Click to refresh status"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div 
+              className={`w-2.5 h-2.5 rounded-full ${status === 'connected' ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: statusInfo.color }}
+            />
+            <div>
+              <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                {statusInfo.text}
+              </span>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                {statusInfo.subtext}
+              </p>
+            </div>
+          </div>
+          {/* Real-time indicator */}
+          <div className="flex flex-col items-end gap-1">
+            {loading ? (
+              <Activity className="w-4 h-4 animate-spin" style={{ color: statusInfo.color }} />
+            ) : (
+              <div className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                {lastChecked ? (
+                  <span title={lastChecked.toLocaleTimeString('id-ID')}>
+                    {new Date().getTime() - lastChecked.getTime() < 15000 ? '● LIVE' : '○ Checking...'}
+                  </span>
+                ) : ''}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Processing indicator sub-component
 const ProcessingIndicator = ({ processType, onReset }) => (
