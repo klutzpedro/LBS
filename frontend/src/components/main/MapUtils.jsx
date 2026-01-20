@@ -281,8 +281,29 @@ export const createBlinkingMarker = (phoneNumber, timestamp, name, showName, zoo
   });
 };
 
-// Blinking marker with selector for grouped AOI alerts
-export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, showName, totalCount, selectedIndex, positionKey) => {
+// Blinking marker with selector for grouped AOI alerts - with zoom scaling
+export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, showName, totalCount, selectedIndex, positionKey, zoom = 14) => {
+  const scale = getScaleFactor(zoom);
+  const showLabel = shouldShowLabel(zoom);
+  const showSelector = shouldShowSelector(zoom);
+  
+  // Minimal marker at very low zoom
+  if (scale === 0) {
+    return new DivIcon({
+      className: 'custom-marker-minimal blinking-marker',
+      html: `
+        <style>
+          @keyframes blink-alert { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+          .blink-dot { animation: blink-alert 0.5s ease-in-out infinite; }
+        </style>
+        <div class="blink-dot" style="width: 12px; height: 12px; background: #FF3B5C; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px #FF3B5C;"></div>
+      `,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
+      popupAnchor: [0, -6]
+    });
+  }
+  
   const timeStr = new Date(timestamp).toLocaleString('id-ID', { 
     day: '2-digit', 
     month: 'short', 
@@ -290,9 +311,10 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
     minute: '2-digit' 
   });
   
-  const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: 11px; margin-bottom: 2px;">${name}</div>` : '';
+  const nameDisplay = showName && name ? `<div style="color: #FFFFFF; font-size: ${11 * scale}px; margin-bottom: 2px;">${name}</div>` : '';
   
-  // Create number buttons
+  // Create number buttons with scaled size
+  const btnSize = Math.round(20 * scale);
   const numberButtons = Array.from({ length: totalCount }, (_, i) => {
     const isSelected = i === selectedIndex;
     return `<button 
@@ -300,19 +322,55 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
       data-pos="${positionKey}" 
       data-idx="${i}"
       style="
-        width: 20px;
-        height: 20px;
+        width: ${btnSize}px;
+        height: ${btnSize}px;
         border-radius: 50%;
         background: ${isSelected ? '#00D9FF' : '#2A2A2A'};
         color: ${isSelected ? '#121212' : '#FFFFFF'};
         border: ${isSelected ? '2px solid #00FF88' : '1px solid #555'};
-        font-size: 10px;
+        font-size: ${Math.round(10 * scale)}px;
         font-weight: bold;
         cursor: pointer;
         font-family: 'JetBrains Mono', monospace;
       "
     >${i + 1}</button>`;
   }).join('');
+  
+  const markerSize = Math.round(40 * scale);
+  
+  const labelHtml = showLabel ? `
+    <div style="
+      background: #FF3B5C;
+      border: 3px solid #FFFFFF;
+      border-radius: ${8 * scale}px;
+      padding: ${6 * scale}px ${10 * scale}px;
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: ${11 * scale}px;
+      color: #FFFFFF;
+      box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
+      margin-bottom: ${6 * scale}px;
+    ">
+      ${nameDisplay}
+      <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
+      <div style="font-size: ${9 * scale}px; opacity: 0.9;">ALERT: Dalam AOI</div>
+    </div>
+  ` : '';
+  
+  const selectorHtml = showSelector ? `
+    <div style="
+      display: flex;
+      gap: ${3 * scale}px;
+      margin-top: ${4 * scale}px;
+      padding: ${4 * scale}px ${6 * scale}px;
+      background: rgba(18, 18, 18, 0.95);
+      border-radius: ${14 * scale}px;
+      border: 1px solid #444;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    ">
+      ${numberButtons}
+    </div>
+  ` : '';
   
   return new DivIcon({
     className: 'custom-marker-label blinking-marker',
@@ -327,49 +385,21 @@ export const createBlinkingMarkerWithSelector = (phoneNumber, timestamp, name, s
         }
       </style>
       <div style="display: flex; flex-direction: column; align-items: center;" class="blinking-marker-inner">
-        <!-- Alert Label above -->
-        <div style="
-          background: #FF3B5C;
-          border: 3px solid #FFFFFF;
-          border-radius: 8px;
-          padding: 6px 10px;
-          white-space: nowrap;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 11px;
-          color: #FFFFFF;
-          box-shadow: 0 0 20px rgba(255, 59, 92, 0.8), 0 4px 12px rgba(0,0,0,0.5);
-          margin-bottom: 6px;
-        ">
-          ${nameDisplay}
-          <div style="font-weight: bold;">⚠️ ${phoneNumber}</div>
-          <div style="font-size: 9px; opacity: 0.9;">ALERT: Dalam AOI</div>
-        </div>
+        ${labelHtml}
         
         <!-- RED DOT MARKER - Center position, clearly visible -->
-        <svg width="40" height="40" viewBox="0 0 40 40" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9)); margin: 4px 0;">
+        <svg width="${markerSize}" height="${markerSize}" viewBox="0 0 40 40" style="filter: drop-shadow(0 0 15px rgba(255, 59, 92, 0.9)); margin: ${4 * scale}px 0;">
           <circle cx="20" cy="20" r="18" fill="#FF3B5C" fill-opacity="0.4"/>
           <circle cx="20" cy="20" r="12" fill="#FF3B5C"/>
           <circle cx="20" cy="20" r="5" fill="#FFFFFF"/>
         </svg>
         
-        <!-- Number selector below -->
-        <div style="
-          display: flex;
-          gap: 3px;
-          margin-top: 4px;
-          padding: 4px 6px;
-          background: rgba(18, 18, 18, 0.95);
-          border-radius: 14px;
-          border: 1px solid #444;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        ">
-          ${numberButtons}
-        </div>
+        ${selectorHtml}
       </div>
     `,
-    iconSize: [120, 140],
-    iconAnchor: [60, 70],
-    popupAnchor: [0, -70]
+    iconSize: [Math.round(120 * scale), Math.round(140 * scale)],
+    iconAnchor: [Math.round(60 * scale), Math.round(70 * scale)],
+    popupAnchor: [0, Math.round(-70 * scale)]
   });
 };
 
