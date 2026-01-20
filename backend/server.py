@@ -1383,11 +1383,19 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
     global telegram_client, telegram_phone_code_hash
     
     try:
-        # Disconnect existing client
+        # Try to properly log out from Telegram first (this invalidates the session on Telegram's side)
         if telegram_client is not None:
             try:
+                if telegram_client.is_connected():
+                    try:
+                        # Log out properly - this tells Telegram to invalidate this session
+                        await telegram_client.log_out()
+                        logging.info("Logged out from Telegram properly")
+                    except Exception as logout_err:
+                        logging.warning(f"Logout error (may already be invalid): {logout_err}")
+                    
                 await telegram_client.disconnect()
-                logging.info("Disconnected existing Telegram client")
+                logging.info("Disconnected Telegram client")
             except Exception as e:
                 logging.warning(f"Error disconnecting client: {e}")
         
@@ -1395,10 +1403,10 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
         telegram_client = None
         telegram_phone_code_hash = None
         
-        # Delete session files
+        # Delete ALL session files (including any cache)
         session_files = [
             '/app/backend/northarch_session.session',
-            '/app/backend/northarch_session.session-journal'
+            '/app/backend/northarch_session.session-journal',
         ]
         
         deleted_files = []
@@ -1411,11 +1419,19 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
                 except Exception as e:
                     logging.error(f"Error deleting {sf}: {e}")
         
+        # IMPORTANT: Delete session backup from MongoDB
+        try:
+            result = await db.telegram_sessions.delete_many({})
+            logging.info(f"Deleted {result.deleted_count} session backups from MongoDB")
+        except Exception as db_err:
+            logging.warning(f"Error deleting MongoDB sessions: {db_err}")
+        
         return {
             "success": True,
-            "message": "Telegram connection reset successfully",
+            "message": "Telegram connection fully reset. Session invalidated on Telegram servers.",
             "deleted_files": deleted_files,
-            "status": "You need to setup Telegram again"
+            "mongodb_cleared": True,
+            "next_step": "Please login with your phone number again"
         }
     except Exception as e:
         logging.error(f"Error resetting Telegram connection: {e}")
