@@ -135,6 +135,32 @@ const Settings = () => {
     navigate('/login');
   };
 
+  const handleRestoreSession = async () => {
+    console.log('Restore session clicked');
+    
+    toast.info('Mencoba restore session dari backup...');
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/telegram/force-restore-session`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Restore response:', response.data);
+      
+      if (response.data.success) {
+        toast.success(response.data.message);
+        await refreshStatus();
+        setTimeout(() => navigate('/'), 1000);
+      } else {
+        toast.warning(response.data.message);
+      }
+    } catch (error) {
+      console.error('Restore error:', error);
+      toast.error(error.response?.data?.message || 'Gagal restore session');
+    }
+  };
+
   const handleResetConnection = async () => {
     console.log('Reset connection clicked');
     
