@@ -38,16 +38,24 @@ JWT_ALGORITHM = "HS256"
 
 # Telegram Client Setup - PERMANENT VALUES
 # These are the correct API credentials for this application
-DEFAULT_TELEGRAM_API_ID = '37983970'
-DEFAULT_TELEGRAM_API_HASH = 'd484d8fe3d2f4025f99101caeb070e1a'
+# IMPORTANT: Always use these values, ignore any incorrect env variables
+CORRECT_TELEGRAM_API_ID = 37983970
+CORRECT_TELEGRAM_API_HASH = 'd484d8fe3d2f4025f99101caeb070e1a'
 
-TELEGRAM_API_ID = int(os.getenv('TELEGRAM_API_ID', DEFAULT_TELEGRAM_API_ID))
-TELEGRAM_API_HASH = os.getenv('TELEGRAM_API_HASH', DEFAULT_TELEGRAM_API_HASH)
+# Check if env has correct value, otherwise use hardcoded correct value
+env_api_id = os.getenv('TELEGRAM_API_ID', '')
+env_api_hash = os.getenv('TELEGRAM_API_HASH', '')
+
+# FORCE correct values - ignore incorrect environment variables
+if env_api_id and env_api_id != str(CORRECT_TELEGRAM_API_ID):
+    logger.warning(f"Incorrect TELEGRAM_API_ID in env ({env_api_id}), using correct value: {CORRECT_TELEGRAM_API_ID}")
+    
+TELEGRAM_API_ID = CORRECT_TELEGRAM_API_ID
+TELEGRAM_API_HASH = CORRECT_TELEGRAM_API_HASH
 BOT_USERNAME = '@northarch_bot'
 
-# Log Telegram credentials status (not the actual values for security)
-logger.info(f"Telegram API ID loaded: {TELEGRAM_API_ID}")
-logger.info(f"Telegram API ID matches default: {TELEGRAM_API_ID == int(DEFAULT_TELEGRAM_API_ID)}")
+# Log Telegram credentials status
+logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
 
 telegram_client = None
 
