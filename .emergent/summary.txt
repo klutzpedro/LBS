@@ -10,60 +10,66 @@ PRODUCT REQUIREMENTS:
 6.  **History Tracking:** Log and display the historical movement of a target.
 7.  **Area of Interest (AOI):** Define areas on the map and receive alerts if a target enters one.
 8.  **Family Tree Logic:** Correctly determine the order of children based on age.
+9.  **Custom AOI Colors:** Allow users to select a specific color for each AOI.
+10. **Advanced AOI Alerts:** Implement a multi-modal alert system (visual banner, audible beep, flashing marker) when a target enters an AOI.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A full-stack application (FastAPI backend, React frontend, MongoDB) with most features implemented. The agent has recently completed a major refactoring of the main UI component () to improve maintainability. A database seeding feature was added to allow data to be exported and imported, which is useful for deployment. The application also now includes a Settings page where the user can configure their personal Telegram API credentials and view the connection status.
+A full-stack application (FastAPI backend, React frontend, MongoDB) with most core features implemented. The application's stability has been significantly improved by fixing critical bugs related to data display, Telegram session persistence, and API credential management. Recent additions include a custom color picker for Areas of Interest (AOIs) and an in-progress implementation of an advanced AOI alert system.
 
 **Last working item**:
-The agent was debugging a critical UI bug where the NIK Info dialog displays incomplete data.
+The user requested a new, advanced alert system for when a target enters an Area of Interest (AOI), specifying a combination of visual and audible cues.
 
--   Last item agent was working: The user reported that after performing a NIK query, the dialog that appears only shows a photo and 3 data fields (Phone, NIK, Operator), instead of the full 15 fields (Full Name, Address, etc.) that are correctly returned by the Telegram bot. The agent confirmed the backend successfully parses and saves all 15 fields to the database, concluding the issue is a data-binding or rendering problem in the frontend  component.
+-   Last item agent was working: Implementing the AOI alert system with three components:
+    1.  A persistent red banner at the top of the screen ().
+    2.  A repeating beep sound until the alert is acknowledged ().
+    3.  A flashing map marker for the specific target that triggered the alert ().
+    The agent started by modifying  to create the top banner and  to handle the flashing effect. The implementation is mid-way through.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
 -   Which testing method agent to use? screenshot tool
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: NIK Info Dialog Displays Incomplete Data (P0)**
-    -   **Description:** The dialog for displaying detailed NIK information () shows only a few fields from the REGHP data, instead of the full 15 fields from the NIK data, even though the complete data is present in the backend.
-    -   **Attempted fixes:** The agent confirmed the backend is parsing and storing the data correctly. An attempt was made to modify , but it resulted in compilation errors and the final fix was incomplete.
-    -   **Next debug checklist:**
-        1.  In , locate the  component.
-        2.  Add a  at the beginning of the component to inspect the exact data it receives when opened.
-        3.  Verify that  exists and contains the 15 expected fields. The current code iterates over . If  is  or missing, the table will not render.
-        4.  The issue is likely that the wrong data object is being passed into the dialog state. The dialog is showing data from the initial REGHP query instead of the subsequent NIK query. Trace the  call from the Info button in the  to the  function in  to ensure the correct  object is being passed.
-    -   **Why fix this issue?** This is a critical bug blocking the core data deep dive functionality. The user cannot view the primary data they have queried.
-    -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend.
+None. The agent has resolved all previously reported bugs.
 
 **In progress Task List**:
-None.
+-   **Task 1: Complete the new AOI Alert System (P0)**
+    -   **Where to resume:** The agent has modified  and . The next steps are:
+        1.  Ensure the  prop is correctly passed from  to .
+        2.  Implement and test the  hook in  to ensure the sound repeats until acknowledged.
+        3.  Verify that the Acknowledge button stops the sound for a specific alert and the Dismiss All button clears all banners and sounds.
+        4.  Perform an end-to-end test: create an AOI, monitor a target, and confirm that the banner, sound, and flashing marker are all triggered when the target enters the AOI.
+    -   **What will be achieved with this?** A user-specified, multi-modal alert system for AOI breaches will be fully functional.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on something:** No
 
 **Upcoming and Future Tasks**
+-   **Upcoming Tasks:**
+    -   Add an opacity slider to the AOI creation/editing form to allow users to control the transparency of the AOI overlay on the map.
 -   **Future Tasks:**
     -   **Enhance Family Tree Visualization (P2):** Use a dedicated graph visualization library (like ) to create a more dynamic and interactive tree diagram.
-    -   **Database Migration Tool (P2):** A more robust export/import tool for migrating user data (cases, targets, AOIs, history) between environments could be built.
+    -   **Database Migration Tool (P2):** Build a more robust export/import tool for migrating user data (cases, targets, AOIs, history) between environments.
 
 **Completed work in this session**
--   **Refactoring :** Broke down the monolithic  (3253 lines) into smaller components (, , , etc.), reducing its size by ~55%.
--   **Database Seeding Feature:** Created backend endpoints (, ) and an auto-seed mechanism on startup to manage data for deployment.
--   **Telegram Credentials Management:** Added a form in Settings for users to input their API credentials and a status panel to show connection health. The backend now deletes the old session file on credential updates.
--   **Partial Revert:** Reverted  to a previous version to restore a user-requested data flow, which may have contributed to the current bug.
--   **UI/UX Improvements:**
-    -   Added a Reset Processing State button to resolve UI freezes.
-    -   Changed the default map layer to Street view.
-    -   Improved backend logic and frontend UI to handle Data Not Found responses from Telegram.
+-   **Bug Fix: NIK Info Dialog:** Resolved a critical bug where the NIK dialog only showed 3-4 fields of REGHP data instead of the full 15 fields of NIK data. The fix was verified by the testing agent.
+-   **Feature: Custom AOI Colors:** Implemented a color picker in the AOI panel, allowing users to assign custom colors to each AOI, which are then reflected on the map.
+-   **Bug Fix: Telegram Session Persistence:** Implemented a robust session backup/restore mechanism using MongoDB to ensure the Telethon session persists across server restarts and deployments.
+-   **Bug Fix: Data Not Loading on Login:** Fixed frontend logic to ensure all case/target data is fetched and displayed immediately after a user logs in.
+-   **Bug Fix: Stale Query Status:** Resolved an issue where the UI would get stuck on processing by implementing auto-refresh on dialog open and adding manual refresh buttons.
+-   **Bug Fix: Telegram API ID Conflict:** Permanently fixed a recurring and critical bug where an incorrect API ID was being used. The agent hardcoded the correct API ID () in the backend, cleaned all caches and old files, and removed the misleading warning from the UI.
+-   **Bug Fix: Removed Mock Data Fallback:** Removed backend logic that incorrectly showed example data on query failures. The app now correctly shows processing or error states.
+-   **UX/Error Handling Improvements:** Added toasts for disconnected Telegram state, Retry buttons for failed queries, and improved status indicators like  to provide better user feedback.
 
 **Earlier issues found/mentioned but not fixed**
 None.
 
 **Known issue recurrence from previous fork**
--   **Issue:** Telegram session conflicts (, invalid credentials, usage from multiple IPs).
--   **Recurrence count:** 2+
--   **Status:** RESOLVED (Workaround provided). The user has been instructed to use unique Telegram sessions per environment and to use the Settings page to reset their connection. This is a recurring operational issue, not a code bug.
+-   **Issue:** Telegram session conflicts and invalid API credentials.
+-   **Recurrence count:** 3+
+-   **Status:** RESOLVED. This was a major focus of the session. The issue was traced to a combination of non-persistent session files, stale caches, and incorrect environment variables on deployment. The agent resolved this by implementing a session backup to MongoDB and hardcoding the correct API ID () directly into the backend code.
 
 **Code Architecture**
 
@@ -71,75 +77,76 @@ None.
 **Key Technical Concepts**
 -   **Backend:** FastAPI, Telethon, MongoDB (), Pydantic.
 -   **Frontend:** React, Tailwind CSS, Leaflet, Shadcn/UI, Sonner.
--   **Component Refactoring:** The main achievement was breaking down a monolithic React component into smaller, single-responsibility components to improve maintainability.
--   **Database Seeding:** An export/import mechanism was created to populate databases for new environments.
+-   **State Management:** Extensive debugging of React's state (, ) to resolve issues with stale data being displayed after asynchronous backend operations.
+-   **Deployment/Environment Configuration:** Debugged issues related to environment variables () in a containerized environment, leading to hardcoding critical values to ensure stability.
+-   **Session Persistence:** Implemented a manual session backup/restore mechanism between the file system and a MongoDB collection to handle ephemeral container storage.
 
 **key DB schema**
--   **targets:** 
--   Other collections: , , , , , .
+-   **aois:** Added a  field.
+-   **telegram_sessions:** New collection created to store session strings for persistence.
+    -   
+-   **targets:** Schema remains 
 
 **changes in tech stack**
 -   None.
 
 **All files of reference**
--   : This is the primary file to investigate for the current NIK dialog bug.
--   : Contains all backend logic, including the NIK data parsing function (), which has been confirmed to be working correctly.
--   : Manages the state () that is passed to the dialog. The  function here is the bridge between the components.
+-   : Currently being modified for the new AOI alert banner.
+-   : Currently being modified for the new flashing marker effect.
+-   : The central hub for frontend logic; contains state for AOI alerts.
+-   : Contains the hardcoded Telegram API ID and the session backup/restore logic.
 
 **Areas that need refactoring**:
--   The interaction between the refactored  and the reverted  should be reviewed. The prop-passing logic might be inconsistent, causing the current bug.
+-   None.
 
 **key api endpoints**
--   : (POST) Updates API ID/Hash.
--   : (GET) Gets current connection status.
--   : (POST) Initiates a NIK query.
--   : (GET) Exports database collections to a JSON file.
--   : (POST) Seeds the database from the JSON file.
+-    (GET): A new endpoint created to provide detailed status about the configured API credentials.
+-    (POST/PUT): Endpoints updated to handle the new  field.
 
 **Critical Info for New Agent**
--   **The NIK Data Bug is a Frontend Issue:** Do not debug the backend. The database correctly contains the full 15 fields for a successful NIK query. The problem lies in  or the state being passed to it from . The dialog is likely displaying the wrong data object.
--   **Telegram Connection is Fragile:** NIK queries will fail if the user's Telegram connection is not active. The session can become invalid if used from multiple locations simultaneously (e.g., production and preview). Guide the user to go to the Settings page to check the status and re-authenticate if necessary.
--   **Refactoring-Revert Conflict:** The agent refactored  but then reverted  to an older version at the user's request. This mix-and-match of new and old code is a likely source of the data display bug.
+-   **Telegram API ID is Hardcoded:** The API ID  is permanently set in . This was a critical fix to prevent platform environment variables from causing connection failures. Do not try to change it via  alone.
+-   **Telegram Session is Persistent:** The Telethon session is now backed up to MongoDB on successful login and restored on server startup. This has made the Telegram connection significantly more stable.
+-   **AOI Alert Implementation is In-Progress:** The immediate task is to complete the user-requested AOI alert system (banner, sound, flashing marker). The initial modifications have been made in  and .
 
 **documents and test reports created in this job**
 -   
 -   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** NIK query is still not working.
-2.  **User:** By default, the map should show the street view, not dark. (Status: RESOLVED).
-3.  **User:** NIK query is stuck, clicked 5 times but nothing is sent to Telegram. (Status: IN PROGRESS - Diagnosed as a Telegram session conflict).
-4.  **User:** When REGHP returns Data Not Found in Telegram, the webapp still shows a location marker. It should just say Data Not Found. (Status: RESOLVED).
-5.  **User:** Revert the Pendalaman flow to the previous version. (Status: PARTIALLY RESOLVED -  was reverted).
-6.  **User:** Make sure the buttons for NKK and Family Tree are not missing. (Status: VERIFIED).
-7.  **User:** The Pendalaman info is incomplete again; it only shows REG data, not the 15 fields. (Status: IN PROGRESS - This is the current bug).
-8.  **User:** (Provides screenshot) The NIK query result in the webapp is missing most data fields. (Status: PENDING FIX).
-9.  **User:** (Provides screenshot) The Telegram bot returned the full data. Why isn't it showing in the app? (Status: PENDING FIX).
-10. **User:** (Provides another screenshot of the incomplete NIK dialog) Why is the NIK data still incomplete when Telegram has sent a lot of data? (Status: PENDING FIX).
+1.  **User (LATEST):** Agreed to the agent's proposed implementation for the AOI alert system: a combination of a top banner, repeating beep, and flashing marker.
+2.  **User:** Asked for clarification on how the AOI alert should look and sound.
+3.  **User:** Reported the API ID mismatch warning was still appearing after redeploying.
+4.  **User:** Confirmed the correct API ID () and API Hash.
+5.  **User:** Complained that the API ID  was not being permanently set and asked what the other ID () was.
+6.  **User:** Reported getting an invalid api_id/api_hash error when trying to connect.
+7.  **User:** Reported five distinct issues: data appearing as example data, inconsistent Telegram connection status, unstable credential saving, data not found messages not being shown, and the chat panel not updating.
+8.  **User:** Reported that a NIK query was stuck in a processing state for over 10 minutes, despite the data having been sent from Telegram.
+9.  **User:** Reported that NIK/REGHP queries required multiple retries and that the NIK info dialog was only showing incomplete data (3 fields).
+10. **User (OLDEST):** Requested the ability to set a custom color for each AOI.
 
 **Project Health Check:**
--   **Broken:** The NIK data deep dive feature is fundamentally broken, preventing users from seeing complete query results.
--   **Mocked:** None.
+-   **Broken:** None.
+-   **Mocked:** A mock data fallback was discovered in the backend and has been removed.
 
 **3rd Party Integrations**
--   **Telethon:** For live Telegram user-bot automation.
+-   **Telethon:** For live Telegram user-bot automation. The connection stability has been significantly improved.
 -   **Leaflet.js & OpenStreetMap:** For rendering interactive maps.
 -   **Lucide-react:** For UI icons.
 -   **Gemini (via emergentintegrations):** For AI-powered text analysis of family data. Uses Emergent LLM Key.
 -   **jsPDF & html2canvas:** For client-side PDF generation.
 
 **Testing status**
--   Testing agent used after significant changes: NO
+-   Testing agent used after significant changes: YES, to verify the NIK Info Dialog fix.
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: The NIK info display functionality is a regression, likely caused by the partial revert of the refactoring work.
+-   Known regressions: None. The previous regression (NIK dialog) has been fixed.
 
 **Credentials to test flow:**
 -   **Web App Login:**
     -   Username: 
     -   Password: 
 -   **Telegram Setup:**
-    -   The user must log in through the web UI with their own phone number, API ID, and API Hash. The agent cannot test Telegram-dependent features without the user's credentials and live authentication.
+    -   The user must log in through the web UI with their own phone number, API ID, and API Hash. The agent has hardcoded the correct API ID () and API Hash, so the user only needs to provide their phone number and the received verification code.
 
 **What agent forgot to execute**
--   The agent did not fully resolve the frontend bug in  after identifying it. The attempted fix was unsuccessful and left the feature in a broken state.</analysis>
+-   The agent was in the middle of implementing the new AOI alert feature as requested by the user. The task is correctly marked as In Progress and is the highest priority for the next agent.</analysis>
