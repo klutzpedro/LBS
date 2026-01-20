@@ -68,7 +68,7 @@ export const TargetMarkers = ({
   // Group targets by position
   const positionGroups = useMemo(() => groupTargetsByPosition(filteredTargets), [filteredTargets]);
   
-  // Render markers
+  // Render markers - recreate when zoom changes
   const markers = useMemo(() => {
     const result = [];
     
@@ -94,7 +94,8 @@ export const TargetMarkers = ({
             showMarkerNames,
             groupTargets.length,
             selectedIdx,
-            posKey
+            posKey,
+            zoomLevel
           ) :
           createMarkerWithSelector(
             selectedTarget.phone_number,
@@ -103,7 +104,8 @@ export const TargetMarkers = ({
             showMarkerNames,
             groupTargets.length,
             selectedIdx,
-            posKey
+            posKey,
+            zoomLevel
           );
       } else {
         // Single target - use normal marker
@@ -112,19 +114,21 @@ export const TargetMarkers = ({
             selectedTarget.phone_number,
             selectedTarget.data.timestamp || selectedTarget.created_at,
             targetName,
-            showMarkerNames
+            showMarkerNames,
+            zoomLevel
           ) :
           createMarkerWithLabel(
             selectedTarget.phone_number,
             selectedTarget.data.timestamp || selectedTarget.created_at,
             targetName,
-            showMarkerNames
+            showMarkerNames,
+            zoomLevel
           );
       }
       
       result.push(
         <Marker
-          key={`marker-${posKey}`}
+          key={`marker-${posKey}-${zoomLevel}`}
           position={[selectedTarget.data.latitude, selectedTarget.data.longitude]}
           icon={icon}
         >
@@ -142,7 +146,7 @@ export const TargetMarkers = ({
     });
     
     return result;
-  }, [positionGroups, selectedAtPosition, alertedTargetIds, showMarkerNames, onShowReghpInfo, onPendalaman, loadingPendalaman]);
+  }, [positionGroups, selectedAtPosition, alertedTargetIds, showMarkerNames, onShowReghpInfo, onPendalaman, loadingPendalaman, zoomLevel]);
 
   return <>{markers}</>;
 };
