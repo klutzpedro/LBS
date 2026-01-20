@@ -435,6 +435,14 @@
 
 ## Recent Updates (January 20, 2026)
 
+### PDF Export with Photo (January 20, 2026)
+- **Feature:** PDF export now includes target's photo (from NIK data) if available
+- **Layout:** Photo displayed on the right side of NIK data table (35x45mm portrait format)
+- **Both Exports Updated:** Single target PDF and Case PDF both show photos
+- **Fallback:** If photo unavailable, table uses full width
+- **Files Modified:**
+  - `/app/frontend/src/components/main/PDFExport.jsx` - Added photo rendering in both `generateTargetPDF` and `generateCasePDF`
+
 ### Real-time Telegram Status Monitoring
 - **Feature:** Telegram connection status is now monitored in real-time with polling every 10 seconds
 - **UI Changes:**
