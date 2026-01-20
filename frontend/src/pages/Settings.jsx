@@ -225,8 +225,24 @@ const Settings = () => {
             </div>
           </div>
           
-          {/* Reset Connection Button - Always visible */}
-          <div className="px-4 pb-4">
+          {/* Action Buttons - Reset and Restore */}
+          <div className="px-4 pb-4 space-y-2">
+            {/* Restore Session Button - New */}
+            <Button
+              size="sm"
+              onClick={handleRestoreSession}
+              data-testid="restore-session-button"
+              className="w-full"
+              style={{
+                backgroundColor: 'var(--accent-primary)',
+                color: 'var(--background-primary)'
+              }}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Restore Session dari Backup
+            </Button>
+            
+            {/* Reset Connection Button */}
             <Button
               size="sm"
               variant="destructive"
@@ -238,10 +254,11 @@ const Settings = () => {
                 color: 'white'
               }}
             >
-              Reset Connection
+              Reset Connection (Login Ulang)
             </Button>
             <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
-              Gunakan jika koneksi stuck atau bermasalah
+              • Restore: Pulihkan session yang tersimpan<br/>
+              • Reset: Hapus session dan login ulang
             </p>
           </div>
         </div>
