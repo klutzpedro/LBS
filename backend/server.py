@@ -2016,21 +2016,14 @@ async def query_telegram_nik(target_id: str, nik: str):
     try:
         global telegram_client
         
-        # Ensure client is connected
-        if telegram_client is None:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
+        # Ensure client is connected using helper
+        if not await ensure_telegram_connected():
+            logging.error("[NIK] Failed to connect to Telegram")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {f"nik_queries.{nik}.status": "error", f"nik_queries.{nik}.data": {"error": "Telegram connection failed"}}}
             )
-            await telegram_client.connect()
-            logging.info("Telegram client connected for NIK query")
-        
-        # Check and reconnect if needed
-        if not telegram_client.is_connected():
-            logging.warning("[NIK] Telegram disconnected, reconnecting...")
-            await telegram_client.connect()
-            await asyncio.sleep(1)
+            return
         
         query_token = f"NIK_{nik}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting NIK query")
