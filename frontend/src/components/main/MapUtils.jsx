@@ -87,13 +87,9 @@ export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName,
   return new DivIcon({
     className: 'custom-marker-with-selector',
     html: `
-      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-        <!-- Label above -->
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <!-- Label above (Info) -->
         <div style="
-          position: absolute;
-          bottom: 40px;
-          left: 50%;
-          transform: translateX(-50%);
           background: var(--background-elevated);
           border: 2px solid var(--accent-primary);
           border-radius: 8px;
@@ -103,21 +99,21 @@ export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName,
           font-size: 10px;
           color: var(--foreground-primary);
           box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-          z-index: 1000;
+          margin-bottom: 6px;
         ">
           ${nameDisplay}
           <div style="color: var(--accent-primary); font-weight: bold;">${phoneNumber}</div>
           <div style="color: var(--foreground-muted); font-size: 9px;">${timeStr}</div>
         </div>
         
-        <!-- Marker point - Red dot with white center -->
-        <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-          <circle cx="16" cy="16" r="16" fill="#FF3B5C" fill-opacity="0.2"/>
-          <circle cx="16" cy="16" r="8" fill="#FF3B5C"/>
+        <!-- RED DOT MARKER - Center position, clearly visible -->
+        <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5)); margin: 4px 0;">
+          <circle cx="16" cy="16" r="14" fill="#FF3B5C" fill-opacity="0.25"/>
+          <circle cx="16" cy="16" r="10" fill="#FF3B5C"/>
           <circle cx="16" cy="16" r="4" fill="#FFFFFF"/>
         </svg>
         
-        <!-- Number selector below marker -->
+        <!-- Number selector below marker (1, 2, 3, etc) -->
         <div style="
           display: flex;
           gap: 3px;
@@ -132,9 +128,9 @@ export const createMarkerWithSelector = (phoneNumber, timestamp, name, showName,
         </div>
       </div>
     `,
-    iconSize: [32, 80],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -50]
+    iconSize: [100, 120],
+    iconAnchor: [50, 60],
+    popupAnchor: [0, -60]
   });
 };
 
