@@ -1164,7 +1164,15 @@ const MainApp = () => {
       
       let attempts = 0;
       const maxAttempts = 30;
+      let isCompleted = false; // Flag to prevent multiple completions
+      
       const checkInterval = setInterval(async () => {
+        // Skip if already completed
+        if (isCompleted) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
         attempts++;
         
         try {
@@ -1176,17 +1184,20 @@ const MainApp = () => {
           }
           
           const nikData = target.nik_queries?.[sourceNik];
-          if (nikData?.family_status === 'completed' && nikData?.family_data) {
+          if (nikData?.family_status === 'completed' && nikData?.family_data && !isCompleted) {
+            isCompleted = true; // Set flag BEFORE clearing
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
             setLoadingFamilyPendalaman(null);
             toast.success('Family Tree data tersedia!');
             
-            setTimeout(() => {
+            // Use requestAnimationFrame to avoid state conflicts
+            requestAnimationFrame(() => {
               handleShowFamilyTree(nikData.family_data, sourceNik);
-            }, 500);
-          } else if (nikData?.family_status === 'error' || attempts >= maxAttempts) {
+            });
+          } else if ((nikData?.family_status === 'error' || attempts >= maxAttempts) && !isCompleted) {
+            isCompleted = true;
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
