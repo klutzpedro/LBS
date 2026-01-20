@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Marker, Popup, useMap } from 'react-leaflet';
+import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { createMarkerWithLabel, createBlinkingMarker, createMarkerWithSelector, createBlinkingMarkerWithSelector, groupTargetsByPosition } from './MapUtils';
 
 /**
  * Renders target markers on the map with popups
  * For overlapping targets at same position, shows numbered selector BELOW the marker
+ * Markers scale based on zoom level
  */
 export const TargetMarkers = ({ 
   targets = [], 
@@ -17,7 +18,15 @@ export const TargetMarkers = ({
 }) => {
   const map = useMap();
   const [selectedAtPosition, setSelectedAtPosition] = useState({});
+  const [zoomLevel, setZoomLevel] = useState(map.getZoom());
   const containerRef = useRef(null);
+  
+  // Listen for zoom changes
+  useMapEvents({
+    zoomend: () => {
+      setZoomLevel(map.getZoom());
+    }
+  });
   
   // Handle clicks on selector buttons
   useEffect(() => {
