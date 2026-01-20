@@ -1088,7 +1088,15 @@ const MainApp = () => {
       
       let attempts = 0;
       const maxAttempts = 60; // Increased to 2 minutes (60 * 2 seconds)
+      let isCompleted = false; // Flag to prevent multiple completions
+      
       const checkInterval = setInterval(async () => {
+        // Skip if already completed
+        if (isCompleted) {
+          clearInterval(checkInterval);
+          return;
+        }
+        
         attempts++;
         try {
           const pollResponse = await axios.get(`${API}/targets/${targetId}`, { headers });
@@ -1097,7 +1105,8 @@ const MainApp = () => {
           
           console.log(`[NIK Pendalaman] Poll ${attempts}/${maxAttempts}, status:`, nikData?.status);
           
-          if (nikData?.status === 'completed' || nikData?.status === 'error') {
+          if ((nikData?.status === 'completed' || nikData?.status === 'error') && !isCompleted) {
+            isCompleted = true; // Set flag BEFORE clearing
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
@@ -1112,7 +1121,8 @@ const MainApp = () => {
             if (nikData?.status === 'completed') {
               toast.success('NIK query selesai!');
             }
-          } else if (attempts >= maxAttempts) {
+          } else if (attempts >= maxAttempts && !isCompleted) {
+            isCompleted = true;
             clearInterval(checkInterval);
             setGlobalProcessing(false);
             setGlobalProcessType(null);
