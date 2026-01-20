@@ -1189,12 +1189,19 @@ const MainApp = () => {
             setGlobalProcessing(false);
             setGlobalProcessType(null);
             setLoadingNikPendalaman(null);
-            fetchTargets(selectedCase.id);
             
-            // IMPORTANT: Update selectedReghpTarget with fresh data
+            // IMPORTANT: Update selectedReghpTarget with fresh data FIRST
             if (selectedReghpTarget?.id === targetId) {
               setSelectedReghpTarget(target);
             }
+            
+            // Also update targets array with fresh data
+            setTargets(prevTargets => 
+              prevTargets.map(t => t.id === targetId ? target : t)
+            );
+            
+            // Then fetch all targets in background
+            fetchTargets(selectedCase.id);
             
             if (nikData?.status === 'completed') {
               toast.success('NIK query selesai!');
