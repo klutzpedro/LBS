@@ -1471,6 +1471,7 @@ const MainApp = () => {
                 onShowReghpInfo={handleShowReghpInfo}
                 onPendalaman={handlePendalaman}
                 loadingPendalaman={loadingPendalaman}
+                aoiAlerts={aoiAlerts}
               />
 
               {/* AOI Renderer */}
