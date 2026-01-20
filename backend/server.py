@@ -59,6 +59,54 @@ logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
 
 telegram_client = None
 
+# Helper function to create TelegramClient with proper settings
+def create_telegram_client():
+    """Create a TelegramClient with persistent connection settings"""
+    return TelegramClient(
+        '/app/backend/northarch_session',
+        TELEGRAM_API_ID,
+        TELEGRAM_API_HASH,
+        connection_retries=10,        # Retry connection 10 times
+        retry_delay=1,                # 1 second delay between retries
+        auto_reconnect=True,          # Auto reconnect on disconnect
+        request_retries=5,            # Retry requests 5 times
+    )
+
+# Helper function to ensure client is connected
+async def ensure_telegram_connected():
+    """Ensure Telegram client is connected, reconnect if needed"""
+    global telegram_client
+    
+    if telegram_client is None:
+        telegram_client = create_telegram_client()
+        await telegram_client.connect()
+        logger.info("[Telegram] Client created and connected")
+        return True
+    
+    if not telegram_client.is_connected():
+        logger.warning("[Telegram] Client disconnected, reconnecting...")
+        try:
+            await telegram_client.connect()
+            if telegram_client.is_connected():
+                logger.info("[Telegram] Reconnected successfully")
+                return True
+            else:
+                logger.error("[Telegram] Reconnect failed - not connected")
+                return False
+        except Exception as e:
+            logger.error(f"[Telegram] Reconnect error: {e}")
+            # Try to recreate client
+            try:
+                telegram_client = create_telegram_client()
+                await telegram_client.connect()
+                logger.info("[Telegram] Client recreated and connected")
+                return True
+            except Exception as e2:
+                logger.error(f"[Telegram] Recreate failed: {e2}")
+                return False
+    
+    return True
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
