@@ -564,6 +564,9 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
                         await save_position_history(target_id, phone_number, lat, lng, address, timestamp)
                         logging.info(f"[REFRESH] Updated position for {phone_number}: {lat}, {lng}")
                         
+                        # Check AOI alerts for new position
+                        await check_aoi_alerts(target_id, phone_number, lat, lng)
+                        
                         received_response = True
                         break
                     else:
