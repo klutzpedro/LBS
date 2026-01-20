@@ -2976,40 +2976,81 @@ async def startup():
 
 # Background task to keep Telegram connection alive
 async def telegram_keepalive_task():
-    """Background task that periodically checks and maintains Telegram connection"""
+    """Background task that maintains a persistent Telegram connection"""
     global telegram_client
     
-    logger.info("Starting Telegram keepalive background task")
+    logger.info("[Keepalive] Starting persistent Telegram connection manager")
+    
+    # Counter to track consecutive failures
+    failure_count = 0
+    max_failures = 3
     
     while True:
         try:
-            await asyncio.sleep(60)  # Check every 60 seconds
+            # Check more frequently - every 30 seconds
+            await asyncio.sleep(30)
             
             if telegram_client is None:
                 continue
-                
-            # Check if connected
-            if not telegram_client.is_connected():
-                logger.warning("[Keepalive] Telegram client disconnected, attempting reconnect...")
-                try:
-                    await telegram_client.connect()
-                    if telegram_client.is_connected():
-                        logger.info("[Keepalive] Telegram reconnected successfully")
-                except Exception as reconnect_err:
-                    logger.error(f"[Keepalive] Reconnect failed: {reconnect_err}")
             
-            # Ping to keep session alive (only if connected and authorized)
-            if telegram_client.is_connected():
+            # Check connection status
+            is_connected = telegram_client.is_connected()
+            
+            if not is_connected:
+                failure_count += 1
+                logger.warning(f"[Keepalive] Connection lost (failure {failure_count}/{max_failures})")
+                
+                if failure_count <= max_failures:
+                    try:
+                        # Reconnect with catch_up to sync any missed updates
+                        await telegram_client.connect()
+                        
+                        # Verify connection
+                        if telegram_client.is_connected():
+                            logger.info("[Keepalive] ✓ Reconnected successfully")
+                            failure_count = 0  # Reset counter
+                        else:
+                            logger.error("[Keepalive] Reconnect returned but not connected")
+                    except Exception as reconnect_err:
+                        logger.error(f"[Keepalive] Reconnect error: {reconnect_err}")
+                else:
+                    # Too many failures, try to recreate client
+                    logger.warning("[Keepalive] Too many failures, recreating client...")
+                    try:
+                        if telegram_client:
+                            await telegram_client.disconnect()
+                    except:
+                        pass
+                    
+                    telegram_client = TelegramClient(
+                        '/app/backend/northarch_session',
+                        TELEGRAM_API_ID,
+                        TELEGRAM_API_HASH,
+                        connection_retries=5,
+                        retry_delay=1,
+                        auto_reconnect=True
+                    )
+                    await telegram_client.connect()
+                    
+                    if telegram_client.is_connected():
+                        logger.info("[Keepalive] ✓ Client recreated and connected")
+                        failure_count = 0
+            else:
+                # Connection is alive, do a light ping
+                failure_count = 0  # Reset on success
+                
                 try:
                     if await telegram_client.is_user_authorized():
-                        # Simple ping by getting self
-                        await telegram_client.get_me()
-                        logger.debug("[Keepalive] Telegram session ping successful")
+                        # Light ping - just check authorization, don't call get_me every time
+                        pass  # is_user_authorized already does a server call
                 except Exception as ping_err:
-                    logger.warning(f"[Keepalive] Ping failed: {ping_err}")
+                    logger.warning(f"[Keepalive] Auth check failed: {ping_err}")
                     
+        except asyncio.CancelledError:
+            logger.info("[Keepalive] Task cancelled, shutting down")
+            break
         except Exception as e:
-            logger.error(f"[Keepalive] Error in keepalive task: {e}")
+            logger.error(f"[Keepalive] Unexpected error: {e}")
 
 @api_router.post("/telegram/force-restore-session")
 async def force_restore_session(username: str = Depends(verify_token)):
