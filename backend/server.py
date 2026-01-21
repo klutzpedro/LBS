@@ -647,14 +647,58 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
             "timestamp": datetime.now(timezone.utc)
         })
         
-        # Wait for response (max 60 seconds)
-        await asyncio.sleep(3)
+        # Wait for bot to respond with buttons
+        await asyncio.sleep(4)
+        
+        # Get messages and look for CP button
+        async def get_button_messages():
+            return await telegram_client.get_messages(bot_username, limit=5)
+        
+        button_messages = await safe_telegram_operation(get_button_messages, "get_buttons_refresh", max_retries=3)
+        
+        cp_clicked = False
+        cp_button = None
+        
+        if button_messages:
+            for msg in button_messages:
+                if msg.buttons:
+                    button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                    logging.info(f"[REFRESH] Buttons found: {button_texts}")
+                    
+                    for row in msg.buttons:
+                        for button in row:
+                            if button.text and 'CP' in button.text.upper():
+                                cp_button = button
+                                break
+                        if cp_button:
+                            break
+                    if cp_button:
+                        break
+        
+        # Click CP button if found
+        if cp_button:
+            async def click_cp():
+                await cp_button.click()
+                return True
+            
+            clicked = await safe_telegram_operation(click_cp, f"click_cp_refresh_{phone_number}", max_retries=3)
+            
+            if clicked:
+                logging.info(f"[REFRESH] ✓ Clicked CP button for {phone_number}")
+                cp_clicked = True
+            else:
+                logging.error(f"[REFRESH] Failed to click CP button for {phone_number}")
+        else:
+            logging.warning(f"[REFRESH] CP button not found for {phone_number}")
+        
+        # Wait for location response after clicking CP
+        await asyncio.sleep(5)
         
         received_response = False
-        for attempt in range(20):  # Try for 60 seconds
+        for attempt in range(15):  # Try for ~45 seconds
             # Get messages with retry
             async def get_messages():
-                return await telegram_client.get_messages(bot_username, limit=5)
+                return await telegram_client.get_messages(bot_username, limit=10)
             
             messages = await safe_telegram_operation(get_messages, "get_messages_refresh", max_retries=2)
             
@@ -665,52 +709,57 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
             
             for msg in messages:
                 if msg.text and phone_number in msg.text:
-                    logging.info(f"[REFRESH] Got response for {phone_number}")
+                    # Check if this message has coordinates (not just the initial response with buttons)
+                    if 'maps.google.com' in msg.text.lower() or 'lat:' in msg.text.lower() or 'long:' in msg.text.lower():
+                        logging.info(f"[REFRESH] Got location response for {phone_number}")
+                        
+                        # Save to chat history
+                        await db.chat_messages.insert_one({
+                            "target_id": target_id,
+                            "direction": "received",
+                            "content": msg.text,
+                            "timestamp": datetime.now(timezone.utc)
+                        })
+                        
+                        # Parse location from response
+                        lat, lng, address, timestamp = parse_cp_response(msg.text)
+                        
+                        if lat and lng:
+                            # Update target with new position
+                            new_data = {
+                                "latitude": lat,
+                                "longitude": lng,
+                                "address": address or "Alamat tidak tersedia",
+                                "timestamp": timestamp or datetime.now(timezone.utc).isoformat()
+                            }
+                            
+                            await db.targets.update_one(
+                                {"id": target_id},
+                                {"$set": {
+                                    "status": "completed",
+                                    "data": new_data,
+                                    "location": {
+                                        "type": "Point",
+                                        "coordinates": [lng, lat]
+                                    },
+                                    "last_refresh": datetime.now(timezone.utc).isoformat()
+                                }}
+                            )
+                            
+                            # Save new position to history
+                            await save_position_history(target_id, phone_number, lat, lng, address, timestamp)
+                            logging.info(f"[REFRESH] ✓ Updated position for {phone_number}: {lat}, {lng}")
+                            
+                            # Check AOI alerts for new position
+                            await check_aoi_alerts(target_id, phone_number, lat, lng)
+                            
+                            received_response = True
+                            break
                     
-                    # Save to chat history
-                    await db.chat_messages.insert_one({
-                        "target_id": target_id,
-                        "direction": "received",
-                        "content": msg.text,
-                        "timestamp": datetime.now(timezone.utc)
-                    })
-                    
-                    # Parse location from response
-                    lat, lng, address, timestamp = parse_cp_response(msg.text)
-                    
-                    if lat and lng:
-                        # Update target with new position
-                        new_data = {
-                            "latitude": lat,
-                            "longitude": lng,
-                            "address": address or "Alamat tidak tersedia",
-                            "timestamp": timestamp or datetime.now(timezone.utc).isoformat()
-                        }
-                        
-                        await db.targets.update_one(
-                            {"id": target_id},
-                            {"$set": {
-                                "status": "completed",
-                                "data": new_data,
-                                "location": {
-                                    "type": "Point",
-                                    "coordinates": [lng, lat]
-                                },
-                                "last_refresh": datetime.now(timezone.utc).isoformat()
-                            }}
-                        )
-                        
-                        # Save new position to history
-                        await save_position_history(target_id, phone_number, lat, lng, address, timestamp)
-                        logging.info(f"[REFRESH] Updated position for {phone_number}: {lat}, {lng}")
-                        
-                        # Check AOI alerts for new position
-                        await check_aoi_alerts(target_id, phone_number, lat, lng)
-                        
-                        received_response = True
-                        break
-                    else:
-                        # No coordinates found - might be "not found" response
+                    # Check for "not found" or similar responses
+                    msg_lower = msg.text.lower()
+                    if 'not found' in msg_lower or 'tidak ditemukan' in msg_lower or 'offline' in msg_lower:
+                        logging.info(f"[REFRESH] Target not found response for {phone_number}")
                         await db.targets.update_one(
                             {"id": target_id},
                             {"$set": {
@@ -718,6 +767,13 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
                                 "last_refresh": datetime.now(timezone.utc).isoformat()
                             }}
                         )
+                        received_response = True
+                        break
+            
+            if received_response:
+                break
+            
+            await asyncio.sleep(3)
                         received_response = True
                         break
             
