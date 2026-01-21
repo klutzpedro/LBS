@@ -5,6 +5,7 @@ import MainApp from '@/pages/MainApp';
 import Settings from '@/pages/Settings';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { TelegramProvider } from '@/context/TelegramContext';
+import { CpApiProvider } from '@/context/CpApiContext';
 import '@/App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -16,14 +17,16 @@ function App() {
   return (
     <AuthProvider>
       <TelegramProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-            <Route path="/*" element={<PrivateRoute><MainApp /></PrivateRoute>} />
-          </Routes>
-          <Toaster position="top-right" />
-        </BrowserRouter>
+        <CpApiProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+              <Route path="/*" element={<PrivateRoute><MainApp /></PrivateRoute>} />
+            </Routes>
+            <Toaster position="top-right" />
+          </BrowserRouter>
+        </CpApiProvider>
       </TelegramProvider>
     </AuthProvider>
   );
