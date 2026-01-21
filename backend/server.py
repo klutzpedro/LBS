@@ -774,24 +774,29 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
                 break
             
             await asyncio.sleep(3)
-                        received_response = True
-                        break
-            
-            if received_response:
-                break
-            
-            await asyncio.sleep(3)
         
         if not received_response:
-            # Timeout - revert to completed status with previous data
-            await db.targets.update_one(
-                {"id": target_id},
-                {"$set": {
-                    "status": "completed" if target.get('data') else "error",
-                    "error": "Timeout waiting for bot response"
-                }}
-            )
-            logging.warning(f"[REFRESH] Timeout for {phone_number}")
+            # Timeout - revert to completed status with previous data or set error
+            if cp_clicked:
+                # CP was clicked but no response - might be bot issue
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {"$set": {
+                        "status": "error",
+                        "error": "Timeout menunggu respons lokasi dari bot"
+                    }}
+                )
+                logging.warning(f"[REFRESH] Timeout waiting for location for {phone_number}")
+            else:
+                # CP button not found/clicked
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {"$set": {
+                        "status": "error",
+                        "error": "Tombol CP tidak ditemukan atau gagal diklik"
+                    }}
+                )
+                logging.warning(f"[REFRESH] CP button issue for {phone_number}")
             
     except Exception as e:
         logging.error(f"[REFRESH] Error: {e}")
