@@ -211,15 +211,27 @@ async def decrement_cp_api_quota():
     return 0
 
 async def check_cp_api_connection():
-    """Check if CP API is reachable"""
+    """Check if CP API is reachable AND authorized (not 403)"""
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # Just check if the server responds (even with error)
+            # Try a simple request to check authorization
             response = await client.get(
                 f"{CP_API_URL}/api/v3/cekpos",
                 headers={"api-key": CP_API_KEY}
             )
-            # API is reachable if we get any response
+            
+            # Check if we get 403 Forbidden (IP not whitelisted)
+            if response.status_code == 403:
+                logger.warning(f"[CP API] 403 Forbidden - IP not whitelisted")
+                return False
+            
+            # Check if response is HTML (error page)
+            content_type = response.headers.get('content-type', '')
+            if 'text/html' in content_type:
+                logger.warning(f"[CP API] Received HTML response - likely blocked")
+                return False
+            
+            # API is connected and authorized
             return True
     except Exception as e:
         logger.error(f"[CP API] Connection check failed: {e}")
