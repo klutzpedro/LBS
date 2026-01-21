@@ -1882,7 +1882,7 @@ async def telegram_status(username: str = Depends(verify_token)):
                     pass
             
             telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
+                SESSION_PATH,
                 TELEGRAM_API_ID,
                 TELEGRAM_API_HASH
             )
@@ -3940,7 +3940,7 @@ async def force_restore_session(username: str = Depends(verify_token)):
         
         # Try to connect with restored session
         telegram_client = TelegramClient(
-            '/app/backend/northarch_session',
+            SESSION_PATH,
             TELEGRAM_API_ID,
             TELEGRAM_API_HASH
         )
