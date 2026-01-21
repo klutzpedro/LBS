@@ -707,7 +707,7 @@ async def refresh_target_position(target_id: str, username: str = Depends(verify
     """
     Refresh/update target position while preserving all existing data (RegHP, NIK, NKK).
     - Saves current position to history
-    - Queries new position from Telegram
+    - Queries new position from CP API (not Telegram anymore)
     - Keeps all existing pendalaman data intact
     """
     target = await db.targets.find_one({"id": target_id}, {"_id": 0})
@@ -715,6 +715,11 @@ async def refresh_target_position(target_id: str, username: str = Depends(verify
         raise HTTPException(status_code=404, detail="Target not found")
     
     phone_number = target.get('phone_number')
+    
+    # Check quota first
+    quota = await get_cp_api_quota()
+    if quota <= 0:
+        raise HTTPException(status_code=400, detail="Quota CP API habis (0 tersisa)")
     
     # Save current position to history BEFORE updating
     if target.get('data') and target['data'].get('latitude') and target['data'].get('longitude'):
@@ -743,19 +748,98 @@ async def refresh_target_position(target_id: str, username: str = Depends(verify
         }}
     )
     
-    logging.info(f"[REFRESH] Starting position refresh for {phone_number} (target: {target_id})")
+    logging.info(f"[REFRESH] Starting CP API position refresh for {phone_number} (target: {target_id})")
     
-    # Start background task to query new position
-    asyncio.create_task(query_telegram_bot_refresh(target_id, phone_number))
+    # Start background task to query new position via CP API
+    asyncio.create_task(query_cp_api_refresh(target_id, phone_number))
     
     return {
-        "message": "Position refresh started",
+        "message": "Position refresh started (via CP API)",
         "target_id": target_id,
         "phone_number": phone_number,
-        "previous_position_saved": True
+        "previous_position_saved": True,
+        "quota_remaining": quota - 1
     }
 
-async def query_telegram_bot_refresh(target_id: str, phone_number: str):
+async def query_cp_api_refresh(target_id: str, phone_number: str):
+    """
+    Query CP API for updated position.
+    Uses the new CP API instead of Telegram bot.
+    """
+    try:
+        logging.info(f"[CP API REFRESH] Querying position for {phone_number}")
+        
+        # Query CP API
+        result = await query_cp_api(phone_number)
+        
+        if result.get("success"):
+            # Update target with new position
+            new_data = {
+                "latitude": result["latitude"],
+                "longitude": result["longitude"],
+                "address": result["address"],
+                "network": result.get("network"),
+                "state": result.get("state"),
+                "imsi": result.get("imsi"),
+                "imei": result.get("imei"),
+                "phone_model": result.get("phone_model"),
+                "prefix_type": result.get("prefix_type"),
+                "query_time": result.get("query_time"),
+                "timestamp": result["timestamp"],
+                "source": "cp_api"  # Mark as from CP API
+            }
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "status": "completed",
+                    "data": new_data,
+                    "location": {
+                        "type": "Point",
+                        "coordinates": [result["longitude"], result["latitude"]]
+                    },
+                    "last_refresh": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Save new position to history
+            await save_position_history(
+                target_id, phone_number, 
+                result["latitude"], result["longitude"], 
+                result["address"], result["timestamp"]
+            )
+            
+            logging.info(f"[CP API REFRESH] ✓ Updated position for {phone_number}: {result['latitude']}, {result['longitude']}")
+            
+            # Check AOI alerts for new position
+            await check_aoi_alerts(target_id, phone_number, result["latitude"], result["longitude"])
+            
+        else:
+            # API returned error
+            error_msg = result.get("error", "Unknown error")
+            logging.warning(f"[CP API REFRESH] Failed for {phone_number}: {error_msg}")
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "status": "not_found",
+                    "error": error_msg,
+                    "last_refresh": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+    except Exception as e:
+        logging.error(f"[CP API REFRESH] Error for {phone_number}: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {
+                "status": "error",
+                "error": str(e)
+            }}
+        )
+
+# Keep old Telegram refresh function for reference but renamed
+async def query_telegram_bot_refresh_legacy(target_id: str, phone_number: str):
     """
     Query Telegram bot for updated position.
     Similar to query_telegram_bot but updates existing target instead of creating new.
