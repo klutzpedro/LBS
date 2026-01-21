@@ -595,13 +595,20 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
     """
     Query Telegram bot for updated position.
     Similar to query_telegram_bot but updates existing target instead of creating new.
+    Uses safe_telegram_operation for robust connection handling.
     """
     global telegram_client
     
     try:
-        # Ensure connection using helper
-        if not await ensure_telegram_connected():
-            logging.error("[REFRESH] Telegram client not connected")
+        # Ensure connection using helper with retries
+        connected = await safe_telegram_operation(
+            lambda: ensure_telegram_connected(),
+            "connect_for_refresh",
+            max_retries=5
+        )
+        
+        if not connected:
+            logging.error("[REFRESH] Telegram client not connected after retries")
             await db.targets.update_one(
                 {"id": target_id},
                 {"$set": {"status": "error", "error": "Telegram tidak terkoneksi"}}
@@ -613,9 +620,23 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
         
         bot_username = "northarch_bot"
         
-        # Send phone number query (no prefix needed)
+        # Send phone number query with retry wrapper
         message_text = f"{phone_number}"
-        await telegram_client.send_message(bot_username, message_text)
+        
+        async def send_message():
+            await telegram_client.send_message(bot_username, message_text)
+            return True
+        
+        sent = await safe_telegram_operation(send_message, f"send_message_{phone_number}", max_retries=3)
+        
+        if not sent:
+            logging.error(f"[REFRESH] Failed to send message for {phone_number}")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "error", "error": "Gagal mengirim pesan ke bot"}}
+            )
+            return
+        
         logging.info(f"[REFRESH] Sent: {message_text} to @{bot_username}")
         
         # Save sent message to chat history
@@ -631,7 +652,16 @@ async def query_telegram_bot_refresh(target_id: str, phone_number: str):
         
         received_response = False
         for attempt in range(20):  # Try for 60 seconds
-            messages = await telegram_client.get_messages(bot_username, limit=5)
+            # Get messages with retry
+            async def get_messages():
+                return await telegram_client.get_messages(bot_username, limit=5)
+            
+            messages = await safe_telegram_operation(get_messages, "get_messages_refresh", max_retries=2)
+            
+            if messages is None:
+                logging.warning(f"[REFRESH] Failed to get messages, attempt {attempt + 1}")
+                await asyncio.sleep(3)
+                continue
             
             for msg in messages:
                 if msg.text and phone_number in msg.text:
