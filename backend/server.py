@@ -585,10 +585,92 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
     if target_data.manual_mode and target_data.manual_data:
         await process_manual_target(target.id, target_data.manual_data)
     else:
-        # Start background task to query bot
-        asyncio.create_task(query_telegram_bot(target.id, target_data.phone_number))
+        # Check quota before querying
+        quota = await get_cp_api_quota()
+        if quota <= 0:
+            await db.targets.update_one(
+                {"id": target.id},
+                {"$set": {"status": "error", "error": "Quota CP API habis (0 tersisa)"}}
+            )
+        else:
+            # Start background task to query CP API (instead of Telegram bot)
+            asyncio.create_task(query_cp_api_for_new_target(target.id, target_data.phone_number))
     
     return target
+
+async def query_cp_api_for_new_target(target_id: str, phone_number: str):
+    """Query CP API for new target position"""
+    try:
+        logging.info(f"[CP API NEW] Querying position for new target {phone_number}")
+        
+        # Update status to querying
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"status": "querying"}}
+        )
+        
+        # Query CP API
+        result = await query_cp_api(phone_number)
+        
+        if result.get("success"):
+            # Update target with position
+            new_data = {
+                "latitude": result["latitude"],
+                "longitude": result["longitude"],
+                "address": result["address"],
+                "network": result.get("network"),
+                "state": result.get("state"),
+                "imsi": result.get("imsi"),
+                "imei": result.get("imei"),
+                "phone_model": result.get("phone_model"),
+                "prefix_type": result.get("prefix_type"),
+                "query_time": result.get("query_time"),
+                "timestamp": result["timestamp"],
+                "source": "cp_api"
+            }
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "status": "completed",
+                    "data": new_data,
+                    "location": {
+                        "type": "Point",
+                        "coordinates": [result["longitude"], result["latitude"]]
+                    }
+                }}
+            )
+            
+            # Save to position history
+            await save_position_history(
+                target_id, phone_number,
+                result["latitude"], result["longitude"],
+                result["address"], result["timestamp"]
+            )
+            
+            logging.info(f"[CP API NEW] ✓ Position found for {phone_number}: {result['latitude']}, {result['longitude']}")
+            
+            # Check AOI alerts
+            await check_aoi_alerts(target_id, phone_number, result["latitude"], result["longitude"])
+            
+        else:
+            error_msg = result.get("error", "Unknown error")
+            logging.warning(f"[CP API NEW] Failed for {phone_number}: {error_msg}")
+            
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "status": "not_found",
+                    "error": error_msg
+                }}
+            )
+            
+    except Exception as e:
+        logging.error(f"[CP API NEW] Error for {phone_number}: {e}")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
 
 async def process_manual_target(target_id: str, manual_data: dict):
     """Process target with manually entered data"""
