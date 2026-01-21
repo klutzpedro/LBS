@@ -1,165 +1,184 @@
 <analysis>**original_problem_statement:**
-The user wants to build a Geospatial Information System (GIS) web application called WASKITA LBS. The primary function is a location-based system to find the position of a mobile phone number and retrieve owner details (CP, Reghp, NIK, NKK). The data source is a private Telegram bot () that the user controls.
+The user wants to build a Geospatial Information System (GIS) web application called WASKITA LBS. Initially, its primary function was to find a mobile phone's position and retrieve owner details (CP, Reghp, NIK, NKK) by querying a private Telegram bot. The project has since evolved.
 
 PRODUCT REQUIREMENTS:
-1.  **Core Functionality:** Create a case, add a target phone number, and have the system query the Telegram bot to get coordinates and detailed personal data.
+1.  **Core Functionality:** Create a case, add a target phone number, and query for location and personal data.
+    -   **Position (CP/CekPos):** Now uses a direct JSON API ().
+    -   **Personal Data (NIK/NKK):** Still uses the private Telegram bot.
 2.  **Map Visualization:** Plot the extracted location on a map.
-3.  **Data Deep Dive (Pendalaman):** A series of pop-up windows for detailed data, including REGHP, NIK, and a family tree.
-4.  **Scheduling:** Schedule automatic position updates for targets.
-5.  **PDF Export:** Generate a PDF report for targets, including their photo.
-6.  **History Tracking:** Log and display the historical movement of a target.
-7.  **Area of Interest (AOI):** Define areas on the map and receive alerts if a target enters one.
-8.  **Family Tree Logic:** Correctly determine the order of children based on age.
-9.  **Custom AOI Colors:** Allow users to select a specific color for each AOI.
-10. **Advanced AOI Alerts:** Implement a multi-modal alert system (visual banner, audible beep, flashing marker) when a target enters an AOI.
-11. **Overlapping Markers:** When multiple targets are at the same location, provide a way to view each one without the UI overlapping.
-12. **Connection Stability:** The connection to Telegram must be persistent and automatically recover after server restarts or redeployments.
+3.  **Data Deep Dive (Pendalaman):** A series of pop-up windows for detailed data.
+4.  **API Quota Tracking:** The new CP API has a usage limit (300 requests). The UI must display a countdown.
+5.  **Dual Connection Status:** The UI must show separate, real-time status indicators for the CP API and the Telegram bot connection.
+6.  **Self-Hosted Deployment:** The user wants to deploy the application on their own Virtual Private Server (VPS), not on the Emergent platform.
+7.  **UI/UX:**
+    -   Markers for overlapping targets must be clearly distinguishable.
+    -   Map labels and markers should scale dynamically with the map's zoom level.
+    -   Solve the Deployment not found error by moving to a self-hosted solution.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A feature-rich full-stack application (FastAPI, React, MongoDB) that has undergone extensive bug fixing and stabilization. The core functionalities are in place, but the session was plagued by numerous bugs related to data polling loops, UI race conditions, and, most critically, an unstable Telegram connection that would break after every redeployment. The agent has implemented multiple layers of fixes to create a persistent, auto-recovering Telegram session backed by MongoDB. A UI for handling overlapping map markers has also been implemented and refined based on specific user feedback.
+The full-stack application (FastAPI, React, MongoDB) has been successfully deployed and is running on the user's private VPS. The agent has guided the user through the entire manual setup process, including installing all dependencies (Python, Node.js, MongoDB, Nginx, PM2), configuring the environment, and troubleshooting numerous deployment issues.
+
+The application's backend has been significantly refactored to integrate a new external JSON API for position queries, replacing the previous Telegram-based method for that specific function. The frontend has been updated to display dual status indicators (for the new CP API and the existing Telegram connection) and a request quota counter.
 
 **Last working item**:
-The user requested to change the web application's login password.
+The user's CP API connection was failing on the VPS due to the server making requests over an un-whitelisted IPv6 address. The agent identified the issue and provided a fix to force all backend HTTP requests to use the whitelisted IPv4 address.
 
--   Last item agent was working: Changing the login password for the 'admin' user.
--   Status: NOT STARTED
+-   Last item agent was working: Forcing backend HTTP requests to use IPv4 to resolve a 403 Forbidden error from the whitelisted CP API on the user's VPS.
+-   Status: USER VERIFICATION PENDING
 -   Agent Testing Done: N
--   Which testing method agent to use? backend testing agent
+-   Which testing method agent to use? Manual testing by user. The next agent should ask the user to check the web app on their VPS. The CP API status indicator should now be green.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Change web application login password (P0)**
-    -   The user has requested to change the password for the  account to .
-    -   Next debug checklist: The logic for password hashing and updating is located in . The agent will need to modify the user authentication/creation logic to update the password for the existing 'admin' user or create it with the new password if it doesn't exist.
-    -   Why fix this issue and what will be achieved with the fix? Fulfills a direct user request for account security.
-    -   Status: NOT STARTED
-    -   Should Test frontend/backend/both after fix? Backend (verify login with new credentials).
-
--   **Issue 2: Verify permanent Telegram session fix (P1)**
-    -   The user has been repeatedly affected by the Telegram connection dropping after every redeployment. The agent implemented a comprehensive solution involving session backup to MongoDB and an auto-restore mechanism on startup.
-    -   Next debug checklist: This is not a code issue but a user action is required. The next agent must guide the user to **log in to Telegram one final time** via the app's Settings page on the production environment (). This action will create the initial persistent session backup in MongoDB.
-    -   Why fix this issue and what will be achieved with the fix? This will permanently solve the most critical and recurring stability problem in the application.
+-   **Issue 1: Verify CP API IPv4 Fix on VPS (P0)**
+    -   The backend code on the VPS was modified to force  client requests over IPv4. The user needs to confirm this solved the connection problem.
+    -   Next debug checklist:
+        1.  Ask the user to open their application ().
+        2.  Check if the CP API status indicator is now green.
+        3.  If it is, ask them to try creating or refreshing a target to confirm a query works.
+        4.  If it is still red, ask the user for the output of  on their VPS.
     -   Status: USER VERIFICATION PENDING
-    -   Is recurring issue? Y
-    -   Should Test frontend/backend/both after fix? Both (verify status indicator stays green after a redeploy).
-    -   Blocked on other issue: None.
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? Backend (via frontend interaction).
+
+-   **Issue 2: User-side Telegram Login (P1)**
+    -   To enable NIK/NKK features, the user must log into their Telegram account via the application's Settings page. This will create the persistent session file and MongoDB backup on the new VPS environment.
+    -   Next debug checklist: Guide the user to navigate to the Settings page in the web app, enter their phone number and login credentials for Telegram, and confirm the Telegram status indicator turns green.
+    -   Status: USER VERIFICATION PENDING
+    -   Is recurring issue? Y (Historically, but the implemented backup solution should prevent future recurrence once logged in).
+
+-   **Issue 3: Verify Telegram Session Restore (P2)**
+    -   The user previously mentioned . While recent changes required a fresh login anyway, the restore functionality needs to be verified once a session is established on the VPS.
+    -   Next debug checklist: After the user successfully logs into Telegram (Issue 2), restart the backend () and verify that the Telegram connection restores automatically (indicator stays green) without requiring another login.
+    -   Status: NOT STARTED
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? Backend.
 
 **In progress Task List**:
-None.
+-   **Task 1: Finalize VPS Deployment Handover (P0)**
+    -   The app is running, but key functionalities (CP API, Telegram) require final user verification.
+    -   Where to resume: Guide the user through resolving the pending issues above to confirm the VPS deployment is fully operational.
+    -   Status: IN PROGRESS
+    -   Blocked on something: User verification of pending issues.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   Add an opacity slider to the AOI creation/editing form to allow users to control the transparency of the AOI overlay on the map.
+    -   (P1) **Implement other CP API functions:** Add features for querying immigration data (passport WNI/WNA, perlintasan) as specified in the API documentation provided by the user.
+    -   (P2) **Add Opacity Slider for AOIs:** Implement a UI control to adjust the transparency of Area of Interest overlays on the map.
+
 -   **Future Tasks:**
-    -   **Enhance Family Tree Visualization (P2):** Use a dedicated graph visualization library (like ) to create a more dynamic and interactive tree diagram.
-    -   **Database Migration Tool (P2):** Build a more robust export/import tool for migrating user data between environments.
+    -   Enhance Family Tree Visualization (e.g., using ).
+    -   Build a more robust database migration tool.
 
 **Completed work in this session**
--   **Bug Fix: Telegram Connection Stability (MAJOR):** Implemented a multi-layered, permanent fix for the connection dropping on redeploy. This included:
-    -   Creating helper functions (, ) for robust, auto-reconnecting clients.
-    -   Backing up the Telethon session string to MongoDB upon successful login and periodically via a keepalive task.
-    -   Implementing an auto-restore mechanism on server startup that loads the session from MongoDB.
-    -   Refactoring all Telegram-related functions to use the new robust connection helpers.
--   **Bug Fix: Telegram Two IPs Error:** Resolved a critical Telegram error () by creating a hard-reset endpoint () that clears the session file and the MongoDB backup, allowing for a fresh login.
--   **Bug Fix: NIK Data Not Displaying:** Fixed a frontend race condition where the NIK info dialog wouldn't update after a successful query because stale state was being used.
--   **Bug Fix: Infinite Polling Loop:** Corrected the logic for polling REGHP, NIK, and Family Tree data to prevent an infinite loop of success notifications and pop-ups after data was received.
--   **Bug Fix: Perbaharui (Update) Logic:** Replaced the faulty Update function (which created a new target) with a new backend endpoint () that correctly updates an existing target's position while preserving all its data (NIK, REGHP, etc.) and triggering AOI alerts.
--   **Bug Fix: AOI Alert for New Targets:** Fixed a logic flaw where alerts would not trigger for newly created targets. The system now checks all enabled AOIs, not just those already monitoring the target.
--   **Feature: Overlapping Marker Handling:** Implemented and refined a UI to handle multiple targets at the exact same coordinates. The final design places numbered buttons (, , ) below the marker, allowing the user to click to cycle through the info for each target.
--   **Feature: PDF Export with Photo:** The target's photo is now successfully embedded into the exported PDF reports.
--   **Feature: Real-time Telegram Status:** Added a live status indicator to the UI sidebar.
--   **UX Improvements:** Added Perbaharui and Jadwalkan buttons for targets with  or  status.
+-   **Major Task: Full VPS Deployment:** Guided the user through a complete manual deployment of the application onto their own Ubuntu VPS (), including installation and configuration of Nginx, MongoDB, Node.js, Python, PM2, and firewall rules.
+-   **Critical Bug Fix: API Whitelisting (IPv4/IPv6):** Diagnosed that API requests were failing because the VPS was using an un-whitelisted IPv6 address. Provided a fix to force requests over the whitelisted IPv4.
+-   **Major Feature: CP API Integration:** Replaced the Telegram-based position query with a direct JSON API, including backend logic, quota management, and a new dual-status UI on the frontend.
+-   **Feature: Zoom-based Marker Scaling:** Implemented a feature where map markers and their labels dynamically resize based on the map's zoom level, disappearing at far-out zoom levels to reduce clutter.
+-   **Bug Fix: Overlapping Marker Visibility:** Corrected the CSS and HTML structure for overlapping markers to ensure the central red dot is always visible and positioned correctly between the info label and the number selectors.
+-   **Security: Password Change:** Updated the  user's password as requested.
+-   **Support: Code Export to GitHub:** Prepared the codebase (creating , ) and guided the user on how to export the project to their personal GitHub repository for deployment on the VPS.
+-   **Support: VPS Update Workflow:** Provided the user with a shell script () and instructions on how to pull future changes from GitHub and redeploy them on their VPS.
 
 **Earlier issues found/mentioned but not fixed**
 None.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Telegram session instability and disconnections.
+-   **Issue recurrence in previous fork:** Telegram session instability.
 -   **Recurrence count:** 5+
--   **Status:** RESOLVED (pending final user verification). The agent dedicated a significant portion of the session to implementing a permanent solution using MongoDB for session persistence, which should finally resolve this long-standing issue once the user logs in one last time.
+-   **Status:** RESOLVED. A robust session backup-and-restore mechanism using MongoDB is in place. It now requires a one-time user login on the new VPS environment to become fully active.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Telethon, MongoDB ().
+-   **Backend:** FastAPI, Telethon, MongoDB (, ).
 -   **Frontend:** React, Tailwind CSS, Leaflet, Shadcn/UI, Sonner.
--   **Session Persistence:** Overcame ephemeral container storage by creating a robust backup/restore mechanism for the Telethon session file using a dedicated MongoDB collection.
--   **Race Condition Debugging:** Diagnosed and fixed a complex frontend state management issue in React where asynchronous polling and  hooks caused stale data to be displayed.
--   **Robust Asynchronous Operations:** Refactored backend Telegram queries to include auto-reconnect logic, connection checks, and retry loops to handle network instability.
--   **Custom Map Markers (Leaflet):** Used Leaflet's  to create complex, interactive map markers for handling overlapping geo-points.
+-   **VPS Deployment:** Manual setup and configuration on an Ubuntu VPS.
+-   **Process Management:** PM2 for running the backend service.
+-   **Reverse Proxy:** Nginx for serving the React frontend and proxying API requests.
+-   **Network Debugging:** Diagnosing and resolving an issue related to IPv4 vs. IPv6 addressing for API calls.
 
 **key DB schema**
--   **telegram_sessions:** Stores session strings. 
--   No other schema changes.
+-   **telegram_sessions:** 
+-   **cp_api_quota:** 
+-   Other collections: , , , , .
 
 **changes in tech stack**
--   None.
+-   The application is now self-hosted on a user-managed VPS instead of the Emergent platform.
 
 **All files of reference**
--   : The core of all bug fixes and new logic for connection stability and data updates.
--   : Location of fixes for polling loops and state management race conditions.
--   : Contains the latest implementation for handling overlapping markers.
--   : Contains the custom  logic for the overlapping markers UI.
--   : Contains the fix for the NIK data not appearing.
--   : Contains the logic for embedding images into PDFs.
--   : Contains UI for session management.
--   : Contains UI for real-time status.
-
-**Areas that need refactoring**:
--   None.
+-   : Contains the new CP API logic and the IPv4 fix.
+-   : Contains the new CP API credentials.
+-   : Contains the UI for the new CP API status and quota.
+-   : State management for the CP API.
+-    & : Contain the zoom-scaling logic.
 
 **key api endpoints**
--   ****: New endpoint to update a target's position without losing its existing data.
--   ****: New endpoint to perform a hard reset of the Telegram session, deleting the local file and the MongoDB backup.
--   ****: New endpoint to manually trigger a session restore from the database.
--   ****: Updated to return more detailed  and  states.
+-   ****: (New) Checks connection status to the CP API.
+-   ****: (New) Retrieves the remaining request quota for the CP API.
+-   ****: (Modified) Now uses the CP API for initial position query.
+-   ****: (Modified) Now uses the CP API for position updates.
 
 **Critical Info for New Agent**
--   **TELEGRAM SESSION FIX REQUIRES USER ACTION:** The most critical task is to ensure the user understands they **must log in to Telegram one more time** on their production site (). This will create the initial persistent session in MongoDB. Without this step, the connection will continue to break on redeploy.
--   **Two IPs Error is Expected:** If the user attempts to log in after a redeploy without the session backup being in place, they will likely hit the authorization key used under two different IP addresses error. The  endpoint (triggered by the Reset Connection button) is the solution. Guide the user to use this button if they see that error, then try logging in again.
--   **Overlapping Marker Logic:** The UI for handling multiple targets at the same location has been iterated on multiple times based on user feedback. The current implementation uses custom s to place number selectors *below* the marker icon. Be cautious if making changes here.
+-   **THE APP IS ON A USER'S VPS.** Do not use platform tools for deployment or file access. All instructions must be  commands for the user to run on their VPS. The user's IP is .
+-   **Update Workflow:** After implementing changes, push them to the user's GitHub repo (via Save to GitHub). Then, provide the user with the command  to run on their VPS to pull the changes and redeploy.
+-   **Primary Goal:** Your first action should be to guide the user through verifying the pending issues, starting with the CP API connection fix (Issue 1).
+-   **Language:** The user's primary language is Bahasa Indonesia. All communication must be in Bahasa Indonesia.
 
 **documents and test reports created in this job**
--    (updated with completed tasks)
+-    (updated)
+-   
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** Change password to . (NOT STARTED)
-2.  **User:** Provided details of a Telegram error: authorization key used under two different IP addresses. (FIXED)
-3.  **User:** Asked if the connection dropping is related to redeploying. (ANSWERED)
-4.  **User:** Clarified the design for overlapping markers: numbers should be *outside* the popup, *below* the marker. (IMPLEMENTED)
-5.  **User:** Disliked the stacked label design for overlapping markers and asked to revert, but with a new design. (RE-IMPLEMENTED)
-6.  **User:** Reported the Telegram connection is still unstable, providing a screenshot. (FIXED with permanent solution, pending user action)
-7.  **User:** Reported that popups for overlapping markers are too far from the coordinate point. (FIXED by reverting to original design)
-8.  **User:** Reported an issue with overlapping markers covering each other. (IMPLEMENTED)
-9.  **User:** Complained the Telegram connection is still unstable (putus nyambung). (FIXED with permanent solution)
-10. **User:** Complained the NIK query process is unstable and disconnects Telegram. (FIXED)
+1.  **User (LATEST):** okay sudah bisa (Okay, it's working now) - *User confirmed the web app is accessible via IP after Nginx was installed.* (RESOLVED)
+2.  **User:** Unit nginx.service could not be found. - *Reported Nginx wasn't installed on the VPS.* (RESOLVED)
+3.  **User:** setelah di akses alamat itu di browser, tdk membuka apapaun (After accessing that address in the browser, nothing opens) - *Reported the app was inaccessible.* (IN PROGRESS)
+4.  **User:** Shared logs showing MongoDB connection refusal. (RESOLVED)
+5.  **User:** Shared logs showing the  command was not found. (RESOLVED)
+6.  **User:** Shared an error from yarn install v1.22.22
+[1/4] Resolving packages...
+[2/4] Fetching packages...
+[3/4] Linking dependencies...
+[4/4] Building fresh packages...
+success Saved lockfile.
+Done in 0.03s. and yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.. (RESOLVED by upgrading Node.js)
+7.  **User:** Shared an error about  package not found. (RESOLVED by providing a custom pip index)
+8.  **User:** Shared a  authentication failure. (RESOLVED by explaining PAT usage)
+9.  **User:** coba detailkan cara clone ke VPS (explain in detail how to clone to VPS) - *Requested detailed instructions for VPS deployment.* (RESOLVED)
+10. **User:** bisa tidak jika saya membuka VPS dan emergent deploy ke VPS tersebut? (can I open a VPS and have emergent deploy to it?) - *Asked about self-hosting.* (RESOLVED)
 
 **Project Health Check:**
--   **Broken:** None.
+-   **Broken:** None in the codebase. Functionality on the VPS is pending user verification.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telethon:** For live Telegram user-bot automation. Connection stability is now heavily reinforced.
+-   **Telethon:** For NIK/NKK queries via a live Telegram user-bot.
+-   **CP API ():** (New) External JSON API for position queries. Requires IP whitelisting.
 -   **Leaflet.js & OpenStreetMap:** For rendering interactive maps.
--   **Lucide-react:** For UI icons.
--   **Gemini (via emergentintegrations):** For AI-powered text analysis of family data. Uses Emergent LLM Key.
+-   **Gemini (via emergentintegrations):** For AI text analysis (currently non-functional on VPS until pip install is fixed). Uses Emergent LLM Key.
 -   **jsPDF & html2canvas:** For client-side PDF generation.
 
 **Testing status**
 -   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: None. Many bugs were fixed.
+-   Known regressions: The  package may not be installed correctly on the VPS, potentially disabling AI-related features. This is a low-priority issue.
 
 **Credentials to test flow:**
 -   **Web App Login:**
     -   Username: 
-    -   Password:  (This is the requested new password, not yet implemented)
--   **Telegram Setup:**
-    -   The user must log in through the web UI with their own phone number. The agent has hardcoded the correct API ID/Hash.
+    -   Password: 
+-   **VPS Access:**
+    -   The agent does not have direct access. Instructions must be provided to the user.
+    -   IP Address: 
+-   **CP API Key:**
+    -   Stored in  on the VPS.
 
 **What agent forgot to execute**
--   The agent has not yet implemented the user's latest request to change the login password. This is the immediate next task.</analysis>
+-   The agent correctly identified the need for a fresh user login for Telegram but did not create a separate verification step for the session *restore* mechanism, which the user had flagged as failing. This has been added as a new pending issue.</analysis>
