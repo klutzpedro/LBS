@@ -152,6 +152,9 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
   // Import useTelegram for enhanced status info
   const { telegramConnected, lastChecked, status, refreshStatus, loading } = require('@/context/TelegramContext').useTelegram();
   
+  // Import useCpApi for CP API status
+  const { connected: cpApiConnected, quotaRemaining, quotaInitial, loading: cpLoading, refreshStatus: refreshCpStatus } = require('@/context/CpApiContext').useCpApi();
+  
   const getStatusInfo = () => {
     switch (status) {
       case 'connected':
@@ -160,7 +163,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
           bgColor: 'rgba(0, 255, 136, 0.1)',
           icon: '🟢',
           text: `@${telegramUser?.username || 'Connected'}`,
-          subtext: 'Real-time active'
+          subtext: 'NIK/NKK Active'
         };
       case 'authorized_disconnected':
         return {
@@ -176,7 +179,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
           bgColor: 'rgba(255, 59, 92, 0.1)',
           icon: '🔴',
           text: 'Telegram disconnected',
-          subtext: 'Setup required'
+          subtext: 'Setup required for NIK/NKK'
         };
     }
   };
@@ -224,7 +227,48 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
         </div>
       </div>
 
-      {/* Enhanced Telegram Status with Real-time Indicator */}
+      {/* CP API Status (Position Query) */}
+      <div 
+        className="p-3 rounded-lg border text-sm cursor-pointer hover:opacity-90 transition-opacity mb-2"
+        style={{
+          backgroundColor: cpApiConnected ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 59, 92, 0.1)',
+          borderColor: cpApiConnected ? 'var(--status-success)' : 'var(--status-error)'
+        }}
+        onClick={refreshCpStatus}
+        title="CP API - Click to refresh"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div 
+              className={`w-2.5 h-2.5 rounded-full ${cpApiConnected ? 'animate-pulse' : ''}`}
+              style={{ backgroundColor: cpApiConnected ? 'var(--status-success)' : 'var(--status-error)' }}
+            />
+            <div>
+              <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                CP API {cpApiConnected ? 'Connected' : 'Disconnected'}
+              </span>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                Position Query Service
+              </p>
+            </div>
+          </div>
+          {/* Quota Counter */}
+          <div className="flex flex-col items-end">
+            <div 
+              className="text-sm font-bold px-2 py-0.5 rounded"
+              style={{ 
+                backgroundColor: quotaRemaining > 50 ? 'rgba(0, 255, 136, 0.2)' : quotaRemaining > 10 ? 'rgba(255, 184, 0, 0.2)' : 'rgba(255, 59, 92, 0.2)',
+                color: quotaRemaining > 50 ? 'var(--status-success)' : quotaRemaining > 10 ? 'var(--status-warning)' : 'var(--status-error)'
+              }}
+            >
+              {cpLoading ? '...' : quotaRemaining}
+            </div>
+            <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Quota</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Telegram Status (NIK/NKK Query) */}
       <div 
         className="p-3 rounded-lg border text-sm cursor-pointer hover:opacity-90 transition-opacity"
         style={{
@@ -232,7 +276,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
           borderColor: statusInfo.color
         }}
         onClick={refreshStatus}
-        title="Click to refresh status"
+        title="Telegram Bot - Click to refresh"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
