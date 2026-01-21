@@ -1729,8 +1729,20 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 {"$set": {"status": "parsing"}}
             )
             
-            # Get the response after clicking CP - get more messages
-            response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            # Get the response after clicking CP with safe wrapper
+            async def get_response_messages():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            
+            response_messages = await safe_telegram_operation(get_response_messages, "get_response_messages", max_retries=3)
+            
+            if response_messages is None:
+                logging.error(f"[TARGET {target_id}] Failed to get response messages")
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {"$set": {"status": "error", "error": "Gagal membaca respons dari bot"}}
+                )
+                return
+            
             logging.info(f"[TARGET {target_id}] [{query_token}] Retrieved {len(response_messages)} messages for parsing")
             
             # Log all messages for debugging
