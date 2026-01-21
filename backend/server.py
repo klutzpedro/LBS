@@ -3160,22 +3160,23 @@ async def startup():
     asyncio.create_task(telegram_keepalive_task())
     logger.info("✓ Telegram keepalive task started")
 
-# Background task to keep Telegram connection alive
+# Background task to keep Telegram connection alive with active ping
 async def telegram_keepalive_task():
-    """Background task that maintains a persistent Telegram connection"""
+    """Background task that maintains a persistent Telegram connection with active ping"""
     global telegram_client
     
     logger.info("[Keepalive] Starting persistent Telegram connection manager")
     
     # Counter to track consecutive failures
     failure_count = 0
-    max_failures = 3
-    backup_counter = 0  # Backup session every 10 checks (5 minutes)
+    max_failures = 5
+    backup_counter = 0  # Backup session every 6 checks (2 minutes)
+    ping_counter = 0    # Ping every 3 checks (1 minute)
     
     while True:
         try:
-            # Check more frequently - every 30 seconds
-            await asyncio.sleep(30)
+            # Check more frequently - every 20 seconds
+            await asyncio.sleep(20)
             
             if telegram_client is None:
                 continue
@@ -3189,7 +3190,7 @@ async def telegram_keepalive_task():
                 
                 if failure_count <= max_failures:
                     try:
-                        # Reconnect with catch_up to sync any missed updates
+                        # Reconnect
                         await telegram_client.connect()
                         
                         # Verify connection
