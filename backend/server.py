@@ -2046,30 +2046,43 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 for row in msg.buttons:
                     for button in row:
                         if button.text and 'REGHP' in button.text.upper():
-                            await button.click()
-                            logging.info(f"[{query_token}] ✓ Clicked Reghp button")
-                            
-                            # Log button clicked
-                            await db.chat_messages.insert_one({
-                                "target_id": target_id,
-                                "message": f"[PENDALAMAN] ✅ Klik tombol REGHP...",
-                                "direction": "sent",
-                                "timestamp": datetime.now(timezone.utc).isoformat(),
-                                "query_type": "reghp"
-                            })
-                            
-                            reghp_clicked = True
+                            reghp_button = button
                             break
-                if reghp_clicked:
+                    if reghp_button:
+                        break
+                if reghp_button:
                     break
         
+        # Click REGHP button with safe wrapper
+        if reghp_button:
+            async def click_reghp():
+                await reghp_button.click()
+                return True
+            
+            clicked = await safe_telegram_operation(click_reghp, f"click_reghp_{phone_number}", max_retries=3)
+            
+            if clicked:
+                logging.info(f"[{query_token}] ✓ Clicked Reghp button")
+                reghp_clicked = True
+                
+                # Log button clicked
+                await db.chat_messages.insert_one({
+                    "target_id": target_id,
+                    "message": f"[PENDALAMAN] ✅ Klik tombol REGHP...",
+                    "direction": "sent",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "query_type": "reghp"
+                })
+            else:
+                logging.error(f"[{query_token}] Failed to click REGHP button after retries")
+        
         if not reghp_clicked:
-            logging.warning(f"[{query_token}] Reghp button not found")
+            logging.warning(f"[{query_token}] Reghp button not found or click failed")
             
             # Log button not found
             await db.chat_messages.insert_one({
                 "target_id": target_id,
-                "message": f"[PENDALAMAN] ⚠️ Tombol REGHP tidak ditemukan",
+                "message": f"[PENDALAMAN] ⚠️ Tombol REGHP tidak ditemukan atau gagal diklik",
                 "direction": "received",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "query_type": "reghp"
@@ -2078,8 +2091,19 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         # Wait for response
         await asyncio.sleep(8)
         
-        # Get Reghp response - ONLY messages containing our phone number
-        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=15)
+        # Get Reghp response with safe wrapper
+        async def get_response():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=15)
+        
+        response_messages = await safe_telegram_operation(get_response, "get_reghp_response", max_retries=3)
+        
+        if response_messages is None:
+            logging.error(f"[{query_token}] Failed to get REGHP response")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"reghp_status": "error", "reghp_error": "Gagal membaca respons REGHP"}}
+            )
+            return
         
         reghp_info = None
         data_not_found = False
