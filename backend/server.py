@@ -39,8 +39,8 @@ JWT_ALGORITHM = "HS256"
 # Telegram Client Setup - PERMANENT VALUES
 # These are the correct API credentials for this application
 # IMPORTANT: Always use these values, ignore any incorrect env variables
-CORRECT_TELEGRAM_API_ID = 37983970
-CORRECT_TELEGRAM_API_HASH = 'd484d8fe3d2f4025f99101caeb070e1a'
+CORRECT_TELEGRAM_API_ID = 31836139
+CORRECT_TELEGRAM_API_HASH = '8a71ab940136be9274ac6f92d9fb7d45'
 
 # Check if env has correct value, otherwise use hardcoded correct value
 env_api_id = os.getenv('TELEGRAM_API_ID', '')
