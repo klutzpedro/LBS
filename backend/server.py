@@ -69,11 +69,14 @@ logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
 telegram_client = None
 telegram_connection_lock = asyncio.Lock()
 
+# Session path - use ROOT_DIR for portability
+SESSION_PATH = str(ROOT_DIR / 'northarch_session')
+
 # Helper function to create TelegramClient with proper settings
 def create_telegram_client():
     """Create a TelegramClient with persistent connection settings"""
     return TelegramClient(
-        '/app/backend/northarch_session',
+        SESSION_PATH,
         TELEGRAM_API_ID,
         TELEGRAM_API_HASH,
         connection_retries=20,        # Increased retry attempts
