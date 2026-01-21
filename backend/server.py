@@ -2801,6 +2801,21 @@ async def query_telegram_nik(target_id: str, nik: str):
                 continue
             
             for msg in response_messages:
+                # Skip if we already have good NIK data (10+ fields) - don't overwrite with lesser data
+                if nik_info and nik_info.get('parsed_data') and len(nik_info['parsed_data']) >= 10:
+                    # Only continue looking for photo
+                    if msg.photo and not photo_path and found_matching_response:
+                        try:
+                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                            if photo_bytes:
+                                import base64
+                                photo_base64 = base64.b64encode(photo_bytes).decode('utf-8')
+                                photo_path = f"data:image/jpeg;base64,{photo_base64}"
+                                logging.info(f"[{query_token}] ✓ Photo downloaded ({len(photo_bytes)} bytes)")
+                        except Exception as photo_err:
+                            logging.error(f"[{query_token}] Error downloading photo: {photo_err}")
+                    continue
+                
                 # STRICT TOKENIZATION: Must contain exact NIK we queried
                 if msg.text and nik in msg.text:
                     logging.info(f"[{query_token}] Found message containing NIK {nik}")
@@ -2812,11 +2827,11 @@ async def query_telegram_nik(target_id: str, nik: str):
                         logging.info(f"[{query_token}] ✓ CONFIRMED: This is response for NIK {nik}")
                         found_matching_response = True
                         
-                        # Parse identity data
-                        if 'identity' in msg.text.lower() or 'full name' in msg.text.lower():
+                        # Parse identity data - ONLY if it looks like full NIK data (contains Full Name)
+                        if 'full name' in msg.text.lower():
                             logging.info(f"[{query_token}] Parsing identity data...")
                             
-                            nik_info = {
+                            temp_nik_info = {
                                 "nik": nik,
                                 "raw_text": msg.text,
                                 "timestamp": datetime.now(timezone.utc).isoformat()
@@ -2862,15 +2877,18 @@ async def query_telegram_nik(target_id: str, nik: str):
                             if current_key:
                                 parsed_data[current_key] = current_value.strip()
                             
-                            nik_info['parsed_data'] = parsed_data
+                            temp_nik_info['parsed_data'] = parsed_data
                             logging.info(f"[{query_token}] Parsed {len(parsed_data)} fields: {list(parsed_data.keys())}")
                             
                             # VERIFY: Check if parsed NIK matches queried NIK
                             if parsed_data.get('NIK') == nik:
                                 logging.info(f"[{query_token}] ✓✓ NIK VERIFIED: Data matches queried NIK")
+                                # Only accept if this has MORE fields than current data (or no current data)
+                                if not nik_info or len(parsed_data) > len(nik_info.get('parsed_data', {})):
+                                    nik_info = temp_nik_info
+                                    logging.info(f"[{query_token}] ✓ Accepted NIK data with {len(parsed_data)} fields")
                             else:
                                 logging.error(f"[{query_token}] ✗✗ NIK MISMATCH: Parsed NIK {parsed_data.get('NIK')} != Queried NIK {nik}")
-                                nik_info = None
                                 continue
                 
                 # Check for photo in messages (must be near our NIK response)
