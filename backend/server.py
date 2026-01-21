@@ -1675,7 +1675,7 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
     for attempt in range(1, max_retries + 1):
         try:
             # Delete old session file first to avoid IP conflict errors
-            session_path = '/app/backend/northarch_session.session'
+            session_path = str(ROOT_DIR / 'northarch_session.session')
             if os.path.exists(session_path) and attempt == 1:
                 # On first attempt, if session exists but we're here, it might be corrupted
                 # Check if it's causing issues
@@ -1731,7 +1731,7 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
                 telegram_phone_code_hash = None
                 
                 # Delete session file
-                for sf in ['/app/backend/northarch_session.session', '/app/backend/northarch_session.session-journal']:
+                for sf in [str(ROOT_DIR / 'northarch_session.session'), '/app/backend/northarch_session.session-journal']:
                     if os.path.exists(sf):
                         try:
                             os.remove(sf)
@@ -1802,7 +1802,7 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
         me = await telegram_client.get_me()
         
         # Verify session file was created and backup to MongoDB
-        session_path = '/app/backend/northarch_session.session'
+        session_path = str(ROOT_DIR / 'northarch_session.session')
         session_saved = os.path.exists(session_path)
         
         if session_saved:
@@ -1860,7 +1860,7 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
 async def telegram_status(username: str = Depends(verify_token)):
     global telegram_client
     
-    session_exists = os.path.exists('/app/backend/northarch_session.session')
+    session_exists = os.path.exists(str(ROOT_DIR / 'northarch_session.session'))
     
     if not session_exists:
         return {
@@ -1953,7 +1953,7 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
         
         # Delete ALL session files (including any cache)
         session_files = [
-            '/app/backend/northarch_session.session',
+            str(ROOT_DIR / 'northarch_session.session'),
             '/app/backend/northarch_session.session-journal',
         ]
         
@@ -3725,7 +3725,7 @@ async def startup():
         logger.info("Database has existing data, skipping auto-seed")
     
     # Try to reconnect Telegram session
-    session_path = '/app/backend/northarch_session.session'
+    session_path = str(ROOT_DIR / 'northarch_session.session')
     
     # First, try to restore session from MongoDB if file doesn't exist
     if not os.path.exists(session_path):
@@ -3873,7 +3873,7 @@ async def telegram_keepalive_task():
                     backup_counter = 0
                     try:
                         if await telegram_client.is_user_authorized():
-                            session_path = '/app/backend/northarch_session.session'
+                            session_path = str(ROOT_DIR / 'northarch_session.session')
                             if os.path.exists(session_path):
                                 import base64
                                 with open(session_path, 'rb') as f:
@@ -3905,7 +3905,7 @@ async def force_restore_session(username: str = Depends(verify_token)):
     """Force restore Telegram session from MongoDB backup"""
     global telegram_client
     
-    session_path = '/app/backend/northarch_session.session'
+    session_path = str(ROOT_DIR / 'northarch_session.session')
     
     try:
         # Disconnect current client
