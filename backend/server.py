@@ -2271,12 +2271,18 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         })
 
 async def query_telegram_nik(target_id: str, nik: str):
-    """Query NIK detail dengan foto dari bot"""
+    """Query NIK detail dengan foto dari bot - with robust connection handling"""
     try:
         global telegram_client
         
-        # Ensure client is connected using helper
-        if not await ensure_telegram_connected():
+        # Ensure client is connected using safe wrapper
+        connected = await safe_telegram_operation(
+            lambda: ensure_telegram_connected(),
+            "connect_for_nik",
+            max_retries=5
+        )
+        
+        if not connected:
             logging.error("[NIK] Failed to connect to Telegram")
             await db.targets.update_one(
                 {"id": target_id},
@@ -2290,22 +2296,41 @@ async def query_telegram_nik(target_id: str, nik: str):
         # Short delay to prevent concurrent queries mixing
         await asyncio.sleep(1)
         
-        # Send NIK to bot
-        await telegram_client.send_message(BOT_USERNAME, nik)
+        # Send NIK to bot with safe wrapper
+        async def send_nik():
+            await telegram_client.send_message(BOT_USERNAME, nik)
+            return True
+        
+        sent = await safe_telegram_operation(send_nik, f"send_nik_{nik}", max_retries=3)
+        
+        if not sent:
+            logging.error(f"[{query_token}] Failed to send NIK")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {f"nik_queries.{nik}.status": "error", f"nik_queries.{nik}.data": {"error": "Gagal mengirim NIK ke bot"}}}
+            )
+            return
+        
         logging.info(f"[{query_token}] Sent NIK: {nik} to bot")
         
         # Wait for initial response
         await asyncio.sleep(4)
         
-        # Check connection before getting messages
-        if not telegram_client.is_connected():
-            logging.warning(f"[{query_token}] Connection lost, reconnecting...")
-            await telegram_client.connect()
-            await asyncio.sleep(1)
+        # Get messages with safe wrapper
+        async def get_msgs():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
         
-        # Get messages and look for "NIK" button
-        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        messages = await safe_telegram_operation(get_msgs, "get_nik_buttons", max_retries=3)
         
+        if messages is None:
+            logging.error(f"[{query_token}] Failed to get messages")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {f"nik_queries.{nik}.status": "error", f"nik_queries.{nik}.data": {"error": "Gagal membaca pesan dari bot"}}}
+            )
+            return
+        
+        nik_button = None
         nik_clicked = False
         for msg in messages:
             if msg.buttons:
@@ -2315,17 +2340,31 @@ async def query_telegram_nik(target_id: str, nik: str):
                 for row in msg.buttons:
                     for button in row:
                         if button.text and 'NIK' in button.text.upper():
-                            await button.click()
-                            logging.info(f"[{query_token}] ✓ Clicked NIK button")
-                            nik_clicked = True
+                            nik_button = button
                             break
-                if nik_clicked:
+                    if nik_button:
+                        break
+                if nik_button:
                     break
         
-        if not nik_clicked:
-            logging.warning(f"[{query_token}] NIK button not found")
+        # Click NIK button with safe wrapper
+        if nik_button:
+            async def click_nik():
+                await nik_button.click()
+                return True
+            
+            clicked = await safe_telegram_operation(click_nik, f"click_nik_{nik}", max_retries=3)
+            
+            if clicked:
+                logging.info(f"[{query_token}] ✓ Clicked NIK button")
+                nik_clicked = True
+            else:
+                logging.error(f"[{query_token}] Failed to click NIK button after retries")
         
-        # Wait for response with photo - use shorter intervals with connection checks
+        if not nik_clicked:
+            logging.warning(f"[{query_token}] NIK button not found or click failed")
+        
+        # Wait for response with photo
         nik_info = None
         photo_path = None
         found_matching_response = False
@@ -2334,17 +2373,14 @@ async def query_telegram_nik(target_id: str, nik: str):
         for attempt in range(4):
             await asyncio.sleep(5)
             
-            # Check connection before getting messages
-            if not telegram_client.is_connected():
-                logging.warning(f"[{query_token}] Connection lost at attempt {attempt+1}, reconnecting...")
-                await telegram_client.connect()
-                await asyncio.sleep(1)
+            # Get NIK response with safe wrapper
+            async def get_response():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=20)
             
-            # Get NIK response
-            try:
-                response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
-            except Exception as get_err:
-                logging.error(f"[{query_token}] Error getting messages: {get_err}")
+            response_messages = await safe_telegram_operation(get_response, f"get_nik_response_{attempt}", max_retries=2)
+            
+            if response_messages is None:
+                logging.warning(f"[{query_token}] Failed to get response at attempt {attempt+1}")
                 continue
             
             for msg in response_messages:
