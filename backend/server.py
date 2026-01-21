@@ -58,6 +58,7 @@ BOT_USERNAME = '@northarch_bot'
 logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
 
 telegram_client = None
+telegram_connection_lock = asyncio.Lock()
 
 # Helper function to create TelegramClient with proper settings
 def create_telegram_client():
@@ -66,46 +67,106 @@ def create_telegram_client():
         '/app/backend/northarch_session',
         TELEGRAM_API_ID,
         TELEGRAM_API_HASH,
-        connection_retries=10,        # Retry connection 10 times
+        connection_retries=20,        # Increased retry attempts
         retry_delay=1,                # 1 second delay between retries
         auto_reconnect=True,          # Auto reconnect on disconnect
-        request_retries=5,            # Retry requests 5 times
+        request_retries=10,           # More request retries
+        timeout=30,                   # 30 second timeout
     )
 
-# Helper function to ensure client is connected
+# Robust connection helper with lock to prevent race conditions
 async def ensure_telegram_connected():
     """Ensure Telegram client is connected, reconnect if needed"""
     global telegram_client
     
-    if telegram_client is None:
-        telegram_client = create_telegram_client()
-        await telegram_client.connect()
-        logger.info("[Telegram] Client created and connected")
-        return True
-    
-    if not telegram_client.is_connected():
-        logger.warning("[Telegram] Client disconnected, reconnecting...")
-        try:
+    async with telegram_connection_lock:
+        if telegram_client is None:
+            telegram_client = create_telegram_client()
             await telegram_client.connect()
-            if telegram_client.is_connected():
-                logger.info("[Telegram] Reconnected successfully")
-                return True
-            else:
-                logger.error("[Telegram] Reconnect failed - not connected")
-                return False
-        except Exception as e:
-            logger.error(f"[Telegram] Reconnect error: {e}")
-            # Try to recreate client
+            logger.info("[Telegram] Client created and connected")
+            return True
+        
+        if not telegram_client.is_connected():
+            logger.warning("[Telegram] Client disconnected, reconnecting...")
             try:
-                telegram_client = create_telegram_client()
                 await telegram_client.connect()
-                logger.info("[Telegram] Client recreated and connected")
-                return True
-            except Exception as e2:
-                logger.error(f"[Telegram] Recreate failed: {e2}")
-                return False
+                if telegram_client.is_connected():
+                    logger.info("[Telegram] Reconnected successfully")
+                    return True
+                else:
+                    logger.error("[Telegram] Reconnect failed - not connected")
+                    return False
+            except Exception as e:
+                logger.error(f"[Telegram] Reconnect error: {e}")
+                # Try to recreate client
+                try:
+                    telegram_client = create_telegram_client()
+                    await telegram_client.connect()
+                    logger.info("[Telegram] Client recreated and connected")
+                    return True
+                except Exception as e2:
+                    logger.error(f"[Telegram] Recreate failed: {e2}")
+                    return False
+        
+        return True
+
+# Wrapper for safe Telegram operations with automatic retry
+async def safe_telegram_operation(operation, operation_name="operation", max_retries=3):
+    """
+    Safely execute a Telegram operation with automatic reconnection and retry.
     
-    return True
+    Args:
+        operation: async callable that performs the Telegram operation
+        operation_name: name for logging
+        max_retries: maximum number of retries
+    
+    Returns:
+        Result of the operation or None if all retries fail
+    """
+    global telegram_client
+    
+    for attempt in range(max_retries):
+        try:
+            # Ensure connection before operation
+            if not await ensure_telegram_connected():
+                logger.error(f"[Telegram] Cannot connect for {operation_name}")
+                await asyncio.sleep(2)
+                continue
+            
+            # Execute the operation
+            result = await operation()
+            return result
+            
+        except ConnectionError as e:
+            logger.warning(f"[Telegram] Connection error in {operation_name} (attempt {attempt + 1}/{max_retries}): {e}")
+            # Force reconnect
+            if telegram_client:
+                try:
+                    await telegram_client.disconnect()
+                except:
+                    pass
+                telegram_client = None
+            await asyncio.sleep(2)
+            
+        except Exception as e:
+            error_str = str(e).lower()
+            if 'connection' in error_str or 'disconnect' in error_str or 'timeout' in error_str:
+                logger.warning(f"[Telegram] Network error in {operation_name} (attempt {attempt + 1}/{max_retries}): {e}")
+                # Force reconnect
+                if telegram_client:
+                    try:
+                        await telegram_client.disconnect()
+                    except:
+                        pass
+                    telegram_client = None
+                await asyncio.sleep(2)
+            else:
+                # Non-connection error, don't retry
+                logger.error(f"[Telegram] Error in {operation_name}: {e}")
+                raise
+    
+    logger.error(f"[Telegram] All {max_retries} retries failed for {operation_name}")
+    return None
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
