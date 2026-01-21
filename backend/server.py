@@ -259,7 +259,9 @@ async def query_cp_api(phone_number: str) -> dict:
     logger.info(f"[CP API] Querying position for {normalized_phone}")
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as http_client:
+        # Force IPv4 for whitelisted IP
+        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        async with httpx.AsyncClient(timeout=30.0, transport=transport) as http_client:
             response = await http_client.post(
                 f"{CP_API_URL}/api/v3/cekpos",
                 headers={"api-key": CP_API_KEY},
