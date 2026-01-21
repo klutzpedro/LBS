@@ -1569,6 +1569,7 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def query_telegram_bot(target_id: str, phone_number: str):
+    """Query Telegram bot with robust connection handling"""
     try:
         # Update status: connecting
         await db.targets.update_one(
@@ -1576,16 +1577,21 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             {"$set": {"status": "connecting"}}
         )
         
-        # Initialize Telethon client if not already initialized
+        # Ensure connection using safe wrapper
         global telegram_client
-        if telegram_client is None:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
+        connected = await safe_telegram_operation(
+            lambda: ensure_telegram_connected(),
+            "connect_for_query",
+            max_retries=5
+        )
+        
+        if not connected:
+            logging.error(f"[TARGET {target_id}] Failed to connect to Telegram")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "error", "error": "Tidak dapat terhubung ke Telegram"}}
             )
-            await telegram_client.start()
-            logging.info("Telegram client started")
+            return
         
         # Create unique token for this query
         query_token = f"CP_{phone_number}_{target_id[:8]}"
@@ -1599,9 +1605,21 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         )
         
         try:
-            # Send phone number with token marker
-            message_text = f"{phone_number}"
-            await telegram_client.send_message(BOT_USERNAME, message_text)
+            # Send phone number with safe wrapper
+            async def send_phone():
+                await telegram_client.send_message(BOT_USERNAME, phone_number)
+                return True
+            
+            sent = await safe_telegram_operation(send_phone, f"send_phone_{phone_number}", max_retries=3)
+            
+            if not sent:
+                logging.error(f"[TARGET {target_id}] Failed to send phone number")
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {"$set": {"status": "error", "error": "Gagal mengirim nomor ke bot"}}
+                )
+                return
+            
             logging.info(f"[TARGET {target_id}] [{query_token}] Sent phone number {phone_number} to {BOT_USERNAME}")
             
             # Save sent message to chat history
@@ -1626,12 +1644,26 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             logging.info(f"[TARGET {target_id}] Waiting for bot response...")
             await asyncio.sleep(5)
             
-            # Get latest messages from bot
-            messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+            # Get latest messages from bot with safe wrapper
+            async def get_messages():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+            
+            messages = await safe_telegram_operation(get_messages, "get_messages_for_buttons", max_retries=3)
+            
+            if messages is None:
+                logging.error(f"[TARGET {target_id}] Failed to get messages from bot")
+                await db.targets.update_one(
+                    {"id": target_id},
+                    {"$set": {"status": "error", "error": "Gagal membaca pesan dari bot"}}
+                )
+                return
+            
             logging.info(f"[TARGET {target_id}] Retrieved {len(messages)} messages from bot")
             
             # Look for message with buttons
             cp_clicked = False
+            cp_button_found = None
+            
             for idx, msg in enumerate(messages):
                 logging.info(f"[TARGET {target_id}] Message {idx}: has_buttons={msg.buttons is not None}, text_preview={msg.text[:50] if msg.text else 'No text'}...")
                 
@@ -1653,27 +1685,39 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                     for row in msg.buttons:
                         for button in row:
                             if button.text and 'CP' in button.text.upper():
-                                # Click the CP button
-                                await button.click()
-                                logging.info(f"[TARGET {target_id}] ✓ Clicked CP button: {button.text}")
-                                
-                                # Save click action
-                                await db.chat_messages.insert_one({
-                                    "id": str(uuid.uuid4()),
-                                    "target_id": target_id,
-                                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                                    "direction": "sent",
-                                    "message": f"🔘 Clicked button: {button.text}",
-                                    "has_buttons": False
-                                })
-                                
-                                cp_clicked = True
+                                cp_button_found = button
                                 break
-                    if cp_clicked:
+                        if cp_button_found:
+                            break
+                    if cp_button_found:
                         break
             
+            # Click CP button with safe wrapper
+            if cp_button_found:
+                async def click_cp():
+                    await cp_button_found.click()
+                    return True
+                
+                clicked = await safe_telegram_operation(click_cp, f"click_CP_{phone_number}", max_retries=3)
+                
+                if clicked:
+                    logging.info(f"[TARGET {target_id}] ✓ Clicked CP button: {cp_button_found.text}")
+                    cp_clicked = True
+                    
+                    # Save click action
+                    await db.chat_messages.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "target_id": target_id,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "direction": "sent",
+                        "message": f"🔘 Clicked button: {cp_button_found.text}",
+                        "has_buttons": False
+                    })
+                else:
+                    logging.error(f"[TARGET {target_id}] Failed to click CP button after retries")
+            
             if not cp_clicked:
-                logging.warning(f"[TARGET {target_id}] ⚠ CP button not found in messages")
+                logging.warning(f"[TARGET {target_id}] ⚠ CP button not found or click failed")
             
             # Wait longer for bot to process and respond
             logging.info(f"[TARGET {target_id}] Waiting for location response...")
