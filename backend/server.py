@@ -1731,7 +1731,7 @@ async def send_telegram_code(phone_data: dict, username: str = Depends(verify_to
                 telegram_phone_code_hash = None
                 
                 # Delete session file
-                for sf in [str(ROOT_DIR / 'northarch_session.session'), '/app/backend/northarch_session.session-journal']:
+                for sf in [str(ROOT_DIR / 'northarch_session.session'), str(ROOT_DIR / 'northarch_session.session-journal')]:
                     if os.path.exists(sf):
                         try:
                             os.remove(sf)
@@ -1954,7 +1954,7 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
         # Delete ALL session files (including any cache)
         session_files = [
             str(ROOT_DIR / 'northarch_session.session'),
-            '/app/backend/northarch_session.session-journal',
+            str(ROOT_DIR / 'northarch_session.session-journal'),
         ]
         
         deleted_files = []
