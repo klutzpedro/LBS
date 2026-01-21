@@ -177,6 +177,118 @@ async def safe_telegram_operation(operation, operation_name="operation", max_ret
     logger.error(f"[Telegram] All {max_retries} retries failed for {operation_name}")
     return None
 
+# ============================================
+# CP API Functions (CEKPOS)
+# ============================================
+
+async def get_cp_api_quota():
+    """Get current CP API quota from database"""
+    quota_doc = await db.api_quota.find_one({"type": "cp_api"})
+    if not quota_doc:
+        # Initialize quota
+        await db.api_quota.insert_one({
+            "type": "cp_api",
+            "remaining": CP_API_INITIAL_QUOTA,
+            "initial": CP_API_INITIAL_QUOTA,
+            "used": 0,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        })
+        return CP_API_INITIAL_QUOTA
+    return quota_doc.get("remaining", 0)
+
+async def decrement_cp_api_quota():
+    """Decrement CP API quota by 1"""
+    result = await db.api_quota.find_one_and_update(
+        {"type": "cp_api", "remaining": {"$gt": 0}},
+        {
+            "$inc": {"remaining": -1, "used": 1},
+            "$set": {"last_updated": datetime.now(timezone.utc).isoformat()}
+        },
+        return_document=True
+    )
+    if result:
+        return result.get("remaining", 0)
+    return 0
+
+async def check_cp_api_connection():
+    """Check if CP API is reachable"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Just check if the server responds (even with error)
+            response = await client.get(
+                f"{CP_API_URL}/api/v3/cekpos",
+                headers={"api-key": CP_API_KEY}
+            )
+            # API is reachable if we get any response
+            return True
+    except Exception as e:
+        logger.error(f"[CP API] Connection check failed: {e}")
+        return False
+
+def normalize_phone_number(phone: str) -> str:
+    """Convert phone number to 628xxx format"""
+    phone = re.sub(r'[^0-9]', '', phone)  # Remove non-digits
+    if phone.startswith('08'):
+        phone = '62' + phone[1:]
+    elif phone.startswith('8'):
+        phone = '62' + phone
+    elif not phone.startswith('62'):
+        phone = '62' + phone
+    return phone
+
+async def query_cp_api(phone_number: str) -> dict:
+    """
+    Query CP (CEKPOS) API for phone location.
+    Returns dict with location data or error.
+    """
+    normalized_phone = normalize_phone_number(phone_number)
+    logger.info(f"[CP API] Querying position for {normalized_phone}")
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as http_client:
+            response = await http_client.post(
+                f"{CP_API_URL}/api/v3/cekpos",
+                headers={"api-key": CP_API_KEY},
+                data={"msisdn": normalized_phone}
+            )
+            
+            data = response.json()
+            logger.info(f"[CP API] Response code: {data.get('code')}, message: {data.get('message')}")
+            
+            if data.get("code") == 0 and data.get("contents"):
+                contents = data["contents"]
+                
+                # Decrement quota on successful query
+                await decrement_cp_api_quota()
+                
+                return {
+                    "success": True,
+                    "latitude": float(contents.get("latitude", 0)),
+                    "longitude": float(contents.get("longitude", 0)),
+                    "address": contents.get("address", "Alamat tidak tersedia"),
+                    "network": contents.get("network", "Unknown"),
+                    "state": contents.get("state", "Unknown"),
+                    "imsi": contents.get("imsi", ""),
+                    "imei": contents.get("imei", ""),
+                    "phone_model": contents.get("phone", ""),
+                    "prefix_type": contents.get("prefix_type", ""),
+                    "query_time": data.get("queryTime", ""),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": data.get("message", "Unknown error"),
+                    "code": data.get("code", -1)
+                }
+                
+    except httpx.TimeoutException:
+        logger.error(f"[CP API] Timeout for {normalized_phone}")
+        return {"success": False, "error": "Request timeout"}
+    except Exception as e:
+        logger.error(f"[CP API] Error: {e}")
+        return {"success": False, "error": str(e)}
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
