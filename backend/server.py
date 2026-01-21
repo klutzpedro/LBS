@@ -2518,18 +2518,20 @@ async def query_telegram_nik(target_id: str, nik: str):
         )
 
 async def query_telegram_family(target_id: str, family_id: str, source_nik: str = None):
-    """Query Family (NKK) data dengan Family ID - Stores per NIK"""
+    """Query Family (NKK) data dengan Family ID - with robust connection handling"""
     try:
         global telegram_client
         
-        if telegram_client is None:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
-            )
-            await telegram_client.start()
-            logging.info("Telegram client started for Family query")
+        # Ensure connection using safe wrapper
+        connected = await safe_telegram_operation(
+            lambda: ensure_telegram_connected(),
+            "connect_for_family",
+            max_retries=5
+        )
+        
+        if not connected:
+            logging.error(f"[FAMILY {target_id}] Failed to connect to Telegram")
+            return
         
         query_token = f"FAMILY_{family_id}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting Family query for NIK: {source_nik}")
@@ -2537,15 +2539,32 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
         # Add delay
         await asyncio.sleep(2)
         
-        # Send Family ID to bot
-        await telegram_client.send_message(BOT_USERNAME, family_id)
+        # Send Family ID to bot with safe wrapper
+        async def send_family_id():
+            await telegram_client.send_message(BOT_USERNAME, family_id)
+            return True
+        
+        sent = await safe_telegram_operation(send_family_id, f"send_family_{family_id}", max_retries=3)
+        
+        if not sent:
+            logging.error(f"[{query_token}] Failed to send Family ID")
+            return
+        
         logging.info(f"[{query_token}] Sent Family ID: {family_id}")
         
         await asyncio.sleep(5)
         
-        # Look for NKK button
-        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        # Get messages with safe wrapper
+        async def get_msgs():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
         
+        messages = await safe_telegram_operation(get_msgs, "get_family_buttons", max_retries=3)
+        
+        if messages is None:
+            logging.error(f"[{query_token}] Failed to get messages")
+            return
+        
+        nkk_button = None
         nkk_clicked = False
         for msg in messages:
             if msg.buttons:
@@ -2555,34 +2574,53 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
                 for row in msg.buttons:
                     for button in row:
                         if button.text and ('NKK' in button.text.upper() or 'FAMILY' in button.text.upper()):
-                            await button.click()
-                            logging.info(f"[{query_token}] ✓ Clicked NKK button")
-                            nkk_clicked = True
+                            nkk_button = button
                             break
-                if nkk_clicked:
+                    if nkk_button:
+                        break
+                if nkk_button:
                     break
         
+        # Click NKK button with safe wrapper
+        if nkk_button:
+            async def click_nkk():
+                await nkk_button.click()
+                return True
+            
+            clicked = await safe_telegram_operation(click_nkk, f"click_nkk_{family_id}", max_retries=3)
+            
+            if clicked:
+                logging.info(f"[{query_token}] ✓ Clicked NKK button")
+                nkk_clicked = True
+            else:
+                logging.error(f"[{query_token}] Failed to click NKK button after retries")
+        
         if not nkk_clicked:
-            logging.warning(f"[{query_token}] NKK button not found")
+            logging.warning(f"[{query_token}] NKK button not found or click failed")
         
         # Wait for family data response
         await asyncio.sleep(10)
         
-        # Get family response - Look for family/household data with multiple members
-        response_messages = await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        # Get family response with safe wrapper
+        async def get_response():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        
+        response_messages = await safe_telegram_operation(get_response, "get_family_response", max_retries=3)
+        
+        if response_messages is None:
+            logging.error(f"[{query_token}] Failed to get family response")
+            return
         
         family_info = None
         for msg in response_messages:
             if msg.text and family_id in msg.text:
                 # Look for NKK/Family Card data (multiple members)
-                # Keywords: "Kartu Keluarga", "NKK", "Household", "Anggota"
                 text_lower = msg.text.lower()
                 
                 if any(keyword in text_lower for keyword in ['kartu keluarga', 'nkk', 'household', 'anggota keluarga', 'family card']):
                     logging.info(f"[{query_token}] ✓ Found NKK/Family Card response")
                     
                     # Parse family members from NKK format
-                    # Format bisa berbeda - bisa list atau table
                     members = []
                     lines = msg.text.split('\n')
                     
