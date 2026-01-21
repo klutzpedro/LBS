@@ -1954,18 +1954,24 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         )
 
 async def query_telegram_reghp(target_id: str, phone_number: str):
-    """Query Reghp data for deeper information"""
+    """Query Reghp data for deeper information with robust connection handling"""
     try:
         global telegram_client
         
-        if telegram_client is None:
-            telegram_client = TelegramClient(
-                '/app/backend/northarch_session',
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
+        # Ensure connection using safe wrapper
+        connected = await safe_telegram_operation(
+            lambda: ensure_telegram_connected(),
+            "connect_for_reghp",
+            max_retries=5
+        )
+        
+        if not connected:
+            logging.error(f"[REGHP {target_id}] Failed to connect to Telegram")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"reghp_status": "error", "reghp_error": "Tidak dapat terhubung ke Telegram"}}
             )
-            await telegram_client.start()
-            logging.info("Telegram client started for Reghp query")
+            return
         
         query_token = f"REGHP_{phone_number}_{target_id[:8]}"
         logging.info(f"[{query_token}] Starting Reghp query for {phone_number}")
@@ -1979,8 +1985,21 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             "query_type": "reghp"
         })
         
-        # Send phone number to bot
-        await telegram_client.send_message(BOT_USERNAME, phone_number)
+        # Send phone number to bot with safe wrapper
+        async def send_phone():
+            await telegram_client.send_message(BOT_USERNAME, phone_number)
+            return True
+        
+        sent = await safe_telegram_operation(send_phone, f"send_reghp_{phone_number}", max_retries=3)
+        
+        if not sent:
+            logging.error(f"[{query_token}] Failed to send phone number")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"reghp_status": "error", "reghp_error": "Gagal mengirim nomor ke bot"}}
+            )
+            return
+        
         logging.info(f"[{query_token}] Sent phone number to bot")
         
         # Log to chat: Sent to bot
@@ -1994,9 +2013,21 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
         
         await asyncio.sleep(3)
         
-        # Get messages and look for "Reghp" button
-        messages = await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        # Get messages with safe wrapper
+        async def get_msgs():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
         
+        messages = await safe_telegram_operation(get_msgs, "get_reghp_messages", max_retries=3)
+        
+        if messages is None:
+            logging.error(f"[{query_token}] Failed to get messages")
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"reghp_status": "error", "reghp_error": "Gagal membaca pesan dari bot"}}
+            )
+            return
+        
+        reghp_button = None
         reghp_clicked = False
         for msg in messages:
             if msg.buttons:
