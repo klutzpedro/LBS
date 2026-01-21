@@ -452,6 +452,49 @@ async def login(request: LoginRequest):
     
     return LoginResponse(token=token, username=request.username)
 
+# ============================================
+# CP API Status and Quota Endpoints
+# ============================================
+
+@api_router.get("/cp-api/status")
+async def get_cp_api_status(username: str = Depends(verify_token)):
+    """Get CP API connection status and quota"""
+    is_connected = await check_cp_api_connection()
+    quota = await get_cp_api_quota()
+    quota_doc = await db.api_quota.find_one({"type": "cp_api"}, {"_id": 0})
+    
+    return {
+        "connected": is_connected,
+        "quota_remaining": quota,
+        "quota_initial": quota_doc.get("initial", CP_API_INITIAL_QUOTA) if quota_doc else CP_API_INITIAL_QUOTA,
+        "quota_used": quota_doc.get("used", 0) if quota_doc else 0,
+        "last_updated": quota_doc.get("last_updated") if quota_doc else None,
+        "api_url": CP_API_URL
+    }
+
+@api_router.post("/cp-api/reset-quota")
+async def reset_cp_api_quota(username: str = Depends(verify_token)):
+    """Reset CP API quota to initial value"""
+    await db.api_quota.update_one(
+        {"type": "cp_api"},
+        {
+            "$set": {
+                "remaining": CP_API_INITIAL_QUOTA,
+                "initial": CP_API_INITIAL_QUOTA,
+                "used": 0,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+    return {"message": "Quota reset", "remaining": CP_API_INITIAL_QUOTA}
+
+@api_router.post("/cp-api/test")
+async def test_cp_api(phone_number: str, username: str = Depends(verify_token)):
+    """Test CP API with a phone number (uses quota)"""
+    result = await query_cp_api(phone_number)
+    return result
+
 # Case Routes
 @api_router.post("/cases", response_model=Case)
 async def create_case(case_data: CaseCreate, username: str = Depends(verify_token)):
