@@ -15,6 +15,7 @@ from passlib.context import CryptContext
 import asyncio
 from telethon import TelegramClient, events
 import re
+import httpx  # For CP API calls
 
 ROOT_DIR = Path(__file__).parent
 env_path = ROOT_DIR / '.env'
@@ -35,6 +36,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 JWT_SECRET = os.getenv('JWT_SECRET', 'northarch-secret-key-2024')
 JWT_ALGORITHM = "HS256"
+
+# CP API Configuration
+CP_API_URL = os.getenv('CP_API_URL', 'https://gate-amg.blackopium.xyz')
+CP_API_KEY = os.getenv('CP_API_KEY', '4e5c5c4afc0c7ee8e22aa54c0796c084')
+CP_API_INITIAL_QUOTA = int(os.getenv('CP_API_QUOTA', '300'))
+
+logger.info(f"CP API URL: {CP_API_URL}")
+logger.info(f"CP API Key: {CP_API_KEY[:8]}...{CP_API_KEY[-4:]}")
 
 # Telegram Client Setup - PERMANENT VALUES
 # These are the correct API credentials for this application
