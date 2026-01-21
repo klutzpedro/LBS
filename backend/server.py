@@ -3220,9 +3220,24 @@ async def telegram_keepalive_task():
                 # Connection is alive, reset failure count
                 failure_count = 0
                 
-                # Periodic session backup to MongoDB (every 5 minutes = 10 * 30 seconds)
+                # Active ping every minute (3 * 20 seconds) to keep connection truly alive
+                ping_counter += 1
+                if ping_counter >= 3:
+                    ping_counter = 0
+                    try:
+                        if await telegram_client.is_user_authorized():
+                            # Send a lightweight request to keep connection active
+                            # get_me() is a simple operation that verifies the connection
+                            me = await telegram_client.get_me()
+                            logger.debug(f"[Keepalive] ✓ Active ping OK - connected as {me.username}")
+                    except Exception as ping_err:
+                        logger.warning(f"[Keepalive] Active ping failed: {ping_err}")
+                        # Force reconnect on next cycle
+                        failure_count = 1
+                
+                # Periodic session backup to MongoDB (every 2 minutes = 6 * 20 seconds)
                 backup_counter += 1
-                if backup_counter >= 10:
+                if backup_counter >= 6:
                     backup_counter = 0
                     try:
                         if await telegram_client.is_user_authorized():
