@@ -595,17 +595,29 @@
 
 ## Bug Fixes (January 2026 - Latest Session)
 
-### P0: Investigation Results Not Reloading from History - FIXED
+### P0: Investigation Results Not Reloading from History - FIXED (v2)
 - **Issue:** When user selected a target from NON GEOINT history, investigation results (NIK/NKK/RegNIK) were not displayed
-- **Root Cause:** React state management issue with useEffect dependencies causing race conditions when dialog opens
-- **Solution:**
-  1. Added `prevOpenRef` to detect dialog opening transition (closed → open)
-  2. Added `loadedSearchIdRef` to prevent redundant fetches for same search
-  3. Added `resetAllStates()` helper function for consistent cleanup
-  4. Reset `selectedNonGeointSearch` in parent component when dialog closes
+- **Root Cause:** React useEffect had flawed logic with `prevOpenRef` that prevented data loading on subsequent dialog opens
+- **Solution (v2 - Simplified & More Robust):**
+  1. Replaced complex `prevOpenRef` logic with simpler `lastOpenedWithSearchRef`
+  2. Data loads when: dialog opens AND initialSearch.id differs from last loaded search
+  3. On dialog close: all states reset AND `lastOpenedWithSearchRef` set to null
+  4. Parent component resets `selectedNonGeointSearch` when dialog closes
+  5. Added extensive console logging for debugging
 - **Files Modified:**
   - `/app/frontend/src/components/main/NonGeointSearch.jsx` - useEffect refactoring
   - `/app/frontend/src/pages/MainApp.jsx` - onOpenChange handler with state reset
+  - `/app/backend/server.py` - Enhanced logging for investigation loading
+
+### Debug Logs Added
+Frontend logs prefixed with `[NonGeoint]`:
+- Dialog open/close events
+- Search data loading
+- Investigation data presence
+
+Backend logs in `/var/log/supervisor/backend.out.log`:
+- Search fetch with investigation status
+- NIK results summary for each investigation
 
 ### P1: Family Tree Graph Not Rendering
 - **Status:** Needs VPS testing - component code appears correct
