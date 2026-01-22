@@ -1756,6 +1756,17 @@ const MainApp = () => {
         open={nonGeointDialogOpen}
         onOpenChange={setNonGeointDialogOpen}
         onNikPendalaman={handleNonGeointNikPendalaman}
+        initialSearch={selectedNonGeointSearch}
+      />
+
+      {/* NON GEOINT History Dialog */}
+      <NonGeointHistoryDialog
+        open={nonGeointHistoryOpen}
+        onOpenChange={setNonGeointHistoryOpen}
+        onSelectSearch={(search) => {
+          setSelectedNonGeointSearch(search);
+          setNonGeointDialogOpen(true);
+        }}
       />
     </div>
   );
