@@ -3587,6 +3587,9 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
             return {"status": "error", "error": "Failed to click button", "niks_found": []}
         
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
+        
+        # Record time after clicking button
+        button_click_time = datetime.now(timezone.utc)
         await asyncio.sleep(5)
         
         # Step 4: Get response - increase limit for large results
@@ -3597,6 +3600,20 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         if not response_messages:
             return {"status": "error", "error": "Failed to get response", "niks_found": []}
         
+        # IMPORTANT: Filter messages to only include those AFTER our query
+        # Use a buffer of 10 seconds before query_start_time to account for clock differences
+        time_threshold = query_start_time - timedelta(seconds=10)
+        filtered_messages = []
+        for msg in response_messages:
+            msg_time = msg.date.replace(tzinfo=timezone.utc) if msg.date.tzinfo is None else msg.date
+            if msg_time >= time_threshold:
+                filtered_messages.append(msg)
+            else:
+                logger.debug(f"[{query_token}] Skipping old message (time: {msg_time}, threshold: {time_threshold})")
+        
+        logger.info(f"[{query_token}] Filtered {len(response_messages)} messages to {len(filtered_messages)} (after {time_threshold})")
+        response_messages = filtered_messages
+        
         # For CAPIL queries with potentially many results, wait and get more messages
         if query_type == 'capil':
             await asyncio.sleep(3)  # Wait for more messages
@@ -3605,14 +3622,17 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
                 existing_ids = {m.id for m in response_messages}
                 for m in more_messages:
                     if m.id not in existing_ids:
-                        response_messages.append(m)
+                        # Also filter by time
+                        msg_time = m.date.replace(tzinfo=timezone.utc) if m.date.tzinfo is None else m.date
+                        if msg_time >= time_threshold:
+                            response_messages.append(m)
         
-        # Step 5: Parse response - COLLECT ALL NIKs FROM ALL MESSAGES
+        # Step 5: Parse response - COLLECT ALL NIKs FROM ALL MESSAGES (now filtered by time)
         parsed_data = None
         all_raw_text = []
         niks_found = []
         
-        # First pass: collect ALL NIKs from ALL messages
+        # First pass: collect ALL NIKs from ALL filtered messages
         for msg in response_messages:
             if msg.text:
                 # Extract NIKs using regex - 16 digit numbers
