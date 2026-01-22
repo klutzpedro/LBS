@@ -19,7 +19,8 @@ import {
   ChevronUp,
   MapPin,
   Calendar,
-  Download
+  Download,
+  Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
