@@ -1539,6 +1539,18 @@ const MainApp = () => {
             hasActiveQueries={hasActiveQueries}
           />
 
+          {/* NON GEOINT Search Button - Top Center of Map */}
+          <div 
+            className="absolute z-[1500]"
+            style={{
+              top: '16px',
+              left: '50%',
+              transform: 'translateX(-50%)'
+            }}
+          >
+            <NonGeointButton onOpenSearch={() => setNonGeointDialogOpen(true)} />
+          </div>
+
           {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
