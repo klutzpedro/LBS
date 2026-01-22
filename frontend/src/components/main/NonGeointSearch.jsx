@@ -1365,8 +1365,19 @@ export const NonGeointSearchDialog = ({
                     Data NIK
                   </h4>
                   <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                    {/* Photo section - more prominent */}
                     {detailDialog.result.nik_data.photo && (
-                      <img src={detailDialog.result.nik_data.photo} alt="Foto" className="w-32 h-auto rounded mb-3" />
+                      <div className="mb-4 flex justify-center">
+                        <div className="p-2 rounded-lg border" style={{ borderColor: 'var(--borders-default)', backgroundColor: 'var(--background-secondary)' }}>
+                          <img 
+                            src={detailDialog.result.nik_data.photo} 
+                            alt="Foto KTP" 
+                            className="w-36 h-auto rounded shadow-md"
+                            style={{ maxHeight: '180px', objectFit: 'cover' }}
+                          />
+                          <p className="text-xs text-center mt-2" style={{ color: 'var(--foreground-muted)' }}>Foto KTP</p>
+                        </div>
+                      </div>
                     )}
                     {detailDialog.result.nik_data.data && Object.keys(detailDialog.result.nik_data.data).length > 0 ? (
                       <div className="space-y-1 text-xs">
