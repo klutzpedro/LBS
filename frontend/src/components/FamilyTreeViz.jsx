@@ -246,7 +246,7 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
           </p>
         ) : (
           <p className="text-xs italic" style={{ color: 'var(--foreground-muted)' }}>
-            Klik "Analisis" untuk mendapatkan insight AI tentang keluarga ini
+            Klik &quot;Analisis&quot; untuk mendapatkan insight AI tentang keluarga ini
           </p>
         )}
       </div>
