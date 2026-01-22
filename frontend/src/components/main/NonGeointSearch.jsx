@@ -1429,10 +1429,30 @@ export const NonGeointSearchDialog = ({
               {/* NKK Data Section */}
               {detailDialog.result?.nkk_data && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
-                    {getStatusIcon(detailDialog.result.nkk_data.status)}
-                    Data NKK (Kartu Keluarga)
-                  </h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      {getStatusIcon(detailDialog.result.nkk_data.status)}
+                      Data NKK (Kartu Keluarga)
+                    </h4>
+                    {/* Family Tree Button */}
+                    {detailDialog.result.nkk_data.family_data?.members?.length > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={() => setFamilyTreeDialog({
+                          open: true,
+                          familyData: detailDialog.result.nkk_data.family_data,
+                          targetNik: detailDialog.nik
+                        })}
+                        style={{
+                          backgroundColor: 'var(--accent-secondary)',
+                          color: '#fff'
+                        }}
+                      >
+                        <GitBranch className="w-3 h-3 mr-1" />
+                        Family Tree
+                      </Button>
+                    )}
+                  </div>
                   <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
                     {detailDialog.result.nkk_data.data && Object.keys(detailDialog.result.nkk_data.data).length > 0 ? (
                       <div className="space-y-1 text-xs">
