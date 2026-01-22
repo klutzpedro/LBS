@@ -525,3 +525,70 @@
 - `/app/frontend/src/components/FamilyTreeViz.jsx` - Family tree component
 - `/app/frontend/src/components/HistoryDialog.jsx` - Position history dialog
 - `/app/frontend/src/components/AOIComponents.jsx` - AOI panel and alert notification
+- `/app/frontend/src/components/main/NonGeointSearch.jsx` - NON GEOINT search component
+
+## Recent Updates (January 22, 2026)
+
+### Critical Bug Fixes on VPS (January 21-22, 2026)
+1. **IndentationError Fix:** Fixed server-crashing IndentationError in `backend/server.py`
+2. **Telegram Session Path Fix:** Replaced hardcoded file paths with relative paths using `ROOT_DIR`
+3. **NIK Data Overwriting Fix:** Corrected logic where detailed NIK data was being overwritten
+
+### Cases Slider Feature (January 22, 2026)
+- **Feature:** Cases list in sidebar now uses horizontal slider for multiple cases
+- **Library:** `react-slick`, `slick-carousel`
+- **UI:** Navigation arrows and dots for case selection
+- **Files Modified:** `/app/frontend/src/components/main/Sidebar.jsx`
+
+### NON GEOINT Search Engine (January 22, 2026)
+- **Purpose:** Search for individuals by name (separate from map-based phone tracking)
+- **Workflow:**
+  1. User enters full name in search dialog
+  2. System queries Telegram bot for: Capil → Pass WNI → Pass WNA
+  3. Results aggregated with automatic NIK extraction
+  4. User selects NIKs for detailed investigation (NIK, NKK, RegNIK queries)
+  5. Final results exportable as PDF
+
+- **Backend Features:**
+  - New `asyncio.Queue` system for sequential Telegram queries (prevents race conditions)
+  - Endpoints: `/api/nongeoint/search`, `/api/nongeoint/investigate-niks`, `/api/nongeoint/history`
+  - MongoDB collection: `nongeoint_searches`
+
+- **Frontend Features:**
+  - 3D-styled "NON GEOINT" button (orange gradient) positioned above map
+  - History button (purple) for viewing past searches
+  - Multi-step dialog: Search → Results → NIK Selection → Investigation → PDF Export
+  - Status indicators for each query type (Capil, Pass WNI, Pass WNA)
+  - Checkbox selection for multiple NIKs
+  - Real-time polling for query progress
+
+- **Files Created/Modified:**
+  - `/app/backend/server.py` - NON GEOINT endpoints and queue system
+  - `/app/frontend/src/components/main/NonGeointSearch.jsx` - New component
+  - `/app/frontend/src/pages/MainApp.jsx` - Integration and button placement
+  - `/app/frontend/package.json` - Added jspdf, html2canvas dependencies
+
+- **UI Fix:** Sidebar minimize button z-index corrected (z-[999] instead of z-[2000])
+
+### Dependencies Added
+- `react-slick` - Slider/carousel component
+- `slick-carousel` - Slider CSS
+- `jspdf` - PDF generation (also used by NON GEOINT)
+- `html2canvas` - HTML to canvas conversion
+
+## Deployment Notes (VPS: 76.13.21.246)
+- **Update Command:**
+  ```bash
+  cd /var/www/waskita-lbs
+  git checkout -- .
+  git pull origin main
+  pm2 restart waskita-backend
+  ```
+- Agent does NOT have direct VPS access - all instructions provided as bash commands for user
+
+## Testing Status (January 22, 2026)
+- **Preview Environment:** UI verified working (login, map, NON GEOINT dialogs)
+- **VPS Testing Required:** Full functional testing of NON GEOINT needs:
+  1. Active Telegram connection (session setup on VPS)
+  2. Bot @northarch_bot must be responsive
+- **CP API:** Disconnected in preview (IP not whitelisted)
