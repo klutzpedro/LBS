@@ -4014,29 +4014,6 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             # If no good response yet, wait and try again
             if not best_response and not collected_texts:
                 await asyncio.sleep(3)
-                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                logger.info(f"[{query_token}] Downloaded photo")
-                        except Exception as e:
-                            logger.error(f"[{query_token}] Photo download error: {e}")
-                    
-                    # Store the best response (prefer ones with parsed data)
-                    if parsed_data or not best_response:
-                        best_response = {
-                            "status": "completed",
-                            "data": parsed_data,
-                            "raw_text": msg.text,
-                            "photo": photo_base64,
-                            "family_data": family_data
-                        }
-                        
-                    # If we got parsed data, return immediately
-                    if parsed_data:
-                        logger.info(f"[{query_token}] Successfully parsed data")
-                        return best_response
-            
-            # If no good response yet, wait and try again
-            if not best_response:
-                await asyncio.sleep(3)
         
         # Return best response if found, otherwise error
         if best_response:
