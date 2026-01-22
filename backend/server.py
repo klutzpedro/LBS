@@ -4026,6 +4026,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         # Step 4: Get response - try multiple times
         best_response = None
         collected_texts = []  # For NKK, collect all related messages
+        photo_base64 = None  # Store photo separately
         
         for attempt in range(3):
             async def get_resp():
@@ -4035,6 +4036,20 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             if not response_messages:
                 await asyncio.sleep(2)
                 continue
+            
+            # FIRST: Look for photo in ALL messages (photo might be separate from text)
+            if not photo_base64:
+                for msg in response_messages:
+                    if msg.photo:
+                        try:
+                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                            if photo_bytes:
+                                import base64
+                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                logger.info(f"[{query_token}] Downloaded photo from message")
+                                break
+                        except Exception as e:
+                            logger.error(f"[{query_token}] Photo download error: {e}")
             
             # Step 5: Parse response - look for relevant data
             for msg in response_messages:
@@ -4077,15 +4092,14 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     # Parse data
                     parsed_data = parse_nongeoint_response(msg.text, button_type)
                     
-                    # Download photo if exists
-                    photo_base64 = None
-                    if msg.photo:
+                    # Also check for photo in this specific message
+                    if msg.photo and not photo_base64:
                         try:
                             photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                             if photo_bytes:
                                 import base64
                                 photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                logger.info(f"[{query_token}] Downloaded photo")
+                                logger.info(f"[{query_token}] Downloaded photo from data message")
                         except Exception as e:
                             logger.error(f"[{query_token}] Photo download error: {e}")
                     
@@ -4103,7 +4117,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                             
                         # If we got parsed data, return immediately
                         if parsed_data:
-                            logger.info(f"[{query_token}] Successfully parsed data")
+                            logger.info(f"[{query_token}] Successfully parsed data, photo: {'Yes' if photo_base64 else 'No'}")
                             return best_response
             
             # For NKK, parse combined texts after collecting
