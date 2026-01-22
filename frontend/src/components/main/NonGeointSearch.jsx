@@ -1433,6 +1433,14 @@ export const NonGeointSearchDialog = ({
                     <h4 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
                       {getStatusIcon(detailDialog.result.nkk_data.status)}
                       Data NKK (Kartu Keluarga)
+                      {detailDialog.result.nkk_data.family_data?.member_count && (
+                        <span 
+                          className="ml-2 px-2 py-0.5 rounded text-xs"
+                          style={{ backgroundColor: 'var(--accent-primary-transparent)', color: 'var(--accent-primary)' }}
+                        >
+                          {detailDialog.result.nkk_data.family_data.member_count} anggota
+                        </span>
+                      )}
                     </h4>
                     {/* Family Tree Button */}
                     {detailDialog.result.nkk_data.family_data?.members?.length > 0 && (
@@ -1453,8 +1461,47 @@ export const NonGeointSearchDialog = ({
                       </Button>
                     )}
                   </div>
-                  <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                    {detailDialog.result.nkk_data.data && Object.keys(detailDialog.result.nkk_data.data).length > 0 ? (
+                  <div className="p-3 rounded-md space-y-3" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                    {/* Show family members table if available */}
+                    {detailDialog.result.nkk_data.family_data?.members?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                          ANGGOTA KELUARGA:
+                        </p>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs border-collapse">
+                            <thead>
+                              <tr style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>No</th>
+                                <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>NIK</th>
+                                <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Nama</th>
+                                <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Hubungan</th>
+                                <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>L/P</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {detailDialog.result.nkk_data.family_data.members.map((member, idx) => (
+                                <tr 
+                                  key={idx}
+                                  style={{ 
+                                    backgroundColor: member.nik === detailDialog.nik ? 'rgba(255, 59, 92, 0.15)' : 'transparent'
+                                  }}
+                                >
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{idx + 1}</td>
+                                  <td className="py-1.5 px-2 border font-mono" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>{member.nik || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>{member.name || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.relationship || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.gender || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Show parsed data if no family members */}
+                    {!detailDialog.result.nkk_data.family_data?.members?.length && detailDialog.result.nkk_data.data && Object.keys(detailDialog.result.nkk_data.data).length > 0 && (
                       <div className="space-y-1 text-xs">
                         {Object.entries(detailDialog.result.nkk_data.data).map(([key, value]) => (
                           <div key={key} className="flex">
@@ -1463,11 +1510,17 @@ export const NonGeointSearchDialog = ({
                           </div>
                         ))}
                       </div>
-                    ) : detailDialog.result.nkk_data.raw_text ? (
-                      <pre className="text-xs whitespace-pre-wrap" style={{ color: 'var(--foreground-primary)' }}>
+                    )}
+                    
+                    {/* Show raw text if no parsed data */}
+                    {!detailDialog.result.nkk_data.family_data?.members?.length && !detailDialog.result.nkk_data.data && detailDialog.result.nkk_data.raw_text && (
+                      <pre className="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto" style={{ color: 'var(--foreground-primary)' }}>
                         {detailDialog.result.nkk_data.raw_text}
                       </pre>
-                    ) : (
+                    )}
+                    
+                    {/* No data */}
+                    {!detailDialog.result.nkk_data.family_data?.members?.length && !detailDialog.result.nkk_data.data && !detailDialog.result.nkk_data.raw_text && (
                       <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                         Status: {detailDialog.result.nkk_data.status} - {detailDialog.result.nkk_data.error || 'No data'}
                       </p>
