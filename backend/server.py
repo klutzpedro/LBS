@@ -3508,6 +3508,245 @@ def parse_nongeoint_response(text: str, query_type: str) -> dict:
     return parsed if parsed else None
 
 
+# NIK Deep Investigation (NIK, NKK, RegNIK)
+class NikDeepInvestigationRequest(BaseModel):
+    search_id: str
+    niks: List[str]
+
+@api_router.post("/nongeoint/investigate-niks")
+async def investigate_niks(request: NikDeepInvestigationRequest, username: str = Depends(verify_token)):
+    """
+    Deep investigation for selected NIKs - queries NIK, NKK, RegNIK for each
+    """
+    investigation_id = str(uuid.uuid4())[:8]
+    logger.info(f"[NIK INVESTIGATION {investigation_id}] Starting for {len(request.niks)} NIKs")
+    
+    # Create investigation document
+    investigation_doc = {
+        "id": investigation_id,
+        "search_id": request.search_id,
+        "niks": request.niks,
+        "status": "processing",
+        "results": {},
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": username
+    }
+    await db.nik_investigations.insert_one(investigation_doc)
+    
+    # Start background processing
+    asyncio.create_task(process_nik_investigation(investigation_id, request.search_id, request.niks))
+    
+    return {"investigation_id": investigation_id, "status": "processing"}
+
+@api_router.get("/nongeoint/investigation/{investigation_id}")
+async def get_investigation(investigation_id: str, username: str = Depends(verify_token)):
+    """Get NIK investigation results"""
+    investigation = await db.nik_investigations.find_one({"id": investigation_id}, {"_id": 0})
+    if not investigation:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+    return investigation
+
+async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
+    """Process NIK deep investigation with queue system"""
+    global telegram_client
+    
+    results = {}
+    
+    async with nongeoint_queue_lock:
+        try:
+            # Ensure Telegram connection
+            connected = await safe_telegram_operation(
+                lambda: ensure_telegram_connected(),
+                f"nik_invest_connect_{investigation_id}",
+                max_retries=5
+            )
+            
+            if not connected:
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {"status": "error", "error": "Telegram connection failed"}}
+                )
+                return
+            
+            # Process each NIK sequentially
+            for nik in niks:
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Processing NIK: {nik}")
+                
+                nik_results = {
+                    "nik": nik,
+                    "nik_data": None,
+                    "nkk_data": None,
+                    "regnik_data": None,
+                    "status": "processing"
+                }
+                
+                # Query 1: NIK
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NIK for {nik}")
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.status": "processing_nik"}}
+                )
+                nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
+                nik_results["nik_data"] = nik_result
+                await asyncio.sleep(3)
+                
+                # Query 2: NKK
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NKK for {nik}")
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.status": "processing_nkk"}}
+                )
+                nkk_result = await execute_nik_button_query(investigation_id, nik, "NKK")
+                nik_results["nkk_data"] = nkk_result
+                await asyncio.sleep(3)
+                
+                # Query 3: RegNIK
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying RegNIK for {nik}")
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.status": "processing_regnik"}}
+                )
+                regnik_result = await execute_nik_button_query(investigation_id, nik, "REGNIK")
+                nik_results["regnik_data"] = regnik_result
+                
+                nik_results["status"] = "completed"
+                results[nik] = nik_results
+                
+                # Update database
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}": nik_results}}
+                )
+                
+                # Wait between NIKs
+                await asyncio.sleep(3)
+            
+            # Mark investigation as completed
+            await db.nik_investigations.update_one(
+                {"id": investigation_id},
+                {"$set": {"status": "completed", "results": results}}
+            )
+            logger.info(f"[NIK INVESTIGATION {investigation_id}] Completed")
+            
+        except Exception as e:
+            logger.error(f"[NIK INVESTIGATION {investigation_id}] Error: {e}")
+            await db.nik_investigations.update_one(
+                {"id": investigation_id},
+                {"$set": {"status": "error", "error": str(e)}}
+            )
+
+async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
+    """Execute a single NIK/NKK/RegNIK query"""
+    global telegram_client
+    
+    button_map = {
+        "NIK": ["🔍 NIK", "NIK"],
+        "NKK": ["👥 NKK", "NKK"],
+        "REGNIK": ["📞 Regnik", "Regnik", "REGNIK"]
+    }
+    
+    query_token = f"NIKINVEST_{investigation_id}_{nik}_{button_type}"
+    
+    try:
+        # Step 1: Send NIK to bot
+        async def send_nik():
+            await telegram_client.send_message(BOT_USERNAME, nik)
+            return True
+        
+        sent = await safe_telegram_operation(send_nik, f"send_{query_token}", max_retries=3)
+        if not sent:
+            return {"status": "error", "error": "Failed to send NIK to bot"}
+        
+        logger.info(f"[{query_token}] Sent NIK: {nik}")
+        await asyncio.sleep(4)
+        
+        # Step 2: Get buttons
+        async def get_buttons():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        messages = await safe_telegram_operation(get_buttons, f"get_buttons_{query_token}", max_retries=3)
+        if not messages:
+            return {"status": "error", "error": "Failed to get bot buttons"}
+        
+        # Find target button
+        target_button = None
+        for msg in messages:
+            if msg.buttons:
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text:
+                            for btn_text in button_map.get(button_type, []):
+                                if btn_text.lower() in button.text.lower():
+                                    target_button = button
+                                    break
+                        if target_button:
+                            break
+                    if target_button:
+                        break
+            if target_button:
+                break
+        
+        if not target_button:
+            logger.warning(f"[{query_token}] Button '{button_type}' not found")
+            return {"status": "not_found", "error": f"Button {button_type} not found"}
+        
+        # Step 3: Click button
+        async def click_btn():
+            await target_button.click()
+            return True
+        
+        clicked = await safe_telegram_operation(click_btn, f"click_{query_token}", max_retries=3)
+        if not clicked:
+            return {"status": "error", "error": "Failed to click button"}
+        
+        logger.info(f"[{query_token}] Clicked button: {target_button.text}")
+        await asyncio.sleep(5)
+        
+        # Step 4: Get response
+        async def get_resp():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        
+        response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}", max_retries=3)
+        if not response_messages:
+            return {"status": "error", "error": "Failed to get response"}
+        
+        # Step 5: Parse response
+        for msg in response_messages:
+            if msg.text and nik in msg.text:
+                logger.info(f"[{query_token}] Found response containing NIK")
+                
+                # Check for not found
+                if 'not found' in msg.text.lower() or 'tidak ditemukan' in msg.text.lower():
+                    return {"status": "not_found", "raw_text": msg.text}
+                
+                # Parse data
+                parsed_data = parse_nongeoint_response(msg.text, button_type)
+                
+                # Download photo if exists
+                photo_base64 = None
+                if msg.photo:
+                    try:
+                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                        if photo_bytes:
+                            import base64
+                            photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                    except Exception as e:
+                        logger.error(f"[{query_token}] Photo download error: {e}")
+                
+                return {
+                    "status": "completed",
+                    "data": parsed_data,
+                    "raw_text": msg.text,
+                    "photo": photo_base64
+                }
+        
+        return {"status": "no_data", "error": "No matching response found"}
+        
+    except Exception as e:
+        logger.error(f"[{query_token}] Error: {e}")
+        return {"status": "error", "error": str(e)}
+
+
 # AI Family Tree Analysis
 class FamilyAnalysisRequest(BaseModel):
     members: List[dict]
