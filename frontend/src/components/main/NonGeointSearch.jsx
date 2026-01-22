@@ -1425,15 +1425,39 @@ export const NonGeointSearchDialog = ({
                 <div>
                   <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
                     {getStatusIcon(detailDialog.result.regnik_data.status)}
-                    Data RegNIK
+                    Data RegNIK (Nomor Telepon)
                   </h4>
                   <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                    {detailDialog.result.regnik_data.data && Object.keys(detailDialog.result.regnik_data.data).length > 0 ? (
+                    {/* Display phones array if available */}
+                    {detailDialog.result.regnik_data.phones && detailDialog.result.regnik_data.phones.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium" style={{ color: 'var(--foreground-muted)' }}>
+                          Ditemukan {detailDialog.result.regnik_data.phones.length} nomor telepon:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {detailDialog.result.regnik_data.phones.map((phone, idx) => (
+                            <span 
+                              key={idx}
+                              className="px-3 py-1.5 rounded-md font-mono text-sm"
+                              style={{ 
+                                backgroundColor: 'var(--accent-primary-transparent)',
+                                color: 'var(--accent-primary)',
+                                border: '1px solid var(--accent-primary)'
+                              }}
+                            >
+                              📞 {phone}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : detailDialog.result.regnik_data.data && Object.keys(detailDialog.result.regnik_data.data).length > 0 ? (
                       <div className="space-y-1 text-xs">
                         {Object.entries(detailDialog.result.regnik_data.data).map(([key, value]) => (
                           <div key={key} className="flex">
                             <span className="font-medium w-28 flex-shrink-0" style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
-                            <span style={{ color: 'var(--foreground-primary)' }}>{String(value)}</span>
+                            <span style={{ color: 'var(--foreground-primary)' }}>
+                              {Array.isArray(value) ? value.join(', ') : String(value)}
+                            </span>
                           </div>
                         ))}
                       </div>
