@@ -1553,10 +1553,15 @@ const MainApp = () => {
           >
             <NonGeointButton 
               onOpenSearch={() => {
+                if (isGlobalInvestigating) {
+                  toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
+                  return;
+                }
                 setSelectedNonGeointSearch(null);
                 setNonGeointDialogOpen(true);
               }} 
               onOpenHistory={() => setNonGeointHistoryOpen(true)}
+              isInvestigating={isGlobalInvestigating}
             />
           </div>
 
