@@ -1473,11 +1473,11 @@ const MainApp = () => {
         </Button>
       )}
 
-      {!isMaximized && !sidebarCollapsed && (
+      {!isMaximized && !sidebarCollapsed && !nonGeointDialogOpen && !nonGeointHistoryOpen && (
         <Button
           onClick={() => setSidebarCollapsed(true)}
           size="icon"
-          className="fixed left-[304px] bottom-8 z-[40] w-10 h-10 rounded-full shadow-lg"
+          className="fixed left-[304px] bottom-4 z-[10] w-8 h-8 rounded-full shadow-lg opacity-70 hover:opacity-100"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--accent-primary)',
@@ -1485,7 +1485,7 @@ const MainApp = () => {
             border: '2px solid'
           }}
         >
-          <Minimize2 className="w-5 h-5" />
+          <Minimize2 className="w-4 h-4" />
         </Button>
       )}
 
