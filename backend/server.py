@@ -3605,6 +3605,12 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 )
                 nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
                 nik_results["nik_data"] = nik_result
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] NIK result status: {nik_result.get('status')}")
+                # Save immediately after each query
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.nik_data": nik_result}}
+                )
                 await asyncio.sleep(3)
                 
                 # Query 2: NKK
@@ -3615,6 +3621,12 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 )
                 nkk_result = await execute_nik_button_query(investigation_id, nik, "NKK")
                 nik_results["nkk_data"] = nkk_result
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}")
+                # Save immediately after each query
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.nkk_data": nkk_result}}
+                )
                 await asyncio.sleep(3)
                 
                 # Query 3: RegNIK
@@ -3625,15 +3637,17 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 )
                 regnik_result = await execute_nik_button_query(investigation_id, nik, "REGNIK")
                 nik_results["regnik_data"] = regnik_result
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}")
                 
                 nik_results["status"] = "completed"
                 results[nik] = nik_results
                 
-                # Update database
+                # Update database with complete NIK results
                 await db.nik_investigations.update_one(
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}": nik_results}}
                 )
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Saved complete results for {nik}")
                 
                 # Wait between NIKs
                 await asyncio.sleep(3)
