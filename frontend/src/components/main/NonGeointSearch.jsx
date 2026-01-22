@@ -14,9 +14,12 @@ import {
   Globe,
   History,
   Eye,
-  X
+  Printer,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -71,6 +74,9 @@ const ResultDetailDialog = ({ open, onClose, queryType, result }) => {
       case 'capil': return 'CAPIL (Dukcapil)';
       case 'pass_wni': return 'Passport WNI';
       case 'pass_wna': return 'Passport WNA';
+      case 'nik_data': return 'Data NIK';
+      case 'nkk_data': return 'Data NKK (Kartu Keluarga)';
+      case 'regnik_data': return 'Data RegNIK';
       default: return type;
     }
   };
@@ -103,6 +109,16 @@ const ResultDetailDialog = ({ open, onClose, queryType, result }) => {
               {result?.status || 'Unknown'}
             </span>
           </div>
+
+          {/* Photo */}
+          {result?.photo && (
+            <div>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                Foto:
+              </h4>
+              <img src={result.photo} alt="Photo" className="max-w-[200px] rounded-md border" />
+            </div>
+          )}
 
           {/* NIKs Found */}
           {result?.niks_found?.length > 0 && (
@@ -297,6 +313,129 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   );
 };
 
+// NIK Investigation Results Component
+const NikInvestigationResults = ({ investigation, searchResults, onPrint }) => {
+  const [expandedNiks, setExpandedNiks] = useState({});
+  const [detailDialog, setDetailDialog] = useState({ open: false, type: null, result: null });
+
+  const toggleNik = (nik) => {
+    setExpandedNiks(prev => ({ ...prev, [nik]: !prev[nik] }));
+  };
+
+  const getStatusIcon = (status) => {
+    if (!status || status === 'processing' || status.startsWith('processing_')) {
+      return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
+    }
+    if (status === 'completed') {
+      return <CheckCircle className="w-4 h-4 text-green-500" />;
+    }
+    return <AlertCircle className="w-4 h-4 text-yellow-500" />;
+  };
+
+  const getQueryTypeLabel = (type) => {
+    switch (type) {
+      case 'nik_data': return 'NIK';
+      case 'nkk_data': return 'NKK';
+      case 'regnik_data': return 'RegNIK';
+      default: return type;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground-secondary)' }}>
+          Hasil Pendalaman NIK
+        </h3>
+        {investigation?.status === 'completed' && (
+          <Button
+            size="sm"
+            onClick={onPrint}
+            style={{
+              backgroundColor: 'var(--accent-secondary)',
+              color: '#fff'
+            }}
+          >
+            <Printer className="w-4 h-4 mr-1" />
+            Print PDF
+          </Button>
+        )}
+      </div>
+
+      {Object.entries(investigation?.results || {}).map(([nik, nikResult]) => (
+        <div 
+          key={nik}
+          className="rounded-md border overflow-hidden"
+          style={{
+            backgroundColor: 'var(--background-tertiary)',
+            borderColor: 'var(--borders-subtle)'
+          }}
+        >
+          {/* NIK Header */}
+          <div 
+            className="p-3 flex items-center justify-between cursor-pointer"
+            onClick={() => toggleNik(nik)}
+            style={{ backgroundColor: 'var(--background-secondary)' }}
+          >
+            <div className="flex items-center gap-2">
+              {getStatusIcon(nikResult?.status)}
+              <span className="font-mono font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                {nik}
+              </span>
+            </div>
+            {expandedNiks[nik] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </div>
+
+          {/* NIK Details */}
+          {expandedNiks[nik] && (
+            <div className="p-3 space-y-2">
+              {['nik_data', 'nkk_data', 'regnik_data'].map(queryType => {
+                const result = nikResult?.[queryType];
+                const hasData = result && (result.data || result.raw_text);
+                
+                return (
+                  <div 
+                    key={queryType}
+                    className="flex items-center justify-between p-2 rounded"
+                    style={{ backgroundColor: 'var(--background-primary)' }}
+                  >
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(result?.status)}
+                      <span className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                        {getQueryTypeLabel(queryType)}
+                      </span>
+                    </div>
+                    {hasData && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDetailDialog({ open: true, type: queryType, result })}
+                        className="h-7 px-2"
+                        style={{ color: 'var(--accent-primary)' }}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </Button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Detail Dialog */}
+      <ResultDetailDialog
+        open={detailDialog.open}
+        onClose={() => setDetailDialog({ open: false, type: null, result: null })}
+        queryType={detailDialog.type}
+        result={detailDialog.result}
+      />
+    </div>
+  );
+};
+
 export const NonGeointSearchDialog = ({ 
   open, 
   onOpenChange, 
@@ -305,12 +444,13 @@ export const NonGeointSearchDialog = ({
 }) => {
   const [searchName, setSearchName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [currentSearchId, setCurrentSearchId] = useState(null);
   const [searchResults, setSearchResults] = useState(null);
   const [selectedNiks, setSelectedNiks] = useState([]);
-  const [processingPendalaman, setProcessingPendalaman] = useState(false);
+  const [isInvestigating, setIsInvestigating] = useState(false);
+  const [investigation, setInvestigation] = useState(null);
   const [detailDialog, setDetailDialog] = useState({ open: false, type: null, result: null });
   const pollingRef = useRef(null);
+  const investigationPollingRef = useRef(null);
 
   // Load initial search if provided
   useEffect(() => {
@@ -327,8 +467,12 @@ export const NonGeointSearchDialog = ({
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+      if (investigationPollingRef.current) {
+        clearInterval(investigationPollingRef.current);
+        investigationPollingRef.current = null;
+      }
       setIsSearching(false);
-      setCurrentSearchId(null);
+      setIsInvestigating(false);
     }
   }, [open]);
 
@@ -341,6 +485,7 @@ export const NonGeointSearchDialog = ({
     setIsSearching(true);
     setSearchResults(null);
     setSelectedNiks([]);
+    setInvestigation(null);
 
     try {
       const token = localStorage.getItem('token');
@@ -359,7 +504,6 @@ export const NonGeointSearchDialog = ({
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
-      setCurrentSearchId(data.search_id);
       
       pollingRef.current = setInterval(() => {
         pollSearchResults(data.search_id);
@@ -392,8 +536,6 @@ export const NonGeointSearchDialog = ({
 
         if (data.status === 'completed' && data.niks_found?.length > 0) {
           toast.success(`Ditemukan ${data.niks_found.length} NIK`);
-        } else if (data.status === 'error') {
-          toast.error(data.error || 'Search failed');
         }
       }
     } catch (error) {
@@ -419,25 +561,194 @@ export const NonGeointSearchDialog = ({
     }
   };
 
-  const handlePendalaman = async () => {
+  const startInvestigation = async () => {
     if (selectedNiks.length === 0) {
-      toast.error('Pilih minimal satu NIK untuk pendalaman');
+      toast.error('Pilih minimal satu NIK');
       return;
     }
 
-    setProcessingPendalaman(true);
-    toast.info(`Memulai pendalaman ${selectedNiks.length} NIK...`);
+    setIsInvestigating(true);
+    toast.info(`Memulai pendalaman ${selectedNiks.length} NIK (NIK, NKK, RegNIK)...`);
 
-    for (const nik of selectedNiks) {
-      if (onNikPendalaman) {
-        await onNikPendalaman(nik);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/investigate-niks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          search_id: searchResults.id,
+          niks: selectedNiks
+        })
+      });
+
+      if (!response.ok) throw new Error('Investigation failed');
+
+      const data = await response.json();
+      
+      // Start polling for investigation results
+      investigationPollingRef.current = setInterval(() => {
+        pollInvestigation(data.investigation_id);
+      }, 2000);
+
+    } catch (error) {
+      toast.error('Gagal memulai pendalaman');
+      setIsInvestigating(false);
+    }
+  };
+
+  const pollInvestigation = async (investigationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/investigation/${investigationId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) throw new Error('Failed to get investigation');
+
+      const data = await response.json();
+      setInvestigation(data);
+
+      if (data.status === 'completed' || data.status === 'error') {
+        if (investigationPollingRef.current) {
+          clearInterval(investigationPollingRef.current);
+          investigationPollingRef.current = null;
+        }
+        setIsInvestigating(false);
+
+        if (data.status === 'completed') {
+          toast.success('Pendalaman NIK selesai');
+        }
+      }
+    } catch (error) {
+      console.error('Investigation polling error:', error);
+    }
+  };
+
+  const generatePDF = () => {
+    const pdf = new jsPDF();
+    let yPos = 20;
+    const lineHeight = 7;
+    const pageHeight = 280;
+    
+    const addText = (text, x = 14, fontSize = 10, isBold = false) => {
+      if (yPos > pageHeight) {
+        pdf.addPage();
+        yPos = 20;
+      }
+      pdf.setFontSize(fontSize);
+      if (isBold) {
+        pdf.setFont('helvetica', 'bold');
+      } else {
+        pdf.setFont('helvetica', 'normal');
+      }
+      pdf.text(text, x, yPos);
+      yPos += lineHeight;
+    };
+
+    const addSection = (title) => {
+      yPos += 5;
+      addText(title, 14, 12, true);
+      yPos += 2;
+    };
+
+    // Title
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('LAPORAN NON GEOINT', 105, yPos, { align: 'center' });
+    yPos += 10;
+
+    // Search Info
+    addText(`Nama Pencarian: ${searchResults?.name || '-'}`, 14, 11, true);
+    addText(`Tanggal: ${new Date().toLocaleDateString('id-ID', { 
+      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+    })}`);
+    yPos += 5;
+
+    // CAPIL Results
+    if (searchResults?.results?.capil) {
+      addSection('1. HASIL CAPIL (Dukcapil)');
+      const capil = searchResults.results.capil;
+      addText(`Status: ${capil.status}`);
+      if (capil.data) {
+        Object.entries(capil.data).forEach(([key, value]) => {
+          addText(`${key}: ${value}`);
+        });
+      }
+      if (capil.niks_found?.length > 0) {
+        addText(`NIK Ditemukan: ${capil.niks_found.join(', ')}`);
       }
     }
 
-    setProcessingPendalaman(false);
-    toast.success('Pendalaman selesai');
-    onOpenChange(false);
+    // Pass WNI Results
+    if (searchResults?.results?.pass_wni) {
+      addSection('2. HASIL PASSPORT WNI');
+      const passWni = searchResults.results.pass_wni;
+      addText(`Status: ${passWni.status}`);
+      if (passWni.data) {
+        Object.entries(passWni.data).forEach(([key, value]) => {
+          addText(`${key}: ${value}`);
+        });
+      }
+    }
+
+    // Pass WNA Results
+    if (searchResults?.results?.pass_wna) {
+      addSection('3. HASIL PASSPORT WNA');
+      const passWna = searchResults.results.pass_wna;
+      addText(`Status: ${passWna.status}`);
+      if (passWna.data) {
+        Object.entries(passWna.data).forEach(([key, value]) => {
+          addText(`${key}: ${value}`);
+        });
+      }
+    }
+
+    // NIK Investigation Results
+    if (investigation?.results) {
+      addSection('4. HASIL PENDALAMAN NIK');
+      
+      Object.entries(investigation.results).forEach(([nik, nikResult], idx) => {
+        yPos += 3;
+        addText(`${idx + 1}. NIK: ${nik}`, 14, 11, true);
+        
+        // NIK Data
+        if (nikResult.nik_data?.data) {
+          addText('   Data NIK:', 14, 10, true);
+          Object.entries(nikResult.nik_data.data).forEach(([key, value]) => {
+            addText(`      ${key}: ${value}`);
+          });
+        }
+        
+        // NKK Data
+        if (nikResult.nkk_data?.data) {
+          addText('   Data NKK:', 14, 10, true);
+          Object.entries(nikResult.nkk_data.data).forEach(([key, value]) => {
+            addText(`      ${key}: ${value}`);
+          });
+        }
+        
+        // RegNIK Data
+        if (nikResult.regnik_data?.data) {
+          addText('   Data RegNIK:', 14, 10, true);
+          Object.entries(nikResult.regnik_data.data).forEach(([key, value]) => {
+            addText(`      ${key}: ${value}`);
+          });
+        }
+      });
+    }
+
+    // Footer
+    yPos = pageHeight;
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.text('Generated by WASKITA LBS - NON GEOINT Module', 105, yPos, { align: 'center' });
+
+    // Save PDF
+    pdf.save(`NON_GEOINT_${searchResults?.name || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('PDF berhasil dibuat');
   };
 
   const getStatusIcon = (status) => {
@@ -485,7 +796,7 @@ export const NonGeointSearchDialog = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="max-w-2xl max-h-[80vh] overflow-y-auto"
+          className="max-w-2xl max-h-[85vh] overflow-y-auto"
           style={{ 
             backgroundColor: 'var(--background-elevated)',
             border: '1px solid var(--borders-default)'
@@ -509,22 +820,20 @@ export const NonGeointSearchDialog = ({
                 value={searchName}
                 onChange={(e) => setSearchName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isSearching && startSearch()}
-                disabled={isSearching}
+                disabled={isSearching || isInvestigating}
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
                   color: 'var(--foreground-primary)'
                 }}
-                data-testid="nongeoint-name-input"
               />
               <Button
                 onClick={startSearch}
-                disabled={isSearching || !searchName.trim()}
+                disabled={isSearching || isInvestigating || !searchName.trim()}
                 style={{
                   backgroundColor: 'var(--accent-primary)',
                   color: 'var(--background-primary)'
                 }}
-                data-testid="nongeoint-start-search-btn"
               >
                 {isSearching ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -535,7 +844,7 @@ export const NonGeointSearchDialog = ({
             </div>
 
             <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-              Pencarian akan dilakukan secara berurutan: CAPIL → Passport WNI → Passport WNA
+              Pencarian: CAPIL → Passport WNI → Passport WNA → Pendalaman NIK (NIK, NKK, RegNIK)
             </p>
           </div>
 
@@ -546,7 +855,7 @@ export const NonGeointSearchDialog = ({
                 className="text-sm font-semibold"
                 style={{ color: 'var(--foreground-secondary)' }}
               >
-                {isSearching ? 'Proses Pencarian...' : 'Hasil Pencarian'}
+                {isSearching ? 'Proses Pencarian...' : 'Hasil Pencarian Awal'}
               </h3>
 
               {/* Query Status */}
@@ -574,7 +883,6 @@ export const NonGeointSearchDialog = ({
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusIcon(status)}
-                          {/* View Button */}
                           {hasData && (
                             <Button
                               size="sm"
@@ -595,26 +903,20 @@ export const NonGeointSearchDialog = ({
                           NIK: {result.niks_found.join(', ')}
                         </div>
                       )}
-                      
-                      {result?.error && status !== 'not_found' && (
-                        <div className="mt-2 text-xs text-red-400">
-                          {result.error}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* NIK Results */}
-              {searchResults?.niks_found?.length > 0 && !isSearching && (
+              {/* NIK Selection */}
+              {searchResults?.niks_found?.length > 0 && !isSearching && !investigation && (
                 <div className="mt-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 
                       className="text-sm font-semibold"
                       style={{ color: 'var(--foreground-secondary)' }}
                     >
-                      NIK Ditemukan ({searchResults.niks_found.length})
+                      Pilih NIK untuk Pendalaman ({searchResults.niks_found.length})
                     </h3>
                     <Button
                       variant="ghost"
@@ -622,7 +924,7 @@ export const NonGeointSearchDialog = ({
                       onClick={handleSelectAll}
                       style={{ color: 'var(--accent-primary)' }}
                     >
-                      {selectedNiks.length === searchResults.niks_found.length ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                      {selectedNiks.length === searchResults.niks_found.length ? 'Batal Pilih' : 'Pilih Semua'}
                     </Button>
                   </div>
 
@@ -630,7 +932,7 @@ export const NonGeointSearchDialog = ({
                     {searchResults.niks_found.map(nik => (
                       <div 
                         key={nik}
-                        className="flex items-center gap-3 p-3 rounded-md border cursor-pointer hover:bg-opacity-50"
+                        className="flex items-center gap-3 p-3 rounded-md border cursor-pointer"
                         onClick={() => handleNikToggle(nik)}
                         style={{
                           backgroundColor: selectedNiks.includes(nik) 
@@ -655,41 +957,42 @@ export const NonGeointSearchDialog = ({
                     ))}
                   </div>
 
-                  {/* Pendalaman Button */}
-                  <div className="mt-4 flex justify-end gap-2">
+                  <div className="mt-4">
                     <Button
-                      variant="outline"
-                      onClick={() => onOpenChange(false)}
-                      style={{
-                        borderColor: 'var(--borders-default)',
-                        color: 'var(--foreground-secondary)'
-                      }}
-                    >
-                      Tutup
-                    </Button>
-                    <Button
-                      onClick={handlePendalaman}
-                      disabled={selectedNiks.length === 0 || processingPendalaman}
+                      onClick={startInvestigation}
+                      disabled={selectedNiks.length === 0 || isInvestigating}
+                      className="w-full"
                       style={{
                         backgroundColor: 'var(--accent-primary)',
                         color: 'var(--background-primary)'
                       }}
-                      data-testid="nongeoint-pendalaman-btn"
                     >
-                      {processingPendalaman ? (
+                      {isInvestigating ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Memproses...
+                          Memproses Pendalaman...
                         </>
                       ) : (
                         <>
                           <Search className="w-4 h-4 mr-2" />
-                          Pendalaman NIK ({selectedNiks.length})
+                          Mulai Pendalaman ({selectedNiks.length} NIK)
                         </>
                       )}
                     </Button>
+                    <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
+                      Akan melakukan query NIK, NKK, dan RegNIK untuk setiap NIK yang dipilih
+                    </p>
                   </div>
                 </div>
+              )}
+
+              {/* Investigation Results */}
+              {(isInvestigating || investigation) && (
+                <NikInvestigationResults 
+                  investigation={investigation}
+                  searchResults={searchResults}
+                  onPrint={generatePDF}
+                />
               )}
 
               {/* No Results */}
