@@ -3671,6 +3671,45 @@ def parse_nongeoint_response(text: str, query_type: str) -> dict:
     return parsed if parsed else None
 
 
+def check_name_similarity(search_name: str, found_name: str) -> float:
+    """Check similarity between search name and found name - returns score 0-1"""
+    if not search_name or not found_name:
+        return 0.0
+    
+    # Normalize names
+    search_lower = search_name.lower().strip()
+    found_lower = found_name.lower().strip()
+    
+    # Exact match
+    if search_lower == found_lower:
+        return 1.0
+    
+    # Split into parts
+    search_parts = set(search_lower.split())
+    found_parts = set(found_lower.split())
+    
+    # Check if all search parts are in found name
+    if search_parts.issubset(found_parts):
+        return 0.9
+    
+    # Check word overlap
+    common = search_parts.intersection(found_parts)
+    if not common:
+        return 0.0
+    
+    # Calculate Jaccard similarity
+    union = search_parts.union(found_parts)
+    similarity = len(common) / len(union)
+    
+    # Bonus if first word matches (usually family name)
+    search_first = search_lower.split()[0] if search_lower.split() else ""
+    found_first = found_lower.split()[0] if found_lower.split() else ""
+    if search_first == found_first and len(search_first) > 2:
+        similarity = min(1.0, similarity + 0.2)
+    
+    return similarity
+
+
 # NIK Deep Investigation (NIK, NKK, RegNIK)
 class NikDeepInvestigationRequest(BaseModel):
     search_id: str
