@@ -3700,46 +3700,90 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             return {"status": "error", "error": "Failed to click button"}
         
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
-        await asyncio.sleep(5)
+        await asyncio.sleep(6)  # Wait longer for response
         
-        # Step 4: Get response
-        async def get_resp():
-            return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        # Step 4: Get response - try multiple times
+        best_response = None
+        for attempt in range(3):
+            async def get_resp():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=15)
+            
+            response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}_attempt{attempt}", max_retries=2)
+            if not response_messages:
+                await asyncio.sleep(2)
+                continue
+            
+            # Step 5: Parse response - look for relevant data
+            for msg in response_messages:
+                if not msg.text:
+                    continue
+                    
+                msg_text_lower = msg.text.lower()
+                
+                # Skip messages that are just the NIK we sent or button prompts
+                if msg.text.strip() == nik:
+                    continue
+                if 'pilih menu' in msg_text_lower or 'silahkan pilih' in msg_text_lower:
+                    continue
+                
+                # Check if this looks like a data response (contains typical fields)
+                is_data_response = any(keyword in msg_text_lower for keyword in [
+                    'nama', 'name', 'alamat', 'address', 'tempat lahir', 'tgl lahir',
+                    'jenis kelamin', 'agama', 'status', 'pekerjaan', 'kewarganegaraan',
+                    'provinsi', 'kabupaten', 'kecamatan', 'kelurahan', 'rt', 'rw',
+                    'no kk', 'kepala keluarga', 'hubungan', 'ayah', 'ibu',
+                    'not found', 'tidak ditemukan', 'data tidak'
+                ])
+                
+                # Also check if message contains the NIK
+                contains_nik = nik in msg.text
+                
+                if is_data_response or contains_nik:
+                    logger.info(f"[{query_token}] Found potential response: {msg.text[:100]}...")
+                    
+                    # Check for not found
+                    if 'not found' in msg_text_lower or 'tidak ditemukan' in msg_text_lower or 'data tidak' in msg_text_lower:
+                        return {"status": "not_found", "raw_text": msg.text}
+                    
+                    # Parse data
+                    parsed_data = parse_nongeoint_response(msg.text, button_type)
+                    
+                    # Download photo if exists
+                    photo_base64 = None
+                    if msg.photo:
+                        try:
+                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                            if photo_bytes:
+                                import base64
+                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                logger.info(f"[{query_token}] Downloaded photo")
+                        except Exception as e:
+                            logger.error(f"[{query_token}] Photo download error: {e}")
+                    
+                    # Store the best response (prefer ones with parsed data)
+                    if parsed_data or not best_response:
+                        best_response = {
+                            "status": "completed",
+                            "data": parsed_data,
+                            "raw_text": msg.text,
+                            "photo": photo_base64
+                        }
+                        
+                    # If we got parsed data, return immediately
+                    if parsed_data:
+                        logger.info(f"[{query_token}] Successfully parsed data")
+                        return best_response
+            
+            # If no good response yet, wait and try again
+            if not best_response:
+                await asyncio.sleep(3)
         
-        response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}", max_retries=3)
-        if not response_messages:
-            return {"status": "error", "error": "Failed to get response"}
+        # Return best response if found, otherwise error
+        if best_response:
+            logger.info(f"[{query_token}] Returning best response found")
+            return best_response
         
-        # Step 5: Parse response
-        for msg in response_messages:
-            if msg.text and nik in msg.text:
-                logger.info(f"[{query_token}] Found response containing NIK")
-                
-                # Check for not found
-                if 'not found' in msg.text.lower() or 'tidak ditemukan' in msg.text.lower():
-                    return {"status": "not_found", "raw_text": msg.text}
-                
-                # Parse data
-                parsed_data = parse_nongeoint_response(msg.text, button_type)
-                
-                # Download photo if exists
-                photo_base64 = None
-                if msg.photo:
-                    try:
-                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                        if photo_bytes:
-                            import base64
-                            photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                    except Exception as e:
-                        logger.error(f"[{query_token}] Photo download error: {e}")
-                
-                return {
-                    "status": "completed",
-                    "data": parsed_data,
-                    "raw_text": msg.text,
-                    "photo": photo_base64
-                }
-        
+        logger.warning(f"[{query_token}] No matching response found after all attempts")
         return {"status": "no_data", "error": "No matching response found"}
         
     except Exception as e:
