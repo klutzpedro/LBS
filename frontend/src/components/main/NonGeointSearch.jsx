@@ -1281,7 +1281,91 @@ export const NonGeointSearchDialog = ({
 
   return (
     <>
-      <DraggableDialog open={open} onOpenChange={onOpenChange}>
+      {/* Background Warning Dialog */}
+      <Dialog open={showBackgroundWarning} onOpenChange={setShowBackgroundWarning}>
+        <DialogContent 
+          className="max-w-md"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '2px solid #ef4444'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="w-6 h-6" />
+              PERINGATAN
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
+              PROSES PENDALAMAN AKAN DILAKUKAN DI BACKGROUND
+            </p>
+            <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+              Sementara Anda <strong className="text-red-500">TIDAK DAPAT</strong> melakukan pendalaman lain sampai proses ini selesai.
+            </p>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={cancelBackgroundProcess}
+              style={{ borderColor: 'var(--borders-default)' }}
+            >
+              Batalkan
+            </Button>
+            <Button
+              onClick={confirmBackgroundProcess}
+              style={{ backgroundColor: '#ef4444', color: 'white' }}
+            >
+              {pendingAction === 'minimize' ? 'Minimize' : 'Tutup'} & Lanjutkan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Minimized State - Small floating indicator */}
+      {isMinimized && (
+        <div 
+          className="fixed bottom-4 right-4 z-50 p-3 rounded-lg shadow-xl cursor-pointer hover:scale-105 transition-all"
+          onClick={() => setIsMinimized(false)}
+          style={{
+            backgroundColor: isInvestigating ? '#ef4444' : 'var(--accent-primary)',
+            color: 'white',
+            animation: isInvestigating ? 'pulse 2s infinite' : 'none'
+          }}
+        >
+          <style>
+            {`
+              @keyframes pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+                50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+              }
+            `}
+          </style>
+          <div className="flex items-center gap-2">
+            {isInvestigating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm font-semibold">Pendalaman Berjalan...</span>
+              </>
+            ) : (
+              <>
+                <Search className="w-4 h-4" />
+                <span className="text-sm font-semibold">NON GEOINT</span>
+              </>
+            )}
+            <Maximize2 className="w-4 h-4 ml-2" />
+          </div>
+        </div>
+      )}
+
+      {/* Main Dialog */}
+      <DraggableDialog open={open && !isMinimized} onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          handleMinimizeOrClose('close');
+        } else {
+          onOpenChange(true);
+        }
+      }}>
         <DraggableDialogContent 
           className="max-w-2xl max-h-[85vh] overflow-y-auto"
           style={{ 
@@ -1290,13 +1374,31 @@ export const NonGeointSearchDialog = ({
           }}
         >
           <DraggableDialogHeader>
-            <DraggableDialogTitle 
-              className="flex items-center gap-2"
-              style={{ color: 'var(--foreground-primary)' }}
-            >
-              <Search className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
-              NON GEOINT Search
-            </DraggableDialogTitle>
+            <div className="flex items-center justify-between w-full pr-8">
+              <DraggableDialogTitle 
+                className="flex items-center gap-2"
+                style={{ color: 'var(--foreground-primary)' }}
+              >
+                <Search className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+                NON GEOINT Search
+                {isInvestigating && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white animate-pulse">
+                    PROCESSING
+                  </span>
+                )}
+              </DraggableDialogTitle>
+              {/* Minimize Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleMinimizeOrClose('minimize')}
+                className="h-7 w-7 p-0"
+                title="Minimize"
+                style={{ color: 'var(--foreground-muted)' }}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+            </div>
           </DraggableDialogHeader>
 
           {/* Search Input */}
