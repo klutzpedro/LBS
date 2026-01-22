@@ -1543,14 +1543,20 @@ const MainApp = () => {
 
           {/* NON GEOINT Search Button - Top Center of Map */}
           <div 
-            className="absolute z-[1500]"
+            className="fixed z-[2000]"
             style={{
-              top: '16px',
+              top: '8px',
               left: '50%',
               transform: 'translateX(-50%)'
             }}
           >
-            <NonGeointButton onOpenSearch={() => setNonGeointDialogOpen(true)} />
+            <NonGeointButton 
+              onOpenSearch={() => {
+                setSelectedNonGeointSearch(null);
+                setNonGeointDialogOpen(true);
+              }} 
+              onOpenHistory={() => setNonGeointHistoryOpen(true)}
+            />
           </div>
 
           {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
