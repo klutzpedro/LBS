@@ -1530,8 +1530,8 @@ export const NonGeointSearchDialog = ({
                 </div>
               )}
             </div>
-          </DialogContent>
-        </Dialog>
+          </DraggableDialogContent>
+        </DraggableDialog>
       ) : (
         <ResultDetailDialog
           open={detailDialog.open}
