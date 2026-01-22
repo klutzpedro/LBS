@@ -114,11 +114,19 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
       childOrder: idx + 1 // Add child order for display
     }));
   
-  const others = members.filter(m => 
+  const others = normalizedMembers.filter(m => 
     !m.relationship?.includes('KEPALA') && 
+    !m.relationship?.includes('HEAD') &&
     !m.relationship?.includes('ISTRI') && 
     !m.relationship?.includes('SUAMI') && 
-    !m.relationship?.includes('ANAK')
+    !m.relationship?.includes('WIFE') &&
+    !m.relationship?.includes('HUSBAND') &&
+    !m.relationship?.includes('SPOUSE') &&
+    !m.relationship?.includes('ANAK') &&
+    !m.relationship?.includes('CHILD') &&
+    !m.relationship?.includes('SON') &&
+    !m.relationship?.includes('DAUGHTER') &&
+    m.relationship !== '1' && m.relationship !== '2' && m.relationship !== '3' && m.relationship !== '4'
   );
 
   const fetchAIAnalysis = async () => {
