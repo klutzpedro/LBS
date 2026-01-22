@@ -416,7 +416,7 @@ export const NonGeointSearchDialog = ({
                 style={{ color: 'var(--foreground-muted)' }}
               >
                 <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Tidak ditemukan NIK untuk nama "{searchResults.name}"</p>
+                <p>Tidak ditemukan NIK untuk nama &quot;{searchResults.name}&quot;</p>
               </div>
             )}
           </div>
