@@ -1477,7 +1477,7 @@ const MainApp = () => {
         <Button
           onClick={() => setSidebarCollapsed(true)}
           size="icon"
-          className="fixed left-[304px] top-1/2 transform -translate-y-1/2 z-[999] w-10 h-10 rounded-full shadow-lg"
+          className="fixed left-[304px] bottom-8 z-[40] w-10 h-10 rounded-full shadow-lg"
           style={{
             backgroundColor: 'var(--background-elevated)',
             borderColor: 'var(--accent-primary)',
