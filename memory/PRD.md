@@ -593,6 +593,49 @@
   2. Bot @northarch_bot must be responsive
 - **CP API:** Disconnected in preview (IP not whitelisted)
 
+## New Feature: Auto Photo Fetch for NON GEOINT (January 2026)
+
+### Flow Baru:
+```
+User input NAMA 
+    ↓
+Request CAPIL → Extract NIK(s)
+    ↓
+[NEW] Untuk SETIAP NIK yang ditemukan:
+    → Request NIK ke bot (sequential, tidak race)
+    → Ambil FOTO dari response
+    → Status: fetching_photos (dengan progress bar)
+    ↓
+Tampilkan "Pilih Target" dengan:
+    📷 FOTO + NIK + Nama (horizontal scrollable grid)
+    ↓
+User pilih target
+    ↓
+Pendalaman: NIK detail + NKK + RegNIK
+    ↓
+Tampilkan hasil + PDF
+```
+
+### Files Modified:
+- `/app/backend/server.py`:
+  - `process_nongeoint_search()` - Added Phase 2 for auto photo fetch
+  - New status: `fetching_photos` with progress tracking
+  - Stores photos in `nik_photos` field
+  
+- `/app/frontend/src/components/main/NonGeointSearch.jsx`:
+  - `PersonSelectionCard` - Redesigned with photo display (80x100px)
+  - `pollSearchResults()` - Handle `fetching_photos` status
+  - Photo fetching progress bar UI
+  - Horizontal scrollable grid for person selection
+  - `getCurrentStep()` - Handle new status
+
+### Database Schema Update:
+- `nongeoint_searches` collection now includes:
+  - `nik_photos`: Object with NIK as key, containing `{nik, photo, name, ttl, alamat, jk}`
+  - `photo_fetch_progress`, `photo_fetch_total`, `photo_fetch_current_nik` for progress tracking
+
+---
+
 ## Bug Fixes (January 2026 - Latest Session)
 
 ### P0: Investigation Results Not Reloading from History - FIXED (v2)
