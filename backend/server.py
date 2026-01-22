@@ -3934,6 +3934,13 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     # Parse data
                     parsed_data = parse_nongeoint_response(msg.text, button_type)
                     
+                    # For NKK, also parse family members
+                    family_data = None
+                    if button_type == "NKK":
+                        family_data = parse_nkk_family_data(msg.text)
+                        if family_data:
+                            logger.info(f"[{query_token}] Parsed {len(family_data.get('members', []))} family members")
+                    
                     # Download photo if exists
                     photo_base64 = None
                     if msg.photo:
@@ -3952,7 +3959,8 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                             "status": "completed",
                             "data": parsed_data,
                             "raw_text": msg.text,
-                            "photo": photo_base64
+                            "photo": photo_base64,
+                            "family_data": family_data
                         }
                         
                     # If we got parsed data, return immediately
