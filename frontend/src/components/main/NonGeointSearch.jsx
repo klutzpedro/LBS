@@ -186,12 +186,6 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   const [searches, setSearches] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      fetchHistory();
-    }
-  }, [open]);
-
   const fetchHistory = async () => {
     setLoading(true);
     try {
@@ -208,6 +202,12 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (open) {
+      fetchHistory();
+    }
+  }, [open]);
 
   const getStatusBadge = (status) => {
     const styles = {
