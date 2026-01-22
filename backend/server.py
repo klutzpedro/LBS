@@ -3627,24 +3627,23 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
                         if msg_time >= time_threshold:
                             response_messages.append(m)
         
-        # Step 5: Parse response - COLLECT ALL NIKs FROM ALL MESSAGES (now filtered by time)
+        # Step 5: Parse response - COLLECT ONLY NIKs (NOT Family IDs) FROM ALL filtered MESSAGES
         parsed_data = None
         all_raw_text = []
         niks_found = []
         
-        # First pass: collect ALL NIKs from ALL filtered messages
+        # First pass: collect ONLY NIKs (exclude Family IDs/No KK)
         for msg in response_messages:
             if msg.text:
-                # Extract NIKs using regex - 16 digit numbers
-                nik_pattern = r'\b\d{16}\b'
-                found_niks = re.findall(nik_pattern, msg.text)
-                for nik in found_niks:
+                # Extract 16-digit numbers but filter out Family IDs
+                extracted_niks = extract_niks_only(msg.text)
+                for nik in extracted_niks:
                     if nik not in niks_found:
                         niks_found.append(nik)
                         logger.info(f"[{query_token}] Found NIK: {nik}")
                 
                 # Collect raw text if relevant
-                if name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or len(found_niks) > 0:
+                if name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or len(extracted_niks) > 0:
                     all_raw_text.append(msg.text)
         
         raw_text = '\n---\n'.join(all_raw_text) if all_raw_text else None
@@ -3667,7 +3666,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
                 if parsed_data:
                     break
         
-        logger.info(f"[{query_token}] Total NIKs found: {len(niks_found)}")
+        logger.info(f"[{query_token}] Total NIKs found (excluding Family IDs): {len(niks_found)}")
         
         if parsed_data or niks_found:
             logger.info(f"[{query_token}] Found {len(niks_found)} NIKs: {niks_found}")
