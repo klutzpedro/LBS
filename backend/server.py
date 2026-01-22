@@ -4166,7 +4166,10 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         
         # Return best response if found, otherwise error
         if best_response:
-            logger.info(f"[{query_token}] Returning best response found")
+            # Make sure to include photo if found separately
+            if photo_base64 and not best_response.get('photo'):
+                best_response['photo'] = photo_base64
+            logger.info(f"[{query_token}] Returning best response found, photo: {'Yes' if best_response.get('photo') else 'No'}")
             return best_response
         
         logger.warning(f"[{query_token}] No matching response found after all attempts")
