@@ -493,6 +493,14 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
   const ttl = person.ttl || person.tempat_lahir || person.tgl_lahir || '-';
   const hasPhoto = person.photo && person.photo.startsWith('data:');
   const photoNotAvailable = person.status === 'not_found' || person.error || (!person.photo && person.nik);
+  const similarity = person.similarity || 0;
+  
+  // Similarity color indicator
+  const getSimilarityColor = (sim) => {
+    if (sim >= 0.8) return '#22c55e'; // Green - high match
+    if (sim >= 0.5) return '#f59e0b'; // Orange - medium match
+    return '#ef4444'; // Red - low match
+  };
   
   return (
     <div 
@@ -510,6 +518,20 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
       }}
     >
       <div className="flex flex-col items-center gap-2">
+        {/* Similarity Badge */}
+        {similarity > 0 && (
+          <div 
+            className="text-xs font-bold px-2 py-0.5 rounded-full"
+            style={{ 
+              backgroundColor: getSimilarityColor(similarity),
+              color: 'white',
+              fontSize: '9px'
+            }}
+          >
+            {Math.round(similarity * 100)}% Match
+          </div>
+        )}
+        
         {/* Photo or Placeholder */}
         <div 
           className="relative rounded-md overflow-hidden border-2"
