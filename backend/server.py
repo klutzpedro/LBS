@@ -3324,11 +3324,12 @@ async def delete_nongeoint_search(search_id: str, username: str = Depends(verify
     return {"message": "Search deleted successfully"}
 
 async def process_nongeoint_search(search_id: str, name: str, query_types: List[str]):
-    """Process NON GEOINT search with queue system"""
+    """Process NON GEOINT search with queue system - includes auto photo fetch"""
     global telegram_client
     
     results = {}
     all_niks = []
+    nik_photos = {}  # Store photos for each NIK: {nik: {photo, name, raw_data}}
     
     async with nongeoint_queue_lock:
         try:
@@ -3374,12 +3375,92 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                 # Wait between queries to avoid rate limiting
                 await asyncio.sleep(3)
             
+            # ============================================
+            # PHASE 2: Fetch photos for each NIK found
+            # ============================================
+            if all_niks:
+                logger.info(f"[NONGEOINT {search_id}] Starting photo fetch for {len(all_niks)} NIKs")
+                
+                # Update status to fetching_photos
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {"status": "fetching_photos", "photo_fetch_progress": 0}}
+                )
+                
+                for idx, nik in enumerate(all_niks):
+                    logger.info(f"[NONGEOINT {search_id}] Fetching photo for NIK {nik} ({idx+1}/{len(all_niks)})")
+                    
+                    # Update progress
+                    await db.nongeoint_searches.update_one(
+                        {"id": search_id},
+                        {"$set": {
+                            "photo_fetch_progress": idx + 1,
+                            "photo_fetch_total": len(all_niks),
+                            "photo_fetch_current_nik": nik
+                        }}
+                    )
+                    
+                    try:
+                        # Query NIK to get photo
+                        nik_result = await execute_nik_button_query(f"photo_{search_id}", nik, "NIK")
+                        
+                        if nik_result:
+                            nik_photo_data = {
+                                "nik": nik,
+                                "photo": nik_result.get("photo"),
+                                "name": None,
+                                "status": nik_result.get("status", "unknown")
+                            }
+                            
+                            # Try to extract name from NIK data
+                            if nik_result.get("data"):
+                                data = nik_result["data"]
+                                nik_photo_data["name"] = (
+                                    data.get("Nama") or 
+                                    data.get("nama") or 
+                                    data.get("NAMA") or 
+                                    data.get("Full Name") or
+                                    data.get("Name")
+                                )
+                                # Also store other useful fields
+                                nik_photo_data["ttl"] = data.get("TTL") or data.get("Tempat/Tgl Lahir") or data.get("Tanggal Lahir")
+                                nik_photo_data["alamat"] = data.get("Alamat") or data.get("alamat") or data.get("Address")
+                                nik_photo_data["jk"] = data.get("Jenis Kelamin") or data.get("JK") or data.get("Gender")
+                            
+                            # Try to extract from raw_text if no structured data
+                            if not nik_photo_data["name"] and nik_result.get("raw_text"):
+                                raw = nik_result["raw_text"]
+                                name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*([^\n]+)', raw, re.IGNORECASE)
+                                if name_match:
+                                    nik_photo_data["name"] = name_match.group(1).strip()
+                            
+                            nik_photos[nik] = nik_photo_data
+                            logger.info(f"[NONGEOINT {search_id}] NIK {nik}: photo={'Yes' if nik_photo_data.get('photo') else 'No'}, name={nik_photo_data.get('name')}")
+                        
+                    except Exception as nik_err:
+                        logger.error(f"[NONGEOINT {search_id}] Error fetching NIK {nik}: {nik_err}")
+                        nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "error": str(nik_err)}
+                    
+                    # Wait between NIK queries
+                    await asyncio.sleep(3)
+                
+                # Save nik_photos to database
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {"nik_photos": nik_photos}}
+                )
+                logger.info(f"[NONGEOINT {search_id}] Photo fetch completed. {sum(1 for v in nik_photos.values() if v.get('photo'))} photos obtained")
+            
             # Mark as completed
             await db.nongeoint_searches.update_one(
                 {"id": search_id},
-                {"$set": {"status": "completed", "niks_found": all_niks}}
+                {"$set": {
+                    "status": "completed", 
+                    "niks_found": all_niks,
+                    "nik_photos": nik_photos
+                }}
             )
-            logger.info(f"[NONGEOINT {search_id}] Search completed. Found {len(all_niks)} NIKs: {all_niks}")
+            logger.info(f"[NONGEOINT {search_id}] Search completed. Found {len(all_niks)} NIKs with {sum(1 for v in nik_photos.values() if v.get('photo'))} photos")
             
         except Exception as e:
             logger.error(f"[NONGEOINT {search_id}] Error: {e}")
