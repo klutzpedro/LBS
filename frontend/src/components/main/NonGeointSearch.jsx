@@ -1191,9 +1191,18 @@ export const NonGeointSearchDialog = ({
     // Show searching while fetching photos
     if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed') return 'searching';
-    // Show person selection if we have nik_photos with multiple results
-    if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 1 && showPersonSelection) {
-      return 'select_person';
+    // Show person selection if we have nik_photos (always show for photo selection)
+    if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+      // If multiple results OR showPersonSelection is true, show selection
+      if (Object.keys(searchResults.nik_photos).length > 1 || showPersonSelection) {
+        return 'select_person';
+      }
+      // If single result and person already selected, skip to NIK selection
+      if (selectedPersonIndex !== null) {
+        return 'select_nik';
+      }
+      // Single result - auto select and move to NIK
+      return 'select_nik';
     }
     // Legacy: show person selection from CAPIL extraction
     if (showPersonSelection && personsFound.length > 1) return 'select_person';
