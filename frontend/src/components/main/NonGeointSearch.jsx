@@ -684,9 +684,39 @@ export const NonGeointSearchDialog = ({
     }
   }, [open]);
 
-  // Process search results to extract persons
+  // Process search results to extract persons WITH PHOTOS
   useEffect(() => {
-    if (searchResults?.status === 'completed' && searchResults?.results?.capil) {
+    // Check if we have nik_photos from backend (new flow with auto photo fetch)
+    if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+      console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
+      
+      // Convert nik_photos object to persons array
+      const persons = Object.entries(searchResults.nik_photos).map(([nik, data]) => ({
+        nik: nik,
+        nama: data.name || data.nama,
+        name: data.name || data.nama,
+        photo: data.photo,
+        ttl: data.ttl,
+        alamat: data.alamat,
+        jk: data.jk,
+        status: data.status
+      }));
+      
+      setPersonsFound(persons);
+      
+      if (persons.length === 1) {
+        setSelectedPersonIndex(0);
+        setShowPersonSelection(false);
+      } else if (persons.length > 1) {
+        setShowPersonSelection(true);
+        setSelectedPersonIndex(null);
+      } else {
+        setShowPersonSelection(false);
+      }
+    } 
+    // Fallback to old flow (extract from CAPIL without photos)
+    else if (searchResults?.status === 'completed' && searchResults?.results?.capil && !searchResults?.nik_photos) {
+      console.log('[NonGeoint] Fallback: extracting persons from CAPIL (no photos)');
       const persons = extractPersonsFromCapil(searchResults.results.capil);
       setPersonsFound(persons);
       
