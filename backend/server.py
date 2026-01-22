@@ -4116,6 +4116,9 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
         await asyncio.sleep(8)  # Wait longer for response including photo
         
+        # Time threshold for filtering messages (10 seconds buffer before query)
+        time_threshold = query_start_time - timedelta(seconds=10)
+        
         # Step 4: Get response - try multiple times
         best_response = None
         collected_texts = []  # For NKK, collect all related messages
@@ -4130,8 +4133,17 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 await asyncio.sleep(3)
                 continue
             
-            # FIRST: Look for photo in ALL messages (photo might be separate from text)
-            # Search ALL messages for photo, not just stop at first
+            # IMPORTANT: Filter messages to only include those AFTER our query
+            filtered_messages = []
+            for msg in response_messages:
+                msg_time = msg.date.replace(tzinfo=timezone.utc) if msg.date.tzinfo is None else msg.date
+                if msg_time >= time_threshold:
+                    filtered_messages.append(msg)
+            
+            logger.info(f"[{query_token}] Filtered {len(response_messages)} messages to {len(filtered_messages)} (after {time_threshold})")
+            response_messages = filtered_messages
+            
+            # FIRST: Look for photo in ALL filtered messages (photo might be separate from text)
             for msg in response_messages:
                 if msg.photo and not photo_base64:
                     try:
