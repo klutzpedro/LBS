@@ -529,6 +529,9 @@ export const NonGeointSearchDialog = ({
   // Detail dialog state
   const [detailDialog, setDetailDialog] = useState({ open: false, type: null, result: null, nik: null });
   
+  // Family Tree state
+  const [familyTreeDialog, setFamilyTreeDialog] = useState({ open: false, familyData: null, targetNik: null });
+  
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
 
