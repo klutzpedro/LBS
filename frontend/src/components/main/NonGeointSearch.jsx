@@ -285,24 +285,24 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
 
-  const fetchHistory = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/nongeoint/searches`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSearches(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch history:', error);
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const fetchHistory = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/nongeoint/searches`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSearches(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch history:', error);
+      }
+      setLoading(false);
+    };
+
     if (open) {
       fetchHistory();
     }
