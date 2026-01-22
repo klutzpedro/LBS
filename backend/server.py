@@ -3257,19 +3257,40 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
 
 @api_router.get("/nongeoint/search/{search_id}")
 async def get_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
-    """Get NON GEOINT search results"""
+    """Get NON GEOINT search results with investigation if exists"""
     search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
     if not search:
         raise HTTPException(status_code=404, detail="Search not found")
+    
+    # Also get investigation if exists
+    investigation = await db.nik_investigations.find_one({"search_id": search_id}, {"_id": 0})
+    if investigation:
+        search["investigation"] = investigation
+        logger.info(f"[NONGEOINT] Loaded existing investigation for search {search_id}")
+    
     return search
 
 @api_router.get("/nongeoint/searches")
 async def list_nongeoint_searches(username: str = Depends(verify_token)):
-    """List all NON GEOINT searches for user"""
+    """List all NON GEOINT searches for user with investigation status"""
     searches = await db.nongeoint_searches.find(
         {"created_by": username},
         {"_id": 0}
     ).sort("created_at", -1).limit(20).to_list(20)
+    
+    # Add investigation status for each search
+    for search in searches:
+        investigation = await db.nik_investigations.find_one(
+            {"search_id": search["id"]}, 
+            {"_id": 0, "status": 1, "id": 1}
+        )
+        if investigation:
+            search["has_investigation"] = True
+            search["investigation_status"] = investigation.get("status")
+            search["investigation_id"] = investigation.get("id")
+        else:
+            search["has_investigation"] = False
+    
     return searches
 
 @api_router.delete("/nongeoint/search/{search_id}")
