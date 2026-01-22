@@ -76,6 +76,7 @@ const MainApp = () => {
   const [nonGeointDialogOpen, setNonGeointDialogOpen] = useState(false);
   const [nonGeointHistoryOpen, setNonGeointHistoryOpen] = useState(false);
   const [selectedNonGeointSearch, setSelectedNonGeointSearch] = useState(null);
+  const [isGlobalInvestigating, setIsGlobalInvestigating] = useState(false); // Track if any investigation is running
   
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
