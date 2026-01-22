@@ -599,11 +599,11 @@
 ```
 User input NAMA 
     ↓
-Request CAPIL → Extract NIK(s)
+Request CAPIL → Extract ALL NIKs (improved: limit=50, multiple message collection)
     ↓
 [NEW] Untuk SETIAP NIK yang ditemukan:
     → Request NIK ke bot (sequential, tidak race)
-    → Ambil FOTO dari response
+    → Ambil FOTO dari response (check ALL messages for photos)
     → Status: fetching_photos (dengan progress bar)
     ↓
 Tampilkan "Pilih Target" dengan:
@@ -616,23 +616,28 @@ Pendalaman: NIK detail + NKK + RegNIK
 Tampilkan hasil + PDF
 ```
 
+### Bug Fixes in This Update:
+1. **NIK Extraction** - Now collects NIKs from ALL messages (not just first one)
+   - Increased message limit from 20 to 50
+   - Wait and fetch more messages for CAPIL queries
+   - Remove early `break` that stopped NIK collection
+   
+2. **Photo Fetch** - Now searches for photos in ALL messages
+   - Photo might be sent as separate message from text data
+   - Check all messages for photo before parsing text
+
 ### Files Modified:
 - `/app/backend/server.py`:
-  - `process_nongeoint_search()` - Added Phase 2 for auto photo fetch
-  - New status: `fetching_photos` with progress tracking
-  - Stores photos in `nik_photos` field
+  - `execute_nongeoint_query()` - Fixed NIK extraction to collect from all messages
+  - `execute_nik_button_query()` - Search for photo in all messages first
+  - `process_nongeoint_search()` - Auto photo fetch with progress tracking
   
 - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
   - `PersonSelectionCard` - Redesigned with photo display (80x100px)
   - `pollSearchResults()` - Handle `fetching_photos` status
   - Photo fetching progress bar UI
-  - Horizontal scrollable grid for person selection
-  - `getCurrentStep()` - Handle new status
-
-### Database Schema Update:
-- `nongeoint_searches` collection now includes:
-  - `nik_photos`: Object with NIK as key, containing `{nik, photo, name, ttl, alamat, jk}`
-  - `photo_fetch_progress`, `photo_fetch_total`, `photo_fetch_current_nik` for progress tracking
+  - Fixed useEffect to only process when status is 'completed'
+  - Added extensive console logging for debugging
 
 ---
 
