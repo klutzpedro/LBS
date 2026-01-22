@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { 
+  DraggableDialog, 
+  DraggableDialogContent, 
+  DraggableDialogHeader, 
+  DraggableDialogTitle 
+} from '@/components/ui/draggable-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -20,10 +26,12 @@ import {
   MapPin,
   Calendar,
   Download,
-  Trash2
+  Trash2,
+  GitBranch
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
