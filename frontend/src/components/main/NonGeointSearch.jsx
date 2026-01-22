@@ -16,7 +16,9 @@ import {
   Eye,
   Printer,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
@@ -65,6 +67,93 @@ export const NonGeointButton = ({ onOpenSearch, onOpenHistory }) => {
       </Button>
     </div>
   );
+};
+
+// Helper function to extract person entries from Capil result
+const extractPersonsFromCapil = (capilResult) => {
+  if (!capilResult || !capilResult.raw_text) return [];
+  
+  const persons = [];
+  const text = capilResult.raw_text;
+  
+  // Try to parse multiple person entries from raw text
+  // Common patterns: numbered list, separated by lines, etc.
+  const lines = text.split('\n');
+  let currentPerson = {};
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    
+    // Check for name patterns
+    const namaMatch = trimmed.match(/(?:nama|name)\s*[:\-]?\s*(.+)/i);
+    if (namaMatch) {
+      if (currentPerson.nama) {
+        persons.push({ ...currentPerson });
+        currentPerson = {};
+      }
+      currentPerson.nama = namaMatch[1].trim();
+    }
+    
+    // Check for NIK
+    const nikMatch = trimmed.match(/(?:nik)\s*[:\-]?\s*(\d{16})/i);
+    if (nikMatch) {
+      currentPerson.nik = nikMatch[1];
+    }
+    
+    // Check for TTL (Tempat Tanggal Lahir)
+    const ttlMatch = trimmed.match(/(?:ttl|tempat.*lahir|tgl.*lahir|tanggal.*lahir)\s*[:\-]?\s*(.+)/i);
+    if (ttlMatch) {
+      currentPerson.ttl = ttlMatch[1].trim();
+    }
+    
+    // Check for birthplace separately
+    const tempatMatch = trimmed.match(/(?:tempat\s+lahir)\s*[:\-]?\s*(.+)/i);
+    if (tempatMatch && !currentPerson.tempat_lahir) {
+      currentPerson.tempat_lahir = tempatMatch[1].trim();
+    }
+    
+    // Check for birthdate separately
+    const tglMatch = trimmed.match(/(?:tgl\s+lahir|tanggal\s+lahir)\s*[:\-]?\s*(.+)/i);
+    if (tglMatch && !currentPerson.tgl_lahir) {
+      currentPerson.tgl_lahir = tglMatch[1].trim();
+    }
+    
+    // Check for address
+    const alamatMatch = trimmed.match(/(?:alamat|address)\s*[:\-]?\s*(.+)/i);
+    if (alamatMatch) {
+      currentPerson.alamat = alamatMatch[1].trim();
+    }
+  }
+  
+  // Don't forget the last person
+  if (currentPerson.nama) {
+    persons.push(currentPerson);
+  }
+  
+  // If we couldn't parse individual persons, try using parsed_data
+  if (persons.length === 0 && capilResult.data) {
+    const data = capilResult.data;
+    const person = {
+      nama: data.Nama || data.NAMA || data.nama || '',
+      nik: data.NIK || data.nik || '',
+      ttl: data.TTL || data.ttl || data['Tempat/Tgl Lahir'] || '',
+      tempat_lahir: data['Tempat Lahir'] || data.tempat_lahir || '',
+      tgl_lahir: data['Tgl Lahir'] || data['Tanggal Lahir'] || data.tgl_lahir || '',
+      alamat: data.Alamat || data.alamat || ''
+    };
+    
+    // Combine tempat and tgl lahir if ttl is empty
+    if (!person.ttl && (person.tempat_lahir || person.tgl_lahir)) {
+      person.ttl = [person.tempat_lahir, person.tgl_lahir].filter(Boolean).join(', ');
+    }
+    
+    if (person.nama) {
+      persons.push(person);
+    }
+  }
+  
+  return persons;
 };
 
 // Result Detail Popup
@@ -313,6 +402,64 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   );
 };
 
+// Person Selection Card
+const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
+  const ttl = person.ttl || [person.tempat_lahir, person.tgl_lahir].filter(Boolean).join(', ') || '-';
+  
+  return (
+    <div 
+      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected ? 'ring-2' : ''}`}
+      onClick={onSelect}
+      style={{
+        backgroundColor: isSelected 
+          ? 'var(--accent-primary-transparent)' 
+          : 'var(--background-tertiary)',
+        borderColor: isSelected
+          ? 'var(--accent-primary)'
+          : 'var(--borders-subtle)',
+        ringColor: isSelected ? 'var(--accent-primary)' : 'transparent'
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div 
+          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ 
+            backgroundColor: isSelected ? 'var(--accent-primary)' : 'var(--background-secondary)',
+            color: isSelected ? 'var(--background-primary)' : 'var(--foreground-muted)'
+          }}
+        >
+          {isSelected ? <CheckCircle className="w-5 h-5" /> : <User className="w-4 h-4" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p 
+            className="font-semibold text-sm truncate"
+            style={{ color: 'var(--foreground-primary)' }}
+          >
+            {person.nama || `Hasil ${index + 1}`}
+          </p>
+          <div className="flex items-center gap-1 mt-1">
+            <Calendar className="w-3 h-3" style={{ color: 'var(--foreground-muted)' }} />
+            <p 
+              className="text-xs truncate"
+              style={{ color: 'var(--foreground-muted)' }}
+            >
+              {ttl}
+            </p>
+          </div>
+          {person.nik && (
+            <p 
+              className="text-xs font-mono mt-1"
+              style={{ color: 'var(--accent-primary)' }}
+            >
+              NIK: {person.nik}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // NIK Investigation Results Component
 const NikInvestigationResults = ({ investigation, searchResults, onPrint }) => {
   const [expandedNiks, setExpandedNiks] = useState({});
@@ -445,6 +592,13 @@ export const NonGeointSearchDialog = ({
   const [searchName, setSearchName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
+  
+  // New: Person selection state
+  const [personsFound, setPersonsFound] = useState([]);
+  const [selectedPersonIndex, setSelectedPersonIndex] = useState(null);
+  const [showPersonSelection, setShowPersonSelection] = useState(false);
+  
+  // NIK selection (can select one or more)
   const [selectedNiks, setSelectedNiks] = useState([]);
   const [isInvestigating, setIsInvestigating] = useState(false);
   const [investigation, setInvestigation] = useState(null);
@@ -476,6 +630,27 @@ export const NonGeointSearchDialog = ({
     }
   }, [open]);
 
+  // Process search results to extract persons
+  useEffect(() => {
+    if (searchResults?.status === 'completed' && searchResults?.results?.capil) {
+      const persons = extractPersonsFromCapil(searchResults.results.capil);
+      setPersonsFound(persons);
+      
+      // If only 1 person found, auto-select and skip to NIK selection
+      if (persons.length === 1) {
+        setSelectedPersonIndex(0);
+        setShowPersonSelection(false);
+      } else if (persons.length > 1) {
+        // Multiple persons found, show selection
+        setShowPersonSelection(true);
+        setSelectedPersonIndex(null);
+      } else {
+        // No persons parsed, proceed normally
+        setShowPersonSelection(false);
+      }
+    }
+  }, [searchResults]);
+
   const startSearch = async () => {
     if (!searchName.trim()) {
       toast.error('Masukkan nama untuk dicari');
@@ -486,6 +661,9 @@ export const NonGeointSearchDialog = ({
     setSearchResults(null);
     setSelectedNiks([]);
     setInvestigation(null);
+    setPersonsFound([]);
+    setSelectedPersonIndex(null);
+    setShowPersonSelection(false);
 
     try {
       const token = localStorage.getItem('token');
@@ -543,22 +721,33 @@ export const NonGeointSearchDialog = ({
     }
   };
 
+  // Handle person selection (single select only)
+  const handlePersonSelect = (index) => {
+    setSelectedPersonIndex(index);
+  };
+
+  // Confirm person selection and move to NIK step
+  const confirmPersonSelection = () => {
+    if (selectedPersonIndex === null) {
+      toast.error('Pilih salah satu nama');
+      return;
+    }
+    setShowPersonSelection(false);
+    
+    // If selected person has NIK, pre-select it
+    const selectedPerson = personsFound[selectedPersonIndex];
+    if (selectedPerson?.nik) {
+      setSelectedNiks([selectedPerson.nik]);
+    }
+  };
+
+  // Handle NIK toggle (can select multiple)
   const handleNikToggle = (nik) => {
     setSelectedNiks(prev => 
       prev.includes(nik) 
         ? prev.filter(n => n !== nik)
         : [...prev, nik]
     );
-  };
-
-  const handleSelectAll = () => {
-    if (searchResults?.niks_found) {
-      if (selectedNiks.length === searchResults.niks_found.length) {
-        setSelectedNiks([]);
-      } else {
-        setSelectedNiks([...searchResults.niks_found]);
-      }
-    }
   };
 
   const startInvestigation = async () => {
@@ -792,6 +981,19 @@ export const NonGeointSearchDialog = ({
     }
   };
 
+  // Determine current step
+  const getCurrentStep = () => {
+    if (isSearching) return 'searching';
+    if (!searchResults) return 'input';
+    if (searchResults.status !== 'completed') return 'searching';
+    if (showPersonSelection && personsFound.length > 1) return 'select_person';
+    if (!investigation && searchResults.niks_found?.length > 0) return 'select_nik';
+    if (isInvestigating || investigation) return 'investigation';
+    return 'no_results';
+  };
+
+  const currentStep = getCurrentStep();
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -908,8 +1110,52 @@ export const NonGeointSearchDialog = ({
                 })}
               </div>
 
-              {/* NIK Selection */}
-              {searchResults?.niks_found?.length > 0 && !isSearching && !investigation && (
+              {/* STEP: Person Selection (if multiple persons found) */}
+              {currentStep === 'select_person' && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 
+                      className="text-sm font-semibold"
+                      style={{ color: 'var(--foreground-secondary)' }}
+                    >
+                      Pilih Nama ({personsFound.length} hasil ditemukan)
+                    </h3>
+                  </div>
+                  
+                  <p className="text-xs mb-3" style={{ color: 'var(--foreground-muted)' }}>
+                    Ditemukan beberapa orang dengan nama serupa. Pilih salah satu untuk melanjutkan.
+                  </p>
+
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {personsFound.map((person, idx) => (
+                      <PersonSelectionCard
+                        key={idx}
+                        person={person}
+                        index={idx}
+                        isSelected={selectedPersonIndex === idx}
+                        onSelect={() => handlePersonSelect(idx)}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-4">
+                    <Button
+                      onClick={confirmPersonSelection}
+                      disabled={selectedPersonIndex === null}
+                      className="w-full"
+                      style={{
+                        backgroundColor: 'var(--accent-primary)',
+                        color: 'var(--background-primary)'
+                      }}
+                    >
+                      Lanjutkan dengan Nama Terpilih
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: NIK Selection */}
+              {currentStep === 'select_nik' && (
                 <div className="mt-6">
                   <div className="flex items-center justify-between mb-3">
                     <h3 
@@ -918,15 +1164,11 @@ export const NonGeointSearchDialog = ({
                     >
                       Pilih NIK untuk Pendalaman ({searchResults.niks_found.length})
                     </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleSelectAll}
-                      style={{ color: 'var(--accent-primary)' }}
-                    >
-                      {selectedNiks.length === searchResults.niks_found.length ? 'Batal Pilih' : 'Pilih Semua'}
-                    </Button>
                   </div>
+
+                  <p className="text-xs mb-3" style={{ color: 'var(--foreground-muted)' }}>
+                    Pilih satu atau lebih NIK untuk pendalaman detail.
+                  </p>
 
                   <div className="space-y-2">
                     {searchResults.niks_found.map(nik => (
@@ -987,7 +1229,7 @@ export const NonGeointSearchDialog = ({
               )}
 
               {/* Investigation Results */}
-              {(isInvestigating || investigation) && (
+              {currentStep === 'investigation' && (
                 <NikInvestigationResults 
                   investigation={investigation}
                   searchResults={searchResults}
@@ -996,7 +1238,7 @@ export const NonGeointSearchDialog = ({
               )}
 
               {/* No Results */}
-              {searchResults?.status === 'completed' && searchResults?.niks_found?.length === 0 && (
+              {currentStep === 'no_results' && searchResults?.status === 'completed' && (
                 <div 
                   className="text-center py-8"
                   style={{ color: 'var(--foreground-muted)' }}
