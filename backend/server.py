@@ -3444,16 +3444,30 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                                     if ttl_match:
                                         nik_photo_data["ttl"] = ttl_match.group(1).strip()
                         
+                        # Calculate name similarity score
+                        found_name = nik_photo_data.get("name", "")
+                        similarity = check_name_similarity(name, found_name) if found_name else 0.0
+                        nik_photo_data["similarity"] = similarity
+                        nik_photo_data["search_name"] = name  # Store original search name
+                        
                         # Always save entry (even if photo not available)
                         nik_photos[nik] = nik_photo_data
-                        logger.info(f"[NONGEOINT {search_id}] NIK {nik}: status={nik_photo_data.get('status')}, photo={'Yes' if nik_photo_data.get('photo') else 'No'}, name={nik_photo_data.get('name')}")
+                        logger.info(f"[NONGEOINT {search_id}] NIK {nik}: status={nik_photo_data.get('status')}, photo={'Yes' if nik_photo_data.get('photo') else 'No'}, name={nik_photo_data.get('name')}, similarity={similarity:.2f}")
                         
                     except Exception as nik_err:
                         logger.error(f"[NONGEOINT {search_id}] Error fetching NIK {nik}: {nik_err}")
-                        nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "status": "error", "error": str(nik_err)}
+                        nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "status": "error", "error": str(nik_err), "similarity": 0}
                     
                     # Wait between NIK queries
                     await asyncio.sleep(3)
+                
+                # Filter out results with very low similarity (< 0.3) unless we have very few results
+                high_similarity_count = sum(1 for v in nik_photos.values() if v.get('similarity', 0) >= 0.3)
+                if high_similarity_count >= 3:
+                    # We have enough good matches, filter out low similarity ones
+                    filtered_nik_photos = {k: v for k, v in nik_photos.items() if v.get('similarity', 0) >= 0.3}
+                    logger.info(f"[NONGEOINT {search_id}] Filtered from {len(nik_photos)} to {len(filtered_nik_photos)} results (similarity >= 0.3)")
+                    nik_photos = filtered_nik_photos
                 
                 # Save nik_photos to database
                 await db.nongeoint_searches.update_one(
