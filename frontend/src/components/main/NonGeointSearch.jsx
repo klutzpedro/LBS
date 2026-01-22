@@ -686,22 +686,32 @@ export const NonGeointSearchDialog = ({
 
   // Process search results to extract persons WITH PHOTOS
   useEffect(() => {
+    // Only process when status is 'completed'
+    if (searchResults?.status !== 'completed') {
+      return;
+    }
+    
     // Check if we have nik_photos from backend (new flow with auto photo fetch)
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
+      console.log('[NonGeoint] Number of NIK photos:', Object.keys(searchResults.nik_photos).length);
       
       // Convert nik_photos object to persons array
-      const persons = Object.entries(searchResults.nik_photos).map(([nik, data]) => ({
-        nik: nik,
-        nama: data.name || data.nama,
-        name: data.name || data.nama,
-        photo: data.photo,
-        ttl: data.ttl,
-        alamat: data.alamat,
-        jk: data.jk,
-        status: data.status
-      }));
+      const persons = Object.entries(searchResults.nik_photos).map(([nik, data]) => {
+        console.log(`[NonGeoint] Processing NIK ${nik}:`, data);
+        return {
+          nik: nik,
+          nama: data.name || data.nama,
+          name: data.name || data.nama,
+          photo: data.photo,
+          ttl: data.ttl,
+          alamat: data.alamat,
+          jk: data.jk,
+          status: data.status
+        };
+      });
       
+      console.log('[NonGeoint] Persons array created:', persons.length);
       setPersonsFound(persons);
       
       if (persons.length === 1) {
@@ -715,8 +725,8 @@ export const NonGeointSearchDialog = ({
       }
     } 
     // Fallback to old flow (extract from CAPIL without photos)
-    else if (searchResults?.status === 'completed' && searchResults?.results?.capil && !searchResults?.nik_photos) {
-      console.log('[NonGeoint] Fallback: extracting persons from CAPIL (no photos)');
+    else if (searchResults?.results?.capil) {
+      console.log('[NonGeoint] Fallback: extracting persons from CAPIL (no nik_photos)');
       const persons = extractPersonsFromCapil(searchResults.results.capil);
       setPersonsFound(persons);
       
