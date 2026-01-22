@@ -72,6 +72,9 @@ const MainApp = () => {
   const [nikDialogOpen, setNikDialogOpen] = useState(false);
   const [selectedNikData, setSelectedNikData] = useState(null);
   
+  // NON GEOINT Search
+  const [nonGeointDialogOpen, setNonGeointDialogOpen] = useState(false);
+  
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
