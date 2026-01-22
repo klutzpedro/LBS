@@ -1334,6 +1334,28 @@ const MainApp = () => {
     setLoadingFamilyPendalaman(null);
   };
 
+  // NON GEOINT standalone NIK pendalaman (without existing target)
+  const handleNonGeointNikPendalaman = async (nik) => {
+    console.log('[NON GEOINT NIK Pendalaman] Starting for NIK:', nik);
+    
+    // For standalone NIK pendalaman from NON GEOINT, we need to find or create a virtual target
+    // First check if we have any target with this NIK
+    let targetWithNik = targets.find(t => {
+      if (t.nik_queries) {
+        return Object.keys(t.nik_queries).includes(nik);
+      }
+      return false;
+    });
+    
+    if (targetWithNik) {
+      // Use existing target
+      await handleNikPendalaman(targetWithNik.id, nik);
+    } else {
+      // For now, just show info - in future we can create a virtual target or standalone NIK query
+      toast.info(`NIK ${nik} tidak terkait dengan target yang ada. Fitur pendalaman NIK standalone akan ditambahkan.`);
+    }
+  };
+
   // Refresh single target data (useful when opening dialogs)
   const refreshTargetData = async (targetId) => {
     try {
