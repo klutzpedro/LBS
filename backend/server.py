@@ -2485,7 +2485,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 # Log button clicked
                 await db.chat_messages.insert_one({
                     "target_id": target_id,
-                    "message": f"[PENDALAMAN] ✅ Klik tombol REGHP...",
+                    "message": "[PENDALAMAN] ✅ Klik tombol REGHP...",
                     "direction": "sent",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "query_type": "reghp"
@@ -2499,7 +2499,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             # Log button not found
             await db.chat_messages.insert_one({
                 "target_id": target_id,
-                "message": f"[PENDALAMAN] ⚠️ Tombol REGHP tidak ditemukan atau gagal diklik",
+                "message": "[PENDALAMAN] ⚠️ Tombol REGHP tidak ditemukan atau gagal diklik",
                 "direction": "received",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "query_type": "reghp"
@@ -2539,7 +2539,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
                 # Log data not found
                 await db.chat_messages.insert_one({
                     "target_id": target_id,
-                    "message": f"[PENDALAMAN] ⚠️ REGHP: Data Not Found",
+                    "message": "[PENDALAMAN] ⚠️ REGHP: Data Not Found",
                     "direction": "received",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "query_type": "reghp"
@@ -2660,7 +2660,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             # Log error
             await db.chat_messages.insert_one({
                 "target_id": target_id,
-                "message": f"[PENDALAMAN] ❌ REGHP gagal - tidak ada response",
+                "message": "[PENDALAMAN] ❌ REGHP gagal - tidak ada response",
                 "direction": "received",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "query_type": "reghp"
