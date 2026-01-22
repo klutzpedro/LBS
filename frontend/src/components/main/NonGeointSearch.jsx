@@ -282,29 +282,57 @@ const ResultDetailDialog = ({ open, onClose, queryType, result, nik = null }) =>
 export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) => {
   const [searches, setSearches] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+
+  const fetchHistory = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/searches`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSearches(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch history:', error);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/nongeoint/searches`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSearches(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch history:', error);
-      }
-      setLoading(false);
-    };
-
     if (open) {
       fetchHistory();
     }
   }, [open]);
+
+  const handleDelete = async (e, searchId) => {
+    e.stopPropagation(); // Prevent opening the search
+    
+    if (!window.confirm('Hapus history pencarian ini?')) return;
+    
+    setDeleting(searchId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/search/${searchId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        toast.success('History berhasil dihapus');
+        // Remove from local state
+        setSearches(prev => prev.filter(s => s.id !== searchId));
+      } else {
+        toast.error('Gagal menghapus history');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Gagal menghapus history');
+    }
+    setDeleting(null);
+  };
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -368,7 +396,23 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                     <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
                       {search.name}
                     </span>
-                    {getStatusBadge(search.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(search.status)}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 hover:bg-red-500/20"
+                        onClick={(e) => handleDelete(e, search.id)}
+                        disabled={deleting === search.id}
+                        title="Hapus history"
+                      >
+                        {deleting === search.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3 text-red-400" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs" style={{ color: 'var(--foreground-muted)' }}>
                     <span>
