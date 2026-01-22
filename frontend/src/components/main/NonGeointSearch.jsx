@@ -27,7 +27,10 @@ import {
   Calendar,
   Download,
   Trash2,
-  GitBranch
+  GitBranch,
+  Minus,
+  Maximize2,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
