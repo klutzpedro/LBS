@@ -1520,6 +1520,52 @@ export const NonGeointSearchDialog = ({
               {/* STEP: Investigation Results */}
               {currentStep === 'investigation' && (
                 <div className="mt-6 space-y-4">
+                  {/* Blinking Warning Message during Investigation */}
+                  {isInvestigating && (
+                    <div 
+                      className="p-4 rounded-md border-2 text-center"
+                      style={{
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        borderColor: '#ef4444',
+                        animation: 'blink-border 1s ease-in-out infinite'
+                      }}
+                    >
+                      <style>
+                        {`
+                          @keyframes blink-border {
+                            0%, 100% { border-color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+                            50% { border-color: #fca5a5; background-color: rgba(239, 68, 68, 0.2); }
+                          }
+                          @keyframes blink-text {
+                            0%, 100% { opacity: 1; }
+                            50% { opacity: 0.6; }
+                          }
+                        `}
+                      </style>
+                      <p 
+                        className="font-bold text-sm"
+                        style={{ 
+                          color: '#ef4444',
+                          animation: 'blink-text 1s ease-in-out infinite'
+                        }}
+                      >
+                        ⚠️ PROSES PENDALAMAN SEDANG BERJALAN
+                      </p>
+                      <p 
+                        className="text-xs mt-1"
+                        style={{ color: '#f87171' }}
+                      >
+                        WAKTU TUNGGU TERGANTUNG DARI JUMLAH NAMA IDENTIK YANG ADA DI DATABASE
+                      </p>
+                      <p 
+                        className="text-xs font-semibold mt-1"
+                        style={{ color: '#fca5a5' }}
+                      >
+                        (20 DETIK - 30 MENIT)
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground-secondary)' }}>
                       Hasil Pendalaman NIK
