@@ -463,10 +463,11 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   );
 };
 
-// Person Selection Card - WITH PHOTO
+// Person Selection Card - WITH PHOTO (handles not available)
 const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
   const ttl = person.ttl || person.tempat_lahir || person.tgl_lahir || '-';
   const hasPhoto = person.photo && person.photo.startsWith('data:');
+  const photoNotAvailable = person.status === 'not_found' || person.error || (!person.photo && person.nik);
   
   return (
     <div 
@@ -501,8 +502,25 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <User className="w-8 h-8" style={{ color: 'var(--foreground-muted)' }} />
+            <div className="w-full h-full flex flex-col items-center justify-center p-1">
+              {/* Placeholder icon */}
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center mb-1"
+                style={{ backgroundColor: 'var(--background-primary)' }}
+              >
+                <User className="w-6 h-6" style={{ color: 'var(--foreground-muted)' }} />
+              </div>
+              {/* Not available text */}
+              <span 
+                className="text-center leading-tight"
+                style={{ 
+                  color: 'var(--foreground-muted)', 
+                  fontSize: '8px',
+                  lineHeight: '1.2'
+                }}
+              >
+                {photoNotAvailable ? 'Foto Tidak Tersedia' : 'Memuat...'}
+              </span>
             </div>
           )}
           {/* Selection indicator */}
