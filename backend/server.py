@@ -3691,6 +3691,136 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 {"$set": {"status": "error", "error": str(e)}}
             )
 
+async def execute_regnik_query(investigation_id: str, nik: str) -> dict:
+    """Execute RegNIK query and parse multiple phone numbers"""
+    global telegram_client
+    
+    query_token = f"REGNIK_{investigation_id}_{nik}"
+    
+    try:
+        # Step 1: Send NIK to bot
+        async def send_nik():
+            await telegram_client.send_message(BOT_USERNAME, nik)
+            return True
+        
+        sent = await safe_telegram_operation(send_nik, f"send_{query_token}", max_retries=3)
+        if not sent:
+            return {"status": "error", "error": "Failed to send NIK to bot"}
+        
+        logger.info(f"[{query_token}] Sent NIK: {nik}")
+        await asyncio.sleep(4)
+        
+        # Step 2: Get buttons and click RegNIK
+        async def get_buttons():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        messages = await safe_telegram_operation(get_buttons, f"get_buttons_{query_token}", max_retries=3)
+        if not messages:
+            return {"status": "error", "error": "Failed to get bot buttons"}
+        
+        # Find RegNIK button
+        regnik_button = None
+        for msg in messages:
+            if msg.buttons:
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text and any(x.lower() in button.text.lower() for x in ["📞 Regnik", "Regnik", "REGNIK"]):
+                            regnik_button = button
+                            break
+                    if regnik_button:
+                        break
+            if regnik_button:
+                break
+        
+        if not regnik_button:
+            return {"status": "not_found", "error": "RegNIK button not found"}
+        
+        # Click button
+        async def click_btn():
+            await regnik_button.click()
+            return True
+        
+        clicked = await safe_telegram_operation(click_btn, f"click_{query_token}", max_retries=3)
+        if not clicked:
+            return {"status": "error", "error": "Failed to click button"}
+        
+        logger.info(f"[{query_token}] Clicked RegNIK button")
+        await asyncio.sleep(6)
+        
+        # Step 3: Get response with multiple phone numbers
+        phones = []
+        raw_texts = []
+        
+        for attempt in range(3):
+            async def get_resp():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            
+            response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}_attempt{attempt}", max_retries=2)
+            if not response_messages:
+                await asyncio.sleep(2)
+                continue
+            
+            for msg in response_messages:
+                if not msg.text:
+                    continue
+                
+                msg_text = msg.text
+                msg_text_lower = msg_text.lower()
+                
+                # Skip non-data messages
+                if msg_text.strip() == nik:
+                    continue
+                if 'pilih menu' in msg_text_lower or 'silahkan pilih' in msg_text_lower:
+                    continue
+                
+                # Check for not found
+                if 'not found' in msg_text_lower or 'tidak ditemukan' in msg_text_lower:
+                    return {"status": "not_found", "raw_text": msg_text, "phones": []}
+                
+                # Parse phone numbers from RegNIK response
+                # Look for phone patterns: 08xxx, 628xxx, +628xxx
+                import re
+                phone_patterns = [
+                    r'(?:Phone|HP|No HP|Nomor|No\.?|📞)[:\s]*([+]?[0-9]{10,15})',
+                    r'\b(08[0-9]{8,12})\b',
+                    r'\b(628[0-9]{8,12})\b',
+                    r'\b(\+628[0-9]{8,12})\b',
+                    r'(?:^|\n)([0-9]{10,15})(?:\n|$)'
+                ]
+                
+                for pattern in phone_patterns:
+                    found_phones = re.findall(pattern, msg_text)
+                    for phone in found_phones:
+                        # Clean phone number
+                        clean_phone = re.sub(r'[^0-9+]', '', phone)
+                        if len(clean_phone) >= 10 and clean_phone not in phones:
+                            phones.append(clean_phone)
+                            logger.info(f"[{query_token}] Found phone: {clean_phone}")
+                
+                # Also check if message contains phone-related keywords
+                if any(kw in msg_text_lower for kw in ['phone', 'hp', 'nomor', 'telp', '📞', 'mobile']):
+                    if msg_text not in raw_texts:
+                        raw_texts.append(msg_text)
+            
+            if phones:
+                break
+            await asyncio.sleep(2)
+        
+        if phones:
+            logger.info(f"[{query_token}] Found {len(phones)} phone numbers")
+            return {
+                "status": "completed",
+                "phones": phones,
+                "raw_text": "\n---\n".join(raw_texts) if raw_texts else None,
+                "data": {"phones": phones, "count": len(phones)}
+            }
+        
+        return {"status": "no_data", "error": "No phone numbers found", "phones": [], "raw_text": "\n---\n".join(raw_texts) if raw_texts else None}
+        
+    except Exception as e:
+        logger.error(f"[{query_token}] Error: {e}")
+        return {"status": "error", "error": str(e), "phones": []}
+
 async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
     """Execute a single NIK/NKK/RegNIK query"""
     global telegram_client
