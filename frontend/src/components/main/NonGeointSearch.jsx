@@ -571,7 +571,9 @@ export const NonGeointSearchDialog = ({
   open, 
   onOpenChange, 
   onNikPendalaman,
-  initialSearch = null
+  initialSearch = null,
+  isGlobalInvestigating = false,
+  onInvestigatingChange = () => {}
 }) => {
   const [searchName, setSearchName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -593,9 +595,48 @@ export const NonGeointSearchDialog = ({
   // Family Tree state
   const [familyTreeDialog, setFamilyTreeDialog] = useState({ open: false, familyData: null, targetNik: null });
   
+  // Minimize and warning states
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [showBackgroundWarning, setShowBackgroundWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'minimize' or 'close'
+  
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
   const lastOpenedWithSearchRef = useRef(null); // Track which search was last opened
+
+  // Notify parent when investigation state changes
+  useEffect(() => {
+    onInvestigatingChange(isInvestigating);
+  }, [isInvestigating, onInvestigatingChange]);
+
+  // Handle minimize/close during investigation
+  const handleMinimizeOrClose = (action) => {
+    if (isInvestigating) {
+      setPendingAction(action);
+      setShowBackgroundWarning(true);
+    } else {
+      if (action === 'minimize') {
+        setIsMinimized(true);
+      } else {
+        onOpenChange(false);
+      }
+    }
+  };
+
+  const confirmBackgroundProcess = () => {
+    setShowBackgroundWarning(false);
+    if (pendingAction === 'minimize') {
+      setIsMinimized(true);
+    } else {
+      onOpenChange(false);
+    }
+    setPendingAction(null);
+  };
+
+  const cancelBackgroundProcess = () => {
+    setShowBackgroundWarning(false);
+    setPendingAction(null);
+  };
 
   // Helper function to reset all states
   const resetAllStates = () => {
