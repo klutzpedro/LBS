@@ -757,15 +757,21 @@ export const NonGeointSearchDialog = ({
       }
     };
     
-    // Load when dialog opens with an initialSearch
-    // Re-load if initialSearch.id changed OR if we're opening fresh (lastOpenedWithSearchRef is null)
-    if (open && initialSearch) {
-      const shouldLoad = lastOpenedWithSearchRef.current !== initialSearch.id;
-      console.log('[NonGeoint] Dialog open with initialSearch:', initialSearch.id, 
-                  'lastOpened:', lastOpenedWithSearchRef.current, 
-                  'shouldLoad:', shouldLoad);
-      if (shouldLoad) {
-        loadSearchData();
+    if (open) {
+      if (initialSearch) {
+        // Loading from history - load the search data
+        const shouldLoad = lastOpenedWithSearchRef.current !== initialSearch.id;
+        console.log('[NonGeoint] Dialog open with initialSearch:', initialSearch.id, 
+                    'lastOpened:', lastOpenedWithSearchRef.current, 
+                    'shouldLoad:', shouldLoad);
+        if (shouldLoad) {
+          loadSearchData();
+        }
+      } else {
+        // New search - reset everything to show fresh form
+        console.log('[NonGeoint] Dialog open for NEW search, resetting all states');
+        resetAllStates();
+        lastOpenedWithSearchRef.current = null;
       }
     }
   }, [initialSearch?.id, open]);
