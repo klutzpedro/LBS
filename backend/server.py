@@ -3404,13 +3404,17 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                         # Query NIK to get photo
                         nik_result = await execute_nik_button_query(f"photo_{search_id}", nik, "NIK")
                         
+                        # Always create entry for this NIK
+                        nik_photo_data = {
+                            "nik": nik,
+                            "photo": None,
+                            "name": None,
+                            "status": "unknown"
+                        }
+                        
                         if nik_result:
-                            nik_photo_data = {
-                                "nik": nik,
-                                "photo": nik_result.get("photo"),
-                                "name": None,
-                                "status": nik_result.get("status", "unknown")
-                            }
+                            nik_photo_data["status"] = nik_result.get("status", "unknown")
+                            nik_photo_data["photo"] = nik_result.get("photo")
                             
                             # Try to extract name from NIK data
                             if nik_result.get("data"):
@@ -3433,13 +3437,20 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                                 name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*([^\n]+)', raw, re.IGNORECASE)
                                 if name_match:
                                     nik_photo_data["name"] = name_match.group(1).strip()
-                            
-                            nik_photos[nik] = nik_photo_data
-                            logger.info(f"[NONGEOINT {search_id}] NIK {nik}: photo={'Yes' if nik_photo_data.get('photo') else 'No'}, name={nik_photo_data.get('name')}")
+                                    
+                                # Also try to extract TTL if not found
+                                if not nik_photo_data.get("ttl"):
+                                    ttl_match = re.search(r'(?:ttl|tempat.*lahir|tgl.*lahir)\s*[:\-]?\s*([^\n]+)', raw, re.IGNORECASE)
+                                    if ttl_match:
+                                        nik_photo_data["ttl"] = ttl_match.group(1).strip()
+                        
+                        # Always save entry (even if photo not available)
+                        nik_photos[nik] = nik_photo_data
+                        logger.info(f"[NONGEOINT {search_id}] NIK {nik}: status={nik_photo_data.get('status')}, photo={'Yes' if nik_photo_data.get('photo') else 'No'}, name={nik_photo_data.get('name')}")
                         
                     except Exception as nik_err:
                         logger.error(f"[NONGEOINT {search_id}] Error fetching NIK {nik}: {nik_err}")
-                        nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "error": str(nik_err)}
+                        nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "status": "error", "error": str(nik_err)}
                     
                     # Wait between NIK queries
                     await asyncio.sleep(3)
