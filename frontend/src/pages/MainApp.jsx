@@ -1742,6 +1742,13 @@ const MainApp = () => {
         onAcknowledge={handleAcknowledgeAlert}
         onAcknowledgeAll={handleAcknowledgeAllAlerts}
       />
+
+      {/* NON GEOINT Search Dialog */}
+      <NonGeointSearchDialog
+        open={nonGeointDialogOpen}
+        onOpenChange={setNonGeointDialogOpen}
+        onNikPendalaman={handleNonGeointNikPendalaman}
+      />
     </div>
   );
 };
