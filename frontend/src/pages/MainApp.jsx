@@ -37,7 +37,7 @@ import {
 } from '@/components/main';
 
 // NON GEOINT Search
-import { NonGeointButton, NonGeointSearchDialog } from '@/components/main/NonGeointSearch';
+import { NonGeointButton, NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main/NonGeointSearch';
 
 const MainApp = () => {
   const { username, logout } = useAuth();
