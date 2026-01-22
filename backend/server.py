@@ -4116,8 +4116,9 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
         await asyncio.sleep(8)  # Wait longer for response including photo
         
-        # Time threshold for filtering messages (10 seconds buffer before query)
-        time_threshold = query_start_time - timedelta(seconds=10)
+        # Time threshold for filtering messages (30 seconds buffer before query for photos)
+        # Photos sometimes arrive before or much after the text
+        time_threshold = query_start_time - timedelta(seconds=30)
         
         # Step 4: Get response - try multiple times
         best_response = None
@@ -4126,38 +4127,40 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         
         for attempt in range(4):  # Increase attempts
             async def get_resp():
-                return await telegram_client.get_messages(BOT_USERNAME, limit=30)  # Get more messages
+                return await telegram_client.get_messages(BOT_USERNAME, limit=30)
             
             response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}_attempt{attempt}", max_retries=2)
             if not response_messages:
                 await asyncio.sleep(3)
                 continue
             
-            # IMPORTANT: Filter messages to only include those AFTER our query
+            # FIRST: Look for photo in ALL messages WITHOUT time filter
+            # Photo might have different timestamp than our query
+            if not photo_base64:
+                for msg in response_messages:
+                    if msg.photo:
+                        try:
+                            logger.info(f"[{query_token}] Found photo in message (id={msg.id}), attempting download...")
+                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                            if photo_bytes:
+                                import base64
+                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                logger.info(f"[{query_token}] ✓ Downloaded photo successfully ({len(photo_bytes)} bytes)")
+                                break  # Got photo, stop looking
+                        except Exception as e:
+                            logger.error(f"[{query_token}] Photo download error: {e}")
+            
+            # Filter messages by time for TEXT data only (not photos)
             filtered_messages = []
             for msg in response_messages:
                 msg_time = msg.date.replace(tzinfo=timezone.utc) if msg.date.tzinfo is None else msg.date
                 if msg_time >= time_threshold:
                     filtered_messages.append(msg)
             
-            logger.info(f"[{query_token}] Filtered {len(response_messages)} messages to {len(filtered_messages)} (after {time_threshold})")
-            response_messages = filtered_messages
+            logger.info(f"[{query_token}] Filtered {len(response_messages)} messages to {len(filtered_messages)} for text (photo found: {'Yes' if photo_base64 else 'No'})")
             
-            # FIRST: Look for photo in ALL filtered messages (photo might be separate from text)
-            for msg in response_messages:
-                if msg.photo and not photo_base64:
-                    try:
-                        logger.info(f"[{query_token}] Found photo in message, attempting download...")
-                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                        if photo_bytes:
-                            import base64
-                            photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                            logger.info(f"[{query_token}] ✓ Downloaded photo successfully ({len(photo_bytes)} bytes)")
-                    except Exception as e:
-                        logger.error(f"[{query_token}] Photo download error: {e}")
-            
-            # Step 5: Parse response - look for relevant data
-            for msg in response_messages:
+            # Step 5: Parse response - look for relevant data in filtered messages
+            for msg in filtered_messages:
                 if not msg.text:
                     continue
                     
