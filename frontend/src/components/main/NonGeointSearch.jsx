@@ -39,26 +39,48 @@ import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 // 3D styled NON GEOINT Button
-export const NonGeointButton = ({ onOpenSearch, onOpenHistory }) => {
+export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating = false }) => {
   return (
     <div className="flex gap-2">
       <Button
         onClick={onOpenSearch}
         className="shadow-xl hover:scale-105 transition-all duration-200"
         style={{
-          background: 'linear-gradient(145deg, #f59e0b, #d97706)',
-          color: '#000',
+          background: isInvestigating 
+            ? 'linear-gradient(145deg, #ef4444, #dc2626)' 
+            : 'linear-gradient(145deg, #f59e0b, #d97706)',
+          color: isInvestigating ? '#fff' : '#000',
           border: 'none',
-          boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
+          boxShadow: isInvestigating 
+            ? '0 6px 20px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)'
+            : '0 6px 20px rgba(245, 158, 11, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
           fontWeight: 'bold',
           padding: '10px 20px',
           borderRadius: '8px',
-          textShadow: '0 1px 0 rgba(255,255,255,0.3)'
+          textShadow: '0 1px 0 rgba(255,255,255,0.3)',
+          animation: isInvestigating ? 'pulse-btn 2s infinite' : 'none'
         }}
         data-testid="nongeoint-search-btn"
       >
-        <Search className="w-4 h-4 mr-2" />
-        NON GEOINT
+        <style>
+          {`
+            @keyframes pulse-btn {
+              0%, 100% { box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2); }
+              50% { box-shadow: 0 6px 30px rgba(239, 68, 68, 0.7), 0 2px 4px rgba(0,0,0,0.2); }
+            }
+          `}
+        </style>
+        {isInvestigating ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            PROCESSING...
+          </>
+        ) : (
+          <>
+            <Search className="w-4 h-4 mr-2" />
+            NON GEOINT
+          </>
+        )}
       </Button>
       <Button
         onClick={onOpenHistory}
