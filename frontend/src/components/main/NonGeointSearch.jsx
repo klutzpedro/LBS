@@ -874,16 +874,30 @@ export const NonGeointSearchDialog = ({
           }
         }
         
-        // RegNIK Data
+        // RegNIK Data - with numbered list for phones
         if (nikResult?.regnik_data) {
-          addText('   [Data RegNIK]', margin, 10, true);
+          addText('   [Data RegNIK - Nomor Telepon]', margin, 10, true);
           addText(`   Status: ${nikResult.regnik_data.status}`);
-          if (nikResult.regnik_data.data) {
+          
+          // If phones array exists, display with numbered list
+          if (nikResult.regnik_data.phones && nikResult.regnik_data.phones.length > 0) {
+            addText(`   Jumlah Nomor: ${nikResult.regnik_data.phones.length}`, margin, 10);
+            nikResult.regnik_data.phones.forEach((phone, phoneIdx) => {
+              addText(`      ${phoneIdx + 1}. ${phone}`, margin, 10);
+            });
+          } else if (nikResult.regnik_data.data) {
             Object.entries(nikResult.regnik_data.data).forEach(([key, value]) => {
-              addText(`   ${key}: ${value}`);
+              if (key === 'phones' && Array.isArray(value)) {
+                addText(`   Jumlah Nomor: ${value.length}`, margin, 10);
+                value.forEach((phone, phoneIdx) => {
+                  addText(`      ${phoneIdx + 1}. ${phone}`, margin, 10);
+                });
+              } else {
+                addText(`   ${key}: ${Array.isArray(value) ? value.join(', ') : value}`);
+              }
             });
           }
-          if (nikResult.regnik_data.raw_text && !nikResult.regnik_data.data) {
+          if (nikResult.regnik_data.raw_text && !nikResult.regnik_data.phones?.length) {
             addText(`   Raw: ${nikResult.regnik_data.raw_text.substring(0, 300)}`);
           }
         }
