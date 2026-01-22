@@ -3497,6 +3497,7 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
 async def execute_nongeoint_query(search_id: str, name: str, query_type: str) -> dict:
     """Execute a single NON GEOINT query"""
     global telegram_client
+    from datetime import datetime, timezone, timedelta
     
     button_map = {
         "capil": "CAPIL",
@@ -3508,6 +3509,10 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
     query_token = f"NONGEOINT_{search_id}_{query_type}"
     
     try:
+        # IMPORTANT: Record timestamp BEFORE sending query
+        query_start_time = datetime.now(timezone.utc)
+        logger.info(f"[{query_token}] Query start time: {query_start_time}")
+        
         # Step 1: Send name to bot
         async def send_name():
             await telegram_client.send_message(BOT_USERNAME, name)
