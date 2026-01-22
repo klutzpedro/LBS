@@ -1,71 +1,72 @@
 <analysis>**original_problem_statement:**
-The user wants to build a Geospatial Information System (GIS) web application called WASKITA LBS. Initially, its primary function was to find a mobile phone's position and retrieve owner details (CP, Reghp, NIK, NKK) by querying a private Telegram bot. The project has since evolved.
+The user is building a Geospatial Information System (GIS) web application, WASKITA LBS, deployed on their private Virtual Private Server (VPS). The application's core purpose is to query location and personal data for given phone numbers, using a mix of a direct JSON API and a private Telegram bot.
 
 PRODUCT REQUIREMENTS:
-1.  **Core Functionality:** Create a case, add a target phone number, and query for location and personal data.
-    -   **Position (CP/CekPos):** Now uses a direct JSON API ().
-    -   **Personal Data (NIK/NKK):** Still uses the private Telegram bot.
-2.  **Map Visualization:** Plot the extracted location on a map.
-3.  **Data Deep Dive (Pendalaman):** A series of pop-up windows for detailed data.
-4.  **API Quota Tracking:** The new CP API has a usage limit (300 requests). The UI must display a countdown.
-5.  **Dual Connection Status:** The UI must show separate, real-time status indicators for the CP API and the Telegram bot connection.
-6.  **Self-Hosted Deployment:** The user wants to deploy the application on their own Virtual Private Server (VPS), not on the Emergent platform.
-7.  **UI/UX:**
-    -   Markers for overlapping targets must be clearly distinguishable.
-    -   Map labels and markers should scale dynamically with the map's zoom level.
-    -   Solve the Deployment not found error by moving to a self-hosted solution.
+1.  **Core Functionality:** Create a case, add a target phone number, and query for location (via CP API) and personal data (via Telegram bot).
+2.  **Case Slider:** The cases list in the sidebar should be a horizontal slider to save vertical space.
+3.  **NON GEOINT Search Engine:**
+    *   A new UI section, separate from the map, to search for individuals by name.
+    *   The search triggers a sequence of queries to the Telegram bot: Capil, Pass WNI, and Pass WNA.
+    *   A robust queueing system must be used in the backend to prevent race conditions when communicating with the bot.
+    *   Results from all three queries are aggregated and displayed in a single pop-up window.
+    *   The system should automatically extract NIKs (National Identity Numbers) from the results.
+    *   The user can then select one or more of the found NIKs for a detailed investigation.
+    *   This deep dive triggers another sequence of queries for each selected NIK: NIK, NKK, and RegNIK.
+    *   The final, complete results (from the initial search and the deep dive) should be viewable and exportable as a single PDF document.
+    *   A history of all NON GEOINT searches should be maintained and viewable.
+4.  **UI Fixes:**
+    *   The NON GEOINT button should have a more prominent, 3D style and be positioned correctly above the map.
+    *   The sidebar's minimize button should have its  corrected so it doesn't appear on top of modal windows.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-The full-stack application (FastAPI, React, MongoDB) has been successfully deployed and is running on the user's private VPS. The agent has guided the user through the entire manual setup process, including installing all dependencies (Python, Node.js, MongoDB, Nginx, PM2), configuring the environment, and troubleshooting numerous deployment issues.
+The full-stack application (FastAPI backend, React frontend) is running on the user's VPS. A series of critical bugs that prevented the application from running correctly on the VPS have been resolved in this session. These include an  from a bad code merge, a file permission error due to hardcoded file paths for the Telegram session, and a logic bug where correct NIK data was being overwritten.
 
-The application's backend has been significantly refactored to integrate a new external JSON API for position queries, replacing the previous Telegram-based method for that specific function. The frontend has been updated to display dual status indicators (for the new CP API and the existing Telegram connection) and a request quota counter.
+The agent has just completed the implementation of all new feature requests, including the cases slider and the entire NON GEOINT search and investigation workflow (backend queues, API endpoints, and a complex frontend UI with multiple dialogs and PDF generation).
 
 **Last working item**:
-The user's CP API connection was failing on the VPS due to the server making requests over an un-whitelisted IPv6 address. The agent identified the issue and provided a fix to force all backend HTTP requests to use the whitelisted IPv4 address.
+The agent just finished implementing a large set of new features and UI fixes requested by the user, culminating in the complete NON GEOINT search workflow.
 
--   Last item agent was working: Forcing backend HTTP requests to use IPv4 to resolve a 403 Forbidden error from the whitelisted CP API on the user's VPS.
--   Status: USER VERIFICATION PENDING
+-   Last item agent was working: Implementing the full NON GEOINT feature, which included adding backend endpoints for a detailed NIK investigation (NIK, NKK, RegNIK), and updating the frontend to allow multi-NIK selection, trigger the investigation, display results, and export to PDF. A z-index bug with a UI button was also fixed.
+-   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? Manual testing by user. The next agent should ask the user to check the web app on their VPS. The CP API status indicator should now be green.
+-   Which testing method agent to use? frontend testing agent. The scope of changes is very large and involves complex, multi-step asynchronous UI flows that need thorough verification.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Verify CP API IPv4 Fix on VPS (P0)**
-    -   The backend code on the VPS was modified to force  client requests over IPv4. The user needs to confirm this solved the connection problem.
-    -   Next debug checklist:
-        1.  Ask the user to open their application ().
-        2.  Check if the CP API status indicator is now green.
-        3.  If it is, ask them to try creating or refreshing a target to confirm a query works.
-        4.  If it is still red, ask the user for the output of  on their VPS.
-    -   Status: USER VERIFICATION PENDING
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Backend (via frontend interaction).
-
--   **Issue 2: User-side Telegram Login (P1)**
-    -   To enable NIK/NKK features, the user must log into their Telegram account via the application's Settings page. This will create the persistent session file and MongoDB backup on the new VPS environment.
-    -   Next debug checklist: Guide the user to navigate to the Settings page in the web app, enter their phone number and login credentials for Telegram, and confirm the Telegram status indicator turns green.
-    -   Status: USER VERIFICATION PENDING
-    -   Is recurring issue? Y (Historically, but the implemented backup solution should prevent future recurrence once logged in).
-
--   **Issue 3: Verify Telegram Session Restore (P2)**
-    -   The user previously mentioned . While recent changes required a fresh login anyway, the restore functionality needs to be verified once a session is established on the VPS.
-    -   Next debug checklist: After the user successfully logs into Telegram (Issue 2), restart the backend () and verify that the Telegram connection restores automatically (indicator stays green) without requiring another login.
-    -   Status: NOT STARTED
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Backend.
+-   **Issue 1: Verify All New Features and UI Fixes (P0)**
+    -   **Description:** A significant number of features (Case Slider, the entire NON GEOINT workflow) and UI fixes have been implemented but have not been tested at all. There is a high risk of functional bugs.
+    -   **Issues Detail:**
+        -   **Attempted fixes:** Code has been written and linted, but no functional testing was performed.
+        -   **Next debug checklist:**
+            1.  Instruct the user to pull the latest code to their VPS using the provided  script or equivalent git commands.
+            2.  Ask the user to test the Cases slider in the sidebar.
+            3.  Guide the user to test the full NON GEOINT workflow:
+                -   Perform a search by name.
+                -   Verify the results dialog appears and shows the status of the three sub-queries (Capil, Pass WNI, Pass WNA).
+                -   Check the history.
+                -   Select one or more NIKs and run the detailed investigation.
+                -   Verify the NIK, NKK, and RegNIK results appear.
+                -   Test the Print to PDF functionality.
+            4.  Confirm the sidebar minimize button no longer overlaps with the NON GEOINT dialog.
+        -   **Why fix this issue and what will be achieved with the fix?** This will validate the completion of all user requests from the last major interaction and ensure the new features are working as expected.
+        -   **Status:** IN PROGRESS
+        -   **Is recurring issue?** N
+        -   **Should Test frontend/backend/both after fix?** Both.
 
 **In progress Task List**:
--   **Task 1: Finalize VPS Deployment Handover (P0)**
-    -   The app is running, but key functionalities (CP API, Telegram) require final user verification.
-    -   Where to resume: Guide the user through resolving the pending issues above to confirm the VPS deployment is fully operational.
-    -   Status: IN PROGRESS
-    -   Blocked on something: User verification of pending issues.
+-   **Task 1: Complete and Verify NON GEOINT Feature Set (P0)**
+    -   **Description:** The main task from the user's request. The code has been implemented but requires full verification.
+    -   **Where to resume:** Guide the user through testing the feature on their VPS.
+    -   **What will be achieved with this?** A fully functional, name-based intelligence gathering tool within the application, complete with a detailed investigation flow and PDF reporting.
+    -   **Status:** IN PROGRESS
+    -   **Should Test frontend/backend/both after fix?** Both.
+    -   **Blocked on something:** User action is required to pull the new code and test it on the live VPS environment.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P1) **Implement other CP API functions:** Add features for querying immigration data (passport WNI/WNA, perlintasan) as specified in the API documentation provided by the user.
+    -   (P1) **Implement other CP API functions:** Add features for querying immigration data (passport WNI/WNA, perlintasan) using the direct CP API, as specified in previous API documentation. Clarify with the user if this is still needed given the new Telegram-based functionality.
     -   (P2) **Add Opacity Slider for AOIs:** Implement a UI control to adjust the transparency of Area of Interest overlays on the map.
 
 -   **Future Tasks:**
@@ -73,14 +74,14 @@ The user's CP API connection was failing on the VPS due to the server making req
     -   Build a more robust database migration tool.
 
 **Completed work in this session**
--   **Major Task: Full VPS Deployment:** Guided the user through a complete manual deployment of the application onto their own Ubuntu VPS (), including installation and configuration of Nginx, MongoDB, Node.js, Python, PM2, and firewall rules.
--   **Critical Bug Fix: API Whitelisting (IPv4/IPv6):** Diagnosed that API requests were failing because the VPS was using an un-whitelisted IPv6 address. Provided a fix to force requests over the whitelisted IPv4.
--   **Major Feature: CP API Integration:** Replaced the Telegram-based position query with a direct JSON API, including backend logic, quota management, and a new dual-status UI on the frontend.
--   **Feature: Zoom-based Marker Scaling:** Implemented a feature where map markers and their labels dynamically resize based on the map's zoom level, disappearing at far-out zoom levels to reduce clutter.
--   **Bug Fix: Overlapping Marker Visibility:** Corrected the CSS and HTML structure for overlapping markers to ensure the central red dot is always visible and positioned correctly between the info label and the number selectors.
--   **Security: Password Change:** Updated the  user's password as requested.
--   **Support: Code Export to GitHub:** Prepared the codebase (creating , ) and guided the user on how to export the project to their personal GitHub repository for deployment on the VPS.
--   **Support: VPS Update Workflow:** Provided the user with a shell script () and instructions on how to pull future changes from GitHub and redeploy them on their VPS.
+-   **Critical Bug Fix:  on VPS:** Diagnosed and fixed a server-crashing  in  on the user's VPS.
+-   **Critical Bug Fix: Telegram Session Path:** Resolved an unable to open database file error by replacing hardcoded file paths with relative paths, enabling Telegram login on the VPS.
+-   **Bug Fix: NIK Data Overwriting:** Corrected a backend logic flaw where detailed NIK data was being incorrectly overwritten by a less detailed message from the Telegram bot.
+-   **Feature: Cases Slider:** Implemented a horizontal slider for the Cases list using .
+-   **Major Feature: NON GEOINT Search Engine:**
+    -   **Backend:** Created API endpoints (, , etc.) and a robust  system in  to manage sequential queries to the Telegram bot.
+    -   **Frontend:** Built a new component  for the entire workflow, including search, results polling, history, NIK selection, deep-dive investigation, and PDF export.
+-   **UI Fix: Minimize Button Z-Index:** Corrected the  of the sidebar minimize button to ensure it renders correctly behind modal dialogs.
 
 **Earlier issues found/mentioned but not fixed**
 None.
@@ -88,97 +89,129 @@ None.
 **Known issue recurrence from previous fork**
 -   **Issue recurrence in previous fork:** Telegram session instability.
 -   **Recurrence count:** 5+
--   **Status:** RESOLVED. A robust session backup-and-restore mechanism using MongoDB is in place. It now requires a one-time user login on the new VPS environment to become fully active.
+-   **Status:** RESOLVED. The agent fixed the underlying file path issue causing session creation to fail on the user's VPS.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Telethon, MongoDB (, ).
--   **Frontend:** React, Tailwind CSS, Leaflet, Shadcn/UI, Sonner.
--   **VPS Deployment:** Manual setup and configuration on an Ubuntu VPS.
--   **Process Management:** PM2 for running the backend service.
--   **Reverse Proxy:** Nginx for serving the React frontend and proxying API requests.
--   **Network Debugging:** Diagnosing and resolving an issue related to IPv4 vs. IPv6 addressing for API calls.
+-   **Backend:** Use of  to create a robust, sequential task processor for handling long-running, ordered interactions with an external bot via an API.
+-   **Frontend:** Complex state management for asynchronous, multi-step UI flows with status polling. Client-side PDF generation from HTML content using  and . UI enhancement with .
+-   **Remote Debugging:** Diagnosing and resolving issues on a user-managed VPS by analyzing  logs and providing specific usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
+           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
+           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
+           <command> [<args>]
+
+These are common Git commands used in various situations:
+
+start a working area (see also: git help tutorial)
+   clone     Clone a repository into a new directory
+   init      Create an empty Git repository or reinitialize an existing one
+
+work on the current change (see also: git help everyday)
+   add       Add file contents to the index
+   mv        Move or rename a file, a directory, or a symlink
+   restore   Restore working tree files
+   rm        Remove files from the working tree and from the index
+
+examine the history and state (see also: git help revisions)
+   bisect    Use binary search to find the commit that introduced a bug
+   diff      Show changes between commits, commit and working tree, etc
+   grep      Print lines matching a pattern
+   log       Show commit logs
+   show      Show various types of objects
+   status    Show the working tree status
+
+grow, mark and tweak your common history
+   branch    List, create, or delete branches
+   commit    Record changes to the repository
+   merge     Join two or more development histories together
+   rebase    Reapply commits on top of another base tip
+   reset     Reset current HEAD to the specified state
+   switch    Switch branches
+   tag       Create, list, delete or verify a tag object signed with GPG
+
+collaborate (see also: git help workflows)
+   fetch     Download objects and refs from another repository
+   pull      Fetch from and integrate with another repository or a local branch
+   push      Update remote refs along with associated objects
+
+'git help -a' and 'git help -g' list available subcommands and some
+concept guides. See 'git help <command>' or 'git help <concept>'
+to read about a specific subcommand or concept.
+See 'git help git' for an overview of the system. commands to fix code deployment conflicts.
 
 **key DB schema**
+-   **non_geoint_searches:** (New) 
 -   **telegram_sessions:** 
 -   **cp_api_quota:** 
--   Other collections: , , , , .
 
 **changes in tech stack**
--   The application is now self-hosted on a user-managed VPS instead of the Emergent platform.
+-   **Frontend:** Added dependencies , , , .
 
 **All files of reference**
--   : Contains the new CP API logic and the IPv4 fix.
--   : Contains the new CP API credentials.
--   : Contains the UI for the new CP API status and quota.
--   : State management for the CP API.
--    & : Contain the zoom-scaling logic.
+-   : Contains all bug fixes and new backend logic for the NON GEOINT feature.
+-   : Contains the integration logic for the new component and the z-index fix.
+-   : A new, large component containing the entire UI and logic for the NON GEOINT search, investigation, and PDF export feature.
+-   : Modified to add the  slider for cases.
 
 **key api endpoints**
--   ****: (New) Checks connection status to the CP API.
--   ****: (New) Retrieves the remaining request quota for the CP API.
--   ****: (Modified) Now uses the CP API for initial position query.
--   ****: (Modified) Now uses the CP API for position updates.
+-   : (New) Initiates a search by name.
+-   : (New) Polls the status of an ongoing search/investigation.
+-   : (New) Starts a detailed NIK investigation.
+-   : (New) Fetches past search history.
+-   : Checks the connection to the CP API.
+-   : Creates a new target, now using the CP API.
 
 **Critical Info for New Agent**
--   **THE APP IS ON A USER'S VPS.** Do not use platform tools for deployment or file access. All instructions must be  commands for the user to run on their VPS. The user's IP is .
--   **Update Workflow:** After implementing changes, push them to the user's GitHub repo (via Save to GitHub). Then, provide the user with the command  to run on their VPS to pull the changes and redeploy.
--   **Primary Goal:** Your first action should be to guide the user through verifying the pending issues, starting with the CP API connection fix (Issue 1).
--   **Language:** The user's primary language is Bahasa Indonesia. All communication must be in Bahasa Indonesia.
+-   **THE APP IS ON A USER'S VPS.** All instructions must be  commands for the user to run on their server (). Do not use any platform-specific deployment tools.
+-   **Deployment Workflow:** After making changes, use Save to GitHub. Then, instruct the user to run the following commands on their VPS to deploy:
+    
+    The  is critical to discard any conflicting local changes on the VPS before pulling.
+-   **Primary Goal:** Your first action is to guide the user to test the large set of newly implemented (but completely untested) features. Start with the case slider, then the full NON GEOINT workflow.
+-   **Language:** You MUST communicate with the user in **Bahasa Indonesia**.
 
 **documents and test reports created in this job**
--    (updated)
--   
--   
--   
+None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** okay sudah bisa (Okay, it's working now) - *User confirmed the web app is accessible via IP after Nginx was installed.* (RESOLVED)
-2.  **User:** Unit nginx.service could not be found. - *Reported Nginx wasn't installed on the VPS.* (RESOLVED)
-3.  **User:** setelah di akses alamat itu di browser, tdk membuka apapaun (After accessing that address in the browser, nothing opens) - *Reported the app was inaccessible.* (IN PROGRESS)
-4.  **User:** Shared logs showing MongoDB connection refusal. (RESOLVED)
-5.  **User:** Shared logs showing the  command was not found. (RESOLVED)
-6.  **User:** Shared an error from yarn install v1.22.22
-[1/4] Resolving packages...
-[2/4] Fetching packages...
-[3/4] Linking dependencies...
-[4/4] Building fresh packages...
-success Saved lockfile.
-Done in 0.03s. and yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.. (RESOLVED by upgrading Node.js)
-7.  **User:** Shared an error about  package not found. (RESOLVED by providing a custom pip index)
-8.  **User:** Shared a  authentication failure. (RESOLVED by explaining PAT usage)
-9.  **User:** coba detailkan cara clone ke VPS (explain in detail how to clone to VPS) - *Requested detailed instructions for VPS deployment.* (RESOLVED)
-10. **User:** bisa tidak jika saya membuka VPS dan emergent deploy ke VPS tersebut? (can I open a VPS and have emergent deploy to it?) - *Asked about self-hosting.* (RESOLVED)
+1.  **User (LATEST):** Requested a fix for the sidebar minimize button's z-index and specified the full workflow for the NIK deep-dive feature (select NIKs, query NIK/NKK/RegNIK, view results, and print everything to PDF). (IN PROGRESS)
+2.  **User:** Provided feedback on the first version of the NON GEOINT feature: improve button style, add a history button, and add View buttons for partial results. (RESOLVED by implementation in the last steps)
+3.  **User:** Confirmed the previous NIK data bug was fixed and requested two new major features: the cases slider and the NON GEOINT search engine. (IN PROGRESS)
+4.  **User:** Confirmed the Telegram bot connection was working after the agent fixed the hardcoded session path issue. (RESOLVED)
+5.  **User:** Reported the bot connection was failing with an unable to open database file error. (RESOLVED)
+6.  **User:** Reported the backend was still crashing with an  even after pulling changes. (RESOLVED)
+7.  **User:** Reported the backend was crashing on their VPS with an . (RESOLVED)
+8.  **User:** Confirmed the app was accessible but that data was missing and connections were red. (RESOLVED)
+9.  **User:** Provided logs showing the . (RESOLVED)
+10. **User (OLDEST in this session):** Stated that restarting  was showing an  and that all database content appeared lost on the web app. (RESOLVED)
 
 **Project Health Check:**
--   **Broken:** None in the codebase. Functionality on the VPS is pending user verification.
+-   **Broken:** The newly implemented NON GEOINT feature is completely untested and should be considered broken until verified.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telethon:** For NIK/NKK queries via a live Telegram user-bot.
--   **CP API ():** (New) External JSON API for position queries. Requires IP whitelisting.
--   **Leaflet.js & OpenStreetMap:** For rendering interactive maps.
--   **Gemini (via emergentintegrations):** For AI text analysis (currently non-functional on VPS until pip install is fixed). Uses Emergent LLM Key.
--   **jsPDF & html2canvas:** For client-side PDF generation.
+-   **Telethon:** Live integration for querying a private Telegram bot.
+-   **CP API ():** External JSON API for position queries.
+-   **Leaflet.js & OpenStreetMap:** For map rendering.
+-   **jsPDF & html2canvas:** (New) For client-side PDF generation.
+-   **react-slick:** (New) For the case slider UI.
+-   **Gemini (via emergentintegrations):** Present in the codebase but likely non-functional on the VPS. Low priority. Uses Emergent LLM Key.
 
 **Testing status**
 -   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: The  package may not be installed correctly on the VPS, potentially disabling AI-related features. This is a low-priority issue.
+-   Known regressions: None.
 
 **Credentials to test flow:**
 -   **Web App Login:**
     -   Username: 
     -   Password: 
 -   **VPS Access:**
-    -   The agent does not have direct access. Instructions must be provided to the user.
-    -   IP Address: 
--   **CP API Key:**
-    -   Stored in  on the VPS.
+    -   The agent does not have direct access. All instructions must be provided to the user as bash commands to run on .
 
 **What agent forgot to execute**
--   The agent correctly identified the need for a fresh user login for Telegram but did not create a separate verification step for the session *restore* mechanism, which the user had flagged as failing. This has been added as a new pending issue.</analysis>
+-   The agent did not perform any functional testing after implementing a very large and complex set of features. It went directly from coding and linting to asking the user to deploy the changes. The next agent must prioritize a thorough testing and verification phase with the user.</analysis>
