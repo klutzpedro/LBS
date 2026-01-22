@@ -656,18 +656,6 @@ export const NonGeointSearchDialog = ({
       lastOpenedWithSearchRef.current = null;
     }
   }, [open]);
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-      if (investigationPollingRef.current) {
-        clearInterval(investigationPollingRef.current);
-        investigationPollingRef.current = null;
-      }
-      // Reset all states when dialog closes
-      resetAllStates();
-    }
-  }, [open]);
 
   // Process search results to extract persons
   useEffect(() => {
