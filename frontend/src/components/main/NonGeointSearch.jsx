@@ -552,10 +552,22 @@ export const NonGeointSearchDialog = ({
   const investigationPollingRef = useRef(null);
 
   // Load initial search if provided
+  // Load initial search if provided (from history)
   useEffect(() => {
     if (initialSearch && open) {
       setSearchResults(initialSearch);
       setSearchName(initialSearch.name || '');
+      
+      // If investigation already exists, load it
+      if (initialSearch.investigation) {
+        setInvestigation(initialSearch.investigation);
+        // Set selected NIKs from investigation
+        if (initialSearch.investigation.results) {
+          const investigatedNiks = Object.keys(initialSearch.investigation.results);
+          setSelectedNiks(investigatedNiks);
+        }
+        toast.success('Hasil pendalaman sebelumnya dimuat');
+      }
     }
   }, [initialSearch, open]);
 
