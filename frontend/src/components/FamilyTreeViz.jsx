@@ -1,8 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { API } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Sparkles, RefreshCw } from 'lucide-react';
+
+// Member Card Component - extracted outside to avoid unstable nested component
+const MemberCard = ({ member, isTarget, isHead, childOrder }) => (
+  <div 
+    className="p-2 rounded border text-center"
+    style={{
+      backgroundColor: isTarget ? 'rgba(255, 59, 92, 0.15)' : isHead ? 'rgba(0, 217, 255, 0.1)' : 'var(--background-tertiary)',
+      borderColor: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--borders-default)',
+      borderWidth: isTarget || isHead ? '2px' : '1px',
+      minWidth: '120px',
+      maxWidth: '140px'
+    }}
+  >
+    <p 
+      className="text-xs uppercase tracking-wide mb-0.5"
+      style={{ 
+        color: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--foreground-muted)',
+        fontFamily: 'Rajdhani, sans-serif',
+        fontWeight: 'bold',
+        fontSize: '9px'
+      }}
+    >
+      {childOrder ? `ANAK ${childOrder}` : (member.relationship || 'MEMBER')}
+    </p>
+    <p 
+      className="text-xs font-semibold mb-0.5 truncate"
+      style={{ 
+        color: 'var(--foreground-primary)',
+        fontFamily: 'Barlow Condensed, sans-serif'
+      }}
+      title={member.name}
+    >
+      {member.name || 'Unknown'}
+    </p>
+    {(member.dob || member.birth_date || member.tanggal_lahir) && (
+      <p 
+        className="text-xs mb-0.5"
+        style={{ 
+          color: 'var(--foreground-muted)',
+          fontSize: '8px'
+        }}
+      >
+        {member.dob || member.birth_date || member.tanggal_lahir}
+      </p>
+    )}
+    <p 
+      className="font-mono truncate"
+      style={{ 
+        color: isTarget ? 'var(--status-error)' : 'var(--accent-primary)',
+        fontSize: '9px'
+      }}
+    >
+      {member.nik}
+    </p>
+  </div>
+);
 
 export const FamilyTreeViz = ({ members, targetNik }) => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -12,6 +68,100 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
   useEffect(() => {
     console.log('FamilyTreeViz members:', members);
   }, [members]);
+
+  // Normalize member data - handle different field names
+  const normalizedMembers = useMemo(() => {
+    if (!members || members.length === 0) return [];
+    
+    return members.map(m => ({
+      ...m,
+      name: m.name || m.full_name || m.nama || m.Full_Name || m['Full Name'] || 'Unknown',
+      relationship: (m.relationship || m.hubungan || m.shdk || m.Relationship || m.SHDK || '').toString().toUpperCase(),
+      dob: m.dob || m.birth_date || m.tanggal_lahir || m.Dob || m.DOB || m['Tanggal Lahir'] || null,
+      gender: (m.gender || m.jenis_kelamin || m.Gender || m['Jenis Kelamin'] || '').toString().toUpperCase()
+    }));
+  }, [members]);
+
+  // Organize members by relationship
+  const { head, spouse, children, others } = useMemo(() => {
+    if (normalizedMembers.length === 0) {
+      return { head: null, spouse: null, children: [], others: [] };
+    }
+
+    const headMember = normalizedMembers.find(m => 
+      m.relationship?.includes('KEPALA') || 
+      m.relationship?.includes('HEAD') ||
+      m.relationship === '1'
+    );
+    
+    const spouseMember = normalizedMembers.find(m => 
+      m.relationship?.includes('ISTRI') || 
+      m.relationship?.includes('SUAMI') ||
+      m.relationship?.includes('WIFE') ||
+      m.relationship?.includes('HUSBAND') ||
+      m.relationship?.includes('SPOUSE') ||
+      m.relationship === '2'
+    );
+    
+    // Sort children by DOB (oldest first = Anak 1)
+    const childrenMembers = normalizedMembers
+      .filter(m => 
+        m.relationship?.includes('ANAK') || 
+        m.relationship?.includes('CHILD') ||
+        m.relationship?.includes('SON') ||
+        m.relationship?.includes('DAUGHTER') ||
+        m.relationship === '3' || m.relationship === '4' || m.relationship === '5'
+      )
+      .sort((a, b) => {
+        // Try to parse DOB for sorting
+        const dobA = a.dob || '';
+        const dobB = b.dob || '';
+        
+        // Try to extract year from DOB
+        const yearMatchA = dobA.match(/(\d{4})/);
+        const yearMatchB = dobB.match(/(\d{4})/);
+        
+        if (yearMatchA && yearMatchB) {
+          return parseInt(yearMatchA[1]) - parseInt(yearMatchB[1]);
+        }
+        
+        // Fallback: try to extract from NIK (positions 7-12 = DDMMYY)
+        if (a.nik && b.nik) {
+          const nikDobA = a.nik.substring(6, 12);
+          const nikDobB = b.nik.substring(6, 12);
+          return nikDobA.localeCompare(nikDobB);
+        }
+        
+        return 0;
+      })
+      .map((child, idx) => ({
+        ...child,
+        childOrder: idx + 1
+      }));
+    
+    const othersMembers = normalizedMembers.filter(m => 
+      !m.relationship?.includes('KEPALA') && 
+      !m.relationship?.includes('HEAD') &&
+      !m.relationship?.includes('ISTRI') && 
+      !m.relationship?.includes('SUAMI') && 
+      !m.relationship?.includes('WIFE') &&
+      !m.relationship?.includes('HUSBAND') &&
+      !m.relationship?.includes('SPOUSE') &&
+      !m.relationship?.includes('ANAK') &&
+      !m.relationship?.includes('CHILD') &&
+      !m.relationship?.includes('SON') &&
+      !m.relationship?.includes('DAUGHTER') &&
+      m.relationship !== '1' && m.relationship !== '2' && 
+      m.relationship !== '3' && m.relationship !== '4' && m.relationship !== '5'
+    );
+
+    return { 
+      head: headMember, 
+      spouse: spouseMember, 
+      children: childrenMembers, 
+      others: othersMembers 
+    };
+  }, [normalizedMembers]);
 
   if (!members || members.length === 0) {
     return (
@@ -23,124 +173,24 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
     );
   }
 
-  // Normalize member data - handle different field names
-  const normalizedMembers = members.map(m => ({
-    ...m,
-    name: m.name || m.full_name || m.nama || m.Full_Name || 'Unknown',
-    relationship: (m.relationship || m.hubungan || m.shdk || m.Relationship || '').toUpperCase(),
-    dob: m.dob || m.birth_date || m.tanggal_lahir || m.Dob || m.DOB || null,
-    gender: (m.gender || m.jenis_kelamin || m.Gender || '').toUpperCase()
-  }));
-
-  // Organize members by relationship
-  const head = normalizedMembers.find(m => 
-    m.relationship?.includes('KEPALA') || 
-    m.relationship?.includes('HEAD') ||
-    m.relationship === '1' // Some systems use 1 for head
-  );
-  
-  const spouse = normalizedMembers.find(m => 
-    m.relationship?.includes('ISTRI') || 
-    m.relationship?.includes('SUAMI') ||
-    m.relationship?.includes('WIFE') ||
-    m.relationship?.includes('HUSBAND') ||
-    m.relationship?.includes('SPOUSE') ||
-    m.relationship === '2' // Some systems use 2 for spouse
-  );
-  
-  // Sort children by DOB (oldest first = Anak 1)
-  const children = normalizedMembers
-    .filter(m => 
-      m.relationship?.includes('ANAK') || 
-      m.relationship?.includes('CHILD') ||
-      m.relationship?.includes('SON') ||
-      m.relationship?.includes('DAUGHTER') ||
-      m.relationship === '3' || m.relationship === '4' // Some systems use 3,4 for children
-    )
-    .sort((a, b) => {
-      // Parse DOB from various sources
-      const parseDOB = (member) => {
-        // First try explicit DOB fields
-        const dobField = member.dob || member.birth_date || member.tanggal_lahir || member.tgl_lahir;
-        if (dobField) {
-          const str = String(dobField).trim();
-          // Try DD-MM-YYYY or DD/MM/YYYY
-          let match = str.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
-          if (match) {
-            return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
-          }
-          // Try YYYY-MM-DD
-          match = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
-          if (match) {
-            return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
-          }
-          // Fallback: try native Date parse
-          const parsed = new Date(str);
-          if (!isNaN(parsed)) return parsed;
-        }
-        
-        // Try to extract from Indonesian NIK (16 digits)
-        // Format: PPPPPP-DDMMYY-XXXX (PP=province, DD=day, MM=month, YY=year)
-        // For females, DD is +40 (e.g., 41 = day 1)
-        const nik = member.nik;
-        if (nik && nik.length >= 12) {
-          const nikStr = String(nik).replace(/\D/g, ''); // Remove non-digits
-          if (nikStr.length >= 12) {
-            let day = parseInt(nikStr.substring(6, 8));
-            const month = parseInt(nikStr.substring(8, 10));
-            const year = parseInt(nikStr.substring(10, 12));
-            
-            // If day > 40, it's a female (subtract 40)
-            if (day > 40) day -= 40;
-            
-            // Determine century: if year > 50, assume 1900s; else 2000s
-            const fullYear = year > 50 ? 1900 + year : 2000 + year;
-            
-            if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-              return new Date(fullYear, month - 1, day);
-            }
-          }
-        }
-        
-        return new Date(9999, 11, 31); // No DOB = put at end
-      };
-      
-      const dobA = parseDOB(a);
-      const dobB = parseDOB(b);
-      return dobA - dobB; // Oldest first (smaller date = older)
-    })
-    .map((child, idx) => ({
-      ...child,
-      childOrder: idx + 1 // Add child order for display
-    }));
-  
-  const others = normalizedMembers.filter(m => 
-    !m.relationship?.includes('KEPALA') && 
-    !m.relationship?.includes('HEAD') &&
-    !m.relationship?.includes('ISTRI') && 
-    !m.relationship?.includes('SUAMI') && 
-    !m.relationship?.includes('WIFE') &&
-    !m.relationship?.includes('HUSBAND') &&
-    !m.relationship?.includes('SPOUSE') &&
-    !m.relationship?.includes('ANAK') &&
-    !m.relationship?.includes('CHILD') &&
-    !m.relationship?.includes('SON') &&
-    !m.relationship?.includes('DAUGHTER') &&
-    m.relationship !== '1' && m.relationship !== '2' && m.relationship !== '3' && m.relationship !== '4'
-  );
-
-  const fetchAIAnalysis = async () => {
+  // AI Analysis for family
+  const analyzeFamily = async () => {
     setLoadingAI(true);
     try {
-      const response = await axios.post(`${API}/ai/family-analysis`, {
-        members: members,
-        target_nik: targetNik
+      const membersText = normalizedMembers.map(m => 
+        `${m.name || 'Unknown'} (${m.relationship || 'Unknown'}, ${m.gender === 'L' ? 'Laki-laki' : m.gender === 'P' ? 'Perempuan' : '-'}${m.dob ? ', lahir ' + m.dob : ''})`
+      ).join('\n');
+      
+      const targetInfo = normalizedMembers.find(m => m.nik === targetNik);
+      const familySummary = `ANGGOTA KELUARGA:\n${membersText}\n${targetInfo ? '\nTarget investigasi: ' + (targetInfo.name || 'Unknown') + ' (' + (targetInfo.relationship || '-') + ')' : ''}`;
+      
+      const response = await axios.post(`${API}/api/ai/analyze-family`, {
+        family_data: familySummary
+      }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      if (response.data.success) {
-        setAiAnalysis(response.data.analysis);
-      } else {
-        setAiAnalysis(response.data.analysis || 'Gagal menganalisis');
-      }
+      
+      setAiAnalysis(response.data.analysis);
     } catch (error) {
       console.error('AI Analysis error:', error);
       setAiAnalysis('Tidak dapat menganalisis keluarga');
@@ -149,99 +199,37 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
     }
   };
 
-  const MemberCard = ({ member, isTarget, isHead, childOrder }) => (
-    <div 
-      className="p-2 rounded border text-center"
-      style={{
-        backgroundColor: isTarget ? 'rgba(255, 59, 92, 0.15)' : isHead ? 'rgba(0, 217, 255, 0.1)' : 'var(--background-tertiary)',
-        borderColor: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--borders-default)',
-        borderWidth: isTarget || isHead ? '2px' : '1px',
-        minWidth: '120px',
-        maxWidth: '140px'
-      }}
-    >
-      <p 
-        className="text-xs uppercase tracking-wide mb-0.5"
-        style={{ 
-          color: isTarget ? 'var(--status-error)' : isHead ? 'var(--accent-primary)' : 'var(--foreground-muted)',
-          fontFamily: 'Rajdhani, sans-serif',
-          fontWeight: 'bold',
-          fontSize: '9px'
-        }}
-      >
-        {childOrder ? `ANAK ${childOrder}` : (member.relationship || 'MEMBER')}
-      </p>
-      <p 
-        className="text-xs font-semibold mb-0.5 truncate"
-        style={{ 
-          color: 'var(--foreground-primary)',
-          fontFamily: 'Barlow Condensed, sans-serif'
-        }}
-        title={member.name}
-      >
-        {member.name || 'Unknown'}
-      </p>
-      {(member.dob || member.birth_date || member.tanggal_lahir) && (
-        <p 
-          className="text-xs mb-0.5"
-          style={{ 
-            color: 'var(--foreground-muted)',
-            fontSize: '8px'
-          }}
-        >
-          {member.dob || member.birth_date || member.tanggal_lahir}
-        </p>
-      )}
-      <p 
-        className="font-mono truncate"
-        style={{ 
-          color: isTarget ? 'var(--status-error)' : 'var(--accent-primary)',
-          fontSize: '9px'
-        }}
-      >
-        {member.nik}
-      </p>
-    </div>
-  );
-
   return (
     <div className="space-y-3">
       {/* AI Analysis Section */}
       <div 
         className="p-2 rounded border"
-        style={{
+        style={{ 
           backgroundColor: 'var(--background-tertiary)',
           borderColor: 'var(--borders-subtle)'
         }}
       >
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1">
-            <Sparkles className="w-3 h-3" style={{ color: 'var(--accent-secondary)' }} />
-            <span className="text-xs font-semibold" style={{ color: 'var(--foreground-primary)' }}>
-              AI Analysis
-            </span>
-          </div>
+          <span className="text-xs font-semibold" style={{ color: 'var(--foreground-secondary)' }}>
+            AI ANALYSIS
+          </span>
           <Button
             size="sm"
-            onClick={fetchAIAnalysis}
+            variant="ghost"
+            onClick={analyzeFamily}
             disabled={loadingAI}
-            className="h-6 px-2 text-xs"
-            style={{
-              backgroundColor: 'var(--accent-secondary)',
-              color: 'var(--background-primary)'
-            }}
+            className="h-6 text-xs"
           >
             {loadingAI ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
-            ) : aiAnalysis ? (
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className="w-3 h-3 animate-spin mr-1" />
             ) : (
-              'Analisis'
+              <Sparkles className="w-3 h-3 mr-1" />
             )}
+            {loadingAI ? 'Analyzing...' : 'Analisis'}
           </Button>
         </div>
         {aiAnalysis ? (
-          <p className="text-xs leading-relaxed" style={{ color: 'var(--foreground-secondary)' }}>
+          <p className="text-xs" style={{ color: 'var(--foreground-primary)' }}>
             {aiAnalysis}
           </p>
         ) : (
@@ -258,23 +246,23 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
           {head && <MemberCard member={head} isTarget={head.nik === targetNik} isHead={true} />}
           {spouse && <MemberCard member={spouse} isTarget={spouse.nik === targetNik} isHead={false} />}
         </div>
-
+        
         {/* Connection Line */}
         {(head || spouse) && children.length > 0 && (
           <div className="flex justify-center">
             <div 
-              className="h-4 w-0.5"
+              className="w-0.5 h-3"
               style={{ backgroundColor: 'var(--borders-default)' }}
             />
           </div>
         )}
-
+        
         {/* Children Row */}
         {children.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2">
-            {children.map((child, idx) => (
+          <div className="flex justify-center gap-2 flex-wrap">
+            {children.map((child) => (
               <MemberCard 
-                key={idx} 
+                key={child.nik} 
                 member={child} 
                 isTarget={child.nik === targetNik} 
                 isHead={false}
@@ -283,19 +271,24 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
             ))}
           </div>
         )}
-
-        {/* Other Members */}
+        
+        {/* Others Row */}
         {others.length > 0 && (
           <>
-            <div className="flex justify-center">
-              <div 
-                className="h-4 w-0.5"
-                style={{ backgroundColor: 'var(--borders-default)' }}
-              />
+            <div 
+              className="text-center text-xs py-1"
+              style={{ color: 'var(--foreground-muted)' }}
+            >
+              Anggota Lain
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {others.map((member, idx) => (
-                <MemberCard key={idx} member={member} isTarget={member.nik === targetNik} isHead={false} />
+            <div className="flex justify-center gap-2 flex-wrap">
+              {others.map((other) => (
+                <MemberCard 
+                  key={other.nik} 
+                  member={other} 
+                  isTarget={other.nik === targetNik} 
+                  isHead={false}
+                />
               ))}
             </div>
           </>
