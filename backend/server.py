@@ -4059,6 +4059,7 @@ def parse_nkk_family_data(text: str) -> dict:
     
     # Track line numbers for debugging
     logger.info(f"[NKK PARSER] Parsing {len(lines)} lines of NKK data")
+    logger.info(f"[NKK PARSER] Raw text sample: {text[:500]}...")
     
     # Method 1: Parse structured format (each member has NIK, Name, etc on separate lines)
     for i, line in enumerate(lines):
@@ -4075,15 +4076,31 @@ def parse_nkk_family_data(text: str) -> dict:
                 logger.info(f"[NKK PARSER] Saved member: {current_member.get('name', 'Unknown')}")
             current_member = {'nik': nik_match.group(1)}
         
-        # Check for name patterns
-        name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
-        if name_match and current_member:
-            current_member['name'] = name_match.group(1).strip()
+        # Check for Full Name patterns (prioritize Full Name)
+        full_name_match = re.search(r'(?:full\s*name|nama\s*lengkap)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if full_name_match and current_member:
+            current_member['name'] = full_name_match.group(1).strip()
+        elif not current_member.get('name'):
+            # Fallback to regular name patterns
+            name_match = re.search(r'(?:nama|name)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+            if name_match and current_member:
+                current_member['name'] = name_match.group(1).strip()
         
-        # Check for relationship patterns
-        rel_match = re.search(r'(?:hubungan|relationship|status\s*hubungan|shdk|status)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        # Check for relationship patterns (SHDK = Status Hubungan Dalam Keluarga)
+        rel_match = re.search(r'(?:relationship|hubungan|shdk|status\s*hubungan|status\s*keluarga)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
         if rel_match and current_member:
-            current_member['relationship'] = rel_match.group(1).strip()
+            rel_value = rel_match.group(1).strip().upper()
+            # Normalize relationship values
+            if 'KEPALA' in rel_value or 'HEAD' in rel_value:
+                current_member['relationship'] = 'KEPALA KELUARGA'
+            elif 'ISTRI' in rel_value or 'WIFE' in rel_value or 'SPOUSE' in rel_value:
+                current_member['relationship'] = 'ISTRI'
+            elif 'SUAMI' in rel_value or 'HUSBAND' in rel_value:
+                current_member['relationship'] = 'SUAMI'
+            elif 'ANAK' in rel_value or 'CHILD' in rel_value or 'SON' in rel_value or 'DAUGHTER' in rel_value:
+                current_member['relationship'] = 'ANAK'
+            else:
+                current_member['relationship'] = rel_value
         
         # Check for gender patterns
         gender_match = re.search(r'(?:jenis\s*kelamin|gender|j/k|sex|kelamin)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
@@ -4096,8 +4113,14 @@ def parse_nkk_family_data(text: str) -> dict:
             else:
                 current_member['gender'] = gender_value
         
-        # Check for birth date
-        dob_match = re.search(r'(?:tgl\s*lahir|tanggal\s*lahir|dob|lahir)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        # Check for birth date (DoB) - multiple patterns
+        dob_match = re.search(r'(?:dob|date\s*of\s*birth|tgl\s*lahir|tanggal\s*lahir|lahir|birth)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if dob_match and current_member:
+            dob_value = dob_match.group(1).strip()
+            current_member['dob'] = dob_value
+            # Also add alternative field names for frontend compatibility
+            current_member['birth_date'] = dob_value
+            current_member['tanggal_lahir'] = dob_value
         if dob_match and current_member:
             current_member['dob'] = dob_match.group(1).strip()
     
