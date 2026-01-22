@@ -1231,15 +1231,15 @@ export const NonGeointSearchDialog = ({
                           {/* Sub-query status indicators */}
                           <div className="flex gap-4 text-xs" style={{ color: 'var(--foreground-muted)' }}>
                             <span className="flex items-center gap-1">
-                              {getStatusIcon(nikData?.nik_data?.status || 'pending')}
+                              {getStatusIcon(getSubQueryStatus(nikData, 'nik_data'))}
                               NIK
                             </span>
                             <span className="flex items-center gap-1">
-                              {getStatusIcon(nikData?.nkk_data?.status || 'pending')}
+                              {getStatusIcon(getSubQueryStatus(nikData, 'nkk_data'))}
                               NKK
                             </span>
                             <span className="flex items-center gap-1">
-                              {getStatusIcon(nikData?.regnik_data?.status || 'pending')}
+                              {getStatusIcon(getSubQueryStatus(nikData, 'regnik_data'))}
                               RegNIK
                             </span>
                           </div>
