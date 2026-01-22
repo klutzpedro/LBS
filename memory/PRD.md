@@ -592,3 +592,43 @@
   1. Active Telegram connection (session setup on VPS)
   2. Bot @northarch_bot must be responsive
 - **CP API:** Disconnected in preview (IP not whitelisted)
+
+## Bug Fixes (January 2026 - Latest Session)
+
+### P0: Investigation Results Not Reloading from History - FIXED
+- **Issue:** When user selected a target from NON GEOINT history, investigation results (NIK/NKK/RegNIK) were not displayed
+- **Root Cause:** React state management issue with useEffect dependencies causing race conditions when dialog opens
+- **Solution:**
+  1. Added `prevOpenRef` to detect dialog opening transition (closed → open)
+  2. Added `loadedSearchIdRef` to prevent redundant fetches for same search
+  3. Added `resetAllStates()` helper function for consistent cleanup
+  4. Reset `selectedNonGeointSearch` in parent component when dialog closes
+- **Files Modified:**
+  - `/app/frontend/src/components/main/NonGeointSearch.jsx` - useEffect refactoring
+  - `/app/frontend/src/pages/MainApp.jsx` - onOpenChange handler with state reset
+
+### P1: Family Tree Graph Not Rendering
+- **Status:** Needs VPS testing - component code appears correct
+- **Debug Notes:** Check if `family_data.members` is populated in backend response
+
+### P2: NKK Results Only Show One Family Member
+- **Status:** Needs VPS testing - parser has 4 methods, may need bot response samples
+
+### P2: Delete Button Not Visible on VPS
+- **Status:** User must rebuild frontend on VPS
+- **Command:**
+  ```bash
+  cd /var/www/waskita-lbs/frontend
+  npm install
+  npm run build
+  ```
+
+### VPS Deployment Instructions (CRITICAL)
+After pulling latest code, user MUST run:
+```bash
+cd /var/www/waskita-lbs
+git checkout -- .
+git pull origin main
+cd frontend && npm install && npm run build
+pm2 restart waskita-backend
+```
