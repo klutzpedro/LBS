@@ -3986,40 +3986,44 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
 
 
 def parse_nkk_family_data(text: str) -> dict:
-    """Parse NKK/Family Card data to extract family members"""
+    """Parse NKK/Family Card data to extract family members - ENHANCED VERSION"""
     import re
     
     members = []
     lines = text.split('\n')
     current_member = {}
     
-    for line in lines:
+    # Track line numbers for debugging
+    logger.info(f"[NKK PARSER] Parsing {len(lines)} lines of NKK data")
+    
+    # Method 1: Parse structured format (each member has NIK, Name, etc on separate lines)
+    for i, line in enumerate(lines):
         stripped = line.strip()
         if not stripped:
             continue
         
-        # Check for NIK pattern (16 digits)
+        # Check for NIK pattern (16 digits) - this signals a new member
         nik_match = re.search(r'\b(\d{16})\b', stripped)
         if nik_match:
-            # If we have a current member with data, save it
+            # Save previous member if exists
             if current_member and current_member.get('nik'):
-                members.append(current_member)
-                current_member = {}
-            current_member['nik'] = nik_match.group(1)
+                members.append(current_member.copy())
+                logger.info(f"[NKK PARSER] Saved member: {current_member.get('name', 'Unknown')}")
+            current_member = {'nik': nik_match.group(1)}
         
         # Check for name patterns
         name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
-        if name_match:
+        if name_match and current_member:
             current_member['name'] = name_match.group(1).strip()
         
         # Check for relationship patterns
-        rel_match = re.search(r'(?:hubungan|relationship|status\s*hubungan|shdk)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
-        if rel_match:
+        rel_match = re.search(r'(?:hubungan|relationship|status\s*hubungan|shdk|status)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if rel_match and current_member:
             current_member['relationship'] = rel_match.group(1).strip()
         
         # Check for gender patterns
-        gender_match = re.search(r'(?:jenis\s*kelamin|gender|j/k|sex)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
-        if gender_match:
+        gender_match = re.search(r'(?:jenis\s*kelamin|gender|j/k|sex|kelamin)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if gender_match and current_member:
             gender_value = gender_match.group(1).strip().upper()
             if 'LAKI' in gender_value or gender_value == 'L' or 'MALE' in gender_value:
                 current_member['gender'] = 'L'
@@ -4027,37 +4031,93 @@ def parse_nkk_family_data(text: str) -> dict:
                 current_member['gender'] = 'P'
             else:
                 current_member['gender'] = gender_value
+        
+        # Check for birth date
+        dob_match = re.search(r'(?:tgl\s*lahir|tanggal\s*lahir|dob|lahir)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if dob_match and current_member:
+            current_member['dob'] = dob_match.group(1).strip()
     
     # Don't forget the last member
     if current_member and current_member.get('nik'):
-        members.append(current_member)
+        members.append(current_member.copy())
+        logger.info(f"[NKK PARSER] Saved last member: {current_member.get('name', 'Unknown')}")
     
-    # Try alternative parsing: Look for numbered/bulleted list of members
-    if not members:
-        member_pattern = re.findall(
-            r'(?:^|\n)\s*(?:\d+[\.\)]|\-|\•)?\s*(?:NIK\s*[:\-]?\s*)?(\d{16})\s*(?:[,\-]\s*)?([^,\n]+?)(?:\s*[,\-]\s*(?:hubungan|relationship|shdk)\s*[:\-]?\s*([^,\n]+))?(?:\s*[,\-]\s*(?:gender|j/k|jenis\s*kelamin)\s*[:\-]?\s*([LP]))?',
-            text, re.IGNORECASE | re.MULTILINE
+    logger.info(f"[NKK PARSER] Method 1 found {len(members)} members")
+    
+    # Method 2: Try table-like format (common in bot responses)
+    # Pattern: NIK | Name | Relationship | Gender or similar
+    if len(members) < 2:
+        table_pattern = re.findall(
+            r'(\d{16})\s*[\|\-,]\s*([^|\-,\n]+?)(?:\s*[\|\-,]\s*([^|\-,\n]+?))?(?:\s*[\|\-,]\s*([LP]|LAKI|PEREMPUAN|MALE|FEMALE))?',
+            text, re.IGNORECASE
         )
-        for match in member_pattern:
-            nik, name, relationship, gender = match
-            member = {'nik': nik.strip()}
-            if name:
-                member['name'] = name.strip()
-            if relationship:
-                member['relationship'] = relationship.strip()
-            if gender:
-                member['gender'] = gender.strip().upper()
-            members.append(member)
+        if table_pattern:
+            members = []  # Reset and use table format
+            for match in table_pattern:
+                nik, name, relationship, gender = match
+                member = {'nik': nik.strip()}
+                if name:
+                    member['name'] = name.strip()
+                if relationship:
+                    member['relationship'] = relationship.strip()
+                if gender:
+                    g = gender.strip().upper()
+                    member['gender'] = 'L' if 'L' in g or 'MALE' in g else 'P' if 'P' in g or 'FEMALE' in g else g
+                members.append(member)
+            logger.info(f"[NKK PARSER] Method 2 (table) found {len(members)} members")
+    
+    # Method 3: Try numbered list format
+    # Pattern: 1. NIK: xxx, Name: xxx, etc
+    if len(members) < 2:
+        numbered_pattern = re.findall(
+            r'(?:\d+[\.\)]\s*)?(?:NIK\s*[:\-]?\s*)?(\d{16})(?:[,\s]+(?:nama|name)\s*[:\-]?\s*([^,\n]+))?(?:[,\s]+(?:hubungan|shdk|relationship)\s*[:\-]?\s*([^,\n]+))?',
+            text, re.IGNORECASE
+        )
+        if numbered_pattern and len(numbered_pattern) > len(members):
+            members = []
+            for match in numbered_pattern:
+                nik, name, relationship = match
+                member = {'nik': nik.strip()}
+                if name:
+                    member['name'] = name.strip()
+                if relationship:
+                    member['relationship'] = relationship.strip()
+                members.append(member)
+            logger.info(f"[NKK PARSER] Method 3 (numbered) found {len(members)} members")
+    
+    # Method 4: Extract all 16-digit NIKs and try to associate with nearby text
+    if len(members) < 2:
+        all_niks = re.findall(r'\b(\d{16})\b', text)
+        if len(all_niks) > len(members):
+            # Split text by NIK and parse each section
+            members = []
+            parts = re.split(r'\b(\d{16})\b', text)
+            current_nik = None
+            for part in parts:
+                if re.match(r'^\d{16}$', part):
+                    current_nik = part
+                elif current_nik:
+                    member = {'nik': current_nik}
+                    # Try to extract name from the following text
+                    name_in_part = re.search(r'(?:nama|name)?\s*[:\-]?\s*([A-Z][A-Za-z\s]+)', part)
+                    if name_in_part:
+                        member['name'] = name_in_part.group(1).strip()
+                    members.append(member)
+                    current_nik = None
+            logger.info(f"[NKK PARSER] Method 4 (NIK split) found {len(members)} members")
+    
+    logger.info(f"[NKK PARSER] Final result: {len(members)} members")
     
     if members:
-        # Try to extract No KK (Family Card Number)
-        no_kk_match = re.search(r'(?:no\s*kk|no\.\s*kk|nomor\s*kk|family\s*id)\s*[:\-]?\s*(\d{16})', text, re.IGNORECASE)
+        # Extract family card number
+        no_kk_match = re.search(r'(?:no\s*kk|no\.\s*kk|nomor\s*kk|family\s*id|no\s*kartu\s*keluarga)\s*[:\-]?\s*(\d{16})', text, re.IGNORECASE)
         head_match = re.search(r'(?:kepala\s*keluarga|head\s*of\s*family)\s*[:\-]?\s*(.+)', text, re.IGNORECASE)
         
         return {
             "no_kk": no_kk_match.group(1) if no_kk_match else None,
             "kepala_keluarga": head_match.group(1).strip() if head_match else None,
-            "members": members
+            "members": members,
+            "member_count": len(members)
         }
     
     return None
