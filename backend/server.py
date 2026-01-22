@@ -3617,15 +3617,36 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 )
                 await asyncio.sleep(3)
                 
-                # Query 2: NKK
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NKK for {nik}")
-                await db.nik_investigations.update_one(
-                    {"id": investigation_id},
-                    {"$set": {f"results.{nik}.status": "processing_nkk"}}
-                )
-                nkk_result = await execute_nik_button_query(investigation_id, nik, "NKK")
-                nik_results["nkk_data"] = nkk_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}")
+                # Query 2: NKK - MUST USE FAMILY ID from NIK data, not NIK
+                family_id = None
+                if nik_result.get('data'):
+                    # Try to extract Family ID from parsed data
+                    family_id = nik_result['data'].get('Family ID') or nik_result['data'].get('No KK') or nik_result['data'].get('NKK') or nik_result['data'].get('family_id')
+                
+                if not family_id and nik_result.get('raw_text'):
+                    # Try to extract from raw text
+                    import re
+                    family_match = re.search(r'(?:Family ID|No KK|NKK)[:\s]*(\d{16})', nik_result['raw_text'], re.IGNORECASE)
+                    if family_match:
+                        family_id = family_match.group(1)
+                
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Extracted Family ID: {family_id}")
+                
+                if family_id:
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NKK with Family ID: {family_id}")
+                    await db.nik_investigations.update_one(
+                        {"id": investigation_id},
+                        {"$set": {f"results.{nik}.status": "processing_nkk"}}
+                    )
+                    # Use Family ID instead of NIK for NKK query
+                    nkk_result = await execute_nik_button_query(investigation_id, family_id, "NKK")
+                    nik_results["nkk_data"] = nkk_result
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}")
+                else:
+                    logger.warning(f"[NIK INVESTIGATION {investigation_id}] No Family ID found, skipping NKK query")
+                    nkk_result = {"status": "skipped", "error": "No Family ID found in NIK data"}
+                    nik_results["nkk_data"] = nkk_result
+                
                 # Save immediately after each query
                 await db.nik_investigations.update_one(
                     {"id": investigation_id},
@@ -3633,15 +3654,15 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 )
                 await asyncio.sleep(3)
                 
-                # Query 3: RegNIK
+                # Query 3: RegNIK - Handle multiple phone numbers
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying RegNIK for {nik}")
                 await db.nik_investigations.update_one(
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}.status": "processing_regnik"}}
                 )
-                regnik_result = await execute_nik_button_query(investigation_id, nik, "REGNIK")
+                regnik_result = await execute_regnik_query(investigation_id, nik)
                 nik_results["regnik_data"] = regnik_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}")
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}, phones found: {len(regnik_result.get('phones', []))}")
                 
                 nik_results["status"] = "completed"
                 results[nik] = nik_results
