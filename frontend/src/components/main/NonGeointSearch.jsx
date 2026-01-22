@@ -554,24 +554,58 @@ export const NonGeointSearchDialog = ({
   // Load initial search if provided
   // Load initial search if provided (from history)
   useEffect(() => {
-    if (initialSearch && open) {
-      setSearchResults(initialSearch);
-      setSearchName(initialSearch.name || '');
-      
-      // If investigation already exists, load it
-      if (initialSearch.investigation) {
-        setInvestigation(initialSearch.investigation);
-        // Set selected NIKs from investigation
-        if (initialSearch.investigation.results) {
-          const investigatedNiks = Object.keys(initialSearch.investigation.results);
-          setSelectedNiks(investigatedNiks);
+    const loadSearchData = async () => {
+      if (initialSearch && open) {
+        // Fetch full search data including investigation from server
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${API_URL}/api/nongeoint/search/${initialSearch.id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const fullSearchData = await response.json();
+            console.log('Loaded full search data:', fullSearchData);
+            
+            setSearchResults(fullSearchData);
+            setSearchName(fullSearchData.name || '');
+            
+            // If investigation already exists, load it
+            if (fullSearchData.investigation) {
+              console.log('Investigation found:', fullSearchData.investigation);
+              setInvestigation(fullSearchData.investigation);
+              // Set selected NIKs from investigation
+              if (fullSearchData.investigation.results) {
+                const investigatedNiks = Object.keys(fullSearchData.investigation.results);
+                setSelectedNiks(investigatedNiks);
+                console.log('Loaded investigated NIKs:', investigatedNiks);
+              }
+              toast.success('Hasil pendalaman sebelumnya dimuat');
+            } else {
+              // No investigation yet, reset state
+              setInvestigation(null);
+              setSelectedNiks([]);
+            }
+          } else {
+            // Fallback to initialSearch if fetch fails
+            setSearchResults(initialSearch);
+            setSearchName(initialSearch.name || '');
+          }
+        } catch (error) {
+          console.error('Error loading search data:', error);
+          // Fallback to initialSearch
+          setSearchResults(initialSearch);
+          setSearchName(initialSearch.name || '');
         }
-        toast.success('Hasil pendalaman sebelumnya dimuat');
       }
+    };
+    
+    if (initialSearch && open) {
+      loadSearchData();
     }
-  }, [initialSearch, open]);
+  }, [initialSearch?.id, open]);
 
-  // Cleanup on close
+  // Cleanup on close - reset all states
   useEffect(() => {
     if (!open) {
       if (pollingRef.current) {
@@ -584,6 +618,14 @@ export const NonGeointSearchDialog = ({
       }
       setIsSearching(false);
       setIsInvestigating(false);
+      // Reset states when dialog closes
+      setSearchResults(null);
+      setSearchName('');
+      setSelectedNiks([]);
+      setInvestigation(null);
+      setPersonsFound([]);
+      setSelectedPersonIndex(null);
+      setShowPersonSelection(false);
     }
   }, [open]);
 
