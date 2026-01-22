@@ -36,6 +36,9 @@ import {
   FamilyTreeDialog
 } from '@/components/main';
 
+// NON GEOINT Search
+import { NonGeointButton, NonGeointSearchDialog } from '@/components/main/NonGeointSearch';
+
 const MainApp = () => {
   const { username, logout } = useAuth();
   const { telegramAuthorized, telegramUser } = useTelegram();
