@@ -3379,7 +3379,8 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
             # PHASE 2: Fetch photos for each NIK found
             # ============================================
             if all_niks:
-                logger.info(f"[NONGEOINT {search_id}] Starting photo fetch for {len(all_niks)} NIKs")
+                logger.info(f"[NONGEOINT {search_id}] ======= PHASE 2: STARTING PHOTO FETCH =======")
+                logger.info(f"[NONGEOINT {search_id}] Will fetch photos for {len(all_niks)} NIKs: {all_niks}")
                 
                 # Update status to fetching_photos
                 await db.nongeoint_searches.update_one(
@@ -3388,7 +3389,7 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                 )
                 
                 for idx, nik in enumerate(all_niks):
-                    logger.info(f"[NONGEOINT {search_id}] Fetching photo for NIK {nik} ({idx+1}/{len(all_niks)})")
+                    logger.info(f"[NONGEOINT {search_id}] ------- Photo fetch {idx+1}/{len(all_niks)} for NIK: {nik} -------")
                     
                     # Update progress
                     await db.nongeoint_searches.update_one(
@@ -3402,7 +3403,9 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                     
                     try:
                         # Query NIK to get photo
+                        logger.info(f"[NONGEOINT {search_id}] Calling execute_nik_button_query for NIK {nik}")
                         nik_result = await execute_nik_button_query(f"photo_{search_id}", nik, "NIK")
+                        logger.info(f"[NONGEOINT {search_id}] Result for NIK {nik}: status={nik_result.get('status') if nik_result else 'None'}, has_photo={bool(nik_result.get('photo')) if nik_result else False}")
                         
                         # Always create entry for this NIK
                         nik_photo_data = {
