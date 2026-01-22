@@ -316,7 +316,7 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
           <span className="text-xs" style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}>Target</span>
         </div>
         <span className="text-xs font-mono" style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}>
-          {members.length} anggota
+          {normalizedMembers.length} anggota
         </span>
       </div>
     </div>
