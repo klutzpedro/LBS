@@ -1541,6 +1541,85 @@ export const NonGeointSearchDialog = ({
           nik={detailDialog.nik}
         />
       )}
+
+      {/* Family Tree Dialog */}
+      <DraggableDialog open={familyTreeDialog.open} onOpenChange={(open) => setFamilyTreeDialog(prev => ({ ...prev, open }))}>
+        <DraggableDialogContent 
+          className="max-w-2xl max-h-[80vh] overflow-y-auto"
+          style={{
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-strong)'
+          }}
+        >
+          <DraggableDialogHeader className="pb-2">
+            <DraggableDialogTitle 
+              className="text-lg font-bold flex items-center gap-2"
+              style={{ color: 'var(--foreground-primary)' }}
+            >
+              <GitBranch className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+              Family Tree (NKK)
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
+          
+          {familyTreeDialog.familyData && (
+            <div className="space-y-4">
+              {/* Family Tree Visualization */}
+              <FamilyTreeViz 
+                members={familyTreeDialog.familyData.members} 
+                targetNik={familyTreeDialog.targetNik} 
+              />
+              
+              {/* Raw NKK Data Table */}
+              <div>
+                <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-primary)' }}>
+                  DATA ANGGOTA KELUARGA
+                </p>
+                <div 
+                  className="rounded border overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                >
+                  <table className="w-full text-xs">
+                    <thead 
+                      className="border-b"
+                      style={{ 
+                        backgroundColor: 'var(--background-secondary)',
+                        borderColor: 'var(--borders-default)'
+                      }}
+                    >
+                      <tr>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>NIK</th>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>Nama</th>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>Hubungan</th>
+                        <th className="py-1.5 px-2 text-left uppercase" style={{ color: 'var(--foreground-secondary)' }}>Gender</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {familyTreeDialog.familyData.members.map((member, idx) => (
+                        <tr 
+                          key={idx}
+                          className="border-b"
+                          style={{ 
+                            borderColor: 'var(--borders-subtle)',
+                            backgroundColor: member.nik === familyTreeDialog.targetNik ? 'rgba(255, 59, 92, 0.1)' : 'transparent'
+                          }}
+                        >
+                          <td className="py-1.5 px-2 font-mono" style={{ color: 'var(--foreground-primary)' }}>{member.nik || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-primary)' }}>{member.name || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.relationship || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.gender || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </DraggableDialogContent>
+      </DraggableDialog>
     </>
   );
 };
