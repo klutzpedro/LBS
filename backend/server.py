@@ -3689,6 +3689,39 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         logger.error(f"[{query_token}] Error: {e}")
         return {"status": "error", "error": str(e), "niks_found": []}
 
+def extract_niks_only(text: str) -> list:
+    """
+    Extract only NIKs (16-digit numbers) from text, excluding Family IDs/No KK.
+    Family IDs are typically labeled as 'No KK', 'Family ID', or similar.
+    """
+    # Find all 16-digit numbers
+    all_16_digits = re.findall(r'\b\d{16}\b', text)
+    
+    # Filter out Family IDs by checking context
+    niks_only = []
+    for number in all_16_digits:
+        # Get context around this number (50 chars before and after)
+        number_pos = text.find(number)
+        if number_pos != -1:
+            start = max(0, number_pos - 50)
+            end = min(len(text), number_pos + len(number) + 50)
+            context = text[start:end].lower()
+            
+            # Skip if context suggests it's a Family ID
+            family_indicators = ['no kk', 'family id', 'nomor kk', 'kartu keluarga', 'no. kk']
+            is_family_id = any(indicator in context for indicator in family_indicators)
+            
+            if not is_family_id:
+                niks_only.append(number)
+    
+    # Remove duplicates while preserving order
+    unique_niks = []
+    for nik in niks_only:
+        if nik not in unique_niks:
+            unique_niks.append(nik)
+    
+    return unique_niks
+
 def parse_nongeoint_response(text: str, query_type: str) -> dict:
     """Parse NON GEOINT response based on query type"""
     parsed = {}
