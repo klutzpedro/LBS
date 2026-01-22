@@ -1361,13 +1361,13 @@ export const NonGeointSearchDialog = ({
               )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </DraggableDialogContent>
+      </DraggableDialog>
 
       {/* Combined NIK Result Detail Dialog */}
       {detailDialog.type === 'nik_combined' ? (
-        <Dialog open={detailDialog.open} onOpenChange={() => setDetailDialog({ open: false, type: null, result: null, nik: null })}>
-          <DialogContent 
+        <DraggableDialog open={detailDialog.open} onOpenChange={() => setDetailDialog({ open: false, type: null, result: null, nik: null })}>
+          <DraggableDialogContent 
             className="max-w-2xl max-h-[85vh] overflow-y-auto"
             style={{ 
               backgroundColor: 'var(--background-elevated)',
@@ -1375,11 +1375,11 @@ export const NonGeointSearchDialog = ({
               zIndex: 9999
             }}
           >
-            <DialogHeader>
-              <DialogTitle style={{ color: 'var(--foreground-primary)' }}>
+            <DraggableDialogHeader>
+              <DraggableDialogTitle style={{ color: 'var(--foreground-primary)' }}>
                 Hasil Pendalaman NIK: <span className="font-mono">{detailDialog.nik}</span>
-              </DialogTitle>
-            </DialogHeader>
+              </DraggableDialogTitle>
+            </DraggableDialogHeader>
             
             <div className="mt-4 space-y-6">
               {/* NIK Data Section */}
