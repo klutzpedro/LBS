@@ -550,8 +550,7 @@ export const NonGeointSearchDialog = ({
   
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
-  const prevOpenRef = useRef(false);
-  const loadedSearchIdRef = useRef(null);
+  const lastOpenedWithSearchRef = useRef(null); // Track which search was last opened
 
   // Helper function to reset all states
   const resetAllStates = () => {
@@ -564,19 +563,12 @@ export const NonGeointSearchDialog = ({
     setShowPersonSelection(false);
     setIsSearching(false);
     setIsInvestigating(false);
-    loadedSearchIdRef.current = null;
   };
 
   // Load initial search if provided (from history)
   useEffect(() => {
     const loadSearchData = async () => {
-      // Skip if already loaded this search
-      if (loadedSearchIdRef.current === initialSearch?.id) {
-        console.log('Search already loaded, skipping:', initialSearch?.id);
-        return;
-      }
-      
-      console.log('Loading search data for:', initialSearch?.id);
+      console.log('[NonGeoint] Loading search data for:', initialSearch?.id);
       
       try {
         const token = localStorage.getItem('token');
@@ -586,58 +578,84 @@ export const NonGeointSearchDialog = ({
         
         if (response.ok) {
           const fullSearchData = await response.json();
-          console.log('Loaded full search data:', fullSearchData);
+          console.log('[NonGeoint] Loaded full search data:', fullSearchData);
+          console.log('[NonGeoint] Investigation data:', fullSearchData.investigation);
           
           // Mark as loaded
-          loadedSearchIdRef.current = initialSearch.id;
+          lastOpenedWithSearchRef.current = initialSearch.id;
           
           setSearchResults(fullSearchData);
           setSearchName(fullSearchData.name || '');
           
           // If investigation already exists, load it
           if (fullSearchData.investigation) {
-            console.log('Investigation found:', fullSearchData.investigation);
+            console.log('[NonGeoint] Investigation found with status:', fullSearchData.investigation.status);
+            console.log('[NonGeoint] Investigation results:', fullSearchData.investigation.results);
+            
             setInvestigation(fullSearchData.investigation);
+            
             // Set selected NIKs from investigation
             if (fullSearchData.investigation.results) {
               const investigatedNiks = Object.keys(fullSearchData.investigation.results);
               setSelectedNiks(investigatedNiks);
-              console.log('Loaded investigated NIKs:', investigatedNiks);
+              console.log('[NonGeoint] Loaded investigated NIKs:', investigatedNiks);
             }
+            
             toast.success('Hasil pendalaman sebelumnya dimuat');
           } else {
+            console.log('[NonGeoint] No investigation found for this search');
             // No investigation yet, reset investigation state
             setInvestigation(null);
             setSelectedNiks([]);
           }
         } else {
+          console.error('[NonGeoint] Failed to fetch search data, status:', response.status);
           // Fallback to initialSearch if fetch fails
-          loadedSearchIdRef.current = initialSearch.id;
+          lastOpenedWithSearchRef.current = initialSearch.id;
           setSearchResults(initialSearch);
           setSearchName(initialSearch.name || '');
         }
       } catch (error) {
-        console.error('Error loading search data:', error);
+        console.error('[NonGeoint] Error loading search data:', error);
         // Fallback to initialSearch
-        loadedSearchIdRef.current = initialSearch?.id;
+        lastOpenedWithSearchRef.current = initialSearch?.id;
         setSearchResults(initialSearch);
         setSearchName(initialSearch?.name || '');
       }
     };
     
-    // Only load when dialog OPENS with an initialSearch
-    if (open && initialSearch && !prevOpenRef.current) {
-      loadSearchData();
+    // Load when dialog opens with an initialSearch
+    // Re-load if initialSearch.id changed OR if we're opening fresh (lastOpenedWithSearchRef is null)
+    if (open && initialSearch) {
+      const shouldLoad = lastOpenedWithSearchRef.current !== initialSearch.id;
+      console.log('[NonGeoint] Dialog open with initialSearch:', initialSearch.id, 
+                  'lastOpened:', lastOpenedWithSearchRef.current, 
+                  'shouldLoad:', shouldLoad);
+      if (shouldLoad) {
+        loadSearchData();
+      }
     }
-    
-    // Track open state changes
-    prevOpenRef.current = open;
-  }, [initialSearch, open]);
+  }, [initialSearch?.id, open]);
 
   // Cleanup on close - reset all states
   useEffect(() => {
     if (!open) {
+      console.log('[NonGeoint] Dialog closing, resetting states');
       // Clear polling intervals
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+      if (investigationPollingRef.current) {
+        clearInterval(investigationPollingRef.current);
+        investigationPollingRef.current = null;
+      }
+      // Reset all states when dialog closes
+      resetAllStates();
+      // IMPORTANT: Reset the ref so next open will load fresh data
+      lastOpenedWithSearchRef.current = null;
+    }
+  }, [open]);
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
