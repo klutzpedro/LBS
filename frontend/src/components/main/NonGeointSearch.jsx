@@ -710,8 +710,16 @@ export const NonGeointSearchDialog = ({
       if (!response.ok) throw new Error('Failed to get investigation');
 
       const data = await response.json();
-      console.log('Investigation poll result:', data); // Debug log
+      console.log('Investigation poll result:', data);
+      console.log('Investigation results:', data.results);
       setInvestigation(data);
+
+      // Check if any NIK has data (for View button)
+      if (data.results) {
+        Object.entries(data.results).forEach(([nik, nikData]) => {
+          console.log(`NIK ${nik} data:`, nikData);
+        });
+      }
 
       if (data.status === 'completed' || data.status === 'error') {
         if (investigationPollingRef.current) {
