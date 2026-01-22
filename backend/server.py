@@ -4210,15 +4210,23 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 await asyncio.sleep(3)
                 continue
             
+            # DEBUG: Log all messages structure
+            logger.info(f"[{query_token}] Attempt {attempt+1}: Got {len(response_messages)} messages")
+            for i, msg in enumerate(response_messages[:10]):  # Log first 10
+                has_photo = bool(msg.photo)
+                has_doc = bool(msg.document)
+                has_text = bool(msg.text)
+                text_preview = msg.text[:50] if msg.text else "N/A"
+                logger.info(f"[{query_token}]   Msg {i}: photo={has_photo}, doc={has_doc}, text={has_text}, preview='{text_preview}...'")
+            
             # FIRST: Look for photo in ALL messages WITHOUT time filter
-            # Photo might have different timestamp than our query
-            # Also check for document (some bots send photos as documents)
+            # Photo might be in same message as text OR separate message
             if not photo_base64:
                 for msg in response_messages:
-                    # Check for photo
+                    # Check for photo attribute
                     if msg.photo:
                         try:
-                            logger.info(f"[{query_token}] Found photo in message (id={msg.id}), attempting download...")
+                            logger.info(f"[{query_token}] Found msg.photo in message (id={msg.id}), downloading...")
                             photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                             if photo_bytes:
                                 import base64
@@ -4228,12 +4236,30 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                         except Exception as e:
                             logger.error(f"[{query_token}] Photo download error: {e}")
                     
+                    # Check for media attribute (alternative way photos might be attached)
+                    if hasattr(msg, 'media') and msg.media:
+                        media_type = type(msg.media).__name__
+                        logger.info(f"[{query_token}] Found msg.media type: {media_type}")
+                        
+                        # Try to download if it's a photo type
+                        if 'Photo' in media_type:
+                            try:
+                                logger.info(f"[{query_token}] Attempting to download media as photo...")
+                                photo_bytes = await telegram_client.download_media(msg.media, bytes)
+                                if photo_bytes:
+                                    import base64
+                                    photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                    logger.info(f"[{query_token}] ✓ Downloaded media photo successfully ({len(photo_bytes)} bytes)")
+                                    break
+                            except Exception as e:
+                                logger.error(f"[{query_token}] Media photo download error: {e}")
+                    
                     # Check for document that might be an image
-                    elif msg.document:
+                    if msg.document:
                         mime = getattr(msg.document, 'mime_type', '') or ''
+                        logger.info(f"[{query_token}] Found document with mime: {mime}")
                         if 'image' in mime.lower():
                             try:
-                                logger.info(f"[{query_token}] Found image document in message (id={msg.id}, mime={mime})")
                                 photo_bytes = await telegram_client.download_media(msg.document, bytes)
                                 if photo_bytes:
                                     import base64
