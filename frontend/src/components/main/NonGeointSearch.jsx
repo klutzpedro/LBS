@@ -786,15 +786,25 @@ export const NonGeointSearchDialog = ({
       const data = await response.json();
       setSearchResults(data);
 
-      if (data.status === 'completed' || data.status === 'error') {
+      // Show progress for fetching_photos status
+      if (data.status === 'fetching_photos') {
+        const progress = data.photo_fetch_progress || 0;
+        const total = data.photo_fetch_total || 0;
+        console.log(`[NonGeoint] Fetching photos: ${progress}/${total}`);
+        // Continue polling
+      } else if (data.status === 'completed' || data.status === 'error') {
         if (pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
         setIsSearching(false);
 
-        if (data.status === 'completed' && data.niks_found?.length > 0) {
-          toast.success(`Ditemukan ${data.niks_found.length} NIK`);
+        if (data.status === 'completed') {
+          const photoCount = data.nik_photos ? Object.values(data.nik_photos).filter(p => p.photo).length : 0;
+          const nikCount = data.niks_found?.length || 0;
+          if (nikCount > 0) {
+            toast.success(`Ditemukan ${nikCount} NIK dengan ${photoCount} foto`);
+          }
         }
       }
     } catch (error) {
