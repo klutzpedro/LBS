@@ -1764,6 +1764,8 @@ const MainApp = () => {
         }}
         onNikPendalaman={handleNonGeointNikPendalaman}
         initialSearch={selectedNonGeointSearch}
+        isGlobalInvestigating={isGlobalInvestigating}
+        onInvestigatingChange={setIsGlobalInvestigating}
       />
 
       {/* NON GEOINT History Dialog */}
@@ -1771,6 +1773,11 @@ const MainApp = () => {
         open={nonGeointHistoryOpen}
         onOpenChange={setNonGeointHistoryOpen}
         onSelectSearch={(search) => {
+          // Check if investigation is running
+          if (isGlobalInvestigating) {
+            toast.error('Tidak dapat membuka pencarian baru. Proses pendalaman sedang berjalan.');
+            return;
+          }
           setSelectedNonGeointSearch(search);
           setNonGeointDialogOpen(true);
         }}
