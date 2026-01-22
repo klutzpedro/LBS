@@ -1178,7 +1178,14 @@ export const NonGeointSearchDialog = ({
   const getCurrentStep = () => {
     if (isSearching) return 'searching';
     if (!searchResults) return 'input';
+    // Show searching while fetching photos
+    if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed') return 'searching';
+    // Show person selection if we have nik_photos with multiple results
+    if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 1 && showPersonSelection) {
+      return 'select_person';
+    }
+    // Legacy: show person selection from CAPIL extraction
     if (showPersonSelection && personsFound.length > 1) return 'select_person';
     if (!investigation && !isInvestigating && searchResults.niks_found?.length > 0) return 'select_nik';
     if (isInvestigating || investigation) return 'investigation';
