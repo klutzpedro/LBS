@@ -3559,45 +3559,65 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
         await asyncio.sleep(5)
         
-        # Step 4: Get response
+        # Step 4: Get response - increase limit for large results
         async def get_response():
-            return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+            return await telegram_client.get_messages(BOT_USERNAME, limit=50)
         
         response_messages = await safe_telegram_operation(get_response, f"get_response_{query_token}", max_retries=3)
         if not response_messages:
             return {"status": "error", "error": "Failed to get response", "niks_found": []}
         
-        # Step 5: Parse response
+        # For CAPIL queries with potentially many results, wait and get more messages
+        if query_type == 'capil':
+            await asyncio.sleep(3)  # Wait for more messages
+            more_messages = await safe_telegram_operation(get_response, f"get_more_{query_token}", max_retries=2)
+            if more_messages:
+                existing_ids = {m.id for m in response_messages}
+                for m in more_messages:
+                    if m.id not in existing_ids:
+                        response_messages.append(m)
+        
+        # Step 5: Parse response - COLLECT ALL NIKs FROM ALL MESSAGES
         parsed_data = None
-        raw_text = None
+        all_raw_text = []
         niks_found = []
         
+        # First pass: collect ALL NIKs from ALL messages
         for msg in response_messages:
-            if msg.text and (name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or 'not found' in msg.text.lower()):
-                raw_text = msg.text
-                logger.info(f"[{query_token}] Found response: {msg.text[:100]}...")
-                
-                # Extract NIKs using regex
+            if msg.text:
+                # Extract NIKs using regex - 16 digit numbers
                 nik_pattern = r'\b\d{16}\b'
                 found_niks = re.findall(nik_pattern, msg.text)
                 for nik in found_niks:
                     if nik not in niks_found:
                         niks_found.append(nik)
+                        logger.info(f"[{query_token}] Found NIK: {nik}")
                 
-                # Parse data
+                # Collect raw text if relevant
+                if name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or len(found_niks) > 0:
+                    all_raw_text.append(msg.text)
+        
+        raw_text = '\n---\n'.join(all_raw_text) if all_raw_text else None
+        
+        # Second pass: parse structured data from first relevant message
+        for msg in response_messages:
+            if msg.text and (name.lower() in msg.text.lower() or 'nik' in msg.text.lower()):
                 parsed_data = parse_nongeoint_response(msg.text, query_type)
                 
                 # Check for "not found" message
                 if 'not found' in msg.text.lower() or 'tidak ditemukan' in msg.text.lower():
-                    return {
-                        "status": "not_found",
-                        "raw_text": raw_text,
-                        "niks_found": [],
-                        "error": "Data not found"
-                    }
+                    if not niks_found:  # Only return not_found if we really found nothing
+                        return {
+                            "status": "not_found",
+                            "raw_text": raw_text,
+                            "niks_found": [],
+                            "error": "Data not found"
+                        }
                 
                 if parsed_data:
                     break
+        
+        logger.info(f"[{query_token}] Total NIKs found: {len(niks_found)}")
         
         if parsed_data or niks_found:
             logger.info(f"[{query_token}] Found {len(niks_found)} NIKs: {niks_found}")
