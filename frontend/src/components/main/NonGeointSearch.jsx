@@ -550,64 +550,94 @@ export const NonGeointSearchDialog = ({
   
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
+  const prevOpenRef = useRef(false);
+  const loadedSearchIdRef = useRef(null);
 
-  // Load initial search if provided
+  // Helper function to reset all states
+  const resetAllStates = () => {
+    setSearchResults(null);
+    setSearchName('');
+    setSelectedNiks([]);
+    setInvestigation(null);
+    setPersonsFound([]);
+    setSelectedPersonIndex(null);
+    setShowPersonSelection(false);
+    setIsSearching(false);
+    setIsInvestigating(false);
+    loadedSearchIdRef.current = null;
+  };
+
   // Load initial search if provided (from history)
   useEffect(() => {
     const loadSearchData = async () => {
-      if (initialSearch && open) {
-        // Fetch full search data including investigation from server
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch(`${API_URL}/api/nongeoint/search/${initialSearch.id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+      // Skip if already loaded this search
+      if (loadedSearchIdRef.current === initialSearch?.id) {
+        console.log('Search already loaded, skipping:', initialSearch?.id);
+        return;
+      }
+      
+      console.log('Loading search data for:', initialSearch?.id);
+      
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/nongeoint/search/${initialSearch.id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const fullSearchData = await response.json();
+          console.log('Loaded full search data:', fullSearchData);
           
-          if (response.ok) {
-            const fullSearchData = await response.json();
-            console.log('Loaded full search data:', fullSearchData);
-            
-            setSearchResults(fullSearchData);
-            setSearchName(fullSearchData.name || '');
-            
-            // If investigation already exists, load it
-            if (fullSearchData.investigation) {
-              console.log('Investigation found:', fullSearchData.investigation);
-              setInvestigation(fullSearchData.investigation);
-              // Set selected NIKs from investigation
-              if (fullSearchData.investigation.results) {
-                const investigatedNiks = Object.keys(fullSearchData.investigation.results);
-                setSelectedNiks(investigatedNiks);
-                console.log('Loaded investigated NIKs:', investigatedNiks);
-              }
-              toast.success('Hasil pendalaman sebelumnya dimuat');
-            } else {
-              // No investigation yet, reset state
-              setInvestigation(null);
-              setSelectedNiks([]);
+          // Mark as loaded
+          loadedSearchIdRef.current = initialSearch.id;
+          
+          setSearchResults(fullSearchData);
+          setSearchName(fullSearchData.name || '');
+          
+          // If investigation already exists, load it
+          if (fullSearchData.investigation) {
+            console.log('Investigation found:', fullSearchData.investigation);
+            setInvestigation(fullSearchData.investigation);
+            // Set selected NIKs from investigation
+            if (fullSearchData.investigation.results) {
+              const investigatedNiks = Object.keys(fullSearchData.investigation.results);
+              setSelectedNiks(investigatedNiks);
+              console.log('Loaded investigated NIKs:', investigatedNiks);
             }
+            toast.success('Hasil pendalaman sebelumnya dimuat');
           } else {
-            // Fallback to initialSearch if fetch fails
-            setSearchResults(initialSearch);
-            setSearchName(initialSearch.name || '');
+            // No investigation yet, reset investigation state
+            setInvestigation(null);
+            setSelectedNiks([]);
           }
-        } catch (error) {
-          console.error('Error loading search data:', error);
-          // Fallback to initialSearch
+        } else {
+          // Fallback to initialSearch if fetch fails
+          loadedSearchIdRef.current = initialSearch.id;
           setSearchResults(initialSearch);
           setSearchName(initialSearch.name || '');
         }
+      } catch (error) {
+        console.error('Error loading search data:', error);
+        // Fallback to initialSearch
+        loadedSearchIdRef.current = initialSearch?.id;
+        setSearchResults(initialSearch);
+        setSearchName(initialSearch?.name || '');
       }
     };
     
-    if (initialSearch && open) {
+    // Only load when dialog OPENS with an initialSearch
+    if (open && initialSearch && !prevOpenRef.current) {
       loadSearchData();
     }
-  }, [initialSearch?.id, open]);
+    
+    // Track open state changes
+    prevOpenRef.current = open;
+  }, [initialSearch, open]);
 
   // Cleanup on close - reset all states
   useEffect(() => {
     if (!open) {
+      // Clear polling intervals
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
@@ -616,16 +646,8 @@ export const NonGeointSearchDialog = ({
         clearInterval(investigationPollingRef.current);
         investigationPollingRef.current = null;
       }
-      setIsSearching(false);
-      setIsInvestigating(false);
-      // Reset states when dialog closes
-      setSearchResults(null);
-      setSearchName('');
-      setSelectedNiks([]);
-      setInvestigation(null);
-      setPersonsFound([]);
-      setSelectedPersonIndex(null);
-      setShowPersonSelection(false);
+      // Reset all states when dialog closes
+      resetAllStates();
     }
   }, [open]);
 
