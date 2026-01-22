@@ -3212,6 +3212,302 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
                 }
             )
 
+# NON GEOINT Search - Queue-based search for CAPIL, Pass WNI, Pass WNA
+class NonGeointSearchRequest(BaseModel):
+    name: str
+    query_types: List[str] = ["capil", "pass_wni", "pass_wna"]
+
+class NonGeointSearchResult(BaseModel):
+    query_type: str
+    status: str
+    data: Optional[dict] = None
+    niks_found: List[str] = []
+    raw_text: Optional[str] = None
+    error: Optional[str] = None
+
+# Global queue lock for NON GEOINT queries
+nongeoint_queue_lock = asyncio.Lock()
+
+@api_router.post("/nongeoint/search")
+async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depends(verify_token)):
+    """
+    NON GEOINT Search - Sequentially queries CAPIL, Pass WNI, Pass WNA
+    Uses queue system to prevent race conditions
+    """
+    search_id = str(uuid.uuid4())[:8]
+    logger.info(f"[NONGEOINT {search_id}] Starting search for name: {request.name}")
+    
+    # Store search in database
+    search_doc = {
+        "id": search_id,
+        "name": request.name,
+        "query_types": request.query_types,
+        "status": "processing",
+        "results": {},
+        "niks_found": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": username
+    }
+    await db.nongeoint_searches.insert_one(search_doc)
+    
+    # Start background task
+    asyncio.create_task(process_nongeoint_search(search_id, request.name, request.query_types))
+    
+    return {"search_id": search_id, "status": "processing", "message": "Search started"}
+
+@api_router.get("/nongeoint/search/{search_id}")
+async def get_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
+    """Get NON GEOINT search results"""
+    search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    return search
+
+@api_router.get("/nongeoint/searches")
+async def list_nongeoint_searches(username: str = Depends(verify_token)):
+    """List all NON GEOINT searches for user"""
+    searches = await db.nongeoint_searches.find(
+        {"created_by": username},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    return searches
+
+async def process_nongeoint_search(search_id: str, name: str, query_types: List[str]):
+    """Process NON GEOINT search with queue system"""
+    global telegram_client
+    
+    results = {}
+    all_niks = []
+    
+    async with nongeoint_queue_lock:
+        try:
+            # Ensure Telegram connection
+            connected = await safe_telegram_operation(
+                lambda: ensure_telegram_connected(),
+                f"nongeoint_connect_{search_id}",
+                max_retries=5
+            )
+            
+            if not connected:
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {"status": "error", "error": "Telegram connection failed"}}
+                )
+                return
+            
+            # Process each query type sequentially
+            for query_type in query_types:
+                logger.info(f"[NONGEOINT {search_id}] Processing {query_type} for '{name}'")
+                
+                # Update status
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {f"results.{query_type}.status": "processing"}}
+                )
+                
+                result = await execute_nongeoint_query(search_id, name, query_type)
+                results[query_type] = result
+                
+                # Extract NIKs from result
+                if result.get("niks_found"):
+                    for nik in result["niks_found"]:
+                        if nik not in all_niks:
+                            all_niks.append(nik)
+                
+                # Update result in database
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {f"results.{query_type}": result, "niks_found": all_niks}}
+                )
+                
+                # Wait between queries to avoid rate limiting
+                await asyncio.sleep(3)
+            
+            # Mark as completed
+            await db.nongeoint_searches.update_one(
+                {"id": search_id},
+                {"$set": {"status": "completed", "niks_found": all_niks}}
+            )
+            logger.info(f"[NONGEOINT {search_id}] Search completed. Found {len(all_niks)} NIKs: {all_niks}")
+            
+        except Exception as e:
+            logger.error(f"[NONGEOINT {search_id}] Error: {e}")
+            await db.nongeoint_searches.update_one(
+                {"id": search_id},
+                {"$set": {"status": "error", "error": str(e)}}
+            )
+
+async def execute_nongeoint_query(search_id: str, name: str, query_type: str) -> dict:
+    """Execute a single NON GEOINT query"""
+    global telegram_client
+    
+    button_map = {
+        "capil": "CAPIL",
+        "pass_wni": "PASS WNI",
+        "pass_wna": "PASS WNA"
+    }
+    
+    button_text = button_map.get(query_type, query_type.upper())
+    query_token = f"NONGEOINT_{search_id}_{query_type}"
+    
+    try:
+        # Step 1: Send name to bot
+        async def send_name():
+            await telegram_client.send_message(BOT_USERNAME, name)
+            return True
+        
+        sent = await safe_telegram_operation(send_name, f"send_{query_token}", max_retries=3)
+        if not sent:
+            return {"status": "error", "error": "Failed to send name to bot", "niks_found": []}
+        
+        logger.info(f"[{query_token}] Sent name: {name}")
+        await asyncio.sleep(4)
+        
+        # Step 2: Get buttons and click the right one
+        async def get_buttons():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+        
+        messages = await safe_telegram_operation(get_buttons, f"get_buttons_{query_token}", max_retries=3)
+        if not messages:
+            return {"status": "error", "error": "Failed to get bot response", "niks_found": []}
+        
+        target_button = None
+        for msg in messages:
+            if msg.buttons:
+                button_texts = [[btn.text for btn in row] for row in msg.buttons]
+                logger.info(f"[{query_token}] Buttons found: {button_texts}")
+                
+                for row in msg.buttons:
+                    for button in row:
+                        if button.text and button_text.lower() in button.text.lower():
+                            target_button = button
+                            break
+                    if target_button:
+                        break
+            if target_button:
+                break
+        
+        if not target_button:
+            # Try alternative button names
+            alternative_names = {
+                "capil": ["capil", "📝 capil", "dukcapil"],
+                "pass_wni": ["pass wni", "🛂 pass wni", "passport wni", "paspor wni"],
+                "pass_wna": ["pass wna", "🛂 pass wna", "passport wna", "paspor wna"]
+            }
+            
+            for msg in messages:
+                if msg.buttons:
+                    for row in msg.buttons:
+                        for button in row:
+                            if button.text:
+                                for alt in alternative_names.get(query_type, []):
+                                    if alt.lower() in button.text.lower():
+                                        target_button = button
+                                        break
+                            if target_button:
+                                break
+                        if target_button:
+                            break
+                if target_button:
+                    break
+        
+        if not target_button:
+            logger.warning(f"[{query_token}] Button '{button_text}' not found")
+            return {"status": "not_found", "error": f"Button '{button_text}' not found", "niks_found": []}
+        
+        # Step 3: Click button
+        async def click_button():
+            await target_button.click()
+            return True
+        
+        clicked = await safe_telegram_operation(click_button, f"click_{query_token}", max_retries=3)
+        if not clicked:
+            return {"status": "error", "error": "Failed to click button", "niks_found": []}
+        
+        logger.info(f"[{query_token}] Clicked button: {target_button.text}")
+        await asyncio.sleep(5)
+        
+        # Step 4: Get response
+        async def get_response():
+            return await telegram_client.get_messages(BOT_USERNAME, limit=20)
+        
+        response_messages = await safe_telegram_operation(get_response, f"get_response_{query_token}", max_retries=3)
+        if not response_messages:
+            return {"status": "error", "error": "Failed to get response", "niks_found": []}
+        
+        # Step 5: Parse response
+        parsed_data = None
+        raw_text = None
+        niks_found = []
+        
+        for msg in response_messages:
+            if msg.text and (name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or 'not found' in msg.text.lower()):
+                raw_text = msg.text
+                logger.info(f"[{query_token}] Found response: {msg.text[:100]}...")
+                
+                # Extract NIKs using regex
+                nik_pattern = r'\b\d{16}\b'
+                found_niks = re.findall(nik_pattern, msg.text)
+                for nik in found_niks:
+                    if nik not in niks_found:
+                        niks_found.append(nik)
+                
+                # Parse data
+                parsed_data = parse_nongeoint_response(msg.text, query_type)
+                
+                # Check for "not found" message
+                if 'not found' in msg.text.lower() or 'tidak ditemukan' in msg.text.lower():
+                    return {
+                        "status": "not_found",
+                        "raw_text": raw_text,
+                        "niks_found": [],
+                        "error": "Data not found"
+                    }
+                
+                if parsed_data:
+                    break
+        
+        if parsed_data or niks_found:
+            logger.info(f"[{query_token}] Found {len(niks_found)} NIKs: {niks_found}")
+            return {
+                "status": "completed",
+                "data": parsed_data,
+                "raw_text": raw_text,
+                "niks_found": niks_found
+            }
+        else:
+            return {
+                "status": "no_data",
+                "raw_text": raw_text,
+                "niks_found": [],
+                "error": "No data parsed from response"
+            }
+            
+    except Exception as e:
+        logger.error(f"[{query_token}] Error: {e}")
+        return {"status": "error", "error": str(e), "niks_found": []}
+
+def parse_nongeoint_response(text: str, query_type: str) -> dict:
+    """Parse NON GEOINT response based on query type"""
+    parsed = {}
+    lines = text.split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('```'):
+            continue
+        
+        if ':' in line:
+            parts = line.split(':', 1)
+            if len(parts) == 2:
+                key = parts[0].strip()
+                value = parts[1].strip()
+                if key and value and len(key) < 30:
+                    parsed[key] = value
+    
+    return parsed if parsed else None
+
+
 # AI Family Tree Analysis
 class FamilyAnalysisRequest(BaseModel):
     members: List[dict]
