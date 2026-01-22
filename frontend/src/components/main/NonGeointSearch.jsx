@@ -1307,7 +1307,44 @@ export const NonGeointSearchDialog = ({
                 })}
               </div>
 
-              {/* STEP: Person Selection */}
+              {/* Photo Fetching Progress */}
+              {searchResults?.status === 'fetching_photos' && (
+                <div 
+                  className="mt-4 p-4 rounded-md border"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--accent-primary)'
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--accent-primary)' }} />
+                    <span style={{ color: 'var(--foreground-primary)' }}>
+                      Mengambil foto dari database...
+                    </span>
+                  </div>
+                  <div className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                    Progress: {searchResults.photo_fetch_progress || 0} / {searchResults.photo_fetch_total || 0} NIK
+                    {searchResults.photo_fetch_current_nik && (
+                      <span className="ml-2 font-mono">({searchResults.photo_fetch_current_nik})</span>
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  <div 
+                    className="mt-2 h-2 rounded-full overflow-hidden"
+                    style={{ backgroundColor: 'var(--background-secondary)' }}
+                  >
+                    <div 
+                      className="h-full transition-all duration-300"
+                      style={{ 
+                        width: `${((searchResults.photo_fetch_progress || 0) / (searchResults.photo_fetch_total || 1)) * 100}%`,
+                        backgroundColor: 'var(--accent-primary)'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP: Person Selection - GRID WITH PHOTOS */}
               {currentStep === 'select_person' && (
                 <div className="mt-6">
                   <div className="flex items-center justify-between mb-3">
@@ -1315,15 +1352,22 @@ export const NonGeointSearchDialog = ({
                       className="text-sm font-semibold"
                       style={{ color: 'var(--foreground-secondary)' }}
                     >
-                      Pilih Nama ({personsFound.length} hasil ditemukan)
+                      Pilih Target ({personsFound.length} hasil ditemukan)
                     </h3>
                   </div>
                   
                   <p className="text-xs mb-3" style={{ color: 'var(--foreground-muted)' }}>
-                    Ditemukan beberapa orang dengan nama serupa. Pilih salah satu untuk melanjutkan.
+                    Pilih target berdasarkan foto dan NIK untuk melanjutkan pendalaman.
                   </p>
 
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {/* Horizontal scrollable grid for photos */}
+                  <div 
+                    className="flex gap-3 overflow-x-auto pb-3"
+                    style={{ 
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+                    }}
+                  >
                     {personsFound.map((person, idx) => (
                       <PersonSelectionCard
                         key={idx}
@@ -1345,7 +1389,7 @@ export const NonGeointSearchDialog = ({
                         color: 'var(--background-primary)'
                       }}
                     >
-                      Lanjutkan dengan Nama Terpilih
+                      Lanjutkan dengan Target Terpilih
                     </Button>
                   </div>
                 </div>
