@@ -3688,38 +3688,82 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         logger.error(f"[{query_token}] Error: {e}")
         return {"status": "error", "error": str(e), "niks_found": []}
 
+
 def extract_niks_only(text: str) -> list:
     """
     Extract only NIKs (16-digit numbers) from text, excluding Family IDs/No KK.
-    Family IDs are typically labeled as 'No KK', 'Family ID', or similar.
+    Family IDs are typically labeled as 'No KK', 'NKK', 'Family ID', 'Nomor KK', etc.
+    NIKs are typically labeled as 'NIK', 'Nomor NIK', etc.
     """
-    # Find all 16-digit numbers
-    all_16_digits = re.findall(r'\b\d{16}\b', text)
+    import re
     
-    # Filter out Family IDs by checking context
+    # Find all 16-digit numbers with their positions
+    all_16_digits = list(re.finditer(r'\b(\d{16})\b', text))
+    
+    if not all_16_digits:
+        return []
+    
+    text_lower = text.lower()
     niks_only = []
-    for number in all_16_digits:
-        # Get context around this number (50 chars before and after)
-        number_pos = text.find(number)
-        if number_pos != -1:
-            start = max(0, number_pos - 50)
-            end = min(len(text), number_pos + len(number) + 50)
-            context = text[start:end].lower()
-            
-            # Skip if context suggests it's a Family ID
-            family_indicators = ['no kk', 'family id', 'nomor kk', 'kartu keluarga', 'no. kk']
-            is_family_id = any(indicator in context for indicator in family_indicators)
-            
-            if not is_family_id:
+    
+    for match in all_16_digits:
+        number = match.group(1)
+        number_pos = match.start()
+        
+        # Get context around this number (100 chars before)
+        start = max(0, number_pos - 100)
+        context_before = text_lower[start:number_pos]
+        
+        # Family ID indicators (these mean the number is a Family ID, NOT a NIK)
+        family_indicators = [
+            'no kk', 'no. kk', 'nokk', 'n o k k',
+            'nkk', 'n k k',
+            'family id', 'familyid',
+            'nomor kk', 'nomor kartu keluarga',
+            'kartu keluarga',
+            'kk :', 'kk:'
+        ]
+        
+        # NIK indicators (these confirm the number is a NIK)
+        nik_indicators = [
+            'nik', 'n i k',
+            'nomor induk', 'nomor nik',
+            'national id', 'identity number'
+        ]
+        
+        # Check the immediate context (last 30 chars before the number)
+        immediate_context = context_before[-30:] if len(context_before) >= 30 else context_before
+        
+        # Determine if this is a Family ID or NIK
+        is_family_id = any(indicator in immediate_context for indicator in family_indicators)
+        is_nik = any(indicator in immediate_context for indicator in nik_indicators)
+        
+        # If explicitly labeled as NIK, include it
+        if is_nik and not is_family_id:
+            if number not in niks_only:
                 niks_only.append(number)
+                logger.debug(f"[extract_niks_only] Found NIK (labeled): {number}")
+        # If explicitly labeled as Family ID, exclude it
+        elif is_family_id:
+            logger.debug(f"[extract_niks_only] Skipping Family ID: {number}")
+            continue
+        # If no explicit label but found in data, check if it looks like NIK pattern
+        # NIK format: PPRRKKDDMMYYXXXX (province, regency, district, DOB, sequence)
+        # First 6 digits are location code, next 6 are DOB (DDMMYY), last 4 are sequence
+        else:
+            # If the number appears after common field patterns, it's likely a NIK
+            common_patterns = [':', '=', '-', '|', '\n', '\t']
+            has_field_separator = any(sep in immediate_context[-5:] for sep in common_patterns)
+            
+            # If no Family ID label and has a field separator, assume it's a NIK
+            if has_field_separator:
+                if number not in niks_only:
+                    niks_only.append(number)
+                    logger.debug(f"[extract_niks_only] Found NIK (unlabeled): {number}")
     
-    # Remove duplicates while preserving order
-    unique_niks = []
-    for nik in niks_only:
-        if nik not in unique_niks:
-            unique_niks.append(nik)
-    
-    return unique_niks
+    logger.info(f"[extract_niks_only] Extracted {len(niks_only)} NIKs from {len(all_16_digits)} 16-digit numbers")
+    return niks_only
+
 
 def parse_nongeoint_response(text: str, query_type: str) -> dict:
     """Parse NON GEOINT response based on query type"""
