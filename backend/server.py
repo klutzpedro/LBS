@@ -3258,15 +3258,28 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
 @api_router.get("/nongeoint/search/{search_id}")
 async def get_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
     """Get NON GEOINT search results with investigation if exists"""
+    logger.info(f"[NONGEOINT] Fetching search {search_id}")
+    
     search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
     if not search:
+        logger.warning(f"[NONGEOINT] Search {search_id} not found")
         raise HTTPException(status_code=404, detail="Search not found")
+    
+    logger.info(f"[NONGEOINT] Found search: {search.get('name')}, status: {search.get('status')}, niks_found: {search.get('niks_found', [])}")
     
     # Also get investigation if exists
     investigation = await db.nik_investigations.find_one({"search_id": search_id}, {"_id": 0})
     if investigation:
         search["investigation"] = investigation
-        logger.info(f"[NONGEOINT] Loaded existing investigation for search {search_id}")
+        logger.info(f"[NONGEOINT] Loaded investigation for search {search_id}: status={investigation.get('status')}, results_count={len(investigation.get('results', {}))}")
+        # Log each NIK result briefly
+        for nik, result in investigation.get('results', {}).items():
+            has_nik = 'nik_data' in result
+            has_nkk = 'nkk_data' in result  
+            has_regnik = 'regnik_data' in result
+            logger.info(f"[NONGEOINT]   NIK {nik}: nik_data={has_nik}, nkk_data={has_nkk}, regnik_data={has_regnik}")
+    else:
+        logger.info(f"[NONGEOINT] No investigation found for search {search_id}")
     
     return search
 
