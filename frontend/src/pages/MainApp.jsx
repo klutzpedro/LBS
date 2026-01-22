@@ -1754,7 +1754,13 @@ const MainApp = () => {
       {/* NON GEOINT Search Dialog */}
       <NonGeointSearchDialog
         open={nonGeointDialogOpen}
-        onOpenChange={setNonGeointDialogOpen}
+        onOpenChange={(open) => {
+          setNonGeointDialogOpen(open);
+          // Reset selected search when dialog closes so next open will fetch fresh data
+          if (!open) {
+            setSelectedNonGeointSearch(null);
+          }
+        }}
         onNikPendalaman={handleNonGeointNikPendalaman}
         initialSearch={selectedNonGeointSearch}
       />
