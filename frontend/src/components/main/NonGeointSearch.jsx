@@ -463,9 +463,10 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   );
 };
 
-// Person Selection Card
+// Person Selection Card - WITH PHOTO
 const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
-  const ttl = person.ttl || [person.tempat_lahir, person.tgl_lahir].filter(Boolean).join(', ') || '-';
+  const ttl = person.ttl || person.tempat_lahir || person.tgl_lahir || '-';
+  const hasPhoto = person.photo && person.photo.startsWith('data:');
   
   return (
     <div 
@@ -478,41 +479,67 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
         borderColor: isSelected
           ? 'var(--accent-primary)'
           : 'var(--borders-subtle)',
-        ringColor: isSelected ? 'var(--accent-primary)' : 'transparent'
+        ringColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+        minWidth: '160px'
       }}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex flex-col items-center gap-2">
+        {/* Photo or Placeholder */}
         <div 
-          className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+          className="relative rounded-md overflow-hidden border-2"
           style={{ 
-            backgroundColor: isSelected ? 'var(--accent-primary)' : 'var(--background-secondary)',
-            color: isSelected ? 'var(--background-primary)' : 'var(--foreground-muted)'
+            width: '80px', 
+            height: '100px',
+            borderColor: isSelected ? 'var(--accent-primary)' : 'var(--borders-default)',
+            backgroundColor: 'var(--background-secondary)'
           }}
         >
-          {isSelected ? <CheckCircle className="w-5 h-5" /> : <User className="w-4 h-4" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p 
-            className="font-semibold text-sm truncate"
-            style={{ color: 'var(--foreground-primary)' }}
-          >
-            {person.nama || `Hasil ${index + 1}`}
-          </p>
-          <div className="flex items-center gap-1 mt-1">
-            <Calendar className="w-3 h-3" style={{ color: 'var(--foreground-muted)' }} />
-            <p 
-              className="text-xs truncate"
-              style={{ color: 'var(--foreground-muted)' }}
+          {hasPhoto ? (
+            <img 
+              src={person.photo} 
+              alt={person.nama || 'Foto'} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <User className="w-8 h-8" style={{ color: 'var(--foreground-muted)' }} />
+            </div>
+          )}
+          {/* Selection indicator */}
+          {isSelected && (
+            <div 
+              className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--accent-primary)' }}
             >
-              {ttl}
-            </p>
-          </div>
+              <CheckCircle className="w-3 h-3 text-white" />
+            </div>
+          )}
+        </div>
+        
+        {/* Info */}
+        <div className="text-center w-full">
+          <p 
+            className="font-semibold text-xs truncate"
+            style={{ color: 'var(--foreground-primary)' }}
+            title={person.nama || person.name}
+          >
+            {person.nama || person.name || `Hasil ${index + 1}`}
+          </p>
           {person.nik && (
             <p 
-              className="text-xs font-mono mt-1"
-              style={{ color: 'var(--accent-primary)' }}
+              className="text-xs font-mono mt-0.5 truncate"
+              style={{ color: 'var(--accent-primary)', fontSize: '10px' }}
+              title={person.nik}
             >
-              NIK: {person.nik}
+              {person.nik}
+            </p>
+          )}
+          {ttl !== '-' && (
+            <p 
+              className="text-xs mt-0.5 truncate"
+              style={{ color: 'var(--foreground-muted)', fontSize: '9px' }}
+            >
+              {ttl}
             </p>
           )}
         </div>
