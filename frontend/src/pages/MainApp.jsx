@@ -74,6 +74,8 @@ const MainApp = () => {
   
   // NON GEOINT Search
   const [nonGeointDialogOpen, setNonGeointDialogOpen] = useState(false);
+  const [nonGeointHistoryOpen, setNonGeointHistoryOpen] = useState(false);
+  const [selectedNonGeointSearch, setSelectedNonGeointSearch] = useState(null);
   
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
