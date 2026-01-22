@@ -4160,11 +4160,13 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         
         # Find target button
         target_button = None
+        all_buttons_found = []
         for msg in messages:
             if msg.buttons:
                 for row in msg.buttons:
                     for button in row:
                         if button.text:
+                            all_buttons_found.append(button.text)
                             for btn_text in button_map.get(button_type, []):
                                 if btn_text.lower() in button.text.lower():
                                     target_button = button
@@ -4176,8 +4178,10 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             if target_button:
                 break
         
+        logger.info(f"[{query_token}] All buttons found: {all_buttons_found}")
+        
         if not target_button:
-            logger.warning(f"[{query_token}] Button '{button_type}' not found")
+            logger.warning(f"[{query_token}] Button '{button_type}' not found in buttons: {all_buttons_found}")
             return {"status": "not_found", "error": f"Button {button_type} not found"}
         
         # Step 3: Click button
