@@ -4136,8 +4136,10 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             
             # FIRST: Look for photo in ALL messages WITHOUT time filter
             # Photo might have different timestamp than our query
+            # Also check for document (some bots send photos as documents)
             if not photo_base64:
                 for msg in response_messages:
+                    # Check for photo
                     if msg.photo:
                         try:
                             logger.info(f"[{query_token}] Found photo in message (id={msg.id}), attempting download...")
@@ -4149,6 +4151,22 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                                 break  # Got photo, stop looking
                         except Exception as e:
                             logger.error(f"[{query_token}] Photo download error: {e}")
+                    
+                    # Check for document that might be an image
+                    elif msg.document:
+                        mime = getattr(msg.document, 'mime_type', '') or ''
+                        if 'image' in mime.lower():
+                            try:
+                                logger.info(f"[{query_token}] Found image document in message (id={msg.id}, mime={mime})")
+                                photo_bytes = await telegram_client.download_media(msg.document, bytes)
+                                if photo_bytes:
+                                    import base64
+                                    ext = 'jpeg' if 'jpeg' in mime or 'jpg' in mime else 'png'
+                                    photo_base64 = f"data:image/{ext};base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                    logger.info(f"[{query_token}] ✓ Downloaded document image successfully ({len(photo_bytes)} bytes)")
+                                    break
+                            except Exception as e:
+                                logger.error(f"[{query_token}] Document image download error: {e}")
             
             # Filter messages by time for TEXT data only (not photos)
             filtered_messages = []
