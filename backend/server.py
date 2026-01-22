@@ -3561,6 +3561,10 @@ async def get_investigation(investigation_id: str, username: str = Depends(verif
     investigation = await db.nik_investigations.find_one({"id": investigation_id}, {"_id": 0})
     if not investigation:
         raise HTTPException(status_code=404, detail="Investigation not found")
+    
+    # Log for debugging
+    logger.info(f"[GET INVESTIGATION {investigation_id}] Status: {investigation.get('status')}, Results keys: {list(investigation.get('results', {}).keys())}")
+    
     return investigation
 
 async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
