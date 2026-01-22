@@ -3890,9 +3890,11 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         
         # Step 4: Get response - try multiple times
         best_response = None
+        collected_texts = []  # For NKK, collect all related messages
+        
         for attempt in range(3):
             async def get_resp():
-                return await telegram_client.get_messages(BOT_USERNAME, limit=15)
+                return await telegram_client.get_messages(BOT_USERNAME, limit=25)  # Get more messages for NKK
             
             response_messages = await safe_telegram_operation(get_resp, f"get_resp_{query_token}_attempt{attempt}", max_retries=2)
             if not response_messages:
@@ -3917,12 +3919,12 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     'nama', 'name', 'alamat', 'address', 'tempat lahir', 'tgl lahir',
                     'jenis kelamin', 'agama', 'status', 'pekerjaan', 'kewarganegaraan',
                     'provinsi', 'kabupaten', 'kecamatan', 'kelurahan', 'rt', 'rw',
-                    'no kk', 'kepala keluarga', 'hubungan', 'ayah', 'ibu',
-                    'not found', 'tidak ditemukan', 'data tidak'
+                    'no kk', 'kepala keluarga', 'hubungan', 'ayah', 'ibu', 'anak',
+                    'not found', 'tidak ditemukan', 'data tidak', 'anggota', 'member'
                 ])
                 
-                # Also check if message contains the NIK
-                contains_nik = nik in msg.text
+                # Also check if message contains any 16-digit NIK
+                contains_nik = bool(re.search(r'\b\d{16}\b', msg.text))
                 
                 if is_data_response or contains_nik:
                     logger.info(f"[{query_token}] Found potential response: {msg.text[:100]}...")
@@ -3931,15 +3933,14 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     if 'not found' in msg_text_lower or 'tidak ditemukan' in msg_text_lower or 'data tidak' in msg_text_lower:
                         return {"status": "not_found", "raw_text": msg.text}
                     
+                    # For NKK, collect all relevant messages
+                    if button_type == "NKK":
+                        if msg.text not in collected_texts:
+                            collected_texts.append(msg.text)
+                            logger.info(f"[{query_token}] Collected NKK message {len(collected_texts)}: {len(msg.text)} chars")
+                    
                     # Parse data
                     parsed_data = parse_nongeoint_response(msg.text, button_type)
-                    
-                    # For NKK, also parse family members
-                    family_data = None
-                    if button_type == "NKK":
-                        family_data = parse_nkk_family_data(msg.text)
-                        if family_data:
-                            logger.info(f"[{query_token}] Parsed {len(family_data.get('members', []))} family members")
                     
                     # Download photo if exists
                     photo_base64 = None
@@ -3948,6 +3949,71 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                             photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                             if photo_bytes:
                                 import base64
+                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                logger.info(f"[{query_token}] Downloaded photo")
+                        except Exception as e:
+                            logger.error(f"[{query_token}] Photo download error: {e}")
+                    
+                    # For NKK, don't return immediately - collect more messages
+                    if button_type != "NKK":
+                        # Store the best response (prefer ones with parsed data)
+                        if parsed_data or not best_response:
+                            best_response = {
+                                "status": "completed",
+                                "data": parsed_data,
+                                "raw_text": msg.text,
+                                "photo": photo_base64,
+                                "family_data": None
+                            }
+                            
+                        # If we got parsed data, return immediately
+                        if parsed_data:
+                            logger.info(f"[{query_token}] Successfully parsed data")
+                            return best_response
+            
+            # For NKK, parse combined texts after collecting
+            if button_type == "NKK" and collected_texts:
+                combined_text = "\n\n---MEMBER---\n\n".join(collected_texts)
+                logger.info(f"[{query_token}] Combined {len(collected_texts)} NKK messages, total {len(combined_text)} chars")
+                
+                # Parse family data from combined text
+                family_data = parse_nkk_family_data(combined_text)
+                if family_data:
+                    logger.info(f"[{query_token}] Parsed {family_data.get('member_count', 0)} family members from combined text")
+                
+                # Also try parsing each message separately and combine results
+                if not family_data or len(family_data.get('members', [])) < 2:
+                    all_members = []
+                    for txt in collected_texts:
+                        fd = parse_nkk_family_data(txt)
+                        if fd and fd.get('members'):
+                            for m in fd['members']:
+                                if m.get('nik') and m not in all_members:
+                                    # Check if NIK already exists
+                                    existing_niks = [x.get('nik') for x in all_members]
+                                    if m.get('nik') not in existing_niks:
+                                        all_members.append(m)
+                    
+                    if len(all_members) > len(family_data.get('members', []) if family_data else []):
+                        logger.info(f"[{query_token}] Individual parsing found {len(all_members)} unique members")
+                        family_data = {
+                            "members": all_members,
+                            "member_count": len(all_members)
+                        }
+                
+                parsed_data = parse_nongeoint_response(combined_text, button_type)
+                
+                return {
+                    "status": "completed",
+                    "data": parsed_data,
+                    "raw_text": combined_text,
+                    "photo": None,
+                    "family_data": family_data
+                }
+            
+            # If no good response yet, wait and try again
+            if not best_response and not collected_texts:
+                await asyncio.sleep(3)
                                 photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
                                 logger.info(f"[{query_token}] Downloaded photo")
                         except Exception as e:
