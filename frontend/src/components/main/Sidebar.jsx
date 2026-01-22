@@ -348,7 +348,7 @@ const ProcessingIndicator = ({ processType, onReset }) => (
   </div>
 );
 
-// Cases section sub-component
+// Cases section sub-component with slider for multiple cases
 const CasesSection = ({ 
   cases, 
   selectedCase, 
@@ -357,87 +357,149 @@ const CasesSection = ({
   onDeleteCase,
   onPrintCase,
   printingCase
-}) => (
-  <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
-    <div className="flex items-center justify-between mb-3">
-      <h2 
-        className="text-sm uppercase tracking-wide font-semibold"
-        style={{ color: 'var(--foreground-secondary)', fontFamily: 'Rajdhani, sans-serif' }}
-      >
-        Cases
-      </h2>
-      <Button
-        size="sm"
-        onClick={onNewCase}
-        data-testid="new-case-button"
-        style={{
-          backgroundColor: 'var(--accent-primary)',
-          color: 'var(--background-primary)'
-        }}
-      >
-        <Plus className="w-4 h-4" />
-      </Button>
-    </div>
-    <div className="space-y-2">
-      {cases.map((caseItem) => (
-        <div
-          key={caseItem.id}
-          className="p-3 rounded-md border cursor-pointer transition-all flex items-center justify-between group"
-          onClick={() => onSelectCase(caseItem)}
+}) => {
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  
+  // Find selected case index or use current index
+  const selectedIndex = cases.findIndex(c => c.id === selectedCase?.id);
+  const displayIndex = selectedIndex >= 0 ? selectedIndex : currentIndex;
+  const currentCase = cases[displayIndex];
+  
+  const handlePrev = () => {
+    const newIndex = displayIndex > 0 ? displayIndex - 1 : cases.length - 1;
+    setCurrentIndex(newIndex);
+    if (cases[newIndex]) onSelectCase(cases[newIndex]);
+  };
+  
+  const handleNext = () => {
+    const newIndex = displayIndex < cases.length - 1 ? displayIndex + 1 : 0;
+    setCurrentIndex(newIndex);
+    if (cases[newIndex]) onSelectCase(cases[newIndex]);
+  };
+
+  return (
+    <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 
+          className="text-sm uppercase tracking-wide font-semibold"
+          style={{ color: 'var(--foreground-secondary)', fontFamily: 'Rajdhani, sans-serif' }}
+        >
+          Cases {cases.length > 1 && `(${displayIndex + 1}/${cases.length})`}
+        </h2>
+        <Button
+          size="sm"
+          onClick={onNewCase}
+          data-testid="new-case-button"
           style={{
-            backgroundColor: selectedCase?.id === caseItem.id ? 'var(--background-tertiary)' : 'transparent',
-            borderColor: selectedCase?.id === caseItem.id ? 'var(--accent-primary)' : 'var(--borders-subtle)',
-            borderLeftWidth: '3px'
+            backgroundColor: 'var(--accent-primary)',
+            color: 'var(--background-primary)'
           }}
         >
-          <div className="flex-1">
-            <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
-              {caseItem.name}
-            </p>
-            <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-              {caseItem.target_count || 0} targets
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            {selectedCase?.id === caseItem.id && (
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPrintCase();
-                }}
-                disabled={printingCase}
-                className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
-                style={{ color: 'var(--accent-secondary)' }}
-                title="Export Case ke PDF"
-              >
-                <Printer className={`w-4 h-4 ${printingCase ? 'animate-pulse' : ''}`} />
-              </Button>
-            )}
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteCase(caseItem);
-              }}
-              className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
-              style={{ color: 'var(--status-error)' }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      ))}
-      {cases.length === 0 && (
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+      
+      {cases.length === 0 ? (
         <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
           Belum ada case
         </p>
+      ) : (
+        <div className="relative">
+          {/* Navigation arrows for multiple cases */}
+          {cases.length > 1 && (
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handlePrev}
+                className="h-6 w-6 p-0"
+                style={{ color: 'var(--foreground-secondary)' }}
+              >
+                ◀
+              </Button>
+              <div className="flex gap-1">
+                {cases.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="w-2 h-2 rounded-full cursor-pointer transition-all"
+                    onClick={() => {
+                      setCurrentIndex(idx);
+                      onSelectCase(cases[idx]);
+                    }}
+                    style={{
+                      backgroundColor: idx === displayIndex ? 'var(--accent-primary)' : 'var(--borders-default)'
+                    }}
+                  />
+                ))}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleNext}
+                className="h-6 w-6 p-0"
+                style={{ color: 'var(--foreground-secondary)' }}
+              >
+                ▶
+              </Button>
+            </div>
+          )}
+          
+          {/* Single case display */}
+          {currentCase && (
+            <div
+              className="p-3 rounded-md border cursor-pointer transition-all flex items-center justify-between group"
+              onClick={() => onSelectCase(currentCase)}
+              style={{
+                backgroundColor: selectedCase?.id === currentCase.id ? 'var(--background-tertiary)' : 'transparent',
+                borderColor: selectedCase?.id === currentCase.id ? 'var(--accent-primary)' : 'var(--borders-subtle)',
+                borderLeftWidth: '3px'
+              }}
+            >
+              <div className="flex-1">
+                <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                  {currentCase.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                  {currentCase.target_count || 0} targets
+                </p>
+              </div>
+              <div className="flex items-center gap-1">
+                {selectedCase?.id === currentCase.id && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPrintCase();
+                    }}
+                    disabled={printingCase}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
+                    style={{ color: 'var(--accent-secondary)' }}
+                    title="Export Case ke PDF"
+                  >
+                    <Printer className={`w-4 h-4 ${printingCase ? 'animate-pulse' : ''}`} />
+                  </Button>
+                )}
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteCase(currentCase);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8"
+                  style={{ color: 'var(--status-error)' }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
     </div>
-  </div>
-);
+  );
+};
 
 // Targets section sub-component
 const TargetsSection = ({
