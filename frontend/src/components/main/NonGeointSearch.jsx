@@ -1010,23 +1010,23 @@ export const NonGeointSearchDialog = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
+      <DraggableDialog open={open} onOpenChange={onOpenChange}>
+        <DraggableDialogContent 
           className="max-w-2xl max-h-[85vh] overflow-y-auto"
           style={{ 
             backgroundColor: 'var(--background-elevated)',
             border: '1px solid var(--borders-default)'
           }}
         >
-          <DialogHeader>
-            <DialogTitle 
+          <DraggableDialogHeader>
+            <DraggableDialogTitle 
               className="flex items-center gap-2"
               style={{ color: 'var(--foreground-primary)' }}
             >
               <Search className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
               NON GEOINT Search
-            </DialogTitle>
-          </DialogHeader>
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
 
           {/* Search Input */}
           <div className="space-y-4 mt-4">
