@@ -863,16 +863,34 @@ export const NonGeointSearchDialog = ({
           }
         }
         
-        // NKK Data
+        // NKK Data - with family members table
         if (nikResult?.nkk_data) {
-          addText('   [Data NKK]', margin, 10, true);
+          addText('   [Data NKK - Kartu Keluarga]', margin, 10, true);
           addText(`   Status: ${nikResult.nkk_data.status}`);
-          if (nikResult.nkk_data.data) {
+          
+          // Display family members if available
+          if (nikResult.nkk_data.family_data?.members?.length > 0) {
+            const members = nikResult.nkk_data.family_data.members;
+            addText(`   Jumlah Anggota Keluarga: ${members.length}`, margin, 10);
+            addText('');
+            addText('   No.  NIK                   Nama                    Hubungan         L/P', margin, 9);
+            addText('   ' + '-'.repeat(85), margin, 9);
+            
+            members.forEach((member, idx) => {
+              const no = String(idx + 1).padEnd(4);
+              const nikStr = (member.nik || '-').padEnd(18);
+              const name = (member.name || '-').substring(0, 22).padEnd(24);
+              const rel = (member.relationship || '-').substring(0, 15).padEnd(17);
+              const gender = member.gender || '-';
+              addText(`   ${no} ${nikStr} ${name} ${rel} ${gender}`, margin, 9);
+            });
+            addText('   ' + '-'.repeat(85), margin, 9);
+          } else if (nikResult.nkk_data.data) {
             Object.entries(nikResult.nkk_data.data).forEach(([key, value]) => {
               addText(`   ${key}: ${value}`);
             });
           }
-          if (nikResult.nkk_data.raw_text && !nikResult.nkk_data.data) {
+          if (nikResult.nkk_data.raw_text && !nikResult.nkk_data.family_data?.members?.length && !nikResult.nkk_data.data) {
             addText(`   Raw: ${nikResult.nkk_data.raw_text.substring(0, 300)}`);
           }
         }
