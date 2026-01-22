@@ -8,6 +8,11 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [loadingAI, setLoadingAI] = useState(false);
 
+  // Debug: Log members data
+  useEffect(() => {
+    console.log('FamilyTreeViz members:', members);
+  }, [members]);
+
   if (!members || members.length === 0) {
     return (
       <div className="text-center py-4">
@@ -18,14 +23,40 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
     );
   }
 
+  // Normalize member data - handle different field names
+  const normalizedMembers = members.map(m => ({
+    ...m,
+    name: m.name || m.full_name || m.nama || m.Full_Name || 'Unknown',
+    relationship: (m.relationship || m.hubungan || m.shdk || m.Relationship || '').toUpperCase(),
+    dob: m.dob || m.birth_date || m.tanggal_lahir || m.Dob || m.DOB || null,
+    gender: (m.gender || m.jenis_kelamin || m.Gender || '').toUpperCase()
+  }));
+
   // Organize members by relationship
-  const head = members.find(m => m.relationship?.includes('KEPALA'));
-  const spouse = members.find(m => m.relationship?.includes('ISTRI') || m.relationship?.includes('SUAMI'));
+  const head = normalizedMembers.find(m => 
+    m.relationship?.includes('KEPALA') || 
+    m.relationship?.includes('HEAD') ||
+    m.relationship === '1' // Some systems use 1 for head
+  );
+  
+  const spouse = normalizedMembers.find(m => 
+    m.relationship?.includes('ISTRI') || 
+    m.relationship?.includes('SUAMI') ||
+    m.relationship?.includes('WIFE') ||
+    m.relationship?.includes('HUSBAND') ||
+    m.relationship?.includes('SPOUSE') ||
+    m.relationship === '2' // Some systems use 2 for spouse
+  );
   
   // Sort children by DOB (oldest first = Anak 1)
-  // If no DOB field, try to extract from Indonesian NIK
-  const children = members
-    .filter(m => m.relationship?.includes('ANAK'))
+  const children = normalizedMembers
+    .filter(m => 
+      m.relationship?.includes('ANAK') || 
+      m.relationship?.includes('CHILD') ||
+      m.relationship?.includes('SON') ||
+      m.relationship?.includes('DAUGHTER') ||
+      m.relationship === '3' || m.relationship === '4' // Some systems use 3,4 for children
+    )
     .sort((a, b) => {
       // Parse DOB from various sources
       const parseDOB = (member) => {
