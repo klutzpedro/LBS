@@ -26,65 +26,57 @@ DraggableDialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DraggableDialogContent = React.forwardRef(
   ({ className, children, style, ...props }, ref) => {
-    const nodeRef = React.useRef(null);
-    const [bounds, setBounds] = React.useState({ left: 0, top: 0, right: 0, bottom: 0 });
+    const draggableRef = React.useRef(null);
+    const [position, setPosition] = React.useState({ x: 0, y: 0 });
 
-    React.useEffect(() => {
-      const updateBounds = () => {
-        if (nodeRef.current) {
-          const rect = nodeRef.current.getBoundingClientRect();
-          setBounds({
-            left: -rect.left + 10,
-            top: -rect.top + 10,
-            right: window.innerWidth - rect.right + rect.width - 10,
-            bottom: window.innerHeight - rect.bottom + rect.height - 10,
-          });
-        }
-      };
-      updateBounds();
-      window.addEventListener("resize", updateBounds);
-      return () => window.removeEventListener("resize", updateBounds);
-    }, []);
+    const handleDrag = (e, data) => {
+      setPosition({ x: data.x, y: data.y });
+    };
 
     return (
       <DraggableDialogPortal>
         <DraggableDialogOverlay />
-        <Draggable handle=".drag-handle" nodeRef={nodeRef} bounds={bounds}>
-          <DialogPrimitive.Content
-            ref={(node) => {
-              nodeRef.current = node;
-              if (typeof ref === "function") {
-                ref(node);
-              } else if (ref) {
-                ref.current = node;
-              }
+        <Draggable 
+          handle=".drag-handle" 
+          nodeRef={draggableRef}
+          position={position}
+          onDrag={handleDrag}
+        >
+          <div
+            ref={draggableRef}
+            className="fixed left-[50%] top-[50%] z-50"
+            style={{ 
+              marginLeft: '-50%',
+              marginTop: '-25%'
             }}
-            className={cn(
-              "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-              className
-            )}
-            style={style}
-            {...props}
           >
-            {/* Drag Handle */}
-            <div 
-              className="drag-handle absolute top-0 left-0 right-0 h-8 cursor-move flex items-center justify-center"
-              style={{ 
-                backgroundColor: 'rgba(0,0,0,0.1)', 
-                borderTopLeftRadius: 'inherit',
-                borderTopRightRadius: 'inherit'
-              }}
+            <DialogPrimitive.Content
+              ref={ref}
+              className={cn(
+                "grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-lg",
+                className
+              )}
+              style={style}
+              {...props}
             >
-              <GripHorizontal className="w-5 h-5 opacity-50" />
-            </div>
-            <div className="pt-4">
-              {children}
-            </div>
-            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10">
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-          </DialogPrimitive.Content>
+              {/* Drag Handle */}
+              <div 
+                className="drag-handle absolute top-0 left-0 right-0 h-6 cursor-move flex items-center justify-center rounded-t-lg"
+                style={{ 
+                  backgroundColor: 'rgba(100,100,100,0.3)'
+                }}
+              >
+                <GripHorizontal className="w-4 h-4 opacity-50" />
+              </div>
+              <div className="pt-2">
+                {children}
+              </div>
+              <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </DialogPrimitive.Close>
+            </DialogPrimitive.Content>
+          </div>
         </Draggable>
       </DraggableDialogPortal>
     );
