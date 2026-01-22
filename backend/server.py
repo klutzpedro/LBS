@@ -3985,6 +3985,84 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
         return {"status": "error", "error": str(e)}
 
 
+def parse_nkk_family_data(text: str) -> dict:
+    """Parse NKK/Family Card data to extract family members"""
+    import re
+    
+    members = []
+    lines = text.split('\n')
+    current_member = {}
+    
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        
+        # Check for NIK pattern (16 digits)
+        nik_match = re.search(r'\b(\d{16})\b', stripped)
+        if nik_match:
+            # If we have a current member with data, save it
+            if current_member and current_member.get('nik'):
+                members.append(current_member)
+                current_member = {}
+            current_member['nik'] = nik_match.group(1)
+        
+        # Check for name patterns
+        name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if name_match:
+            current_member['name'] = name_match.group(1).strip()
+        
+        # Check for relationship patterns
+        rel_match = re.search(r'(?:hubungan|relationship|status\s*hubungan|shdk)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if rel_match:
+            current_member['relationship'] = rel_match.group(1).strip()
+        
+        # Check for gender patterns
+        gender_match = re.search(r'(?:jenis\s*kelamin|gender|j/k|sex)\s*[:\-]?\s*(.+)', stripped, re.IGNORECASE)
+        if gender_match:
+            gender_value = gender_match.group(1).strip().upper()
+            if 'LAKI' in gender_value or gender_value == 'L' or 'MALE' in gender_value:
+                current_member['gender'] = 'L'
+            elif 'PEREMPUAN' in gender_value or gender_value == 'P' or 'FEMALE' in gender_value:
+                current_member['gender'] = 'P'
+            else:
+                current_member['gender'] = gender_value
+    
+    # Don't forget the last member
+    if current_member and current_member.get('nik'):
+        members.append(current_member)
+    
+    # Try alternative parsing: Look for numbered/bulleted list of members
+    if not members:
+        member_pattern = re.findall(
+            r'(?:^|\n)\s*(?:\d+[\.\)]|\-|\•)?\s*(?:NIK\s*[:\-]?\s*)?(\d{16})\s*(?:[,\-]\s*)?([^,\n]+?)(?:\s*[,\-]\s*(?:hubungan|relationship|shdk)\s*[:\-]?\s*([^,\n]+))?(?:\s*[,\-]\s*(?:gender|j/k|jenis\s*kelamin)\s*[:\-]?\s*([LP]))?',
+            text, re.IGNORECASE | re.MULTILINE
+        )
+        for match in member_pattern:
+            nik, name, relationship, gender = match
+            member = {'nik': nik.strip()}
+            if name:
+                member['name'] = name.strip()
+            if relationship:
+                member['relationship'] = relationship.strip()
+            if gender:
+                member['gender'] = gender.strip().upper()
+            members.append(member)
+    
+    if members:
+        # Try to extract No KK (Family Card Number)
+        no_kk_match = re.search(r'(?:no\s*kk|no\.\s*kk|nomor\s*kk|family\s*id)\s*[:\-]?\s*(\d{16})', text, re.IGNORECASE)
+        head_match = re.search(r'(?:kepala\s*keluarga|head\s*of\s*family)\s*[:\-]?\s*(.+)', text, re.IGNORECASE)
+        
+        return {
+            "no_kk": no_kk_match.group(1) if no_kk_match else None,
+            "kepala_keluarga": head_match.group(1).strip() if head_match else None,
+            "members": members
+        }
+    
+    return None
+
+
 # AI Family Tree Analysis
 class FamilyAnalysisRequest(BaseModel):
     members: List[dict]
