@@ -4121,8 +4121,6 @@ def parse_nkk_family_data(text: str) -> dict:
             # Also add alternative field names for frontend compatibility
             current_member['birth_date'] = dob_value
             current_member['tanggal_lahir'] = dob_value
-        if dob_match and current_member:
-            current_member['dob'] = dob_match.group(1).strip()
     
     # Don't forget the last member
     if current_member and current_member.get('nik'):
