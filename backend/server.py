@@ -4048,6 +4048,7 @@ async def execute_regnik_query(investigation_id: str, nik: str) -> dict:
 async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
     """Execute a single NIK/NKK/RegNIK query"""
     global telegram_client
+    from datetime import datetime, timezone, timedelta
     
     button_map = {
         "NIK": ["🔍 NIK", "NIK"],
@@ -4058,6 +4059,9 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
     query_token = f"NIKINVEST_{investigation_id}_{nik}_{button_type}"
     
     try:
+        # IMPORTANT: Record timestamp BEFORE sending query
+        query_start_time = datetime.now(timezone.utc)
+        
         # Step 1: Send NIK to bot
         async def send_nik():
             await telegram_client.send_message(BOT_USERNAME, nik)
