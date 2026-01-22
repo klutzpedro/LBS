@@ -780,22 +780,31 @@ export const NonGeointSearchDialog = ({
       console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
       console.log('[NonGeoint] Number of NIK photos:', Object.keys(searchResults.nik_photos).length);
       
-      // Convert nik_photos object to persons array
-      const persons = Object.entries(searchResults.nik_photos).map(([nik, data]) => {
-        console.log(`[NonGeoint] Processing NIK ${nik}:`, data);
-        return {
-          nik: nik,
-          nama: data.name || data.nama,
-          name: data.name || data.nama,
-          photo: data.photo,
-          ttl: data.ttl,
-          alamat: data.alamat,
-          jk: data.jk,
-          status: data.status
-        };
-      });
+      // Convert nik_photos object to persons array and sort by similarity
+      const persons = Object.entries(searchResults.nik_photos)
+        .map(([nik, data]) => {
+          console.log(`[NonGeoint] Processing NIK ${nik}:`, data);
+          return {
+            nik: nik,
+            nama: data.name || data.nama,
+            name: data.name || data.nama,
+            photo: data.photo,
+            ttl: data.ttl,
+            alamat: data.alamat,
+            jk: data.jk,
+            status: data.status,
+            similarity: data.similarity || 0
+          };
+        })
+        // Sort by similarity (highest first), then by name
+        .sort((a, b) => {
+          if (b.similarity !== a.similarity) {
+            return b.similarity - a.similarity;
+          }
+          return (a.nama || '').localeCompare(b.nama || '');
+        });
       
-      console.log('[NonGeoint] Persons array created:', persons.length);
+      console.log('[NonGeoint] Persons array created and sorted by similarity:', persons.length);
       setPersonsFound(persons);
       
       if (persons.length === 1) {
