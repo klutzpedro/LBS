@@ -897,7 +897,20 @@ export const NonGeointSearchDialog = ({
   const hasNikResults = (nik) => {
     const nikData = getNikInvestigationStatus(nik);
     if (!nikData) return false;
-    return nikData.nik_data || nikData.nkk_data || nikData.regnik_data;
+    
+    // Check if any of the sub-queries have data or raw_text
+    const hasNikData = nikData.nik_data && (nikData.nik_data.data || nikData.nik_data.raw_text || nikData.nik_data.status === 'completed' || nikData.nik_data.status === 'not_found');
+    const hasNkkData = nikData.nkk_data && (nikData.nkk_data.data || nikData.nkk_data.raw_text || nikData.nkk_data.status === 'completed' || nikData.nkk_data.status === 'not_found');
+    const hasRegnikData = nikData.regnik_data && (nikData.regnik_data.data || nikData.regnik_data.raw_text || nikData.regnik_data.status === 'completed' || nikData.regnik_data.status === 'not_found');
+    
+    return hasNikData || hasNkkData || hasRegnikData;
+  };
+
+  // Get sub-query status for display
+  const getSubQueryStatus = (nikData, queryType) => {
+    const data = nikData?.[queryType];
+    if (!data) return 'pending';
+    return data.status || 'pending';
   };
 
   // Determine current step
