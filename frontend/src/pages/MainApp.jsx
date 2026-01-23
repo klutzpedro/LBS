@@ -692,7 +692,10 @@ const MainApp = () => {
       // Poll for completion - less frequent to reduce UI updates
       const pollInterval = setInterval(async () => {
         try {
-          const targetsRes = await axios.get(`${API}/targets`);
+          const pollToken = localStorage.getItem('token');
+          const targetsRes = await axios.get(`${API}/targets`, {
+            headers: { Authorization: `Bearer ${pollToken}` }
+          });
           const updatedTarget = targetsRes.data.find(t => t.id === response.data.target_id);
           
           if (updatedTarget && updatedTarget.status === 'completed') {
