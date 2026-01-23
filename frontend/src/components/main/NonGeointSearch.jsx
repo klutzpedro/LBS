@@ -551,11 +551,9 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
           ? 'var(--accent-primary)'
           : 'var(--borders-subtle)',
         ringColor: isSelected ? 'var(--accent-primary)' : 'transparent',
-        minWidth: '160px',
         cursor: 'pointer',
         pointerEvents: 'auto',
         userSelect: 'none',
-        flexShrink: 0,
         position: 'relative',
         zIndex: 10
       }}
