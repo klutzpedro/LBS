@@ -1648,16 +1648,20 @@ export const NonGeointSearchDialog = ({
                     className="flex gap-3 overflow-x-auto pb-3"
                     style={{ 
                       scrollbarWidth: 'thin',
-                      scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+                      scrollbarColor: 'var(--accent-primary) var(--background-tertiary)',
+                      pointerEvents: 'auto'
                     }}
                   >
                     {personsFound.map((person, idx) => (
                       <PersonSelectionCard
-                        key={idx}
+                        key={`person-${idx}-${person.nik}`}
                         person={person}
                         index={idx}
                         isSelected={selectedPersonIndex === idx}
-                        onSelect={() => handlePersonSelect(idx)}
+                        onSelect={() => {
+                          console.log('[NonGeoint] Card onSelect called, idx:', idx);
+                          handlePersonSelect(idx);
+                        }}
                       />
                     ))}
                   </div>
