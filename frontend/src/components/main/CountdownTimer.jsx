@@ -4,6 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 export const CountdownTimer = ({ nextRun, onCountdownEnd, scheduleId }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const hasTriggeredRef = useRef(false);
+  const isMountedRef = useRef(true);
+  
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   
   useEffect(() => {
     // Reset trigger flag when nextRun changes
@@ -14,14 +22,17 @@ export const CountdownTimer = ({ nextRun, onCountdownEnd, scheduleId }) => {
     if (!nextRun) return;
     
     const calculateTimeLeft = () => {
+      // Don't do anything if component is unmounted
+      if (!isMountedRef.current) return;
+      
       const now = new Date();
       const target = new Date(nextRun);
       const diff = target - now;
       
       if (diff <= 0) {
         setTimeLeft('0:00');
-        // Trigger callback only once when countdown ends
-        if (!hasTriggeredRef.current && onCountdownEnd) {
+        // Trigger callback only once when countdown ends AND component is still mounted
+        if (!hasTriggeredRef.current && onCountdownEnd && isMountedRef.current) {
           hasTriggeredRef.current = true;
           onCountdownEnd(scheduleId);
         }
