@@ -3256,23 +3256,66 @@ class NonGeointSearchResult(BaseModel):
 # Global queue lock for NON GEOINT queries
 nongeoint_queue_lock = asyncio.Lock()
 
+# Constants for pagination
+PHOTO_BATCH_SIZE = 10  # Fetch 10 photos at a time
+
 @api_router.post("/nongeoint/search")
 async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depends(verify_token)):
     """
     NON GEOINT Search - Sequentially queries CAPIL, Pass WNI, Pass WNA
     Uses queue system to prevent race conditions
+    Now with CACHING: checks if name was searched before
     """
-    search_id = str(uuid.uuid4())[:8]
-    logger.info(f"[NONGEOINT {search_id}] Starting search for name: {request.name}")
+    search_name = request.name.strip().upper()  # Normalize name for caching
     
-    # Store search in database
+    # ============================================
+    # CHECK CACHE: Look for existing search with same name
+    # ============================================
+    existing_search = await db.nongeoint_searches.find_one(
+        {
+            "name_normalized": search_name,
+            "status": {"$in": ["completed", "waiting_selection", "fetching_photos"]},
+            "niks_found": {"$exists": True, "$ne": []}
+        },
+        {"_id": 0}
+    )
+    
+    if existing_search:
+        logger.info(f"[NONGEOINT] CACHE HIT: Found existing search for '{search_name}' (id: {existing_search['id']})")
+        
+        # Return cached search - frontend will use this data
+        return {
+            "search_id": existing_search['id'],
+            "status": existing_search.get('status', 'completed'),
+            "message": "Menggunakan data cache dari pencarian sebelumnya",
+            "cached": True,
+            "total_niks": len(existing_search.get('niks_found', [])),
+            "photos_fetched": len(existing_search.get('nik_photos', {}))
+        }
+    
+    # ============================================
+    # NEW SEARCH: No cache found
+    # ============================================
+    search_id = str(uuid.uuid4())[:8]
+    logger.info(f"[NONGEOINT {search_id}] Starting NEW search for name: {request.name}")
+    
+    # Store search in database with pagination fields
     search_doc = {
         "id": search_id,
         "name": request.name,
+        "name_normalized": search_name,  # For cache lookup
         "query_types": request.query_types,
         "status": "processing",
         "results": {},
         "niks_found": [],
+        "nik_photos": {},
+        # Pagination fields
+        "total_niks": 0,
+        "current_batch": 0,
+        "photos_fetched_count": 0,
+        "batch_size": PHOTO_BATCH_SIZE,
+        "all_batches_completed": False,
+        # Timestamps
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": username
     }
@@ -3281,7 +3324,7 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
     # Start background task
     asyncio.create_task(process_nongeoint_search(search_id, request.name, request.query_types))
     
-    return {"search_id": search_id, "status": "processing", "message": "Search started"}
+    return {"search_id": search_id, "status": "processing", "message": "Search started", "cached": False}
 
 @api_router.get("/nongeoint/search/{search_id}")
 async def get_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
