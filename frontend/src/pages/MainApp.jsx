@@ -661,7 +661,10 @@ const MainApp = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await axios.get(`${API}/schedules`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/schedules`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setActiveSchedules(response.data);
     } catch (error) {
       console.error('Failed to load schedules:', error);
