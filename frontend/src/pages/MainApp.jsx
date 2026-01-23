@@ -676,30 +676,52 @@ const MainApp = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      toast.info(`Memperbarui posisi ${response.data.target_id ? 'target' : ''}...`, { duration: 5000 });
+      toast.info(`Memperbarui posisi...`, { duration: 3000 });
       fetchSchedules();
       
-      setTimeout(() => fetchTargets(), 3000);
-      
+      // Poll for completion - less frequent to reduce UI updates
       const pollInterval = setInterval(async () => {
-        const targetsRes = await axios.get(`${API}/targets`);
-        const updatedTarget = targetsRes.data.find(t => t.id === response.data.target_id);
-        
-        if (updatedTarget && updatedTarget.status === 'completed') {
-          clearInterval(pollInterval);
-          fetchTargets();
-          toast.success(`Posisi ${updatedTarget.phone_number} berhasil diperbarui!`);
-          executingSchedulesRef.current.delete(scheduleId);
-          await refreshHistoryPath(response.data.target_id);
+        try {
+          const targetsRes = await axios.get(`${API}/targets`);
+          const updatedTarget = targetsRes.data.find(t => t.id === response.data.target_id);
           
-          if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
-            setMapCenter([parseFloat(updatedTarget.data.latitude), parseFloat(updatedTarget.data.longitude)]);
-            setMapZoom(15);
-            setMapKey(prev => prev + 1);
+          if (updatedTarget && updatedTarget.status === 'completed') {
+            clearInterval(pollInterval);
+            
+            // Update targets state WITHOUT re-fetching everything
+            setTargets(prev => prev.map(t => 
+              t.id === updatedTarget.id ? updatedTarget : t
+            ));
+            
+            toast.success(`Posisi ${updatedTarget.phone_number} diperbarui!`, { duration: 2000 });
+            executingSchedulesRef.current.delete(scheduleId);
+            
+            // Only update selected target if it's the one being refreshed
+            if (selectedTarget?.id === updatedTarget.id) {
+              setSelectedTarget(updatedTarget);
+            }
+            
+            // Smooth pan to new position WITHOUT remounting the map
+            if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
+              setMapCenter([parseFloat(updatedTarget.data.latitude), parseFloat(updatedTarget.data.longitude)]);
+              // Don't change mapKey - this prevents full map re-render
+            }
+            
+            // Refresh history path in background (silent)
+            refreshHistoryPath(response.data.target_id).catch(() => {});
+            
+          } else if (updatedTarget && (updatedTarget.status === 'error' || updatedTarget.status === 'not_found')) {
+            clearInterval(pollInterval);
+            executingSchedulesRef.current.delete(scheduleId);
+            // Silent fail - no toast for scheduled updates that fail
+            console.log(`[Schedule] Update failed for ${updatedTarget.phone_number}: ${updatedTarget.status}`);
           }
+        } catch (pollError) {
+          console.error('Poll error:', pollError);
         }
-      }, 5000);
+      }, 8000); // Poll every 8 seconds instead of 5
       
+      // Timeout after 2 minutes
       setTimeout(() => {
         clearInterval(pollInterval);
         executingSchedulesRef.current.delete(scheduleId);
@@ -707,7 +729,10 @@ const MainApp = () => {
       
     } catch (error) {
       console.error('Failed to execute schedule:', error);
-      toast.error('Gagal memperbarui posisi: ' + (error.response?.data?.detail || error.message));
+      // Only show error if it's a quota issue
+      if (error.response?.data?.detail?.includes('Quota')) {
+        toast.error('Quota CP API habis');
+      }
       executingSchedulesRef.current.delete(scheduleId);
     }
   };
