@@ -958,8 +958,8 @@ export const NonGeointSearchDialog = ({
 
   // Process search results to extract persons WITH PHOTOS
   useEffect(() => {
-    // Only process when status is 'completed'
-    if (searchResults?.status !== 'completed') {
+    // Process when status is 'completed' OR 'waiting_selection' (pagination)
+    if (searchResults?.status !== 'completed' && searchResults?.status !== 'waiting_selection') {
       return;
     }
     
@@ -969,10 +969,18 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
+    // Update pagination state
+    setTotalNiks(searchResults.total_niks || searchResults.niks_found?.length || 0);
+    setPhotosFetched(searchResults.photos_fetched_count || Object.keys(searchResults.nik_photos || {}).length);
+    setHasMoreBatches(searchResults.has_more_batches || false);
+    setCurrentBatch(searchResults.current_batch || 0);
+    
     // Check if we have nik_photos from backend (new flow with auto photo fetch)
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
       console.log('[NonGeoint] Number of NIK photos:', Object.keys(searchResults.nik_photos).length);
+      console.log('[NonGeoint] Total NIKs available:', searchResults.total_niks);
+      console.log('[NonGeoint] Has more batches:', searchResults.has_more_batches);
       
       // Convert nik_photos object to persons array and sort by similarity
       const persons = Object.entries(searchResults.nik_photos)
@@ -987,7 +995,8 @@ export const NonGeointSearchDialog = ({
             alamat: data.alamat,
             jk: data.jk,
             status: data.status,
-            similarity: data.similarity || 0
+            similarity: data.similarity || 0,
+            batch: data.batch || 0
           };
         })
         // Sort by similarity (highest first), then by name
@@ -1001,10 +1010,10 @@ export const NonGeointSearchDialog = ({
       console.log('[NonGeoint] Persons array created and sorted by similarity:', persons.length);
       setPersonsFound(persons);
       
-      if (persons.length === 1) {
+      if (persons.length === 1 && !searchResults.has_more_batches) {
         setSelectedPersonIndex(0);
         setShowPersonSelection(false);
-      } else if (persons.length > 1) {
+      } else if (persons.length > 1 || searchResults.has_more_batches) {
         setShowPersonSelection(true);
         setSelectedPersonIndex(null);
       } else {
