@@ -645,6 +645,7 @@ export const NonGeointSearchDialog = ({
   const [searchName, setSearchName] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState(null);
+  const [isLoadingFromHistory, setIsLoadingFromHistory] = useState(false); // NEW: prevents form flash when loading from history
   
   // Person selection state
   const [personsFound, setPersonsFound] = useState([]);
