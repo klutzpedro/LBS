@@ -501,14 +501,23 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
     if (sim >= 0.5) return '#f59e0b'; // Orange - medium match
     return '#ef4444'; // Red - low match
   };
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('[PersonSelectionCard] Card clicked! index:', index);
+    if (onSelect) {
+      onSelect();
+    }
+  };
   
   return (
     <div 
-      className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected ? 'ring-2' : ''}`}
-      onClick={() => {
-        console.log('[PersonSelectionCard] Clicked! index:', index, 'person:', person);
-        onSelect();
-      }}
+      role="button"
+      tabIndex={0}
+      className={`p-3 rounded-md border transition-all hover:scale-105 ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
+      onClick={handleClick}
+      onKeyPress={(e) => e.key === 'Enter' && handleClick(e)}
       data-testid={`person-card-${index}`}
       style={{
         backgroundColor: isSelected 
@@ -518,7 +527,11 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
           ? 'var(--accent-primary)'
           : 'var(--borders-subtle)',
         ringColor: isSelected ? 'var(--accent-primary)' : 'transparent',
-        minWidth: '160px'
+        minWidth: '160px',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        userSelect: 'none',
+        flexShrink: 0
       }}
     >
       <div className="flex flex-col items-center gap-2">
