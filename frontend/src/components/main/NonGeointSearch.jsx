@@ -515,9 +515,10 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
     <div 
       role="button"
       tabIndex={0}
-      className={`p-3 rounded-md border transition-all hover:scale-105 ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
+      className={`p-3 rounded-md border transition-all hover:scale-105 hover:shadow-lg ${isSelected ? 'ring-2 ring-offset-2' : ''}`}
       onClick={handleClick}
       onKeyPress={(e) => e.key === 'Enter' && handleClick(e)}
+      onMouseDown={(e) => e.stopPropagation()}
       data-testid={`person-card-${index}`}
       style={{
         backgroundColor: isSelected 
@@ -531,7 +532,9 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
         cursor: 'pointer',
         pointerEvents: 'auto',
         userSelect: 'none',
-        flexShrink: 0
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 10
       }}
     >
       <div className="flex flex-col items-center gap-2">
