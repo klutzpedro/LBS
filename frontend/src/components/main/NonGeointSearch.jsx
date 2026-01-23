@@ -340,6 +340,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   const [searches, setSearches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [searchFilter, setSearchFilter] = useState(''); // Search filter state
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -361,6 +362,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
 
     if (open) {
       fetchHistory();
+      setSearchFilter(''); // Reset filter when opening
     }
   }, [open]);
 
@@ -405,10 +407,15 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
     );
   };
 
+  // Filter searches based on search filter
+  const filteredSearches = searches.filter(search => 
+    search.name?.toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-lg max-h-[70vh] overflow-y-auto"
+        className="max-w-lg"
         style={{ 
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
@@ -424,87 +431,158 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-4">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent-primary)' }} />
-            </div>
-          ) : searches.length === 0 ? (
-            <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
-              <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Belum ada history pencarian</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {searches.map(search => (
-                <div 
-                  key={search.id}
-                  className="p-3 rounded-md border cursor-pointer hover:bg-opacity-50 transition-all"
-                  onClick={() => {
-                    onSelectSearch(search);
-                    onOpenChange(false);
-                  }}
-                  style={{
-                    backgroundColor: 'var(--background-tertiary)',
-                    borderColor: 'var(--borders-subtle)'
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
-                      {search.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(search.status)}
-                      {/* Show investigation badge if exists */}
-                      {search.has_investigation && (
-                        <span 
-                          className="px-1.5 py-0.5 rounded text-xs"
-                          style={{ 
-                            backgroundColor: search.investigation_status === 'completed' 
-                              ? 'rgba(16, 185, 129, 0.2)' 
-                              : 'rgba(59, 130, 246, 0.2)',
-                            color: search.investigation_status === 'completed' 
-                              ? '#10b981' 
-                              : '#3b82f6'
-                          }}
-                        >
-                          ✓ Pendalaman
-                        </span>
-                      )}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 hover:bg-red-500/20"
-                        onClick={(e) => handleDelete(e, search.id)}
-                        disabled={deleting === search.id}
-                        title="Hapus history"
-                      >
-                        {deleting === search.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3 h-3 text-red-400" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                    <span>
-                      {search.niks_found?.length || 0} NIK ditemukan
-                    </span>
-                    <span>
-                      {new Date(search.created_at).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                  </div>
-                </div>
-              ))}
+        <div className="mt-4 space-y-3">
+          {/* Search Filter Input */}
+          <div className="relative">
+            <Search 
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" 
+              style={{ color: 'var(--foreground-muted)' }} 
+            />
+            <Input
+              placeholder="Cari nama target..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              className="pl-9"
+              style={{
+                backgroundColor: 'var(--background-tertiary)',
+                borderColor: 'var(--borders-default)',
+                color: 'var(--foreground-primary)'
+              }}
+              data-testid="history-search-input"
+            />
+            {searchFilter && (
+              <button
+                onClick={() => setSearchFilter('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:opacity-70"
+                style={{ color: 'var(--foreground-muted)' }}
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Results count */}
+          {!loading && searches.length > 0 && (
+            <div className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+              Menampilkan {filteredSearches.length} dari {searches.length} pencarian
             </div>
           )}
+
+          {/* Scrollable History List - Max 4 items visible (~320px) */}
+          <div 
+            className="overflow-y-auto pr-1 custom-scrollbar"
+            style={{ 
+              maxHeight: '320px',
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+            }}
+          >
+            <style>
+              {`
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: var(--background-tertiary);
+                  border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: var(--accent-primary);
+                  border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: var(--accent-secondary);
+                }
+              `}
+            </style>
+            
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent-primary)' }} />
+              </div>
+            ) : searches.length === 0 ? (
+              <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Belum ada history pencarian</p>
+              </div>
+            ) : filteredSearches.length === 0 ? (
+              <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                <Search className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Tidak ditemukan hasil untuk "{searchFilter}"</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredSearches.map(search => (
+                  <div 
+                    key={search.id}
+                    className="p-3 rounded-md border cursor-pointer hover:bg-opacity-50 transition-all hover:scale-[1.01]"
+                    onClick={() => {
+                      onSelectSearch(search);
+                      onOpenChange(false);
+                    }}
+                    style={{
+                      backgroundColor: 'var(--background-tertiary)',
+                      borderColor: 'var(--borders-subtle)'
+                    }}
+                    data-testid={`history-item-${search.id}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                        {search.name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(search.status)}
+                        {/* Show investigation badge if exists */}
+                        {search.has_investigation && (
+                          <span 
+                            className="px-1.5 py-0.5 rounded text-xs"
+                            style={{ 
+                              backgroundColor: search.investigation_status === 'completed' 
+                                ? 'rgba(16, 185, 129, 0.2)' 
+                                : 'rgba(59, 130, 246, 0.2)',
+                              color: search.investigation_status === 'completed' 
+                                ? '#10b981' 
+                                : '#3b82f6'
+                            }}
+                          >
+                            ✓ Pendalaman
+                          </span>
+                        )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 hover:bg-red-500/20"
+                          onClick={(e) => handleDelete(e, search.id)}
+                          disabled={deleting === search.id}
+                          title="Hapus history"
+                        >
+                          {deleting === search.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3 h-3 text-red-400" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                      <span>
+                        {search.niks_found?.length || 0} NIK ditemukan
+                      </span>
+                      <span>
+                        {new Date(search.created_at).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
