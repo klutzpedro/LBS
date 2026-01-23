@@ -1151,6 +1151,31 @@ export const NonGeointSearchDialog = ({
       addText(title, margin, 12, true);
       yPos += 2;
     };
+    
+    // Helper function to add image from base64
+    const addPhoto = (base64Data, width = 35, height = 45) => {
+      if (!base64Data) return;
+      
+      try {
+        // Check if we need new page for photo
+        if (yPos + height > pageHeight) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        
+        // Extract the actual base64 data if it has data URI prefix
+        let imageData = base64Data;
+        if (base64Data.startsWith('data:image')) {
+          imageData = base64Data;
+        }
+        
+        pdf.addImage(imageData, 'JPEG', margin, yPos, width, height);
+        yPos += height + 5;
+      } catch (err) {
+        console.error('Error adding photo to PDF:', err);
+        addText('[Foto tidak dapat ditampilkan]');
+      }
+    };
 
     // Title
     pdf.setFontSize(16);
@@ -1164,6 +1189,35 @@ export const NonGeointSearchDialog = ({
       day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
     })}`);
     yPos += 5;
+    
+    // ============ FOTO TARGET ============
+    // Add photos from nik_photos if available
+    if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+      addSection('FOTO TARGET');
+      
+      const nikPhotos = searchResults.nik_photos;
+      const selectedNikPhotos = selectedNiks.length > 0 
+        ? selectedNiks.filter(nik => nikPhotos[nik])
+        : Object.keys(nikPhotos);
+      
+      selectedNikPhotos.forEach((nik, idx) => {
+        const photoData = nikPhotos[nik];
+        if (photoData) {
+          addText(`${idx + 1}. NIK: ${nik}`, margin, 10, true);
+          if (photoData.name) {
+            addText(`   Nama: ${photoData.name}`);
+          }
+          
+          // Add photo if available
+          if (photoData.photo && photoData.photo.startsWith('data:')) {
+            addPhoto(photoData.photo);
+          } else {
+            addText('   [Foto tidak tersedia]');
+          }
+          yPos += 3;
+        }
+      });
+    }
 
     // CAPIL Results
     if (searchResults?.results?.capil) {
