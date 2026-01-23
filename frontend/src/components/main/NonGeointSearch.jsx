@@ -1647,15 +1647,21 @@ export const NonGeointSearchDialog = ({
 
                   <div className="mt-4">
                     <Button
-                      onClick={confirmPersonSelection}
+                      onClick={() => {
+                        console.log('[NonGeoint] Button clicked! selectedPersonIndex:', selectedPersonIndex);
+                        confirmPersonSelection();
+                      }}
                       disabled={selectedPersonIndex === null}
                       className="w-full"
                       style={{
-                        backgroundColor: 'var(--accent-primary)',
-                        color: 'var(--background-primary)'
+                        backgroundColor: selectedPersonIndex === null ? 'gray' : 'var(--accent-primary)',
+                        color: 'var(--background-primary)',
+                        opacity: selectedPersonIndex === null ? 0.5 : 1
                       }}
                     >
-                      Lanjutkan dengan Target Terpilih
+                      {selectedPersonIndex === null 
+                        ? 'Pilih Target Terlebih Dahulu' 
+                        : 'Lanjutkan dengan Target Terpilih'}
                     </Button>
                   </div>
                 </div>
