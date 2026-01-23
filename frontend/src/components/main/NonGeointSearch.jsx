@@ -1667,23 +1667,38 @@ export const NonGeointSearchDialog = ({
                   </div>
 
                   <div className="mt-4">
-                    <Button
-                      onClick={() => {
-                        console.log('[NonGeoint] Button clicked! selectedPersonIndex:', selectedPersonIndex);
-                        confirmPersonSelection();
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        console.log('[NonGeoint] Lanjutkan button clicked! selectedPersonIndex:', selectedPersonIndex);
+                        if (selectedPersonIndex !== null) {
+                          confirmPersonSelection();
+                        } else {
+                          toast.error('Pilih target terlebih dahulu dengan klik pada foto');
+                        }
                       }}
                       disabled={selectedPersonIndex === null}
-                      className="w-full"
+                      className="w-full py-3 px-4 rounded-md font-semibold transition-all"
                       style={{
-                        backgroundColor: selectedPersonIndex === null ? 'gray' : 'var(--accent-primary)',
-                        color: 'var(--background-primary)',
-                        opacity: selectedPersonIndex === null ? 0.5 : 1
+                        backgroundColor: selectedPersonIndex === null ? '#6b7280' : 'var(--accent-primary)',
+                        color: 'white',
+                        opacity: selectedPersonIndex === null ? 0.6 : 1,
+                        cursor: selectedPersonIndex === null ? 'not-allowed' : 'pointer',
+                        pointerEvents: 'auto'
                       }}
                     >
                       {selectedPersonIndex === null 
-                        ? 'Pilih Target Terlebih Dahulu' 
-                        : 'Lanjutkan dengan Target Terpilih'}
-                    </Button>
+                        ? '👆 Klik Foto Untuk Memilih Target' 
+                        : '✓ Lanjutkan dengan Target Terpilih'}
+                    </button>
+                    
+                    {/* Debug info */}
+                    <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
+                      {selectedPersonIndex === null 
+                        ? 'Belum ada target dipilih' 
+                        : `Target dipilih: ${personsFound[selectedPersonIndex]?.nama || personsFound[selectedPersonIndex]?.nik || 'Unknown'}`}
+                    </p>
                   </div>
                 </div>
               )}
