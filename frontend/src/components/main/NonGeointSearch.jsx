@@ -952,12 +952,18 @@ export const NonGeointSearchDialog = ({
       toast.error('Pilih salah satu nama');
       return;
     }
-    setShowPersonSelection(false);
     
     const selectedPerson = personsFound[selectedPersonIndex];
+    console.log('[NonGeoint] Confirming person selection:', selectedPerson);
+    
     if (selectedPerson?.nik) {
       setSelectedNiks([selectedPerson.nik]);
+      console.log('[NonGeoint] Set selected NIK:', selectedPerson.nik);
     }
+    
+    // Hide person selection to move to next step
+    setShowPersonSelection(false);
+    console.log('[NonGeoint] Person selection confirmed, moving to next step');
   };
 
   const handleNikToggle = (nik) => {
