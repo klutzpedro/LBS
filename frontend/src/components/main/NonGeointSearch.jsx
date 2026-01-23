@@ -765,12 +765,15 @@ export const NonGeointSearchDialog = ({
             setInvestigation(null);
             setSelectedNiks([]);
           }
+          
+          setIsLoadingFromHistory(false); // Done loading
         } else {
           console.error('[NonGeoint] Failed to fetch search data, status:', response.status);
           // Fallback to initialSearch if fetch fails
           lastOpenedWithSearchRef.current = initialSearch.id;
           setSearchResults(initialSearch);
           setSearchName(initialSearch.name || '');
+          setIsLoadingFromHistory(false); // Done loading
         }
       } catch (error) {
         console.error('[NonGeoint] Error loading search data:', error);
@@ -778,11 +781,14 @@ export const NonGeointSearchDialog = ({
         lastOpenedWithSearchRef.current = initialSearch?.id;
         setSearchResults(initialSearch);
         setSearchName(initialSearch?.name || '');
+        setIsLoadingFromHistory(false); // Done loading
       }
     };
     
     if (open) {
       if (initialSearch) {
+        // Loading from history - set loading state immediately
+        setIsLoadingFromHistory(true);
         // Loading from history - load the search data
         const shouldLoad = lastOpenedWithSearchRef.current !== initialSearch.id;
         console.log('[NonGeoint] Dialog open with initialSearch:', initialSearch.id, 
@@ -790,6 +796,8 @@ export const NonGeointSearchDialog = ({
                     'shouldLoad:', shouldLoad);
         if (shouldLoad) {
           loadSearchData();
+        } else {
+          setIsLoadingFromHistory(false); // Already loaded
         }
       } else {
         // New search - reset everything to show fresh form
