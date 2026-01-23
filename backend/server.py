@@ -4634,7 +4634,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                             logger.error(f"[{query_token}] Photo download error: {e}")
                     
                     # Check for media attribute (alternative way photos might be attached)
-                    if hasattr(msg, 'media') and msg.media:
+                    if hasattr(msg, 'media') and msg.media and not photo_base64:
                         media_type = type(msg.media).__name__
                         logger.info(f"[{query_token}] Found msg.media type: {media_type}")
                         
@@ -4652,7 +4652,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                                 logger.error(f"[{query_token}] Media photo download error: {e}")
                     
                     # Check for document that might be an image
-                    if msg.document:
+                    if msg.document and not photo_base64:
                         mime = getattr(msg.document, 'mime_type', '') or ''
                         logger.info(f"[{query_token}] Found document with mime: {mime}")
                         if 'image' in mime.lower():
@@ -4666,8 +4666,12 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                                     break
                             except Exception as e:
                                 logger.error(f"[{query_token}] Document image download error: {e}")
+                
+                # If no photo found but we have target message, log it
+                if not photo_base64 and target_msg_date:
+                    logger.info(f"[{query_token}] No photo found within time window of target message")
             
-            # Filter messages by time for TEXT data only (not photos)
+            # Filter messages by time for TEXT data only
             filtered_messages = []
             for msg in response_messages:
                 msg_time = msg.date.replace(tzinfo=timezone.utc) if msg.date.tzinfo is None else msg.date
