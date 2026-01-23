@@ -1051,6 +1051,10 @@ export const NonGeointSearchDialog = ({
     setPersonsFound([]);
     setSelectedPersonIndex(null);
     setShowPersonSelection(false);
+    setCachedSearch(false);
+    setHasMoreBatches(false);
+    setTotalNiks(0);
+    setPhotosFetched(0);
 
     try {
       const token = localStorage.getItem('token');
@@ -1069,6 +1073,14 @@ export const NonGeointSearchDialog = ({
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
+      
+      // Check if this is a cached result
+      if (data.cached) {
+        toast.success('Menggunakan data dari pencarian sebelumnya');
+        setCachedSearch(true);
+        setTotalNiks(data.total_niks || 0);
+        setPhotosFetched(data.photos_fetched || 0);
+      }
       
       pollingRef.current = setInterval(() => {
         pollSearchResults(data.search_id);
@@ -1091,6 +1103,12 @@ export const NonGeointSearchDialog = ({
 
       const data = await response.json();
       setSearchResults(data);
+      
+      // Update pagination state
+      setTotalNiks(data.total_niks || data.niks_found?.length || 0);
+      setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
+      setHasMoreBatches(data.has_more_batches || false);
+      setCurrentBatch(data.current_batch || 0);
 
       // Show progress for fetching_photos status
       if (data.status === 'fetching_photos') {
@@ -1098,14 +1116,15 @@ export const NonGeointSearchDialog = ({
         const total = data.photo_fetch_total || 0;
         console.log(`[NonGeoint] Fetching photos: ${progress}/${total}`);
         // Continue polling
-      } else if (data.status === 'completed' || data.status === 'error') {
+      } else if (data.status === 'completed' || data.status === 'waiting_selection' || data.status === 'error') {
+        // Stop polling when completed, waiting_selection (pagination), or error
         if (pollingRef.current) {
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
         setIsSearching(false);
 
-        if (data.status === 'completed') {
+        if (data.status === 'completed' || data.status === 'waiting_selection') {
           const photoCount = data.nik_photos ? Object.values(data.nik_photos).filter(p => p.photo).length : 0;
           const nikCount = data.niks_found?.length || 0;
           if (nikCount > 0) {
