@@ -3768,6 +3768,48 @@ def extract_niks_only(text: str) -> list:
     return niks_only
 
 
+def extract_passport_numbers(text: str) -> list:
+    """
+    Extract passport numbers from text.
+    Indonesian passport format: typically starts with A, B, C followed by 7-8 digits,
+    or just alphanumeric combinations.
+    Common patterns: A1234567, B12345678, etc.
+    """
+    import re
+    
+    passports_found = []
+    
+    # Pattern 1: Indonesian passport (letter followed by 7-8 digits)
+    # Examples: A1234567, B12345678
+    pattern1 = re.finditer(r'\b([A-Z]\d{7,8})\b', text, re.IGNORECASE)
+    for match in pattern1:
+        passport = match.group(1).upper()
+        if passport not in passports_found:
+            passports_found.append(passport)
+    
+    # Pattern 2: Look for explicitly labeled passport numbers
+    # Examples: "No Paspor: A1234567", "Passport: A1234567"
+    pattern2 = re.finditer(
+        r'(?:no\.?\s*)?(?:paspor|passport|pasport)\s*[:\-]?\s*([A-Z0-9]{6,10})',
+        text, re.IGNORECASE
+    )
+    for match in pattern2:
+        passport = match.group(1).upper()
+        if passport not in passports_found and len(passport) >= 6:
+            passports_found.append(passport)
+    
+    # Pattern 3: Generic alphanumeric pattern that looks like passport
+    # Must have at least one letter and one number, 7-9 characters
+    pattern3 = re.finditer(r'\b([A-Z]{1,2}\d{6,8}|\d{6,8}[A-Z]{1,2})\b', text, re.IGNORECASE)
+    for match in pattern3:
+        passport = match.group(1).upper()
+        if passport not in passports_found:
+            passports_found.append(passport)
+    
+    logger.info(f"[extract_passport_numbers] Found {len(passports_found)} passport numbers")
+    return passports_found
+
+
 def parse_nongeoint_response(text: str, query_type: str) -> dict:
     """Parse NON GEOINT response based on query type"""
     parsed = {}
