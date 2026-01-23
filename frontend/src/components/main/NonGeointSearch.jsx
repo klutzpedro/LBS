@@ -750,6 +750,103 @@ export const NonGeointSearchDialog = ({
     setIsSearching(false);
     setIsInvestigating(false);
     setIsLoadingFromHistory(false);
+    // Reset pagination states
+    setIsLoadingMorePhotos(false);
+    setHasMoreBatches(false);
+    setTotalNiks(0);
+    setPhotosFetched(0);
+    setCurrentBatch(0);
+    setCachedSearch(false);
+  };
+
+  // Handler to load more photos (next batch)
+  const handleLoadMorePhotos = async () => {
+    if (!searchResults?.id || isLoadingMorePhotos) return;
+    
+    setIsLoadingMorePhotos(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}/fetch-next-batch`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[NonGeoint] Load more response:', data);
+        
+        if (data.status === 'fetching') {
+          toast.info(`Mengambil ${data.niks_in_batch} foto berikutnya... (Batch ${data.batch}/${data.total_batches})`);
+          // Start polling for batch completion
+          startBatchPolling(searchResults.id);
+        } else if (data.status === 'all_completed') {
+          toast.success('Semua foto sudah diambil');
+          setHasMoreBatches(false);
+          setIsLoadingMorePhotos(false);
+        }
+      } else {
+        toast.error('Gagal mengambil foto berikutnya');
+        setIsLoadingMorePhotos(false);
+      }
+    } catch (error) {
+      console.error('Load more photos error:', error);
+      toast.error('Error mengambil foto berikutnya');
+      setIsLoadingMorePhotos(false);
+    }
+  };
+
+  // Polling for batch photo fetch completion
+  const startBatchPolling = (searchId) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/nongeoint/search/${searchId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status !== 'fetching_photos') {
+            clearInterval(pollInterval);
+            setIsLoadingMorePhotos(false);
+            setSearchResults(data);
+            setHasMoreBatches(data.has_more_batches || false);
+            setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
+            setCurrentBatch(data.current_batch || 0);
+            
+            // Refresh persons list with new photos
+            if (data.nik_photos) {
+              const persons = Object.entries(data.nik_photos)
+                .map(([nik, d]) => ({
+                  nik,
+                  nama: d.name || d.nama,
+                  name: d.name || d.nama,
+                  photo: d.photo,
+                  ttl: d.ttl,
+                  alamat: d.alamat,
+                  jk: d.jk,
+                  status: d.status,
+                  similarity: d.similarity || 0,
+                  batch: d.batch
+                }))
+                .sort((a, b) => b.similarity - a.similarity);
+              
+              setPersonsFound(persons);
+              toast.success(`Batch selesai! Menampilkan ${persons.length} dari ${data.total_niks} target`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Batch polling error:', error);
+      }
+    }, 3000);
+    
+    // Clear after 5 minutes max
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      setIsLoadingMorePhotos(false);
+    }, 300000);
   };
 
   // Load initial search if provided (from history)
