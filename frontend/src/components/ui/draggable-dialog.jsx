@@ -31,13 +31,15 @@ const DraggableDialogContent = React.forwardRef(
     const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
 
     const handleMouseDown = (e) => {
-      if (e.target.closest('.drag-handle')) {
+      // Only start dragging if clicking directly on drag handle
+      if (e.target.closest('.drag-handle') && !e.target.closest('button') && !e.target.closest('input')) {
         setIsDragging(true);
         setDragStart({
           x: e.clientX - position.x,
           y: e.clientY - position.y
         });
         e.preventDefault();
+        e.stopPropagation();
       }
     };
 
