@@ -4581,21 +4581,49 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 has_photo = bool(msg.photo)
                 has_doc = bool(msg.document)
                 has_text = bool(msg.text)
+                msg_date = msg.date.isoformat() if msg.date else "N/A"
                 text_preview = msg.text[:50] if msg.text else "N/A"
-                logger.info(f"[{query_token}]   Msg {i}: photo={has_photo}, doc={has_doc}, text={has_text}, preview='{text_preview}...'")
+                logger.info(f"[{query_token}]   Msg {i}: id={msg.id}, date={msg_date}, photo={has_photo}, doc={has_doc}, text={has_text}, preview='{text_preview}...'")
             
-            # FIRST: Look for photo in RECENT messages (WITH time filter)
-            # Photo must arrive AFTER our query to be valid for this NIK
-            if not photo_base64:
+            # CRITICAL FIX: Find the response message that contains our NIK first
+            # Then only accept photos from THAT message or messages immediately after it
+            target_msg_id = None
+            target_msg_date = None
+            
+            for msg in response_messages:
+                # Skip old messages
+                if msg.date < time_threshold:
+                    continue
+                
+                if msg.text:
+                    msg_text = msg.text.lower()
+                    # Check if this message is the response for OUR NIK
+                    # It should contain the NIK we queried
+                    if nik in msg.text or nik.lower() in msg_text:
+                        target_msg_id = msg.id
+                        target_msg_date = msg.date
+                        logger.info(f"[{query_token}] Found target response message: id={msg.id}, date={msg.date}")
+                        break
+            
+            # PHOTO RETRIEVAL: Only look for photos if we found the target message
+            # And only accept photos from messages AFTER or AT the target message
+            if not photo_base64 and target_msg_date:
                 for msg in response_messages:
-                    # IMPORTANT: Skip messages that are too old (before our query)
-                    if msg.date < time_threshold:
+                    # Photo must be:
+                    # 1. From message at or after our target response
+                    # 2. Within 10 seconds of the target response (to prevent grabbing old photos)
+                    if not target_msg_date:
+                        continue
+                    
+                    time_diff = (msg.date - target_msg_date).total_seconds()
+                    # Accept photos from -2 to +10 seconds relative to target message
+                    if time_diff < -2 or time_diff > 10:
                         continue
                     
                     # Check for photo attribute
                     if msg.photo:
                         try:
-                            logger.info(f"[{query_token}] Found msg.photo in RECENT message (id={msg.id}, date={msg.date}), downloading...")
+                            logger.info(f"[{query_token}] Found msg.photo near target message (id={msg.id}, date={msg.date}, diff={time_diff}s), downloading...")
                             photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                             if photo_bytes:
                                 import base64
