@@ -1189,10 +1189,22 @@ export const NonGeointSearchDialog = ({
       addSection('2. HASIL PASSPORT WNI');
       const passWni = searchResults.results.pass_wni;
       addText(`Status: ${passWni.status}`);
-      if (passWni.data) {
-        Object.entries(passWni.data).forEach(([key, value]) => {
-          addText(`${key}: ${value}`);
+      // Show passport numbers found
+      if (passWni.passports_found?.length > 0) {
+        addText(`No. Paspor Ditemukan (${passWni.passports_found.length}):`);
+        passWni.passports_found.forEach((passport, idx) => {
+          addText(`   ${idx + 1}. ${passport}`);
         });
+      }
+      if (passWni.data) {
+        addText('Data Detail:');
+        Object.entries(passWni.data).forEach(([key, value]) => {
+          addText(`   ${key}: ${value}`);
+        });
+      }
+      if (passWni.raw_text && !passWni.data) {
+        addText('Raw Data:');
+        addText(passWni.raw_text.substring(0, 800));
       }
     }
 
@@ -1201,10 +1213,22 @@ export const NonGeointSearchDialog = ({
       addSection('3. HASIL PASSPORT WNA');
       const passWna = searchResults.results.pass_wna;
       addText(`Status: ${passWna.status}`);
-      if (passWna.data) {
-        Object.entries(passWna.data).forEach(([key, value]) => {
-          addText(`${key}: ${value}`);
+      // Show passport numbers found
+      if (passWna.passports_found?.length > 0) {
+        addText(`No. Paspor Ditemukan (${passWna.passports_found.length}):`);
+        passWna.passports_found.forEach((passport, idx) => {
+          addText(`   ${idx + 1}. ${passport}`);
         });
+      }
+      if (passWna.data) {
+        addText('Data Detail:');
+        Object.entries(passWna.data).forEach(([key, value]) => {
+          addText(`   ${key}: ${value}`);
+        });
+      }
+      if (passWna.raw_text && !passWna.data) {
+        addText('Raw Data:');
+        addText(passWna.raw_text.substring(0, 800));
       }
     }
 
