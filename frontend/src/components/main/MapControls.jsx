@@ -61,7 +61,7 @@ export const MapControls = ({
       className="absolute top-4 z-[1000] flex flex-col gap-2"
       style={{ 
         pointerEvents: 'auto',
-        right: '16px',
+        right: '8px',
         transition: 'right 300ms'
       }}
     >
