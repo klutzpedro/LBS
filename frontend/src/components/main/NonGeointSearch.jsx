@@ -505,7 +505,11 @@ const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
   return (
     <div 
       className={`p-3 rounded-md border cursor-pointer transition-all ${isSelected ? 'ring-2' : ''}`}
-      onClick={onSelect}
+      onClick={() => {
+        console.log('[PersonSelectionCard] Clicked! index:', index, 'person:', person);
+        onSelect();
+      }}
+      data-testid={`person-card-${index}`}
       style={{
         backgroundColor: isSelected 
           ? 'var(--accent-primary-transparent)' 
