@@ -1682,11 +1682,13 @@ export const NonGeointSearchDialog = ({
                     ))}
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mt-4" style={{ position: 'relative', zIndex: 20 }}>
                     <button
                       type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         console.log('[NonGeoint] Lanjutkan button clicked! selectedPersonIndex:', selectedPersonIndex);
                         if (selectedPersonIndex !== null) {
                           confirmPersonSelection();
@@ -1695,13 +1697,15 @@ export const NonGeointSearchDialog = ({
                         }
                       }}
                       disabled={selectedPersonIndex === null}
-                      className="w-full py-3 px-4 rounded-md font-semibold transition-all"
+                      className="w-full py-3 px-4 rounded-md font-semibold transition-all hover:opacity-90 active:scale-95"
                       style={{
                         backgroundColor: selectedPersonIndex === null ? '#6b7280' : 'var(--accent-primary)',
                         color: 'white',
                         opacity: selectedPersonIndex === null ? 0.6 : 1,
                         cursor: selectedPersonIndex === null ? 'not-allowed' : 'pointer',
-                        pointerEvents: 'auto'
+                        pointerEvents: 'auto',
+                        position: 'relative',
+                        zIndex: 25
                       }}
                     >
                       {selectedPersonIndex === null 
