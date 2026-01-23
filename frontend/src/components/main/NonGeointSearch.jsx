@@ -258,6 +258,29 @@ const ResultDetailDialog = ({ open, onClose, queryType, result, nik = null }) =>
             </div>
           )}
 
+          {/* Passports Found */}
+          {result?.passports_found?.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                No. Paspor Ditemukan:
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {result.passports_found.map(p => (
+                  <span 
+                    key={p}
+                    className="px-2 py-1 rounded text-xs font-mono"
+                    style={{ 
+                      backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                      color: '#f59e0b'
+                    }}
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Parsed Data */}
           {result?.data && Object.keys(result.data).length > 0 && (
             <div>
