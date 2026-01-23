@@ -1530,6 +1530,12 @@ async def execute_schedule(schedule_id: str, username: str = Depends(verify_toke
     
     target_id = target['id']
     
+    # Check quota first - IMPORTANT: Schedule also uses CP API quota
+    quota = await get_cp_api_quota()
+    if quota <= 0:
+        logging.warning(f"[SCHEDULE] Quota habis, tidak bisa execute schedule untuk {phone_number}")
+        raise HTTPException(status_code=400, detail="Quota CP API habis (0 tersisa)")
+    
     # Update schedule with last_run and calculate next_run
     now = datetime.now(timezone.utc)
     interval_type = schedule.get('interval_type', 'hourly')
@@ -1554,21 +1560,43 @@ async def execute_schedule(schedule_id: str, username: str = Depends(verify_toke
         }}
     )
     
+    # Save current position to history BEFORE updating (like refresh does)
+    if target.get('data') and target['data'].get('latitude') and target['data'].get('longitude'):
+        lat = float(target['data']['latitude'])
+        lng = float(target['data']['longitude'])
+        address = target['data'].get('address')
+        cp_timestamp = target['data'].get('timestamp')
+        
+        # Check if this exact position is already in history
+        existing = await db.position_history.find_one({
+            "target_id": target_id,
+            "latitude": lat,
+            "longitude": lng
+        })
+        
+        if not existing:
+            await save_position_history(target_id, phone_number, lat, lng, address, cp_timestamp)
+            logging.info(f"[SCHEDULE] Saved previous position to history for {phone_number}")
+    
     # Set target to processing state
     await db.targets.update_one(
         {"id": target_id},
-        {"$set": {"status": "processing"}}
+        {"$set": {
+            "status": "processing",
+            "previous_position": target.get('data')  # Store previous position for reference
+        }}
     )
     
-    # Process in background - update position via Telegram
-    asyncio.create_task(query_telegram_bot(target_id, phone_number))
+    logging.info(f"[SCHEDULE] Executing scheduled update for {phone_number} via CP API (schedule: {schedule_id})")
     
-    logging.info(f"[SCHEDULE] Executing scheduled update for {phone_number} (schedule: {schedule_id})")
+    # Process in background - NOW uses CP API instead of Telegram bot
+    asyncio.create_task(query_cp_api_refresh(target_id, phone_number))
     
     return {
-        "message": f"Updating position for {phone_number}",
+        "message": f"Updating position for {phone_number} via CP API",
         "target_id": target_id,
-        "next_run": next_run.isoformat()
+        "next_run": next_run.isoformat(),
+        "quota_remaining": quota - 1
     }
 
 # Settings Routes
