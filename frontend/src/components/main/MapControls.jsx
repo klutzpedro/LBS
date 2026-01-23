@@ -58,20 +58,20 @@ export const MapControls = ({
 
   return (
     <div 
-      className="absolute top-4 z-[1000] flex flex-col gap-2"
+      className="absolute top-4 z-[1000] flex flex-row gap-3"
       style={{ 
         pointerEvents: 'auto',
         right: '8px',
         transition: 'right 300ms'
       }}
     >
-      {/* Map Type Selector */}
+      {/* Map Type Selector - Left Side */}
       <div 
-        className="rounded-lg border p-3"
+        className="rounded-lg border p-3 self-start"
         style={{
           backgroundColor: 'var(--background-elevated)',
           borderColor: 'var(--borders-default)',
-          minWidth: '180px'
+          minWidth: '160px'
         }}
       >
         <div className="flex items-center gap-2 mb-2">
@@ -101,7 +101,7 @@ export const MapControls = ({
               backgroundColor: 'var(--background-elevated)',
               borderColor: 'var(--borders-strong)',
               color: 'var(--foreground-primary)',
-              minWidth: '180px'
+              minWidth: '160px'
             }}
           >
             {Object.entries(mapTiles).map(([key, tile]) => (
@@ -113,106 +113,109 @@ export const MapControls = ({
         </Select>
       </div>
 
-      {/* Maximize Button */}
-      <Button
-        onClick={onToggleMaximize}
-        data-testid="maximize-map-button"
-        size="icon"
-        className="w-10 h-10 border"
-        style={{
-          backgroundColor: 'var(--background-elevated)',
-          borderColor: 'var(--borders-default)',
-          color: 'var(--accent-primary)'
-        }}
-      >
-        {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-      </Button>
-
-      {/* Toggle Marker Names */}
-      <Button
-        onClick={onToggleMarkerNames}
-        size="icon"
-        className="w-10 h-10 border"
-        title={showMarkerNames ? "Sembunyikan Nama" : "Tampilkan Nama"}
-        style={{
-          backgroundColor: showMarkerNames ? 'var(--accent-primary)' : 'var(--background-elevated)',
-          borderColor: 'var(--borders-default)',
-          color: showMarkerNames ? 'var(--background-primary)' : 'var(--accent-primary)'
-        }}
-      >
-        {showMarkerNames ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-      </Button>
-
-      {/* AOI Panel Toggle */}
-      <Button
-        onClick={onOpenAOIPanel}
-        size="icon"
-        className="w-10 h-10 border"
-        title="Area of Interest (AOI)"
-        style={{
-          backgroundColor: aoiAlerts.length > 0 ? 'var(--status-error)' : 'var(--background-elevated)',
-          borderColor: 'var(--borders-default)',
-          color: aoiAlerts.length > 0 ? 'white' : 'var(--accent-secondary)'
-        }}
-      >
-        <Target className="w-5 h-5" />
-      </Button>
-
-      {/* Drawing Mode Indicator */}
-      {drawingMode && (
-        <DrawingIndicator 
-          drawingMode={drawingMode}
-          drawingPoints={drawingPoints}
-          drawingColor={drawingColor}
-          onDrawingColorChange={onDrawingColorChange}
-          onFinishDrawing={onFinishDrawing}
-          onCancelDrawing={onCancelDrawing}
-        />
-      )}
-
-      {/* Add Target (Floating) */}
-      {selectedCase && !drawingMode && (
+      {/* Control Buttons - Right Side (Vertical) */}
+      <div className="flex flex-col gap-2">
+        {/* Maximize Button */}
         <Button
-          onClick={onAddTarget}
-          data-testid="floating-add-target"
-          className="w-12 h-12 rounded-full shadow-lg"
+          onClick={onToggleMaximize}
+          data-testid="maximize-map-button"
+          size="icon"
+          className="w-10 h-10 border"
           style={{
-            backgroundColor: 'var(--accent-primary)',
-            color: 'var(--background-primary)'
+            backgroundColor: 'var(--background-elevated)',
+            borderColor: 'var(--borders-default)',
+            color: 'var(--accent-primary)'
           }}
         >
-          <Plus className="w-6 h-6" />
+          {isMaximized ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
         </Button>
-      )}
 
-      {/* Chat History Toggle */}
-      {!drawingMode && (
-        <div className="relative">
+        {/* Toggle Marker Names */}
+        <Button
+          onClick={onToggleMarkerNames}
+          size="icon"
+          className="w-10 h-10 border"
+          title={showMarkerNames ? "Sembunyikan Nama" : "Tampilkan Nama"}
+          style={{
+            backgroundColor: showMarkerNames ? 'var(--accent-primary)' : 'var(--background-elevated)',
+            borderColor: 'var(--borders-default)',
+            color: showMarkerNames ? 'var(--background-primary)' : 'var(--accent-primary)'
+          }}
+        >
+          {showMarkerNames ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+        </Button>
+
+        {/* AOI Panel Toggle */}
+        <Button
+          onClick={onOpenAOIPanel}
+          size="icon"
+          className="w-10 h-10 border"
+          title="Area of Interest (AOI)"
+          style={{
+            backgroundColor: aoiAlerts.length > 0 ? 'var(--status-error)' : 'var(--background-elevated)',
+            borderColor: 'var(--borders-default)',
+            color: aoiAlerts.length > 0 ? 'white' : 'var(--accent-secondary)'
+          }}
+        >
+          <Target className="w-5 h-5" />
+        </Button>
+
+        {/* Drawing Mode Indicator */}
+        {drawingMode && (
+          <DrawingIndicator 
+            drawingMode={drawingMode}
+            drawingPoints={drawingPoints}
+            drawingColor={drawingColor}
+            onDrawingColorChange={onDrawingColorChange}
+            onFinishDrawing={onFinishDrawing}
+            onCancelDrawing={onCancelDrawing}
+          />
+        )}
+
+        {/* Add Target (Floating) */}
+        {selectedCase && !drawingMode && (
           <Button
-            onClick={onShowChatPanel}
-            data-testid="toggle-chat-button"
+            onClick={onAddTarget}
+            data-testid="floating-add-target"
             className="w-12 h-12 rounded-full shadow-lg"
             style={{
-              backgroundColor: 'var(--background-elevated)',
-              color: 'var(--accent-primary)',
-              border: '2px solid var(--accent-primary)'
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--background-primary)'
             }}
           >
-            <MessageSquare className="w-6 h-6" />
+            <Plus className="w-6 h-6" />
           </Button>
-          {/* Red blinking indicator for active queries */}
-          {hasActiveQueries && (
-            <div 
-              className="absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full animate-pulse"
-              style={{ 
-                top: '-6px',
-                backgroundColor: 'var(--status-error)',
-                boxShadow: '0 0 12px var(--status-error)'
+        )}
+
+        {/* Chat History Toggle */}
+        {!drawingMode && (
+          <div className="relative">
+            <Button
+              onClick={onShowChatPanel}
+              data-testid="toggle-chat-button"
+              className="w-12 h-12 rounded-full shadow-lg"
+              style={{
+                backgroundColor: 'var(--background-elevated)',
+                color: 'var(--accent-primary)',
+                border: '2px solid var(--accent-primary)'
               }}
-            />
-          )}
-        </div>
-      )}
+            >
+              <MessageSquare className="w-6 h-6" />
+            </Button>
+            {/* Red blinking indicator for active queries */}
+            {hasActiveQueries && (
+              <div 
+                className="absolute left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full animate-pulse"
+                style={{ 
+                  top: '-6px',
+                  backgroundColor: 'var(--status-error)',
+                  boxShadow: '0 0 12px var(--status-error)'
+                }}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
