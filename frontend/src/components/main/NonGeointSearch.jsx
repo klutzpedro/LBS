@@ -1438,9 +1438,9 @@ export const NonGeointSearchDialog = ({
           className="fixed bottom-4 right-4 z-50 p-3 rounded-lg shadow-xl cursor-pointer hover:scale-105 transition-all"
           onClick={() => setIsMinimized(false)}
           style={{
-            backgroundColor: isInvestigating ? '#ef4444' : 'var(--accent-primary)',
+            backgroundColor: (isSearching || isInvestigating) ? '#ef4444' : 'var(--accent-primary)',
             color: 'white',
-            animation: isInvestigating ? 'pulse 2s infinite' : 'none'
+            animation: (isSearching || isInvestigating) ? 'pulse 2s infinite' : 'none'
           }}
         >
           <style>
@@ -1452,7 +1452,12 @@ export const NonGeointSearchDialog = ({
             `}
           </style>
           <div className="flex items-center gap-2">
-            {isInvestigating ? (
+            {isSearching ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm font-semibold">Pencarian Berjalan...</span>
+              </>
+            ) : isInvestigating ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm font-semibold">Pendalaman Berjalan...</span>
