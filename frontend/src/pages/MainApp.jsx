@@ -676,6 +676,13 @@ const MainApp = () => {
     if (!scheduleId) return;
     if (executingSchedulesRef.current.has(scheduleId)) return;
     
+    // Check if schedule still exists before executing
+    const scheduleExists = activeSchedules.find(s => s.id === scheduleId && s.active);
+    if (!scheduleExists) {
+      console.log(`[Schedule] Schedule ${scheduleId} no longer exists or is inactive, skipping execution`);
+      return;
+    }
+    
     executingSchedulesRef.current.add(scheduleId);
     
     try {
