@@ -1993,7 +1993,7 @@ export const NonGeointSearchDialog = ({
                         ℹ️ Target memiliki {totalNiks} nama yang mirip
                       </p>
                       <p className="text-xs mt-1" style={{ color: '#60a5fa' }}>
-                        Saat ini ditampilkan {photosFetched} foto. Jika target tidak ditemukan, klik "Muat Lebih Banyak" untuk melihat kandidat lainnya.
+                        Saat ini ditampilkan {photosFetched} foto. Jika target tidak ditemukan, klik &quot;Muat Lebih Banyak&quot; untuk melihat kandidat lainnya.
                       </p>
                     </div>
                   )}
