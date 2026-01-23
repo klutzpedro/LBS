@@ -1340,20 +1340,25 @@ export const NonGeointSearchDialog = ({
     if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed') return 'searching';
     
-    // Show person selection if we have nik_photos AND showPersonSelection is true
+    // PRIORITY 1: If investigation exists (from history), show investigation results
+    if (investigation) {
+      return 'investigation';
+    }
+    
+    // PRIORITY 2: If currently investigating, show investigation step
+    if (isInvestigating) {
+      return 'investigation';
+    }
+    
+    // PRIORITY 3: Show person selection if we have nik_photos AND showPersonSelection is true
     if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       // Only show person selection if showPersonSelection is true
       if (showPersonSelection) {
         return 'select_person';
       }
-      // Person already selected, check if we should show NIK selection or investigation
+      // Person already selected, check if we should show NIK selection
       if (selectedNiks.length > 0) {
-        // Has selected NIKs, check if we should investigate
-        if (!investigation && !isInvestigating) {
-          return 'select_nik';
-        }
-        // Investigation in progress or completed
-        return 'investigation';
+        return 'select_nik';
       }
       // No NIKs selected yet but person selection done, go to NIK selection
       return 'select_nik';
@@ -1361,8 +1366,10 @@ export const NonGeointSearchDialog = ({
     
     // Legacy: show person selection from CAPIL extraction
     if (showPersonSelection && personsFound.length > 1) return 'select_person';
-    if (!investigation && !isInvestigating && searchResults.niks_found?.length > 0) return 'select_nik';
-    if (isInvestigating || investigation) return 'investigation';
+    
+    // If we have NIKs found but no investigation yet, show NIK selection
+    if (searchResults.niks_found?.length > 0) return 'select_nik';
+    
     return 'no_results';
   };
 
