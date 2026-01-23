@@ -1355,6 +1355,9 @@ export const NonGeointSearchDialog = ({
 
   // Determine current step
   const getCurrentStep = () => {
+    // PRIORITY 0: Show loading when loading from history (prevents form flash)
+    if (isLoadingFromHistory) return 'loading';
+    
     if (isSearching) return 'searching';
     if (!searchResults) return 'input';
     // Show searching while fetching photos
