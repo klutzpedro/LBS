@@ -3634,8 +3634,9 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         parsed_data = None
         all_raw_text = []
         niks_found = []
+        passports_found = []  # NEW: Track passport numbers
         
-        # First pass: collect ONLY NIKs (exclude Family IDs/No KK)
+        # First pass: collect ONLY NIKs (exclude Family IDs/No KK) and passports
         for msg in response_messages:
             if msg.text:
                 # Extract 16-digit numbers but filter out Family IDs
@@ -3645,8 +3646,16 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
                         niks_found.append(nik)
                         logger.info(f"[{query_token}] Found NIK: {nik}")
                 
+                # Extract passport numbers for pass_wni and pass_wna queries
+                if query_type in ['pass_wni', 'pass_wna']:
+                    extracted_passports = extract_passport_numbers(msg.text)
+                    for passport in extracted_passports:
+                        if passport not in passports_found:
+                            passports_found.append(passport)
+                            logger.info(f"[{query_token}] Found Passport: {passport}")
+                
                 # Collect raw text if relevant
-                if name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or len(extracted_niks) > 0:
+                if name.lower() in msg.text.lower() or 'nik' in msg.text.lower() or len(extracted_niks) > 0 or len(passports_found) > 0:
                     all_raw_text.append(msg.text)
         
         raw_text = '\n---\n'.join(all_raw_text) if all_raw_text else None
