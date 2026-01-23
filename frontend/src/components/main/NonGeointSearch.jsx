@@ -1673,9 +1673,17 @@ export const NonGeointSearchDialog = ({
                         </div>
                       </div>
                       
+                      {/* Show NIKs found */}
                       {result?.niks_found?.length > 0 && (
                         <div className="mt-2 text-xs" style={{ color: 'var(--foreground-muted)' }}>
                           NIK: {result.niks_found.join(', ')}
+                        </div>
+                      )}
+                      
+                      {/* Show Passport numbers found (for pass_wni and pass_wna) */}
+                      {result?.passports_found?.length > 0 && (
+                        <div className="mt-2 text-xs" style={{ color: 'var(--accent-secondary)' }}>
+                          No. Paspor: {result.passports_found.join(', ')}
                         </div>
                       )}
                     </div>
