@@ -820,6 +820,12 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
+    // SKIP person selection setup if investigation already exists (loaded from history)
+    if (investigation) {
+      console.log('[NonGeoint] Investigation exists from history, skipping person selection setup');
+      return;
+    }
+    
     // Check if we have nik_photos from backend (new flow with auto photo fetch)
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
