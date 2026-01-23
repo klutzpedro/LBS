@@ -978,19 +978,23 @@ const MainApp = () => {
     e.preventDefault();
     
     try {
+      const token = localStorage.getItem('token');
       await axios.post(`${API}/schedules`, {
         case_id: selectedTargetForSchedule.case_id,
         phone_number: selectedTargetForSchedule.phone_number,
         interval_type: scheduleInterval.type,
         interval_value: scheduleInterval.value,
         active: true
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Jadwal berhasil dibuat!');
       setScheduleDialogOpen(false);
       setScheduleInterval({ type: 'hourly', value: 1 });
       fetchSchedules();
     } catch (error) {
-      toast.error('Gagal membuat jadwal');
+      console.error('Create schedule error:', error);
+      toast.error('Gagal membuat jadwal: ' + (error.response?.data?.detail || error.message));
     }
   };
 
