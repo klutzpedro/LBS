@@ -578,7 +578,14 @@ const MainApp = () => {
   useEffect(() => {
     if (selectedCase) {
       fetchTargets(selectedCase.id);
-      const interval = setInterval(() => fetchTargets(selectedCase.id), 3000);
+      // Poll less frequently (10 seconds) to reduce UI updates
+      // Only poll when there's a processing target
+      const interval = setInterval(() => {
+        const hasProcessing = targets.some(t => t.status === 'processing');
+        if (hasProcessing) {
+          fetchTargets(selectedCase.id);
+        }
+      }, 10000);
       return () => clearInterval(interval);
     }
   }, [selectedCase]);
