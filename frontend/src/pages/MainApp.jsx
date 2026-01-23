@@ -703,9 +703,10 @@ const MainApp = () => {
             toast.success(`Posisi ${updatedTarget.phone_number} diperbarui!`, { duration: 2000 });
             executingSchedulesRef.current.delete(scheduleId);
             
-            // Only update selected target if it's the one being refreshed
-            if (selectedTarget?.id === updatedTarget.id) {
-              setSelectedTarget(updatedTarget);
+            // Update chat target if it's the one being refreshed
+            if (selectedTargetForChat === updatedTarget.id) {
+              // Target data is already updated in the targets array above
+              // No need to set separate state
             }
             
             // Smooth pan to new position WITHOUT remounting the map
