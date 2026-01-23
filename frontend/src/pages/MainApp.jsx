@@ -766,10 +766,19 @@ const MainApp = () => {
       await axios.delete(`${API}/schedules/${scheduleId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Remove from executing schedules if it was running
+      executingSchedulesRef.current.delete(scheduleId);
+      
+      // Immediately update local state to remove the schedule
+      setActiveSchedules(prev => prev.filter(s => s.id !== scheduleId));
+      
       toast.success('Penjadwalan dibatalkan');
+      // Also fetch from server to ensure sync
       fetchSchedules();
     } catch (error) {
-      toast.error('Gagal membatalkan penjadwalan');
+      console.error('Cancel schedule error:', error);
+      toast.error('Gagal membatalkan penjadwalan: ' + (error.response?.data?.detail || error.message));
     }
   };
 
