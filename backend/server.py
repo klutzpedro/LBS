@@ -3270,28 +3270,38 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
     
     # ============================================
     # CHECK CACHE: Look for existing search with same name
+    # Only use cache if pagination was properly done (photos_fetched_count <= batch_size for first batch)
     # ============================================
     existing_search = await db.nongeoint_searches.find_one(
         {
             "name_normalized": search_name,
-            "status": {"$in": ["completed", "waiting_selection", "fetching_photos"]},
-            "niks_found": {"$exists": True, "$ne": []}
+            "status": {"$in": ["completed", "waiting_selection"]},
+            "niks_found": {"$exists": True, "$ne": []},
+            # Only use cache if it was created with pagination
+            "batch_size": {"$exists": True}
         },
         {"_id": 0}
     )
     
     if existing_search:
-        logger.info(f"[NONGEOINT] CACHE HIT: Found existing search for '{search_name}' (id: {existing_search['id']})")
-        
-        # Return cached search - frontend will use this data
-        return {
-            "search_id": existing_search['id'],
-            "status": existing_search.get('status', 'completed'),
-            "message": "Menggunakan data cache dari pencarian sebelumnya",
-            "cached": True,
-            "total_niks": len(existing_search.get('niks_found', [])),
-            "photos_fetched": len(existing_search.get('nik_photos', {}))
-        }
+        # Verify cache is valid (has pagination fields)
+        if existing_search.get('batch_size') and existing_search.get('total_niks'):
+            logger.info(f"[NONGEOINT] CACHE HIT: Found existing search for '{search_name}' (id: {existing_search['id']})")
+            
+            # Return cached search - frontend will use this data
+            return {
+                "search_id": existing_search['id'],
+                "status": existing_search.get('status', 'completed'),
+                "message": "Menggunakan data cache dari pencarian sebelumnya",
+                "cached": True,
+                "total_niks": existing_search.get('total_niks', len(existing_search.get('niks_found', []))),
+                "photos_fetched": existing_search.get('photos_fetched_count', len(existing_search.get('nik_photos', {}))),
+                "has_more_batches": existing_search.get('has_more_batches', False)
+            }
+        else:
+            # Old cache without pagination - delete it and create new search
+            logger.info(f"[NONGEOINT] Found OLD cache without pagination for '{search_name}', deleting and creating new search")
+            await db.nongeoint_searches.delete_one({"id": existing_search['id']})
     
     # ============================================
     # NEW SEARCH: No cache found
