@@ -1957,9 +1957,40 @@ export const NonGeointSearchDialog = ({
                       className="text-sm font-semibold"
                       style={{ color: 'var(--foreground-secondary)' }}
                     >
-                      Pilih Target ({personsFound.length} hasil ditemukan)
+                      Pilih Target ({personsFound.length} dari {totalNiks} ditampilkan)
                     </h3>
                   </div>
+                  
+                  {/* Pagination Info Banner */}
+                  {hasMoreBatches && (
+                    <div 
+                      className="mb-3 p-3 rounded-md border"
+                      style={{
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: '#3b82f6'
+                      }}
+                    >
+                      <p className="text-sm font-semibold" style={{ color: '#3b82f6' }}>
+                        ℹ️ Target memiliki {totalNiks} nama yang mirip
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: '#60a5fa' }}>
+                        Saat ini ditampilkan {photosFetched} foto. Jika target tidak ditemukan, klik "Muat Lebih Banyak" untuk melihat kandidat lainnya.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Cache Info */}
+                  {cachedSearch && (
+                    <div 
+                      className="mb-3 p-2 rounded-md text-xs"
+                      style={{
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        color: '#22c55e'
+                      }}
+                    >
+                      ✓ Data dimuat dari cache (pencarian sebelumnya)
+                    </div>
+                  )}
                   
                   <p className="text-xs mb-3" style={{ color: 'var(--foreground-muted)' }}>
                     Pilih target berdasarkan foto dan NIK untuk melanjutkan pendalaman.
@@ -1986,6 +2017,44 @@ export const NonGeointSearchDialog = ({
                         }}
                       />
                     ))}
+                    
+                    {/* Load More Card */}
+                    {hasMoreBatches && (
+                      <div 
+                        className="flex-shrink-0 p-3 rounded-md border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-all"
+                        onClick={handleLoadMorePhotos}
+                        style={{
+                          minWidth: '160px',
+                          height: '180px',
+                          borderColor: isLoadingMorePhotos ? '#f59e0b' : '#3b82f6',
+                          backgroundColor: isLoadingMorePhotos ? 'rgba(245, 158, 11, 0.1)' : 'rgba(59, 130, 246, 0.1)'
+                        }}
+                      >
+                        {isLoadingMorePhotos ? (
+                          <>
+                            <Loader2 className="w-8 h-8 animate-spin mb-2" style={{ color: '#f59e0b' }} />
+                            <span className="text-xs font-semibold text-center" style={{ color: '#f59e0b' }}>
+                              Memuat...
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <div 
+                              className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+                              style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+                            >
+                              <span style={{ color: '#3b82f6', fontSize: '24px' }}>+</span>
+                            </div>
+                            <span className="text-xs font-semibold text-center" style={{ color: '#3b82f6' }}>
+                              Muat 10 Lainnya
+                            </span>
+                            <span className="text-xs text-center mt-1" style={{ color: '#60a5fa' }}>
+                              ({totalNiks - photosFetched} tersisa)
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4" style={{ position: 'relative', zIndex: 20 }}>
@@ -2019,10 +2088,10 @@ export const NonGeointSearchDialog = ({
                         : '✓ Lanjutkan dengan Target Terpilih'}
                     </button>
                     
-                    {/* Debug info */}
+                    {/* Selection status */}
                     <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
                       {selectedPersonIndex === null 
-                        ? 'Belum ada target dipilih' 
+                        ? `Belum ada target dipilih (${photosFetched}/${totalNiks} foto dimuat)` 
                         : `Target dipilih: ${personsFound[selectedPersonIndex]?.nama || personsFound[selectedPersonIndex]?.nik || 'Unknown'}`}
                     </p>
                   </div>
