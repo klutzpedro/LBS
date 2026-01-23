@@ -3576,6 +3576,34 @@ async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str],
                 {"$set": {"status": "waiting_selection", "error": str(e)}}
             )
 
+@api_router.post("/nongeoint/clear-cache")
+async def clear_nongeoint_cache(username: str = Depends(verify_token)):
+    """Clear all NON GEOINT search cache for fresh searches"""
+    result = await db.nongeoint_searches.delete_many({"created_by": username})
+    result2 = await db.nik_investigations.delete_many({"created_by": username})
+    
+    logger.info(f"[NONGEOINT] Cache cleared by {username}: {result.deleted_count} searches, {result2.deleted_count} investigations")
+    return {
+        "message": "Cache cleared successfully",
+        "deleted_searches": result.deleted_count,
+        "deleted_investigations": result2.deleted_count
+    }
+
+@api_router.post("/nongeoint/clear-cache/{name}")
+async def clear_nongeoint_cache_by_name(name: str, username: str = Depends(verify_token)):
+    """Clear NON GEOINT search cache for a specific name"""
+    search_name = name.strip().upper()
+    result = await db.nongeoint_searches.delete_many({
+        "name_normalized": search_name,
+        "created_by": username
+    })
+    
+    logger.info(f"[NONGEOINT] Cache cleared for '{search_name}' by {username}: {result.deleted_count} searches")
+    return {
+        "message": f"Cache cleared for '{name}'",
+        "deleted_searches": result.deleted_count
+    }
+
 @api_router.delete("/nongeoint/search/{search_id}")
 async def delete_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
     """Delete a NON GEOINT search and its associated investigation"""
