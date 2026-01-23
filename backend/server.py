@@ -3754,28 +3754,42 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                 )
                 logger.info(f"[NONGEOINT {search_id}] First batch photo fetch completed. {sum(1 for v in nik_photos.values() if v.get('photo'))} photos obtained")
             
-            # Mark status based on whether there are more NIKs to fetch
-            final_status = "waiting_selection" if has_more else "completed"
-            all_completed = not has_more
+                # Mark status based on whether there are more NIKs to fetch
+                final_status = "waiting_selection" if has_more else "completed"
+                all_completed = not has_more
+                
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {
+                        "status": final_status,
+                        "niks_found": all_niks,
+                        "nik_photos": nik_photos,
+                        "total_niks": total_niks,
+                        "photos_fetched_count": len(nik_photos),
+                        "current_batch": 1,
+                        "all_batches_completed": all_completed,
+                        "has_more_batches": has_more
+                    }}
+                )
+                
+                if has_more:
+                    logger.info(f"[NONGEOINT {search_id}] Search paused for selection. Showing {len(nik_photos)}/{total_niks} NIKs. User can load more.")
+                else:
+                    logger.info(f"[NONGEOINT {search_id}] Search completed. Found {total_niks} NIKs with {sum(1 for v in nik_photos.values() if v.get('photo'))} photos")
             
-            await db.nongeoint_searches.update_one(
-                {"id": search_id},
-                {"$set": {
-                    "status": final_status,
-                    "niks_found": all_niks,
-                    "nik_photos": nik_photos,
-                    "total_niks": total_niks,
-                    "photos_fetched_count": len(nik_photos),
-                    "current_batch": 1,
-                    "all_batches_completed": all_completed,
-                    "has_more_batches": has_more
-                }}
-            )
-            
-            if has_more:
-                logger.info(f"[NONGEOINT {search_id}] Search paused for selection. Showing {len(nik_photos)}/{total_niks} NIKs. User can load more.")
             else:
-                logger.info(f"[NONGEOINT {search_id}] Search completed. Found {total_niks} NIKs with {sum(1 for v in nik_photos.values() if v.get('photo'))} photos")
+                # No NIKs found
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {
+                        "status": "completed",
+                        "niks_found": [],
+                        "nik_photos": {},
+                        "total_niks": 0,
+                        "all_batches_completed": True
+                    }}
+                )
+                logger.info(f"[NONGEOINT {search_id}] Search completed. No NIKs found.")
             
         except Exception as e:
             logger.error(f"[NONGEOINT {search_id}] Error: {e}")
