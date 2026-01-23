@@ -4621,23 +4621,80 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 has_text = bool(msg.text)
                 msg_date = msg.date.isoformat() if msg.date else "N/A"
                 text_preview = msg.text[:50] if msg.text else "N/A"
-                logger.info(f"[{query_token}]   Msg {i}: id={msg.id}, date={msg_date}, photo={has_photo}, doc={has_doc}, text={has_text}, preview='{text_preview}...'")
+                contains_nik = nik in (msg.text or '') if msg.text else False
+                logger.info(f"[{query_token}]   Msg {i}: id={msg.id}, date={msg_date}, photo={has_photo}, contains_our_nik={contains_nik}, preview='{text_preview}...'")
             
-            # CRITICAL FIX: Find the response message that contains our NIK first
-            # Then only accept photos from THAT message or messages immediately after it
-            target_msg_id = None
-            target_msg_date = None
+            # ============================================
+            # CRITICAL FIX FOR PHOTO LEAKING:
+            # STEP A: Find messages that contain OUR SPECIFIC NIK
+            # STEP B: Only accept photos from messages that ALSO contain our NIK text
+            # ============================================
             
+            # STEP A: Find all messages containing our NIK (text messages)
+            our_nik_messages = []
             for msg in response_messages:
-                # Skip old messages
                 if msg.date < time_threshold:
                     continue
+                if msg.text and nik in msg.text:
+                    our_nik_messages.append(msg)
+                    logger.info(f"[{query_token}] Found message containing our NIK: id={msg.id}, date={msg.date}")
+            
+            # STEP B: Look for photo ONLY in messages related to our NIK
+            # Strategy 1: Photo in same message as our NIK text (caption)
+            # Strategy 2: Photo immediately after our NIK message (within 5 seconds, same sender)
+            
+            if not photo_base64 and our_nik_messages:
+                # Strategy 1: Check if any of our NIK messages has a photo
+                for nik_msg in our_nik_messages:
+                    if nik_msg.photo:
+                        try:
+                            logger.info(f"[{query_token}] Found photo IN SAME MESSAGE as NIK text (id={nik_msg.id})")
+                            photo_bytes = await telegram_client.download_media(nik_msg.photo, bytes)
+                            if photo_bytes:
+                                import base64
+                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                logger.info(f"[{query_token}] ✓ Downloaded photo from NIK message ({len(photo_bytes)} bytes)")
+                                break
+                        except Exception as e:
+                            logger.error(f"[{query_token}] Photo download error: {e}")
                 
-                if msg.text:
-                    msg_text = msg.text.lower()
-                    # Check if this message is the response for OUR NIK
-                    # It should contain the NIK we queried
-                    if nik in msg.text or nik.lower() in msg_text:
+                # Strategy 2: Check for photo immediately after our NIK message
+                if not photo_base64:
+                    for nik_msg in our_nik_messages:
+                        nik_msg_time = nik_msg.date
+                        for msg in response_messages:
+                            if msg.date < time_threshold:
+                                continue
+                            # Must be AFTER our NIK message, within 5 seconds
+                            time_diff = (msg.date - nik_msg_time).total_seconds()
+                            if time_diff >= 0 and time_diff <= 5:
+                                if msg.photo and msg.id != nik_msg.id:
+                                    # Extra check: this message should NOT contain a DIFFERENT NIK
+                                    if msg.text:
+                                        # Check if message text contains any 16-digit number that's NOT our NIK
+                                        other_niks = re.findall(r'\b\d{16}\b', msg.text)
+                                        if other_niks and nik not in other_niks:
+                                            logger.info(f"[{query_token}] Skipping photo - message contains different NIK(s): {other_niks}")
+                                            continue
+                                    
+                                    try:
+                                        logger.info(f"[{query_token}] Found photo AFTER NIK message (nik_msg_id={nik_msg.id}, photo_msg_id={msg.id}, diff={time_diff}s)")
+                                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                                        if photo_bytes:
+                                            import base64
+                                            photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                            logger.info(f"[{query_token}] ✓ Downloaded photo ({len(photo_bytes)} bytes)")
+                                            break
+                                    except Exception as e:
+                                        logger.error(f"[{query_token}] Photo download error: {e}")
+                        if photo_base64:
+                            break
+            
+            # If no NIK messages found, log warning
+            if not our_nik_messages:
+                logger.warning(f"[{query_token}] No messages found containing our NIK {nik}")
+            elif not photo_base64:
+                logger.info(f"[{query_token}] Found {len(our_nik_messages)} messages with our NIK but no associated photo")
                         target_msg_id = msg.id
                         target_msg_date = msg.date
                         logger.info(f"[{query_token}] Found target response message: id={msg.id}, date={msg.date}")
