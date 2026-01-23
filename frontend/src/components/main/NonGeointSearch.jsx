@@ -675,6 +675,14 @@ export const NonGeointSearchDialog = ({
   const [selectedPersonIndex, setSelectedPersonIndex] = useState(null);
   const [showPersonSelection, setShowPersonSelection] = useState(false);
   
+  // Pagination state for photo batches
+  const [isLoadingMorePhotos, setIsLoadingMorePhotos] = useState(false);
+  const [hasMoreBatches, setHasMoreBatches] = useState(false);
+  const [totalNiks, setTotalNiks] = useState(0);
+  const [photosFetched, setPhotosFetched] = useState(0);
+  const [currentBatch, setCurrentBatch] = useState(0);
+  const [cachedSearch, setCachedSearch] = useState(false);
+  
   // NIK selection
   const [selectedNiks, setSelectedNiks] = useState([]);
   const [isInvestigating, setIsInvestigating] = useState(false);
