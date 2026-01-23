@@ -1408,10 +1408,10 @@ export const NonGeointSearchDialog = ({
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
-              PROSES PENDALAMAN AKAN DILAKUKAN DI BACKGROUND
+              PROSES {isSearching ? 'PENCARIAN' : 'PENDALAMAN'} AKAN DILAKUKAN DI BACKGROUND
             </p>
             <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
-              Sementara Anda <strong className="text-red-500">TIDAK DAPAT</strong> melakukan pendalaman lain sampai proses ini selesai.
+              Sementara Anda <strong className="text-red-500">TIDAK DAPAT</strong> melakukan {isSearching ? 'pencarian' : 'pendalaman'} lain sampai proses ini selesai.
             </p>
           </div>
           <div className="flex gap-3 justify-end">
