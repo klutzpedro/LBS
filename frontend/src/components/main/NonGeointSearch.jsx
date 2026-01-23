@@ -944,7 +944,11 @@ export const NonGeointSearchDialog = ({
   };
 
   const handlePersonSelect = (index) => {
+    console.log('[NonGeoint] handlePersonSelect called with index:', index);
+    console.log('[NonGeoint] personsFound:', personsFound);
+    console.log('[NonGeoint] Current selectedPersonIndex:', selectedPersonIndex);
     setSelectedPersonIndex(index);
+    console.log('[NonGeoint] Set selectedPersonIndex to:', index);
   };
 
   const confirmPersonSelection = () => {
