@@ -752,7 +752,10 @@ const MainApp = () => {
     if (!window.confirm('Batalkan penjadwalan?')) return;
     
     try {
-      await axios.delete(`${API}/schedules/${scheduleId}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/schedules/${scheduleId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Penjadwalan dibatalkan');
       fetchSchedules();
     } catch (error) {
