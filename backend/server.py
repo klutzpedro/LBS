@@ -4311,14 +4311,18 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 text_preview = msg.text[:50] if msg.text else "N/A"
                 logger.info(f"[{query_token}]   Msg {i}: photo={has_photo}, doc={has_doc}, text={has_text}, preview='{text_preview}...'")
             
-            # FIRST: Look for photo in ALL messages WITHOUT time filter
-            # Photo might be in same message as text OR separate message
+            # FIRST: Look for photo in RECENT messages (WITH time filter)
+            # Photo must arrive AFTER our query to be valid for this NIK
             if not photo_base64:
                 for msg in response_messages:
+                    # IMPORTANT: Skip messages that are too old (before our query)
+                    if msg.date < time_threshold:
+                        continue
+                    
                     # Check for photo attribute
                     if msg.photo:
                         try:
-                            logger.info(f"[{query_token}] Found msg.photo in message (id={msg.id}), downloading...")
+                            logger.info(f"[{query_token}] Found msg.photo in RECENT message (id={msg.id}, date={msg.date}), downloading...")
                             photo_bytes = await telegram_client.download_media(msg.photo, bytes)
                             if photo_bytes:
                                 import base64
