@@ -4801,34 +4801,8 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             logger.info(f"[{query_token}] Returning best response found, photo: {'Yes' if best_response.get('photo') else 'No'}")
             return best_response
         
-        # If we have a response but no photo, try one more time specifically for photo
-        # BUT still apply time filter to ensure we only get photos from THIS query
-        if best_response and not photo_base64:
-            logger.info(f"[{query_token}] Got response but no photo, doing extra photo search with time filter...")
-            await asyncio.sleep(2)
-            async def get_photos():
-                return await telegram_client.get_messages(BOT_USERNAME, limit=20)
-            
-            photo_messages = await safe_telegram_operation(get_photos, f"get_photos_extra_{query_token}", max_retries=2)
-            if photo_messages:
-                for msg in photo_messages:
-                    # IMPORTANT: Only accept photos that arrived AFTER our query
-                    if msg.date < time_threshold:
-                        continue
-                    
-                    if msg.photo:
-                        try:
-                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                            if photo_bytes:
-                                import base64
-                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                best_response['photo'] = photo_base64
-                                logger.info(f"[{query_token}] ✓ Got photo in extra search ({len(photo_bytes)} bytes, date={msg.date})")
-                                break
-                        except Exception as e:
-                            logger.error(f"[{query_token}] Extra photo search error: {e}")
-            
-            return best_response
+        # REMOVED: Extra photo search - this caused photo leaking between NIKs
+        # Photos should only be found from messages associated with THIS NIK's response
         
         logger.warning(f"[{query_token}] No matching response found after all attempts")
         return {"status": "no_data", "error": "No matching response found"}
