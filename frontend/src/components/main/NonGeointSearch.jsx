@@ -2015,10 +2015,11 @@ export const NonGeointSearchDialog = ({
                     Pilih target berdasarkan foto dan NIK untuk melanjutkan pendalaman.
                   </p>
 
-                  {/* Horizontal scrollable grid for photos */}
+                  {/* Vertical scrollable grid for photos - 2 columns */}
                   <div 
-                    className="flex gap-3 overflow-x-auto pb-3"
+                    className="grid grid-cols-2 gap-3 overflow-y-auto pr-2"
                     style={{ 
+                      maxHeight: '400px',
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'var(--accent-primary) var(--background-tertiary)',
                       pointerEvents: 'auto'
@@ -2040,11 +2041,10 @@ export const NonGeointSearchDialog = ({
                     {/* Load More Card */}
                     {hasMoreBatches && (
                       <div 
-                        className="flex-shrink-0 p-3 rounded-md border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-all"
+                        className="p-3 rounded-md border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-all"
                         onClick={handleLoadMorePhotos}
                         style={{
-                          minWidth: '160px',
-                          height: '180px',
+                          minHeight: '180px',
                           borderColor: isLoadingMorePhotos ? '#f59e0b' : '#3b82f6',
                           backgroundColor: isLoadingMorePhotos ? 'rgba(245, 158, 11, 0.1)' : 'rgba(59, 130, 246, 0.1)'
                         }}
