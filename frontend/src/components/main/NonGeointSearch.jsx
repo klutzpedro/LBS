@@ -718,12 +718,14 @@ export const NonGeointSearchDialog = ({
     setShowPersonSelection(false);
     setIsSearching(false);
     setIsInvestigating(false);
+    setIsLoadingFromHistory(false);
   };
 
   // Load initial search if provided (from history)
   useEffect(() => {
     const loadSearchData = async () => {
       console.log('[NonGeoint] Loading search data for:', initialSearch?.id);
+      setIsLoadingFromHistory(true); // Set loading state BEFORE fetching
       
       try {
         const token = localStorage.getItem('token');
