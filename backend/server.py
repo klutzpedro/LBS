@@ -4695,18 +4695,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                 logger.warning(f"[{query_token}] No messages found containing our NIK {nik}")
             elif not photo_base64:
                 logger.info(f"[{query_token}] Found {len(our_nik_messages)} messages with our NIK but no associated photo")
-                        target_msg_id = msg.id
-                        target_msg_date = msg.date
-                        logger.info(f"[{query_token}] Found target response message: id={msg.id}, date={msg.date}")
-                        break
             
-            # PHOTO RETRIEVAL: Only look for photos if we found the target message
-            # And only accept photos from messages AFTER or AT the target message
-            if not photo_base64 and target_msg_date:
-                for msg in response_messages:
-                    # Photo must be:
-                    # 1. From message at or after our target response
-                    # 2. Within 10 seconds of the target response (to prevent grabbing old photos)
             # Filter messages by time for TEXT data only
             filtered_messages = []
             for msg in response_messages:
