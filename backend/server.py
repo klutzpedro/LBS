@@ -3679,15 +3679,21 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
                     break
         
         logger.info(f"[{query_token}] Total NIKs found (excluding Family IDs): {len(niks_found)}")
+        if passports_found:
+            logger.info(f"[{query_token}] Total Passports found: {len(passports_found)}")
         
-        if parsed_data or niks_found:
+        if parsed_data or niks_found or passports_found:
             logger.info(f"[{query_token}] Found {len(niks_found)} NIKs: {niks_found}")
-            return {
+            result = {
                 "status": "completed",
                 "data": parsed_data,
                 "raw_text": raw_text,
                 "niks_found": niks_found
             }
+            # Include passports_found only for passport queries
+            if query_type in ['pass_wni', 'pass_wna'] and passports_found:
+                result["passports_found"] = passports_found
+            return result
         else:
             return {
                 "status": "no_data",
