@@ -1294,6 +1294,12 @@ export const NonGeointSearchDialog = ({
         yPos += 3;
         addText(`${idx + 1}. NIK: ${nik}`, margin, 11, true);
         
+        // Add photo for this NIK if available from nik_photos
+        const nikPhotoData = searchResults?.nik_photos?.[nik];
+        if (nikPhotoData?.photo && nikPhotoData.photo.startsWith('data:')) {
+          addPhoto(nikPhotoData.photo, 30, 40);
+        }
+        
         // NIK Data
         if (nikResult?.nik_data) {
           addText('   [Data NIK]', margin, 10, true);
