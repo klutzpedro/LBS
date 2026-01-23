@@ -3377,6 +3377,195 @@ async def list_nongeoint_searches(username: str = Depends(verify_token)):
     
     return searches
 
+@api_router.post("/nongeoint/search/{search_id}/fetch-next-batch")
+async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_token)):
+    """
+    Fetch next batch of photos (10 at a time)
+    Called when user wants to see more candidates
+    """
+    search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
+    if not search:
+        raise HTTPException(status_code=404, detail="Search not found")
+    
+    all_niks = search.get("niks_found", [])
+    nik_photos = search.get("nik_photos", {})
+    current_batch = search.get("current_batch", 0)
+    batch_size = search.get("batch_size", PHOTO_BATCH_SIZE)
+    
+    # Calculate which NIKs to fetch in this batch
+    start_idx = current_batch * batch_size
+    end_idx = start_idx + batch_size
+    
+    # Get NIKs that haven't been fetched yet
+    niks_to_fetch = []
+    for i, nik in enumerate(all_niks):
+        if i >= start_idx and i < end_idx and nik not in nik_photos:
+            niks_to_fetch.append(nik)
+    
+    if not niks_to_fetch:
+        # Check if there are more batches
+        if end_idx >= len(all_niks):
+            return {
+                "status": "all_completed",
+                "message": "Semua foto sudah diambil",
+                "total_niks": len(all_niks),
+                "photos_fetched": len(nik_photos),
+                "has_more": False
+            }
+        else:
+            # Move to next batch
+            current_batch += 1
+            start_idx = current_batch * batch_size
+            end_idx = start_idx + batch_size
+            niks_to_fetch = [nik for i, nik in enumerate(all_niks) if i >= start_idx and i < end_idx and nik not in nik_photos]
+    
+    if not niks_to_fetch:
+        return {
+            "status": "all_completed", 
+            "message": "Semua foto sudah diambil",
+            "total_niks": len(all_niks),
+            "photos_fetched": len(nik_photos),
+            "has_more": False
+        }
+    
+    logger.info(f"[NONGEOINT {search_id}] Fetching next batch: {len(niks_to_fetch)} NIKs (batch {current_batch + 1})")
+    
+    # Update status
+    await db.nongeoint_searches.update_one(
+        {"id": search_id},
+        {"$set": {
+            "status": "fetching_photos",
+            "current_batch": current_batch,
+            "photo_fetch_progress": 0,
+            "photo_fetch_total": len(niks_to_fetch)
+        }}
+    )
+    
+    # Start background task to fetch this batch
+    asyncio.create_task(fetch_photo_batch(search_id, search.get("name", ""), niks_to_fetch, current_batch))
+    
+    return {
+        "status": "fetching",
+        "message": f"Mengambil {len(niks_to_fetch)} foto...",
+        "batch": current_batch + 1,
+        "total_batches": (len(all_niks) + batch_size - 1) // batch_size,
+        "niks_in_batch": len(niks_to_fetch),
+        "total_niks": len(all_niks),
+        "photos_fetched": len(nik_photos),
+        "has_more": end_idx < len(all_niks)
+    }
+
+async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str], batch_num: int):
+    """Background task to fetch a batch of photos"""
+    global telegram_client
+    
+    nik_photos = {}
+    
+    async with nongeoint_queue_lock:
+        try:
+            # Ensure Telegram connection
+            connected = await safe_telegram_operation(
+                lambda: ensure_telegram_connected(),
+                f"batch_photo_{search_id}",
+                max_retries=3
+            )
+            
+            if not connected:
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {"status": "waiting_selection", "error": "Telegram connection failed for batch"}}
+                )
+                return
+            
+            for idx, nik in enumerate(niks_to_fetch):
+                logger.info(f"[NONGEOINT {search_id}] Batch {batch_num + 1}: Fetching photo {idx + 1}/{len(niks_to_fetch)} for NIK: {nik}")
+                
+                # Update progress
+                await db.nongeoint_searches.update_one(
+                    {"id": search_id},
+                    {"$set": {
+                        "photo_fetch_progress": idx + 1,
+                        "photo_fetch_total": len(niks_to_fetch),
+                        "photo_fetch_current_nik": nik
+                    }}
+                )
+                
+                try:
+                    nik_result = await execute_nik_button_query(f"batch_{search_id}_{batch_num}", nik, "NIK")
+                    
+                    nik_photo_data = {
+                        "nik": nik,
+                        "photo": None,
+                        "name": None,
+                        "status": "unknown",
+                        "batch": batch_num
+                    }
+                    
+                    if nik_result:
+                        nik_photo_data["status"] = nik_result.get("status", "unknown")
+                        nik_photo_data["photo"] = nik_result.get("photo")
+                        
+                        if nik_result.get("data"):
+                            data = nik_result["data"]
+                            nik_photo_data["name"] = (
+                                data.get("Nama") or data.get("nama") or 
+                                data.get("NAMA") or data.get("Full Name") or data.get("Name")
+                            )
+                            nik_photo_data["ttl"] = data.get("TTL") or data.get("Tempat/Tgl Lahir")
+                            nik_photo_data["alamat"] = data.get("Alamat") or data.get("alamat")
+                            nik_photo_data["jk"] = data.get("Jenis Kelamin") or data.get("JK")
+                        
+                        if not nik_photo_data["name"] and nik_result.get("raw_text"):
+                            raw = nik_result["raw_text"]
+                            name_match = re.search(r'(?:nama|name)\s*[:\-]?\s*([^\n]+)', raw, re.IGNORECASE)
+                            if name_match:
+                                nik_photo_data["name"] = name_match.group(1).strip()
+                    
+                    # Calculate similarity
+                    found_name = nik_photo_data.get("name", "")
+                    similarity = check_name_similarity(name, found_name) if found_name else 0.0
+                    nik_photo_data["similarity"] = similarity
+                    
+                    nik_photos[nik] = nik_photo_data
+                    logger.info(f"[NONGEOINT {search_id}] NIK {nik}: photo={'Yes' if nik_photo_data.get('photo') else 'No'}, similarity={similarity:.2f}")
+                    
+                except Exception as nik_err:
+                    logger.error(f"[NONGEOINT {search_id}] Error fetching NIK {nik}: {nik_err}")
+                    nik_photos[nik] = {"nik": nik, "photo": None, "name": None, "status": "error", "error": str(nik_err), "similarity": 0, "batch": batch_num}
+                
+                await asyncio.sleep(3)
+            
+            # Merge with existing nik_photos
+            existing = await db.nongeoint_searches.find_one({"id": search_id}, {"nik_photos": 1})
+            existing_photos = existing.get("nik_photos", {}) if existing else {}
+            existing_photos.update(nik_photos)
+            
+            # Check if all batches are complete
+            search_data = await db.nongeoint_searches.find_one({"id": search_id})
+            all_niks = search_data.get("niks_found", [])
+            all_completed = len(existing_photos) >= len(all_niks)
+            
+            # Update database
+            await db.nongeoint_searches.update_one(
+                {"id": search_id},
+                {"$set": {
+                    "nik_photos": existing_photos,
+                    "photos_fetched_count": len(existing_photos),
+                    "status": "completed" if all_completed else "waiting_selection",
+                    "all_batches_completed": all_completed,
+                    "current_batch": batch_num + 1
+                }}
+            )
+            
+            logger.info(f"[NONGEOINT {search_id}] Batch {batch_num + 1} completed. Total photos: {len(existing_photos)}/{len(all_niks)}")
+            
+        except Exception as e:
+            logger.error(f"[NONGEOINT {search_id}] Batch photo fetch error: {e}")
+            await db.nongeoint_searches.update_one(
+                {"id": search_id},
+                {"$set": {"status": "waiting_selection", "error": str(e)}}
+            )
+
 @api_router.delete("/nongeoint/search/{search_id}")
 async def delete_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
     """Delete a NON GEOINT search and its associated investigation"""
