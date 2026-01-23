@@ -676,9 +676,10 @@ export const NonGeointSearchDialog = ({
     onInvestigatingChange(isInvestigating);
   }, [isInvestigating, onInvestigatingChange]);
 
-  // Handle minimize/close during investigation
+  // Handle minimize/close during search or investigation
   const handleMinimizeOrClose = (action) => {
-    if (isInvestigating) {
+    // Block minimize/close when searching or investigating
+    if (isSearching || isInvestigating) {
       setPendingAction(action);
       setShowBackgroundWarning(true);
     } else {
