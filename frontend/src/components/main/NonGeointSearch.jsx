@@ -1566,6 +1566,16 @@ export const NonGeointSearchDialog = ({
             </p>
           </div>
 
+          {/* Loading from History indicator */}
+          {currentStep === 'loading' && (
+            <div className="mt-6 flex flex-col items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin mb-3" style={{ color: 'var(--accent-primary)' }} />
+              <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                Memuat data dari history...
+              </p>
+            </div>
+          )}
+
           {/* Search Progress / Results */}
           {(isSearching || searchResults) && (
             <div className="mt-6 space-y-4">
