@@ -4707,65 +4707,6 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     # Photo must be:
                     # 1. From message at or after our target response
                     # 2. Within 10 seconds of the target response (to prevent grabbing old photos)
-                    if not target_msg_date:
-                        continue
-                    
-                    time_diff = (msg.date - target_msg_date).total_seconds()
-                    # Accept photos from -2 to +10 seconds relative to target message
-                    if time_diff < -2 or time_diff > 10:
-                        continue
-                    
-                    # Check for photo attribute
-                    if msg.photo:
-                        try:
-                            logger.info(f"[{query_token}] Found msg.photo near target message (id={msg.id}, date={msg.date}, diff={time_diff}s), downloading...")
-                            photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                            if photo_bytes:
-                                import base64
-                                photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                logger.info(f"[{query_token}] ✓ Downloaded photo successfully ({len(photo_bytes)} bytes)")
-                                break  # Got photo, stop looking
-                        except Exception as e:
-                            logger.error(f"[{query_token}] Photo download error: {e}")
-                    
-                    # Check for media attribute (alternative way photos might be attached)
-                    if hasattr(msg, 'media') and msg.media and not photo_base64:
-                        media_type = type(msg.media).__name__
-                        logger.info(f"[{query_token}] Found msg.media type: {media_type}")
-                        
-                        # Try to download if it's a photo type
-                        if 'Photo' in media_type:
-                            try:
-                                logger.info(f"[{query_token}] Attempting to download media as photo...")
-                                photo_bytes = await telegram_client.download_media(msg.media, bytes)
-                                if photo_bytes:
-                                    import base64
-                                    photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                    logger.info(f"[{query_token}] ✓ Downloaded media photo successfully ({len(photo_bytes)} bytes)")
-                                    break
-                            except Exception as e:
-                                logger.error(f"[{query_token}] Media photo download error: {e}")
-                    
-                    # Check for document that might be an image
-                    if msg.document and not photo_base64:
-                        mime = getattr(msg.document, 'mime_type', '') or ''
-                        logger.info(f"[{query_token}] Found document with mime: {mime}")
-                        if 'image' in mime.lower():
-                            try:
-                                photo_bytes = await telegram_client.download_media(msg.document, bytes)
-                                if photo_bytes:
-                                    import base64
-                                    ext = 'jpeg' if 'jpeg' in mime or 'jpg' in mime else 'png'
-                                    photo_base64 = f"data:image/{ext};base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
-                                    logger.info(f"[{query_token}] ✓ Downloaded document image successfully ({len(photo_bytes)} bytes)")
-                                    break
-                            except Exception as e:
-                                logger.error(f"[{query_token}] Document image download error: {e}")
-                
-                # If no photo found but we have target message, log it
-                if not photo_base64 and target_msg_date:
-                    logger.info(f"[{query_token}] No photo found within time window of target message")
-            
             # Filter messages by time for TEXT data only
             filtered_messages = []
             for msg in response_messages:
