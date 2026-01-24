@@ -2768,9 +2768,9 @@ export const NonGeointSearchDialog = ({
                           }}
                         >
                           <td className="py-1.5 px-2 font-mono" style={{ color: 'var(--foreground-primary)' }}>{member.nik || '-'}</td>
-                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-primary)' }}>{member.name || '-'}</td>
-                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.relationship || '-'}</td>
-                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.gender || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-primary)' }}>{member.displayName || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.relationship || member.hubungan || member.shdk || '-'}</td>
+                          <td className="py-1.5 px-2" style={{ color: 'var(--foreground-muted)' }}>{member.gender || member.jk || member.jenis_kelamin || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
