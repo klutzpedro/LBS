@@ -1451,57 +1451,9 @@ export const NonGeointSearchDialog = ({
       }
     }
 
-    // Pass WNI Results
-    if (searchResults?.results?.pass_wni) {
-      addSection('2. HASIL PASSPORT WNI');
-      const passWni = searchResults.results.pass_wni;
-      addText(`Status: ${passWni.status}`);
-      // Show passport numbers found
-      if (passWni.passports_found?.length > 0) {
-        addText(`No. Paspor Ditemukan (${passWni.passports_found.length}):`);
-        passWni.passports_found.forEach((passport, idx) => {
-          addText(`   ${idx + 1}. ${passport}`);
-        });
-      }
-      if (passWni.data) {
-        addText('Data Detail:');
-        Object.entries(passWni.data).forEach(([key, value]) => {
-          addText(`   ${key}: ${value}`);
-        });
-      }
-      if (passWni.raw_text && !passWni.data) {
-        addText('Raw Data:');
-        addText(passWni.raw_text.substring(0, 800));
-      }
-    }
-
-    // Pass WNA Results
-    if (searchResults?.results?.pass_wna) {
-      addSection('3. HASIL PASSPORT WNA');
-      const passWna = searchResults.results.pass_wna;
-      addText(`Status: ${passWna.status}`);
-      // Show passport numbers found
-      if (passWna.passports_found?.length > 0) {
-        addText(`No. Paspor Ditemukan (${passWna.passports_found.length}):`);
-        passWna.passports_found.forEach((passport, idx) => {
-          addText(`   ${idx + 1}. ${passport}`);
-        });
-      }
-      if (passWna.data) {
-        addText('Data Detail:');
-        Object.entries(passWna.data).forEach(([key, value]) => {
-          addText(`   ${key}: ${value}`);
-        });
-      }
-      if (passWna.raw_text && !passWna.data) {
-        addText('Raw Data:');
-        addText(passWna.raw_text.substring(0, 800));
-      }
-    }
-
     // NIK Investigation Results
     if (investigation?.results && Object.keys(investigation.results).length > 0) {
-      addSection('4. HASIL PENDALAMAN NIK');
+      addSection('2. HASIL PENDALAMAN NIK');
       
       Object.entries(investigation.results).forEach(([nik, nikResult], idx) => {
         yPos += 3;
