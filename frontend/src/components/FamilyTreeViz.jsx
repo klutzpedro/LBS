@@ -139,21 +139,48 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
         childOrder: idx + 1
       }));
     
-    const othersMembers = normalizedMembers.filter(m => 
-      !m.relationship?.includes('KEPALA') && 
-      !m.relationship?.includes('HEAD') &&
-      !m.relationship?.includes('ISTRI') && 
-      !m.relationship?.includes('SUAMI') && 
-      !m.relationship?.includes('WIFE') &&
-      !m.relationship?.includes('HUSBAND') &&
-      !m.relationship?.includes('SPOUSE') &&
-      !m.relationship?.includes('ANAK') &&
-      !m.relationship?.includes('CHILD') &&
-      !m.relationship?.includes('SON') &&
-      !m.relationship?.includes('DAUGHTER') &&
-      m.relationship !== '1' && m.relationship !== '2' && 
-      m.relationship !== '3' && m.relationship !== '4' && m.relationship !== '5'
-    );
+    // Collect names from main family tree (head, spouse, children)
+    const mainFamilyNames = new Set();
+    if (headMember?.name && headMember.name !== 'Unknown') {
+      mainFamilyNames.add(headMember.name.toUpperCase().trim());
+    }
+    if (spouseMember?.name && spouseMember.name !== 'Unknown') {
+      mainFamilyNames.add(spouseMember.name.toUpperCase().trim());
+    }
+    childrenMembers.forEach(child => {
+      if (child.name && child.name !== 'Unknown') {
+        mainFamilyNames.add(child.name.toUpperCase().trim());
+      }
+    });
+    
+    // Filter others: 
+    // 1. Must have real name (not "Unknown" or empty)
+    // 2. Not already in main family tree (by name)
+    // 3. Remove duplicates by name
+    const othersMembers = normalizedMembers
+      .filter(m => 
+        !m.relationship?.includes('KEPALA') && 
+        !m.relationship?.includes('HEAD') &&
+        !m.relationship?.includes('ISTRI') && 
+        !m.relationship?.includes('SUAMI') && 
+        !m.relationship?.includes('WIFE') &&
+        !m.relationship?.includes('HUSBAND') &&
+        !m.relationship?.includes('SPOUSE') &&
+        !m.relationship?.includes('ANAK') &&
+        !m.relationship?.includes('CHILD') &&
+        !m.relationship?.includes('SON') &&
+        !m.relationship?.includes('DAUGHTER') &&
+        m.relationship !== '1' && m.relationship !== '2' && 
+        m.relationship !== '3' && m.relationship !== '4' && m.relationship !== '5'
+      )
+      // Filter out Unknown and empty names
+      .filter(m => m.name && m.name !== 'Unknown' && m.name.trim() !== '')
+      // Filter out names already in main family tree
+      .filter(m => !mainFamilyNames.has(m.name.toUpperCase().trim()))
+      // Remove duplicates by name
+      .filter((m, idx, self) => 
+        self.findIndex(x => x.name.toUpperCase().trim() === m.name.toUpperCase().trim()) === idx
+      );
 
     return { 
       head: headMember, 
