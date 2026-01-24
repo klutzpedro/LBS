@@ -2644,6 +2644,144 @@ export const NonGeointSearchDialog = ({
                   </div>
                 </div>
               )}
+
+              {/* Passport Data Section */}
+              {detailDialog.result?.passport_data && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>🛂</span>
+                    <span className="font-semibold text-sm uppercase" style={{ color: 'var(--foreground-primary)' }}>
+                      DATA PASSPORT
+                    </span>
+                    {getStatusIcon(detailDialog.result.passport_data.status)}
+                  </div>
+                  <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                    {detailDialog.result.passport_data.passports && detailDialog.result.passport_data.passports.length > 0 ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold" style={{ color: 'var(--accent-primary)' }}>
+                          Ditemukan {detailDialog.result.passport_data.passports.length} passport:
+                        </p>
+                        <div className="space-y-1">
+                          {detailDialog.result.passport_data.passports.map((passport, idx) => (
+                            <div 
+                              key={idx}
+                              className="flex items-center gap-2 p-2 rounded"
+                              style={{ backgroundColor: 'var(--background-secondary)' }}
+                            >
+                              <span className="text-xs">🛂</span>
+                              <span className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                                {passport}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {/* WNI Data */}
+                        {detailDialog.result.passport_data.wni_data?.data && (
+                          <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
+                            <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-muted)' }}>
+                              Detail WNI:
+                            </p>
+                            {Array.isArray(detailDialog.result.passport_data.wni_data.data) ? (
+                              detailDialog.result.passport_data.wni_data.data.slice(0, 3).map((item, idx) => (
+                                <div key={idx} className="text-xs space-y-1 mb-2 p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                  {item.GIVENNAME && <p><span style={{ color: 'var(--foreground-muted)' }}>Nama:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.GIVENNAME}</span></p>}
+                                  {item.TRAVELDOCUMENTNO && <p><span style={{ color: 'var(--foreground-muted)' }}>No Passport:</span> <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>{item.TRAVELDOCUMENTNO}</span></p>}
+                                  {item.DATEOFBIRTH && <p><span style={{ color: 'var(--foreground-muted)' }}>Tgl Lahir:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.DATEOFBIRTH}</span></p>}
+                                </div>
+                              ))
+                            ) : null}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                        {detailDialog.result.passport_data.status === 'no_data' ? 'Tidak ditemukan data passport' : `Status: ${detailDialog.result.passport_data.status}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Perlintasan (Immigration Crossing) Data Section */}
+              {detailDialog.result?.perlintasan_data && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm" style={{ color: 'var(--foreground-muted)' }}>✈️</span>
+                    <span className="font-semibold text-sm uppercase" style={{ color: 'var(--foreground-primary)' }}>
+                      DATA PERLINTASAN IMIGRASI
+                    </span>
+                    {getStatusIcon(detailDialog.result.perlintasan_data.status)}
+                  </div>
+                  <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                    {detailDialog.result.perlintasan_data.results && detailDialog.result.perlintasan_data.results.length > 0 ? (
+                      <div className="space-y-3">
+                        {detailDialog.result.perlintasan_data.results.map((passportResult, pIdx) => (
+                          <div key={pIdx}>
+                            {passportResult.crossings && passportResult.crossings.length > 0 ? (
+                              <div>
+                                <p className="text-xs font-semibold mb-2" style={{ color: 'var(--accent-primary)' }}>
+                                  Passport {passportResult.passport_no}: {passportResult.crossings.length} perjalanan
+                                </p>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-xs border-collapse">
+                                    <thead>
+                                      <tr style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                        <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Tanggal</th>
+                                        <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Arah</th>
+                                        <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>TPI</th>
+                                        <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Tujuan/Asal</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {passportResult.crossings.map((crossing, cIdx) => (
+                                        <tr key={cIdx}>
+                                          <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>
+                                            {crossing.movement_date}
+                                          </td>
+                                          <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)' }}>
+                                            <span 
+                                              className="px-1.5 py-0.5 rounded text-xs font-semibold"
+                                              style={{ 
+                                                backgroundColor: crossing.direction_code === 'A' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                                color: crossing.direction_code === 'A' ? '#10b981' : '#ef4444'
+                                              }}
+                                            >
+                                              {crossing.direction_code === 'A' ? '🛬 MASUK' : '🛫 KELUAR'}
+                                            </span>
+                                          </td>
+                                          <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>
+                                            {crossing.tpi_name}
+                                          </td>
+                                          <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>
+                                            {crossing.port_description}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                                Passport {passportResult.passport_no}: {passportResult.message || 'Tidak ada data perlintasan'}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : detailDialog.result.perlintasan_data.status === 'no_passport' ? (
+                      <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                        Tidak ada passport untuk dicek perlintasannya
+                      </p>
+                    ) : (
+                      <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                        Status: {detailDialog.result.perlintasan_data.status}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </DraggableDialogContent>
         </DraggableDialog>
