@@ -362,7 +362,13 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
 
     if (open) {
       fetchHistory();
-      setSearchFilter(''); // Reset filter when opening
+    }
+  }, [open]);
+
+  // Reset filter when opening dialog
+  useEffect(() => {
+    if (open) {
+      setSearchFilter('');
     }
   }, [open]);
 
