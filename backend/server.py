@@ -4520,6 +4520,142 @@ async def execute_regnik_query(investigation_id: str, nik: str) -> dict:
         logger.error(f"[{query_token}] Error: {e}")
         return {"status": "error", "error": str(e), "phones": []}
 
+
+async def query_passport_cp_api(nik: str, name: str = None) -> dict:
+    """
+    Query passport data via CP API
+    - WNI: search by NIK
+    - If name provided, also search WNA by name
+    """
+    import httpx
+    
+    result = {
+        "status": "processing",
+        "wni_data": None,
+        "wna_data": None,
+        "passports": []
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Query WNI passport by NIK
+            logger.info(f"[PASSPORT CP] Querying WNI passport by NIK: {nik}")
+            wni_response = await client.get(
+                f"{CP_API_URL}/api/v3/imigrasi/wni",
+                params={"type": "nik", "query": nik},
+                headers={"api-key": CP_API_KEY}
+            )
+            
+            if wni_response.status_code == 200:
+                wni_data = wni_response.json()
+                if wni_data.get("response_status") or wni_data.get("data"):
+                    result["wni_data"] = wni_data
+                    # Extract passport numbers
+                    if wni_data.get("data"):
+                        for item in wni_data.get("data", []):
+                            passport_no = item.get("TRAVELDOCUMENTNO") or item.get("NO_PASPOR") or item.get("passport_no")
+                            if passport_no and passport_no not in result["passports"]:
+                                result["passports"].append(passport_no)
+                    logger.info(f"[PASSPORT CP] WNI data found, passports: {result['passports']}")
+            
+            # If name provided, also search WNA
+            if name:
+                logger.info(f"[PASSPORT CP] Querying WNA passport by name: {name}")
+                wna_response = await client.get(
+                    f"{CP_API_URL}/api/v3/imigrasi/wna",
+                    params={"type": "name", "query": name},
+                    headers={"api-key": CP_API_KEY}
+                )
+                
+                if wna_response.status_code == 200:
+                    wna_data = wna_response.json()
+                    if wna_data.get("response_status") or wna_data.get("data"):
+                        result["wna_data"] = wna_data
+                        # Extract passport numbers
+                        if wna_data.get("data"):
+                            for item in wna_data.get("data", []):
+                                passport_no = item.get("TRAVELDOCUMENTNO") or item.get("NO_PASPOR") or item.get("passport_no")
+                                if passport_no and passport_no not in result["passports"]:
+                                    result["passports"].append(passport_no)
+                        logger.info(f"[PASSPORT CP] WNA data found")
+            
+            result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
+            
+    except Exception as e:
+        logger.error(f"[PASSPORT CP] Error: {e}")
+        result["status"] = "error"
+        result["error"] = str(e)
+    
+    return result
+
+
+async def query_perlintasan_cp_api(passport_no: str) -> dict:
+    """
+    Query immigration crossing (perlintasan) data via CP API
+    """
+    import httpx
+    
+    result = {
+        "status": "processing",
+        "passport_no": passport_no,
+        "crossings": [],
+        "raw_data": None
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            logger.info(f"[PERLINTASAN CP] Querying crossings for passport: {passport_no}")
+            
+            # Query perlintasan/crossing data
+            response = await client.post(
+                f"{CP_API_URL}/api/v3/imigrasi/lintas",
+                data={"nopas": passport_no},
+                headers={"api-key": CP_API_KEY}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                result["raw_data"] = data
+                
+                if data.get("response_status") and data.get("dataPerlintasan"):
+                    crossings = data.get("dataPerlintasan", [])
+                    
+                    # Parse crossing data
+                    for crossing in crossings:
+                        parsed = {
+                            "passport_no": crossing.get("TRAVELDOCUMENTNO", passport_no),
+                            "name": crossing.get("GIVENNAME", "-"),
+                            "family_name": crossing.get("FAMILYNAME", "-"),
+                            "nationality": crossing.get("NATIONALITYDESCRIPTION", "-"),
+                            "issuing_state": crossing.get("ISSUINGSTATEDESCRIPTION", "-"),
+                            "gender": crossing.get("GENDERCODE", "-"),
+                            "dob": crossing.get("DATEOFBIRTH", "-"),
+                            "movement_date": crossing.get("MOVEMENTDATE", "-"),
+                            "direction": "ARRIVAL" if crossing.get("DIRECTIONCODE") == "A" else "DEPARTURE" if crossing.get("DIRECTIONCODE") == "D" else crossing.get("DIRECTIONCODE", "-"),
+                            "direction_code": crossing.get("DIRECTIONCODE", "-"),
+                            "tpi_name": crossing.get("TPINAME", "-"),  # TPI = Tempat Pemeriksaan Imigrasi (Immigration checkpoint)
+                            "port_description": crossing.get("PORTDESCRIPTION", "-")  # Destination/Origin port
+                        }
+                        result["crossings"].append(parsed)
+                    
+                    result["status"] = "completed"
+                    result["total_crossings"] = len(result["crossings"])
+                    logger.info(f"[PERLINTASAN CP] Found {len(result['crossings'])} crossings")
+                else:
+                    result["status"] = "no_data"
+                    result["message"] = data.get("response_message", "No crossing data found")
+            else:
+                result["status"] = "error"
+                result["error"] = f"API returned status {response.status_code}"
+                
+    except Exception as e:
+        logger.error(f"[PERLINTASAN CP] Error: {e}")
+        result["status"] = "error"
+        result["error"] = str(e)
+    
+    return result
+
+
 async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
     """Execute a single NIK/NKK/RegNIK query"""
     global telegram_client
