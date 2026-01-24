@@ -2305,18 +2305,6 @@ export const NonGeointSearchDialog = ({
                       >
                         ⚠️ PROSES PENDALAMAN SEDANG BERJALAN
                       </p>
-                      <p 
-                        className="text-xs mt-1"
-                        style={{ color: '#f87171' }}
-                      >
-                        WAKTU TUNGGU TERGANTUNG DARI JUMLAH NAMA IDENTIK YANG ADA DI DATABASE
-                      </p>
-                      <p 
-                        className="text-xs font-semibold mt-1"
-                        style={{ color: '#fca5a5' }}
-                      >
-                        (20 DETIK - 30 MENIT)
-                      </p>
                     </div>
                   )}
 
