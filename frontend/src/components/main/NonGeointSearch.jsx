@@ -185,8 +185,6 @@ const ResultDetailDialog = ({ open, onClose, queryType, result, nik = null }) =>
   const getQueryLabel = (type) => {
     switch (type) {
       case 'capil': return 'CAPIL (Dukcapil)';
-      case 'pass_wni': return 'Passport WNI';
-      case 'pass_wna': return 'Passport WNA';
       case 'nik_data': return 'Data NIK';
       case 'nkk_data': return 'Data NKK (Kartu Keluarga)';
       case 'regnik_data': return 'Data RegNIK';
