@@ -1615,10 +1615,6 @@ export const NonGeointSearchDialog = ({
     switch (queryType) {
       case 'capil':
         return <User className="w-4 h-4" />;
-      case 'pass_wni':
-        return <FileText className="w-4 h-4" />;
-      case 'pass_wna':
-        return <Globe className="w-4 h-4" />;
       default:
         return <Search className="w-4 h-4" />;
     }
@@ -1628,10 +1624,6 @@ export const NonGeointSearchDialog = ({
     switch (queryType) {
       case 'capil':
         return 'CAPIL (Dukcapil)';
-      case 'pass_wni':
-        return 'Passport WNI';
-      case 'pass_wna':
-        return 'Passport WNA';
       default:
         return queryType;
     }
