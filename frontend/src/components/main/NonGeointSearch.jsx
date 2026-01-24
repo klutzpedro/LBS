@@ -2743,15 +2743,20 @@ export const NonGeointSearchDialog = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {/* Filter: must have NIK AND name, remove duplicates by NIK+Name */}
+                      {/* Filter: must have NIK AND name (check multiple fields), remove duplicates */}
                       {familyTreeDialog.familyData.members
+                        .map(member => ({
+                          ...member,
+                          displayName: member.name || member.nama || member.full_name || member.fullName || ''
+                        }))
                         .filter(member => 
                           member.nik && 
-                          member.name && 
-                          member.name !== '-'
+                          member.displayName && 
+                          member.displayName !== '-' &&
+                          member.displayName.trim() !== ''
                         )
                         .filter((member, index, self) => 
-                          self.findIndex(m => m.nik === member.nik && m.name === member.name) === index
+                          self.findIndex(m => m.nik === member.nik && m.displayName === member.displayName) === index
                         )
                         .map((member, idx) => (
                         <tr 
