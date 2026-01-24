@@ -2527,15 +2527,20 @@ export const NonGeointSearchDialog = ({
                               </tr>
                             </thead>
                             <tbody>
-                              {/* Filter: must have NIK AND name, remove duplicates by NIK+Name */}
+                              {/* Filter: must have NIK AND name (check multiple name fields), remove duplicates */}
                               {detailDialog.result.nkk_data.family_data.members
+                                .map(member => ({
+                                  ...member,
+                                  displayName: member.name || member.nama || member.full_name || member.fullName || ''
+                                }))
                                 .filter(member => 
                                   member.nik && 
-                                  member.name && 
-                                  member.name !== '-'
+                                  member.displayName && 
+                                  member.displayName !== '-' &&
+                                  member.displayName.trim() !== ''
                                 )
                                 .filter((member, index, self) => 
-                                  self.findIndex(m => m.nik === member.nik && m.name === member.name) === index
+                                  self.findIndex(m => m.nik === member.nik && m.displayName === member.displayName) === index
                                 )
                                 .map((member, idx) => (
                                 <tr 
@@ -2546,9 +2551,9 @@ export const NonGeointSearchDialog = ({
                                 >
                                   <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{idx + 1}</td>
                                   <td className="py-1.5 px-2 border font-mono" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>{member.nik || '-'}</td>
-                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>{member.name || '-'}</td>
-                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.relationship || '-'}</td>
-                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.gender || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>{member.displayName || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.relationship || member.hubungan || member.shdk || '-'}</td>
+                                  <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>{member.gender || member.jk || member.jenis_kelamin || '-'}</td>
                                 </tr>
                               ))}
                             </tbody>
