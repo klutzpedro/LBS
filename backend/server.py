@@ -4718,9 +4718,11 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
                 else:
                     result["status"] = "no_data"
                     result["message"] = data.get("response_message", "No crossing data found")
+                    logger.info(f"[PERLINTASAN CP] No data found: {data.get('response_message')}")
             else:
                 result["status"] = "error"
                 result["error"] = f"API returned status {response.status_code}"
+                logger.warning(f"[PERLINTASAN CP] API returned status {response.status_code}: {response.text[:200]}")
                 
     except Exception as e:
         logger.error(f"[PERLINTASAN CP] Error: {e}")
