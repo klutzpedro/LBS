@@ -1982,9 +1982,9 @@ export const NonGeointSearchDialog = ({
                 {isSearching ? 'Proses Pencarian...' : 'Hasil Pencarian Awal'}
               </h3>
 
-              {/* Query Status */}
+              {/* Query Status - Only CAPIL */}
               <div className="space-y-2">
-                {['capil', 'pass_wni', 'pass_wna'].map(queryType => {
+                {['capil'].map(queryType => {
                   const result = searchResults?.results?.[queryType];
                   const status = result?.status || (isSearching ? 'pending' : 'pending');
                   const hasData = result && (result.raw_text || result.data || result.niks_found?.length > 0);
@@ -2026,13 +2026,6 @@ export const NonGeointSearchDialog = ({
                       {result?.niks_found?.length > 0 && (
                         <div className="mt-2 text-xs" style={{ color: 'var(--foreground-muted)' }}>
                           NIK: {result.niks_found.join(', ')}
-                        </div>
-                      )}
-                      
-                      {/* Show Passport numbers found (for pass_wni and pass_wna) */}
-                      {result?.passports_found?.length > 0 && (
-                        <div className="mt-2 text-xs" style={{ color: 'var(--accent-secondary)' }}>
-                          No. Paspor: {result.passports_found.join(', ')}
                         </div>
                       )}
                     </div>
