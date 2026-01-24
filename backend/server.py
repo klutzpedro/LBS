@@ -4610,8 +4610,11 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                 headers={"api-key": CP_API_KEY}
             )
             
+            logger.info(f"[PASSPORT CP] WNI response status: {wni_response.status_code}")
+            
             if wni_response.status_code == 200:
                 wni_data = wni_response.json()
+                logger.info(f"[PASSPORT CP] WNI response data: {str(wni_data)[:500]}")
                 if wni_data.get("response_status") or wni_data.get("data"):
                     result["wni_data"] = wni_data
                     # Extract passport numbers
@@ -4621,6 +4624,8 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                             if passport_no and passport_no not in result["passports"]:
                                 result["passports"].append(passport_no)
                     logger.info(f"[PASSPORT CP] WNI data found, passports: {result['passports']}")
+            else:
+                logger.warning(f"[PASSPORT CP] WNI API returned status {wni_response.status_code}: {wni_response.text[:200]}")
             
             # If name provided, also search WNA
             if name:
@@ -4631,8 +4636,11 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                     headers={"api-key": CP_API_KEY}
                 )
                 
+                logger.info(f"[PASSPORT CP] WNA response status: {wna_response.status_code}")
+                
                 if wna_response.status_code == 200:
                     wna_data = wna_response.json()
+                    logger.info(f"[PASSPORT CP] WNA response data: {str(wna_data)[:500]}")
                     if wna_data.get("response_status") or wna_data.get("data"):
                         result["wna_data"] = wna_data
                         # Extract passport numbers
@@ -4642,6 +4650,8 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                                 if passport_no and passport_no not in result["passports"]:
                                     result["passports"].append(passport_no)
                         logger.info(f"[PASSPORT CP] WNA data found")
+                else:
+                    logger.warning(f"[PASSPORT CP] WNA API returned status {wna_response.status_code}: {wna_response.text[:200]}")
             
             result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
             
