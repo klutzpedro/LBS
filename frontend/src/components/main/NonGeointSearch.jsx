@@ -1923,7 +1923,7 @@ export const NonGeointSearchDialog = ({
             </div>
 
             <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-              Pencarian: CAPIL → Passport WNI → Passport WNA → Pendalaman NIK (NIK, NKK, RegNIK)
+              Pencarian: CAPIL → Pendalaman NIK (NIK, NKK, RegNIK, Passport, Perlintasan)
             </p>
           </div>
 
