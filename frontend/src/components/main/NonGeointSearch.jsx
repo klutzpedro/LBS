@@ -1148,7 +1148,7 @@ export const NonGeointSearchDialog = ({
         },
         body: JSON.stringify({
           name: searchName,
-          query_types: ['capil', 'pass_wni', 'pass_wna']
+          query_types: ['capil']
         })
       });
 
