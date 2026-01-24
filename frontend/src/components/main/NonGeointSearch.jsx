@@ -1695,8 +1695,10 @@ export const NonGeointSearchDialog = ({
     const hasNikData = nikData.nik_data && (nikData.nik_data.data || nikData.nik_data.raw_text || nikData.nik_data.status === 'completed' || nikData.nik_data.status === 'not_found');
     const hasNkkData = nikData.nkk_data && (nikData.nkk_data.data || nikData.nkk_data.raw_text || nikData.nkk_data.status === 'completed' || nikData.nkk_data.status === 'not_found');
     const hasRegnikData = nikData.regnik_data && (nikData.regnik_data.data || nikData.regnik_data.raw_text || nikData.regnik_data.status === 'completed' || nikData.regnik_data.status === 'not_found');
+    const hasPassportData = nikData.passport_data && (nikData.passport_data.passports || nikData.passport_data.wni_data || nikData.passport_data.status === 'completed' || nikData.passport_data.status === 'no_data');
+    const hasPerlintasanData = nikData.perlintasan_data && (nikData.perlintasan_data.results || nikData.perlintasan_data.status === 'completed' || nikData.perlintasan_data.status === 'no_passport');
     
-    return hasNikData || hasNkkData || hasRegnikData;
+    return hasNikData || hasNkkData || hasRegnikData || hasPassportData || hasPerlintasanData;
   };
 
   // Get sub-query status for display
