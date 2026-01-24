@@ -4365,6 +4365,68 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 nik_results["regnik_data"] = regnik_result
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}, phones found: {len(regnik_result.get('phones', []))}")
                 
+                # Save immediately after each query
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.regnik_data": regnik_result}}
+                )
+                await asyncio.sleep(2)
+                
+                # Query 4: Passport via CP API (WNI by NIK)
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Passport for {nik}")
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.status": "processing_passport"}}
+                )
+                
+                # Get target name from NIK data if available
+                target_name = None
+                if nik_result.get('data'):
+                    target_name = nik_result['data'].get('Full Name') or nik_result['data'].get('Name') or nik_result['data'].get('Nama')
+                
+                passport_result = await query_passport_cp_api(nik, target_name)
+                nik_results["passport_data"] = passport_result
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, passports found: {len(passport_result.get('passports', []))}")
+                
+                # Save immediately after passport query
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.passport_data": passport_result}}
+                )
+                await asyncio.sleep(2)
+                
+                # Query 5: Perlintasan (Immigration Crossing) via CP API - for each passport found
+                perlintasan_results = []
+                passports_to_check = passport_result.get('passports', [])
+                
+                if passports_to_check:
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Perlintasan for {len(passports_to_check)} passports")
+                    await db.nik_investigations.update_one(
+                        {"id": investigation_id},
+                        {"$set": {f"results.{nik}.status": "processing_perlintasan"}}
+                    )
+                    
+                    for passport_no in passports_to_check:
+                        perlintasan_result = await query_perlintasan_cp_api(passport_no)
+                        perlintasan_results.append(perlintasan_result)
+                        await asyncio.sleep(1)
+                    
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Perlintasan query complete")
+                else:
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] No passports found, skipping perlintasan query")
+                
+                nik_results["perlintasan_data"] = {
+                    "status": "completed" if perlintasan_results else "no_passport",
+                    "results": perlintasan_results,
+                    "total_passports": len(passports_to_check)
+                }
+                
+                # Save perlintasan data
+                await db.nik_investigations.update_one(
+                    {"id": investigation_id},
+                    {"$set": {f"results.{nik}.perlintasan_data": nik_results["perlintasan_data"]}}
+                )
+                
                 nik_results["status"] = "completed"
                 results[nik] = nik_results
                 
