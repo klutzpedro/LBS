@@ -4297,6 +4297,8 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     "nik_data": None,
                     "nkk_data": None,
                     "regnik_data": None,
+                    "passport_data": None,
+                    "perlintasan_data": None,
                     "status": "processing"
                 }
                 
