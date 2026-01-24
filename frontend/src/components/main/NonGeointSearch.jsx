@@ -768,7 +768,7 @@ export const NonGeointSearchDialog = ({
   const [detailDialog, setDetailDialog] = useState({ open: false, type: null, result: null, nik: null });
   
   // Family Tree state
-  const [familyTreeDialog, setFamilyTreeDialog] = useState({ open: false, familyData: null, targetNik: null });
+  const [familyTreeDialog, setFamilyTreeDialog] = useState({ open: false, familyData: null, targetNik: null, isMinimized: false });
   
   // Minimize and warning states
   const [isMinimized, setIsMinimized] = useState(false);
