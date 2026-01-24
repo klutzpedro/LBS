@@ -2650,23 +2650,54 @@ export const NonGeointSearchDialog = ({
         />
       )}
 
-      {/* Family Tree Dialog */}
-      <DraggableDialog open={familyTreeDialog.open} onOpenChange={(open) => setFamilyTreeDialog(prev => ({ ...prev, open }))}>
+      {/* Family Tree Dialog - Higher z-index, Minimizable, Draggable */}
+      {familyTreeDialog.isMinimized && (
+        <div 
+          className="fixed bottom-20 right-4 z-[10000] p-3 rounded-lg shadow-xl cursor-pointer hover:scale-105 transition-all"
+          onClick={() => setFamilyTreeDialog(prev => ({ ...prev, isMinimized: false }))}
+          style={{
+            backgroundColor: 'var(--accent-secondary)',
+            color: 'white'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4" />
+            <span className="text-sm font-semibold">Family Tree</span>
+            <Maximize2 className="w-4 h-4 ml-2" />
+          </div>
+        </div>
+      )}
+
+      <DraggableDialog open={familyTreeDialog.open && !familyTreeDialog.isMinimized} onOpenChange={(open) => setFamilyTreeDialog(prev => ({ ...prev, open }))}>
         <DraggableDialogContent 
           className="max-w-2xl max-h-[80vh] overflow-y-auto"
           style={{
             backgroundColor: 'var(--background-elevated)',
-            borderColor: 'var(--borders-strong)'
+            borderColor: 'var(--borders-strong)',
+            zIndex: 10000
           }}
         >
           <DraggableDialogHeader className="pb-2">
-            <DraggableDialogTitle 
-              className="text-lg font-bold flex items-center gap-2"
-              style={{ color: 'var(--foreground-primary)' }}
-            >
-              <GitBranch className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
-              Family Tree (NKK)
-            </DraggableDialogTitle>
+            <div className="flex items-center justify-between w-full pr-8">
+              <DraggableDialogTitle 
+                className="text-lg font-bold flex items-center gap-2"
+                style={{ color: 'var(--foreground-primary)' }}
+              >
+                <GitBranch className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+                Family Tree (NKK)
+              </DraggableDialogTitle>
+              {/* Minimize Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFamilyTreeDialog(prev => ({ ...prev, isMinimized: true }))}
+                className="h-7 w-7 p-0"
+                title="Minimize"
+                style={{ color: 'var(--foreground-muted)' }}
+              >
+                <Minus className="w-4 h-4" />
+              </Button>
+            </div>
           </DraggableDialogHeader>
           
           {familyTreeDialog.familyData && (
@@ -2677,7 +2708,7 @@ export const NonGeointSearchDialog = ({
                 targetNik={familyTreeDialog.targetNik} 
               />
               
-              {/* Raw NKK Data Table */}
+              {/* Raw NKK Data Table - FILTERED */}
               <div>
                 <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-primary)' }}>
                   DATA ANGGOTA KELUARGA
@@ -2705,7 +2736,15 @@ export const NonGeointSearchDialog = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {familyTreeDialog.familyData.members.map((member, idx) => (
+                      {/* Filter: unique NIK + must have name */}
+                      {familyTreeDialog.familyData.members
+                        .filter((member, index, self) => 
+                          member.nik && 
+                          member.name && 
+                          member.name !== '-' &&
+                          self.findIndex(m => m.nik === member.nik) === index
+                        )
+                        .map((member, idx) => (
                         <tr 
                           key={idx}
                           className="border-b"
