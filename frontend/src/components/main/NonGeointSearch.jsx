@@ -2509,7 +2509,7 @@ export const NonGeointSearchDialog = ({
                     )}
                   </div>
                   <div className="p-3 rounded-md space-y-3" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                    {/* Show family members table if available */}
+                    {/* Show family members table if available - FILTERED: only show unique NIK with name */}
                     {detailDialog.result.nkk_data.family_data?.members?.length > 0 && (
                       <div>
                         <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-muted)' }}>
@@ -2527,7 +2527,15 @@ export const NonGeointSearchDialog = ({
                               </tr>
                             </thead>
                             <tbody>
-                              {detailDialog.result.nkk_data.family_data.members.map((member, idx) => (
+                              {/* Filter: unique NIK + must have name */}
+                              {detailDialog.result.nkk_data.family_data.members
+                                .filter((member, index, self) => 
+                                  member.nik && 
+                                  member.name && 
+                                  member.name !== '-' &&
+                                  self.findIndex(m => m.nik === member.nik) === index
+                                )
+                                .map((member, idx) => (
                                 <tr 
                                   key={idx}
                                   style={{ 
