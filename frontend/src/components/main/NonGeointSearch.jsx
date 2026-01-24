@@ -508,7 +508,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
             ) : filteredSearches.length === 0 ? (
               <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
                 <Search className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Tidak ditemukan hasil untuk "{searchFilter}"</p>
+                <p className="text-sm">Tidak ditemukan hasil untuk &quot;{searchFilter}&quot;</p>
               </div>
             ) : (
               <div className="space-y-2">
