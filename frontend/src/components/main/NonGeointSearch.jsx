@@ -1583,6 +1583,41 @@ export const NonGeointSearchDialog = ({
           }
         }
         
+        // Passport Data
+        if (nikResult?.passport_data) {
+          addText('');
+          addText('4. DATA PASSPORT (via CP API)');
+          addText(`   Status: ${nikResult.passport_data.status}`);
+          
+          if (nikResult.passport_data.passports && nikResult.passport_data.passports.length > 0) {
+            addText(`   Jumlah Passport: ${nikResult.passport_data.passports.length}`, margin, 10);
+            nikResult.passport_data.passports.forEach((passport, pIdx) => {
+              addText(`      ${pIdx + 1}. ${passport}`, margin, 10);
+            });
+          }
+        }
+        
+        // Perlintasan (Immigration Crossing) Data
+        if (nikResult?.perlintasan_data) {
+          addText('');
+          addText('5. DATA PERLINTASAN IMIGRASI');
+          addText(`   Status: ${nikResult.perlintasan_data.status}`);
+          
+          if (nikResult.perlintasan_data.results && nikResult.perlintasan_data.results.length > 0) {
+            nikResult.perlintasan_data.results.forEach((passportResult) => {
+              if (passportResult.crossings && passportResult.crossings.length > 0) {
+                addText(`   Passport ${passportResult.passport_no}: ${passportResult.crossings.length} perjalanan`, margin, 10);
+                passportResult.crossings.forEach((crossing, cIdx) => {
+                  const direction = crossing.direction_code === 'A' ? 'MASUK' : 'KELUAR';
+                  addText(`      ${cIdx + 1}. ${crossing.movement_date} - ${direction}`, margin, 10);
+                  addText(`         TPI: ${crossing.tpi_name}`, margin, 10);
+                  addText(`         ${crossing.direction_code === 'A' ? 'Dari' : 'Ke'}: ${crossing.port_description}`, margin, 10);
+                });
+              }
+            });
+          }
+        }
+        
         yPos += 3;
       });
     }
@@ -1608,6 +1643,8 @@ export const NonGeointSearchDialog = ({
       case 'processing_nik':
       case 'processing_nkk':
       case 'processing_regnik':
+      case 'processing_passport':
+      case 'processing_perlintasan':
         return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
       case 'error':
         return <XCircle className="w-4 h-4 text-red-500" />;
