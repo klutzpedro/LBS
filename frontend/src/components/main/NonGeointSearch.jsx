@@ -2367,6 +2367,14 @@ export const NonGeointSearchDialog = ({
                               {getStatusIcon(getSubQueryStatus(nikData, 'regnik_data'))}
                               RegNIK
                             </span>
+                            <span className="flex items-center gap-1">
+                              {getStatusIcon(getSubQueryStatus(nikData, 'passport_data'))}
+                              🛂
+                            </span>
+                            <span className="flex items-center gap-1">
+                              {getStatusIcon(getSubQueryStatus(nikData, 'perlintasan_data'))}
+                              ✈️
+                            </span>
                           </div>
                         </div>
                       );
