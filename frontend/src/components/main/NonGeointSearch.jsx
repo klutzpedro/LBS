@@ -1090,10 +1090,8 @@ export const NonGeointSearchDialog = ({
       console.log('[NonGeoint] Persons array created and sorted by similarity:', persons.length);
       setPersonsFound(persons);
       
-      if (persons.length === 1 && !searchResults.has_more_batches) {
-        setSelectedPersonIndex(0);
-        setShowPersonSelection(false);
-      } else if (persons.length > 1 || searchResults.has_more_batches) {
+      // ALWAYS show person selection for verification (even for single NIK)
+      if (persons.length >= 1) {
         setShowPersonSelection(true);
         setSelectedPersonIndex(null);
       } else {
@@ -1106,10 +1104,8 @@ export const NonGeointSearchDialog = ({
       const persons = extractPersonsFromCapil(searchResults.results.capil);
       setPersonsFound(persons);
       
-      if (persons.length === 1) {
-        setSelectedPersonIndex(0);
-        setShowPersonSelection(false);
-      } else if (persons.length > 1) {
+      // ALWAYS show person selection for verification (even for single person)
+      if (persons.length >= 1) {
         setShowPersonSelection(true);
         setSelectedPersonIndex(null);
       } else {
