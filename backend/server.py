@@ -4605,7 +4605,7 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
         # Query WNI passport by NIK using curl
         logger.info(f"[PASSPORT CP] Querying WNI passport by NIK: {nik}")
         
-        wni_cmd = f"curl -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={nik}' -s"
+        wni_cmd = f"curl -4 -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={nik}' -s"
         logger.info(f"[PASSPORT CP] WNI curl command: {wni_cmd[:100]}...")
         
         wni_process = subprocess.run(wni_cmd, shell=True, capture_output=True, text=True, timeout=30)
@@ -4635,7 +4635,7 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
             import urllib.parse
             encoded_name = urllib.parse.quote(name)
             
-            wna_cmd = f"curl -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_name}' -s"
+            wna_cmd = f"curl -4 -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_name}' -s"
             logger.info(f"[PASSPORT CP] WNA curl command: {wna_cmd[:100]}...")
             
             wna_process = subprocess.run(wna_cmd, shell=True, capture_output=True, text=True, timeout=30)
