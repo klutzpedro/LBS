@@ -1330,6 +1330,9 @@ export const NonGeointSearchDialog = ({
       return;
     }
 
+    // Clear any ongoing search from localStorage
+    localStorage.removeItem('nongeoint_ongoing_search_id');
+    
     setIsSearching(true);
     setSearchResults(null);
     setSelectedNiks([]);
