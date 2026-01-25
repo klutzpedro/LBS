@@ -278,6 +278,38 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
       yPos += 10;
     }
 
+    // Add photos side by side
+    const photoWidth = 50;
+    const photoHeight = 60;
+    
+    if (uploadedImagePreview || botPhoto) {
+      yPos += 5;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      
+      // Input photo
+      if (uploadedImagePreview) {
+        pdf.text('FOTO INPUT:', margin, yPos);
+        try {
+          pdf.addImage(uploadedImagePreview, 'JPEG', margin, yPos + 3, photoWidth, photoHeight);
+        } catch (e) {
+          console.log('Error adding input photo to PDF:', e);
+        }
+      }
+      
+      // Database photo
+      if (botPhoto) {
+        pdf.text('FOTO DATABASE:', margin + 70, yPos);
+        try {
+          pdf.addImage(botPhoto, 'JPEG', margin + 70, yPos + 3, photoWidth, photoHeight);
+        } catch (e) {
+          console.log('Error adding database photo to PDF:', e);
+        }
+      }
+      
+      yPos += photoHeight + 10;
+    }
+
     if (matchResults && matchResults.length > 0) {
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
@@ -287,7 +319,10 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       matchResults.forEach((match, idx) => {
-        pdf.text(`${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match`, margin + 5, yPos);
+        const matchText = idx === 0 
+          ? `${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match (TOP)`
+          : `${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match`;
+        pdf.text(matchText, margin + 5, yPos);
         yPos += lineHeight;
       });
       yPos += 5;
@@ -301,7 +336,7 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
       
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Data NIK:', margin, yPos);
+      pdf.text('Data NIK (TOP Match):', margin, yPos);
       yPos += lineHeight;
 
       pdf.setFontSize(10);
