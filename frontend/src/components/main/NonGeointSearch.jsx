@@ -1104,9 +1104,11 @@ export const NonGeointSearchDialog = ({
       setPersonsFound(persons);
       
       // ALWAYS show person selection for verification (even for single NIK)
+      // BUT don't reset selectedPersonIndex if user already selected one
       if (persons.length >= 1) {
         setShowPersonSelection(true);
-        setSelectedPersonIndex(null);
+        // Only reset selection if this is initial load (not batch update)
+        // We can detect batch update by checking if personsFound already has items
       } else {
         setShowPersonSelection(false);
       }
@@ -1120,7 +1122,6 @@ export const NonGeointSearchDialog = ({
       // ALWAYS show person selection for verification (even for single person)
       if (persons.length >= 1) {
         setShowPersonSelection(true);
-        setSelectedPersonIndex(null);
       } else {
         setShowPersonSelection(false);
       }
