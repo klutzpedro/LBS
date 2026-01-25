@@ -1704,7 +1704,7 @@ export const NonGeointSearchDialog = ({
     if (!searchResults) return 'input';
     // Show searching while fetching photos
     if (searchResults.status === 'fetching_photos') return 'searching';
-    if (searchResults.status !== 'completed') return 'searching';
+    if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
     // PRIORITY 1: If investigation exists (from history), show investigation results
     if (investigation) {
@@ -1723,19 +1723,18 @@ export const NonGeointSearchDialog = ({
       if (showPersonSelection) {
         return 'select_person';
       }
-      // Person already selected, check if we should show NIK selection
-      if (selectedNiks.length > 0) {
-        return 'select_nik';
-      }
-      // No NIKs selected yet but person selection done, go to NIK selection
-      return 'select_nik';
+      // If person selection is done (showPersonSelection=false) but not investigating yet,
+      // this means user hasn't clicked "Mulai Pendalaman" - keep showing person selection
+      // OR skip to investigation if isInvestigating
+      // Since isInvestigating is checked above, if we reach here, show person selection again
+      return 'select_person';
     }
     
     // Legacy: show person selection from CAPIL extraction (even for 1 person for verification)
-    if (showPersonSelection && personsFound.length >= 1) return 'select_person';
+    if (personsFound.length >= 1) return 'select_person';
     
-    // If we have NIKs found but no investigation yet, show NIK selection
-    if (searchResults.niks_found?.length > 0) return 'select_nik';
+    // If we have NIKs found but no photos, show NIK selection as fallback
+    if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) return 'select_nik';
     
     return 'no_results';
   };
