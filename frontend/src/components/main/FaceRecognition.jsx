@@ -47,10 +47,13 @@ export const FaceRecognitionButton = ({ onOpenSearch, onOpenHistory, isProcessin
             ? '0 6px 20px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)'
             : '0 6px 20px rgba(6, 182, 212, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
           fontWeight: 'bold',
-          padding: '10px 20px',
+          padding: '10px 16px',
           borderRadius: '8px',
           textShadow: '0 1px 0 rgba(0,0,0,0.2)',
-          animation: isProcessing ? 'pulse-fr 2s infinite' : 'none'
+          animation: isProcessing ? 'pulse-fr 2s infinite' : 'none',
+          width: '160px',
+          height: '42px',
+          justifyContent: 'center'
         }}
         data-testid="face-recognition-btn"
       >
