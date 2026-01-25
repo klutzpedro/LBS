@@ -5739,6 +5739,244 @@ async def get_telegram_credentials_status(username: str = Depends(verify_token))
         "runtime_matches_env": str(TELEGRAM_API_ID) == current_api_id
     }
 
+# ============== FACE RECOGNITION ENDPOINTS ==============
+
+class FRMatchRequest(BaseModel):
+    image: str  # Base64 encoded image
+
+class FRNikRequest(BaseModel):
+    nik: str
+    fr_session_id: str
+
+@api_router.post("/face-recognition/match")
+async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_token)):
+    """
+    Send photo to Telegram bot for face recognition matching.
+    Returns list of NIKs with match percentages.
+    """
+    global telegram_client
+    
+    logger.info(f"[FR] Starting face recognition match")
+    
+    try:
+        # Check Telegram connection
+        if not telegram_client or not telegram_client.is_connected():
+            raise HTTPException(status_code=503, detail="Telegram not connected")
+        
+        # Create session ID for this FR request
+        session_id = str(uuid.uuid4())[:8]
+        
+        # Decode base64 image and save temporarily
+        import base64
+        import tempfile
+        
+        # Remove data URL prefix if present
+        image_data = request.image
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+        
+        # Decode and save to temp file
+        image_bytes = base64.b64decode(image_data)
+        temp_path = f"/tmp/fr_input_{session_id}.jpg"
+        with open(temp_path, 'wb') as f:
+            f.write(image_bytes)
+        
+        logger.info(f"[FR {session_id}] Image saved to {temp_path}")
+        
+        # Send image to Telegram bot
+        bot_entity = await telegram_client.get_entity("@northarch_bot")
+        
+        # Send the photo
+        await telegram_client.send_file(bot_entity, temp_path, caption="FR")
+        logger.info(f"[FR {session_id}] Photo sent to bot with caption 'FR'")
+        
+        # Wait for bot response with face match results
+        await asyncio.sleep(5)  # Give bot time to process
+        
+        # Get recent messages from bot
+        messages = await telegram_client.get_messages(bot_entity, limit=10)
+        
+        matches = []
+        raw_response = ""
+        
+        for msg in messages:
+            if msg.text and msg.out == False:  # Bot's message (not ours)
+                raw_response = msg.text
+                logger.info(f"[FR {session_id}] Bot response: {msg.text[:200]}...")
+                
+                # Parse face match results
+                # Expected format: NIK: 1234567890123456 - 85% or similar patterns
+                nik_pattern = re.findall(r'(\d{16})\s*[-:]\s*(\d{1,3})%', msg.text)
+                
+                if nik_pattern:
+                    for nik, percentage in nik_pattern:
+                        matches.append({
+                            "nik": nik,
+                            "percentage": int(percentage)
+                        })
+                
+                # Alternative pattern: look for NIK and percentage separately
+                if not matches:
+                    niks = re.findall(r'\b(\d{16})\b', msg.text)
+                    percentages = re.findall(r'(\d{1,3})%', msg.text)
+                    
+                    for i, nik in enumerate(niks):
+                        pct = int(percentages[i]) if i < len(percentages) else 0
+                        matches.append({
+                            "nik": nik,
+                            "percentage": pct
+                        })
+                
+                if matches:
+                    break  # Found matches, stop looking
+        
+        # Sort by percentage descending
+        matches.sort(key=lambda x: x['percentage'], reverse=True)
+        
+        # Store session for later use
+        await db.fr_sessions.insert_one({
+            "id": session_id,
+            "created_by": username,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "input_image": request.image[:100] + "...",  # Store truncated reference
+            "matches": matches,
+            "raw_response": raw_response
+        })
+        
+        # Cleanup temp file
+        try:
+            os.remove(temp_path)
+        except:
+            pass
+        
+        logger.info(f"[FR {session_id}] Found {len(matches)} matches")
+        
+        return {
+            "session_id": session_id,
+            "matches": matches,
+            "raw_response": raw_response
+        }
+        
+    except Exception as e:
+        logger.error(f"[FR] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.post("/face-recognition/get-nik-details")
+async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(verify_token)):
+    """
+    Get detailed NIK data for the selected match.
+    Sends NIK to bot and retrieves full data with photo.
+    """
+    global telegram_client
+    
+    logger.info(f"[FR] Getting NIK details for {request.nik}")
+    
+    try:
+        if not telegram_client or not telegram_client.is_connected():
+            raise HTTPException(status_code=503, detail="Telegram not connected")
+        
+        bot_entity = await telegram_client.get_entity("@northarch_bot")
+        
+        # First, click on the NIK button if it exists in recent messages
+        messages = await telegram_client.get_messages(bot_entity, limit=5)
+        
+        nik_clicked = False
+        for msg in messages:
+            if msg.buttons:
+                for row in msg.buttons:
+                    for button in row:
+                        if request.nik in (button.text or ''):
+                            logger.info(f"[FR] Clicking NIK button: {button.text}")
+                            await button.click()
+                            nik_clicked = True
+                            break
+                    if nik_clicked:
+                        break
+            if nik_clicked:
+                break
+        
+        # If no button found, send NIK as text
+        if not nik_clicked:
+            logger.info(f"[FR] No button found, sending NIK as text")
+            await telegram_client.send_message(bot_entity, request.nik)
+        
+        # Wait for response
+        await asyncio.sleep(5)
+        
+        # Get bot response
+        messages = await telegram_client.get_messages(bot_entity, limit=15)
+        
+        nik_data = {}
+        photo = None
+        
+        for msg in messages:
+            if msg.out:
+                continue
+            
+            # Check for photo
+            if msg.photo and not photo:
+                logger.info(f"[FR] Found photo in message")
+                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                if photo_bytes:
+                    import base64
+                    photo = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode()}"
+            
+            # Parse text data
+            if msg.text:
+                logger.info(f"[FR] Parsing NIK data from: {msg.text[:100]}...")
+                
+                # Parse key-value pairs
+                lines = msg.text.split('\n')
+                for line in lines:
+                    # Try various patterns
+                    patterns = [
+                        r'^([A-Za-z\s]+)\s*:\s*(.+)$',
+                        r'^([A-Za-z_]+)\s*[:\-]\s*(.+)$',
+                    ]
+                    
+                    for pattern in patterns:
+                        match = re.match(pattern, line.strip())
+                        if match:
+                            key = match.group(1).strip()
+                            value = match.group(2).strip()
+                            if key and value:
+                                nik_data[key] = value
+                            break
+                
+                # Also look for NIK specifically
+                nik_match = re.search(r'NIK\s*[:\-]?\s*(\d{16})', msg.text, re.IGNORECASE)
+                if nik_match:
+                    nik_data['NIK'] = nik_match.group(1)
+                
+                # Look for name
+                name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*([A-Z\s]+)', msg.text, re.IGNORECASE)
+                if name_match:
+                    nik_data['Nama'] = name_match.group(1).strip()
+        
+        # Update session with NIK details
+        await db.fr_sessions.update_one(
+            {"id": request.fr_session_id},
+            {"$set": {
+                "selected_nik": request.nik,
+                "nik_data": nik_data,
+                "has_photo": photo is not None
+            }}
+        )
+        
+        logger.info(f"[FR] NIK data keys: {list(nik_data.keys())}, has_photo: {photo is not None}")
+        
+        return {
+            "nik": request.nik,
+            "nik_data": nik_data,
+            "photo": photo
+        }
+        
+    except Exception as e:
+        logger.error(f"[FR] Error getting NIK details: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Events
 @app.on_event("startup")
 async def startup():
