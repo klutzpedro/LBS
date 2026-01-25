@@ -1635,7 +1635,8 @@ const MainApp = () => {
               isInvestigating={isGlobalInvestigating}
             />
             <FaceRecognitionButton 
-              onClick={() => setFrDialogOpen(true)}
+              onOpenSearch={() => setFrDialogOpen(true)}
+              onOpenHistory={() => setFrHistoryOpen(true)}
               isProcessing={isFrProcessing}
             />
           </div>
