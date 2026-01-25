@@ -23,4 +23,4 @@ export {
 } from './TargetDialogs';
 
 // Face Recognition
-export { FaceRecognitionButton, FaceRecognitionDialog } from './FaceRecognition';
+export { FaceRecognitionButton, FaceRecognitionDialog, FaceRecognitionHistoryDialog } from './FaceRecognition';
