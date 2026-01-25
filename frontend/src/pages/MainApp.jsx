@@ -39,6 +39,9 @@ import {
 // NON GEOINT Search
 import { NonGeointButton, NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main/NonGeointSearch';
 
+// Face Recognition
+import { FaceRecognitionButton, FaceRecognitionDialog } from '@/components/main/FaceRecognition';
+
 const MainApp = () => {
   const { username, logout } = useAuth();
   const { telegramAuthorized, telegramUser } = useTelegram();
