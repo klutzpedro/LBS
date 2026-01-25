@@ -1483,11 +1483,11 @@ export const NonGeointSearchDialog = ({
       
       // Start polling for investigation results
       investigationPollingRef.current = setInterval(() => {
-        pollInvestigationStatus(data.investigation_id);
+        pollInvestigation(data.investigation_id);
       }, 2000);
 
       // Initial poll
-      pollInvestigationStatus(data.investigation_id);
+      pollInvestigation(data.investigation_id);
 
     } catch (error) {
       console.error('Investigation error:', error);
