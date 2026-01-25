@@ -1223,7 +1223,7 @@ export const NonGeointSearchDialog = ({
 
   const confirmPersonSelection = () => {
     if (selectedPersonIndex === null) {
-      toast.error('Pilih salah satu nama');
+      toast.error('Pilih salah satu target');
       return;
     }
     
@@ -1231,13 +1231,57 @@ export const NonGeointSearchDialog = ({
     console.log('[NonGeoint] Confirming person selection:', selectedPerson);
     
     if (selectedPerson?.nik) {
+      // Set selected NIK and immediately start investigation
       setSelectedNiks([selectedPerson.nik]);
       console.log('[NonGeoint] Set selected NIK:', selectedPerson.nik);
+      
+      // Hide person selection
+      setShowPersonSelection(false);
+      
+      // Directly start investigation with this NIK
+      startInvestigationWithNik(selectedPerson.nik);
+    } else {
+      toast.error('NIK tidak ditemukan untuk target ini');
     }
-    
-    // Hide person selection to move to next step
-    setShowPersonSelection(false);
-    console.log('[NonGeoint] Person selection confirmed, moving to next step');
+  };
+
+  // New function to start investigation directly with a NIK
+  const startInvestigationWithNik = async (nik) => {
+    setIsInvestigating(true);
+    setInvestigation(null);
+    toast.info(`Memulai pendalaman NIK ${nik}...`);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/investigate-niks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          search_id: searchResults.id,
+          niks: [nik]
+        })
+      });
+
+      if (!response.ok) throw new Error('Investigation failed');
+
+      const data = await response.json();
+      
+      // Start polling for investigation results
+      investigationPollingRef.current = setInterval(() => {
+        pollInvestigationStatus(data.investigation_id);
+      }, 2000);
+
+      // Initial poll
+      pollInvestigationStatus(data.investigation_id);
+
+    } catch (error) {
+      console.error('Investigation error:', error);
+      toast.error('Gagal memulai pendalaman');
+      setIsInvestigating(false);
+    }
   };
 
   const handleNikToggle = (nik) => {
