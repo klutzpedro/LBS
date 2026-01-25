@@ -692,3 +692,37 @@ git pull origin main
 cd frontend && npm install && npm run build
 pm2 restart waskita-backend
 ```
+
+## Recent Updates (January 25, 2026)
+
+### NON GEOINT Resumable Search Verification
+- **Status:** VERIFIED working in frontend code
+- **Implementation Details:**
+  1. Search ID saved to localStorage when dialog closes during active search (`fetching_photos`, `waiting_selection`, or loading more photos)
+  2. On dialog reopen, checks localStorage for `nongeoint_ongoing_search_id`
+  3. Loads search data from backend and resumes polling if still fetching
+  4. UI updates with fetched photos and shows proper state
+- **Files:** `/app/frontend/src/components/main/NonGeointSearch.jsx` (lines 1097-1168, 1221-1246)
+- **Testing:** Frontend UI testing passed 100% (iteration_4.json)
+
+### Pending Issues Summary
+
+#### BLOCKED - Immigration/Passport API (P0)
+- **Status:** EXTERNALLY BLOCKED by API provider
+- **Root Cause:** IP whitelist on provider side has wrong IP (`162.159.142.117`) instead of VPS IP (`76.13.21.246`)
+- **Backend code is CORRECT** - The `/api/nongeoint/investigate` endpoint correctly calls CP API's `/imigrasi/wni`, `/imigrasi/wna`, and `/imigrasi/lintas` endpoints
+- **Action Required:** User must contact API provider to update Lock IP for imigrasi subscription to `76.13.21.246`
+
+#### IN PROGRESS - NKK Table Shows Only 1 Family Member (P1)
+- **Status:** Needs root cause analysis
+- **Suspected Cause:** Backend parser `parse_nkk_family_data()` in `server.py` (line 5069-5225)
+- **Parser has 4 methods:**
+  1. Structured format (NIK, Name on separate lines)
+  2. Table format (NIK | Name | Relationship | Gender)
+  3. Numbered list format
+  4. NIK split method (extract all NIKs and associate with nearby text)
+- **Debug Required:** Need sample raw text from Telegram bot's NKK query response to identify parsing issue
+- **Files:** `/app/backend/server.py` function `parse_nkk_family_data()`
+
+### Test Reports Created
+- `/app/test_reports/iteration_4.json` - NON GEOINT UI testing (100% pass rate)
