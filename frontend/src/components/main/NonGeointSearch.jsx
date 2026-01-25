@@ -55,10 +55,13 @@ export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating =
             ? '0 6px 20px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)'
             : '0 6px 20px rgba(245, 158, 11, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
           fontWeight: 'bold',
-          padding: '10px 20px',
+          padding: '10px 16px',
           borderRadius: '8px',
           textShadow: '0 1px 0 rgba(255,255,255,0.3)',
-          animation: isInvestigating ? 'pulse-btn 2s infinite' : 'none'
+          animation: isInvestigating ? 'pulse-btn 2s infinite' : 'none',
+          width: '160px',
+          height: '42px',
+          justifyContent: 'center'
         }}
         data-testid="nongeoint-search-btn"
       >
