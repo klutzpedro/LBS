@@ -886,6 +886,13 @@ export const NonGeointSearchDialog = ({
         
         if (response.ok) {
           const data = await response.json();
+          console.log('[NonGeoint] Batch polling response:', {
+            status: data.status,
+            nik_photos_count: Object.keys(data.nik_photos || {}).length,
+            photos_fetched_count: data.photos_fetched_count,
+            has_more_batches: data.has_more_batches,
+            total_niks: data.total_niks
+          });
           
           if (data.status !== 'fetching_photos') {
             clearInterval(pollInterval);
@@ -897,6 +904,9 @@ export const NonGeointSearchDialog = ({
             
             // Refresh persons list with new photos
             if (data.nik_photos) {
+              const nikPhotosCount = Object.keys(data.nik_photos).length;
+              console.log(`[NonGeoint] Updating personsFound with ${nikPhotosCount} photos from nik_photos`);
+              
               const persons = Object.entries(data.nik_photos)
                 .map(([nik, d]) => ({
                   nik,
@@ -912,9 +922,12 @@ export const NonGeointSearchDialog = ({
                 }))
                 .sort((a, b) => b.similarity - a.similarity);
               
+              console.log(`[NonGeoint] Setting personsFound to ${persons.length} persons`);
               setPersonsFound(persons);
               toast.success(`Batch selesai! Menampilkan ${persons.length} dari ${data.total_niks} target`);
             }
+          } else {
+            console.log('[NonGeoint] Still fetching photos, continuing to poll...');
           }
         }
       } catch (error) {
