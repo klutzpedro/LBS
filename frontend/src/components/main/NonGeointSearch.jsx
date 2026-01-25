@@ -2059,7 +2059,7 @@ export const NonGeointSearchDialog = ({
                       className="text-sm font-semibold"
                       style={{ color: 'var(--foreground-secondary)' }}
                     >
-                      Pilih Target ({personsFound.length} dari {totalNiks} ditampilkan)
+                      Pilih Target ({photosFetched} dari {totalNiks} ditampilkan)
                     </h3>
                   </div>
                   
