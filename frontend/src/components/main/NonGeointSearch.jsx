@@ -1905,7 +1905,16 @@ export const NonGeointSearchDialog = ({
   const getSubQueryStatus = (nikData, queryType) => {
     const data = nikData?.[queryType];
     if (!data) return 'pending';
-    return data.status || 'pending';
+    
+    // If status exists, use it
+    if (data.status) return data.status;
+    
+    // If data or raw_text exists but no status, consider it completed
+    if (data.data || data.raw_text || data.photo || data.phones || data.passports || data.results) {
+      return 'completed';
+    }
+    
+    return 'pending';
   };
 
   // Determine current step
