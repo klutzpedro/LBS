@@ -1221,6 +1221,7 @@ export const NonGeointSearchDialog = ({
     console.log('[NonGeoint] Set selectedPersonIndex to:', index);
   };
 
+  // Called when user clicks "Mulai Pendalaman" button after selecting photo
   const confirmPersonSelection = () => {
     if (selectedPersonIndex === null) {
       toast.error('Pilih salah satu target');
@@ -1228,32 +1229,27 @@ export const NonGeointSearchDialog = ({
     }
     
     const selectedPerson = personsFound[selectedPersonIndex];
-    console.log('[NonGeoint] Confirming person selection:', selectedPerson);
+    console.log('[NonGeoint] Starting investigation for selected person:', selectedPerson);
     
     if (selectedPerson?.nik) {
-      // Set isInvestigating FIRST to skip NIK selection step
-      setIsInvestigating(true);
-      
       // Set selected NIK
       setSelectedNiks([selectedPerson.nik]);
-      console.log('[NonGeoint] Set selected NIK:', selectedPerson.nik);
       
-      // Hide person selection
+      // Hide person selection and start investigation
       setShowPersonSelection(false);
+      setIsInvestigating(true);
+      setInvestigation(null);
       
-      // Directly start investigation with this NIK
+      // Start investigation
+      toast.info(`Memulai pendalaman NIK ${selectedPerson.nik}...`);
       startInvestigationWithNik(selectedPerson.nik);
     } else {
       toast.error('NIK tidak ditemukan untuk target ini');
     }
   };
 
-  // New function to start investigation directly with a NIK
+  // Function to start investigation with a NIK
   const startInvestigationWithNik = async (nik) => {
-    // isInvestigating already set in confirmPersonSelection
-    setInvestigation(null);
-    toast.info(`Memulai pendalaman NIK ${nik}...`);
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/api/nongeoint/investigate-niks`, {
