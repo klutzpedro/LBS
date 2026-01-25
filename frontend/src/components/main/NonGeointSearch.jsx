@@ -1020,14 +1020,203 @@ export const NonGeointSearchDialog = ({
         } else {
           setIsLoadingFromHistory(false); // Already loaded
         }
+      } else if (searchResults?.id) {
+        // Reopening with existing search in progress - just reload latest data
+        console.log('[NonGeoint] Reopening with existing search:', searchResults.id);
+        reloadCurrentSearch();
       } else {
-        // New search - reset everything to show fresh form
-        console.log('[NonGeoint] Dialog open for NEW search, resetting all states');
-        resetAllStates();
-        lastOpenedWithSearchRef.current = null;
+        // Check if there's an ongoing search saved in localStorage
+        const ongoingSearchId = localStorage.getItem('nongeoint_ongoing_search_id');
+        if (ongoingSearchId) {
+          console.log('[NonGeoint] Found ongoing search in localStorage:', ongoingSearchId);
+          loadOngoingSearch(ongoingSearchId);
+        } else {
+          // New search - reset everything to show fresh form
+          console.log('[NonGeoint] Dialog open for NEW search, resetting all states');
+          resetAllStates();
+          lastOpenedWithSearchRef.current = null;
+        }
       }
     }
   }, [initialSearch?.id, open]);
+  
+  // Function to reload current search data
+  const reloadCurrentSearch = async () => {
+    if (!searchResults?.id) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[NonGeoint] Reloaded search data:', {
+          status: data.status,
+          nik_photos_count: Object.keys(data.nik_photos || {}).length,
+          photos_fetched_count: data.photos_fetched_count
+        });
+        
+        setSearchResults(data);
+        setHasMoreBatches(data.has_more_batches || false);
+        setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
+        setTotalNiks(data.total_niks || data.niks_found?.length || 0);
+        
+        // Update persons list
+        if (data.nik_photos) {
+          const persons = Object.entries(data.nik_photos)
+            .map(([nik, d]) => ({
+              nik,
+              nama: d.name || d.nama,
+              name: d.name || d.nama,
+              photo: d.photo,
+              ttl: d.ttl,
+              alamat: d.alamat,
+              jk: d.jk,
+              status: d.status,
+              similarity: d.similarity || 0,
+              batch: d.batch
+            }))
+            .sort((a, b) => b.similarity - a.similarity);
+          
+          setPersonsFound(persons);
+        }
+        
+        // If still fetching, start polling
+        if (data.status === 'fetching_photos') {
+          startPollingForPhotos(data.id);
+        }
+      }
+    } catch (error) {
+      console.error('[NonGeoint] Error reloading search:', error);
+    }
+  };
+  
+  // Function to load ongoing search from localStorage
+  const loadOngoingSearch = async (searchId) => {
+    setIsLoadingFromHistory(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/search/${searchId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[NonGeoint] Loaded ongoing search:', {
+          id: data.id,
+          name: data.name,
+          status: data.status,
+          nik_photos_count: Object.keys(data.nik_photos || {}).length
+        });
+        
+        setSearchResults(data);
+        setSearchName(data.name || '');
+        setHasMoreBatches(data.has_more_batches || false);
+        setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
+        setTotalNiks(data.total_niks || data.niks_found?.length || 0);
+        
+        // Update persons list
+        if (data.nik_photos) {
+          const persons = Object.entries(data.nik_photos)
+            .map(([nik, d]) => ({
+              nik,
+              nama: d.name || d.nama,
+              name: d.name || d.nama,
+              photo: d.photo,
+              ttl: d.ttl,
+              alamat: d.alamat,
+              jk: d.jk,
+              status: d.status,
+              similarity: d.similarity || 0,
+              batch: d.batch
+            }))
+            .sort((a, b) => b.similarity - a.similarity);
+          
+          setPersonsFound(persons);
+          setShowPersonSelection(true);
+        }
+        
+        // If investigation exists
+        if (data.investigation) {
+          setInvestigation(data.investigation);
+          if (data.investigation.results) {
+            setSelectedNiks(Object.keys(data.investigation.results));
+          }
+        }
+        
+        // If still fetching, start polling
+        if (data.status === 'fetching_photos') {
+          startPollingForPhotos(data.id);
+        }
+        
+        toast.info(`Melanjutkan pencarian "${data.name}"`);
+      } else {
+        // Search not found, clear localStorage and show fresh form
+        localStorage.removeItem('nongeoint_ongoing_search_id');
+        resetAllStates();
+      }
+    } catch (error) {
+      console.error('[NonGeoint] Error loading ongoing search:', error);
+      localStorage.removeItem('nongeoint_ongoing_search_id');
+      resetAllStates();
+    }
+    
+    setIsLoadingFromHistory(false);
+  };
+  
+  // Function to start polling for photo fetching
+  const startPollingForPhotos = (searchId) => {
+    console.log('[NonGeoint] Starting polling for photos:', searchId);
+    
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+    
+    pollingRef.current = setInterval(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/nongeoint/search/${searchId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          if (data.status !== 'fetching_photos') {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          
+          setSearchResults(data);
+          setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
+          
+          if (data.nik_photos) {
+            const persons = Object.entries(data.nik_photos)
+              .map(([nik, d]) => ({
+                nik,
+                nama: d.name || d.nama,
+                name: d.name || d.nama,
+                photo: d.photo,
+                ttl: d.ttl,
+                alamat: d.alamat,
+                jk: d.jk,
+                status: d.status,
+                similarity: d.similarity || 0,
+                batch: d.batch
+              }))
+              .sort((a, b) => b.similarity - a.similarity);
+            
+            setPersonsFound(persons);
+          }
+        }
+      } catch (error) {
+        console.error('[NonGeoint] Polling error:', error);
+      }
+    }, 3000);
+  };
 
   // Cleanup on close - DON'T reset if search is in progress
   useEffect(() => {
