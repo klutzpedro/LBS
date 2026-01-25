@@ -1029,11 +1029,19 @@ export const NonGeointSearchDialog = ({
     }
   }, [initialSearch?.id, open]);
 
-  // Cleanup on close - reset all states
+  // Cleanup on close - DON'T reset if search is in progress
   useEffect(() => {
     if (!open) {
-      console.log('[NonGeoint] Dialog closing, resetting states');
-      // Clear polling intervals
+      console.log('[NonGeoint] Dialog closing');
+      
+      // Save current search ID to localStorage if search is in progress
+      if (searchResults?.id && (searchResults?.status === 'fetching_photos' || searchResults?.status === 'waiting_selection' || isLoadingMorePhotos)) {
+        console.log('[NonGeoint] Saving ongoing search to localStorage:', searchResults.id);
+        localStorage.setItem('nongeoint_ongoing_search_id', searchResults.id);
+      }
+      
+      // Clear polling intervals but DON'T reset states
+      // Backend will continue fetching in background
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
@@ -1042,12 +1050,11 @@ export const NonGeointSearchDialog = ({
         clearInterval(investigationPollingRef.current);
         investigationPollingRef.current = null;
       }
-      // Reset all states when dialog closes
-      resetAllStates();
-      // IMPORTANT: Reset the ref so next open will load fresh data
-      lastOpenedWithSearchRef.current = null;
+      
+      // Only reset if user explicitly started a NEW search or there's no ongoing search
+      // Don't reset here - let it persist so reopening continues from where we left off
     }
-  }, [open]);
+  }, [open, searchResults?.id, searchResults?.status, isLoadingMorePhotos]);
 
   // Process search results to extract persons WITH PHOTOS
   useEffect(() => {
