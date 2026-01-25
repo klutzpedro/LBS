@@ -5960,7 +5960,8 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
             {"$set": {
                 "selected_nik": request.nik,
                 "nik_data": nik_data,
-                "has_photo": photo is not None
+                "has_photo": photo is not None,
+                "photo": photo
             }}
         )
         
@@ -5974,6 +5975,36 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
         
     except Exception as e:
         logger.error(f"[FR] Error getting NIK details: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/face-recognition/history")
+async def fr_get_history(username: str = Depends(verify_token)):
+    """
+    Get Face Recognition search history for the user.
+    """
+    try:
+        sessions = await db.fr_sessions.find(
+            {"created_by": username}
+        ).sort("created_at", -1).limit(50).to_list(50)
+        
+        # Format for frontend
+        history = []
+        for session in sessions:
+            history.append({
+                "id": session.get("id"),
+                "created_at": session.get("created_at"),
+                "selected_nik": session.get("selected_nik"),
+                "matches": session.get("matches", []),
+                "nik_data": session.get("nik_data"),
+                "photo": session.get("photo"),
+                "input_image_full": session.get("input_image_full")  # Full input image if stored
+            })
+        
+        return {"history": history}
+        
+    except Exception as e:
+        logger.error(f"[FR] Error fetching history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
