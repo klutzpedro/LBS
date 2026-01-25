@@ -40,7 +40,7 @@ import {
 import { NonGeointButton, NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main/NonGeointSearch';
 
 // Face Recognition
-import { FaceRecognitionButton, FaceRecognitionDialog } from '@/components/main/FaceRecognition';
+import { FaceRecognitionButton, FaceRecognitionDialog, FaceRecognitionHistoryDialog } from '@/components/main/FaceRecognition';
 
 const MainApp = () => {
   const { username, logout } = useAuth();
