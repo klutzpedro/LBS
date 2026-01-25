@@ -5833,12 +5833,12 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         # Sort by percentage descending
         matches.sort(key=lambda x: x['percentage'], reverse=True)
         
-        # Store session for later use
+        # Store session for later use (store full input image for history)
         await db.fr_sessions.insert_one({
             "id": session_id,
             "created_by": username,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "input_image": request.image[:100] + "...",  # Store truncated reference
+            "input_image_full": request.image,  # Store full image for history
             "matches": matches,
             "raw_response": raw_response
         })
