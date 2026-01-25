@@ -2136,7 +2136,10 @@ export const NonGeointSearchDialog = ({
                           <>
                             <Loader2 className="w-8 h-8 animate-spin mb-2" style={{ color: '#f59e0b' }} />
                             <span className="text-xs font-semibold text-center" style={{ color: '#f59e0b' }}>
-                              Memuat...
+                              Memuat Foto {photosFetched + 1}-{Math.min(photosFetched + 10, totalNiks)}...
+                            </span>
+                            <span className="text-xs text-center mt-1" style={{ color: '#fbbf24' }}>
+                              dari {totalNiks} total
                             </span>
                           </>
                         ) : (
@@ -2148,7 +2151,7 @@ export const NonGeointSearchDialog = ({
                               <span style={{ color: '#3b82f6', fontSize: '24px' }}>+</span>
                             </div>
                             <span className="text-xs font-semibold text-center" style={{ color: '#3b82f6' }}>
-                              Muat 10 Lainnya
+                              Muat Foto {photosFetched + 1}-{Math.min(photosFetched + 10, totalNiks)}
                             </span>
                             <span className="text-xs text-center mt-1" style={{ color: '#60a5fa' }}>
                               ({totalNiks - photosFetched} tersisa)
