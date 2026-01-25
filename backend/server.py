@@ -16,6 +16,7 @@ import asyncio
 from telethon import TelegramClient, events
 import re
 import httpx  # For CP API calls
+import socket  # For forcing IPv4
 
 ROOT_DIR = Path(__file__).parent
 env_path = ROOT_DIR / '.env'
