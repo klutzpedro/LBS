@@ -1678,6 +1678,7 @@ export const NonGeointSearchDialog = ({
     }
     
     // PRIORITY 3: Show person selection if we have nik_photos AND showPersonSelection is true
+    // ALWAYS show photo selection even if only 1 NIK (for verification)
     if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       // Only show person selection if showPersonSelection is true
       if (showPersonSelection) {
@@ -1691,8 +1692,8 @@ export const NonGeointSearchDialog = ({
       return 'select_nik';
     }
     
-    // Legacy: show person selection from CAPIL extraction
-    if (showPersonSelection && personsFound.length > 1) return 'select_person';
+    // Legacy: show person selection from CAPIL extraction (even for 1 person for verification)
+    if (showPersonSelection && personsFound.length >= 1) return 'select_person';
     
     // If we have NIKs found but no investigation yet, show NIK selection
     if (searchResults.niks_found?.length > 0) return 'select_nik';
