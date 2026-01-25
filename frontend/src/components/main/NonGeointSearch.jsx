@@ -2189,14 +2189,14 @@ export const NonGeointSearchDialog = ({
                     >
                       {selectedPersonIndex === null 
                         ? '👆 Klik Foto Untuk Memilih Target' 
-                        : '✓ Lanjutkan dengan Target Terpilih'}
+                        : '🔍 Mulai Pendalaman Target Terpilih'}
                     </button>
                     
                     {/* Selection status */}
                     <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
                       {selectedPersonIndex === null 
                         ? `Belum ada target dipilih (${photosFetched}/${totalNiks} foto dimuat)` 
-                        : `Target dipilih: ${personsFound[selectedPersonIndex]?.nama || personsFound[selectedPersonIndex]?.nik || 'Unknown'}`}
+                        : `Target: ${personsFound[selectedPersonIndex]?.nama || personsFound[selectedPersonIndex]?.name || 'Unknown'} - NIK: ${personsFound[selectedPersonIndex]?.nik}`}
                     </p>
                   </div>
                 </div>
