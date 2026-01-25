@@ -746,6 +746,38 @@ export const FaceRecognitionHistoryDialog = ({ open, onOpenChange, onSelectItem 
     pdf.text(`Session ID: ${item.id}`, margin, yPos);
     yPos += 10;
 
+    // Add photos side by side
+    const photoWidth = 50;
+    const photoHeight = 60;
+    
+    if (item.input_image_full || item.photo) {
+      yPos += 5;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      
+      // Input photo
+      if (item.input_image_full) {
+        pdf.text('FOTO INPUT:', margin, yPos);
+        try {
+          pdf.addImage(item.input_image_full, 'JPEG', margin, yPos + 3, photoWidth, photoHeight);
+        } catch (e) {
+          console.log('Error adding input photo to PDF:', e);
+        }
+      }
+      
+      // Database photo
+      if (item.photo) {
+        pdf.text('FOTO DATABASE:', margin + 70, yPos);
+        try {
+          pdf.addImage(item.photo, 'JPEG', margin + 70, yPos + 3, photoWidth, photoHeight);
+        } catch (e) {
+          console.log('Error adding database photo to PDF:', e);
+        }
+      }
+      
+      yPos += photoHeight + 10;
+    }
+
     if (item.matches && item.matches.length > 0) {
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
@@ -755,7 +787,10 @@ export const FaceRecognitionHistoryDialog = ({ open, onOpenChange, onSelectItem 
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       item.matches.forEach((match, idx) => {
-        pdf.text(`${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match`, margin + 5, yPos);
+        const matchText = idx === 0 
+          ? `${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match (TOP)`
+          : `${idx + 1}. NIK: ${match.nik} - ${match.percentage}% Match`;
+        pdf.text(matchText, margin + 5, yPos);
         yPos += lineHeight;
       });
       yPos += 5;
@@ -769,7 +804,7 @@ export const FaceRecognitionHistoryDialog = ({ open, onOpenChange, onSelectItem 
       
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('Data NIK:', margin, yPos);
+      pdf.text('Data NIK (TOP Match):', margin, yPos);
       yPos += lineHeight;
 
       pdf.setFontSize(10);
