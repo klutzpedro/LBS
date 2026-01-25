@@ -1231,7 +1231,10 @@ export const NonGeointSearchDialog = ({
     console.log('[NonGeoint] Confirming person selection:', selectedPerson);
     
     if (selectedPerson?.nik) {
-      // Set selected NIK and immediately start investigation
+      // Set isInvestigating FIRST to skip NIK selection step
+      setIsInvestigating(true);
+      
+      // Set selected NIK
       setSelectedNiks([selectedPerson.nik]);
       console.log('[NonGeoint] Set selected NIK:', selectedPerson.nik);
       
@@ -1247,7 +1250,7 @@ export const NonGeointSearchDialog = ({
 
   // New function to start investigation directly with a NIK
   const startInvestigationWithNik = async (nik) => {
-    setIsInvestigating(true);
+    // isInvestigating already set in confirmPersonSelection
     setInvestigation(null);
     toast.info(`Memulai pendalaman NIK ${nik}...`);
 
