@@ -1612,8 +1612,9 @@ const MainApp = () => {
           />
 
           {/* NON GEOINT Search Button - Top Center of Map */}
+          {/* Query Nama & Face Recognition Buttons */}
           <div 
-            className="fixed z-[2000]"
+            className="fixed z-[2000] flex flex-col gap-2"
             style={{
               top: '8px',
               left: '50%',
@@ -1631,6 +1632,10 @@ const MainApp = () => {
               }} 
               onOpenHistory={() => setNonGeointHistoryOpen(true)}
               isInvestigating={isGlobalInvestigating}
+            />
+            <FaceRecognitionButton 
+              onClick={() => setFrDialogOpen(true)}
+              isProcessing={isFrProcessing}
             />
           </div>
 
