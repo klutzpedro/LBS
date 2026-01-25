@@ -2334,8 +2334,8 @@ export const NonGeointSearchDialog = ({
                       />
                     ))}
                     
-                    {/* Load More Card */}
-                    {hasMoreBatches && (
+                    {/* Load More Card - Only show if there are actually more photos to load */}
+                    {hasMoreBatches && (totalNiks - photosFetched > 0) && (
                       <div 
                         className="p-3 rounded-md border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:opacity-80 transition-all"
                         onClick={handleLoadMorePhotos}
