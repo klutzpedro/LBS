@@ -4587,11 +4587,12 @@ async def execute_regnik_query(investigation_id: str, nik: str) -> dict:
 
 async def query_passport_cp_api(nik: str, name: str = None) -> dict:
     """
-    Query passport data via CP API
+    Query passport data via CP API using curl command
     - WNI: search by NIK
     - If name provided, also search WNA by name
     """
-    import httpx
+    import subprocess
+    import json
     
     result = {
         "status": "processing",
@@ -4601,20 +4602,19 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
     }
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Query WNI passport by NIK
-            logger.info(f"[PASSPORT CP] Querying WNI passport by NIK: {nik}")
-            wni_response = await client.get(
-                f"{CP_API_URL}/api/v3/imigrasi/wni",
-                params={"type": "nik", "query": nik},
-                headers={"api-key": CP_API_KEY}
-            )
-            
-            logger.info(f"[PASSPORT CP] WNI response status: {wni_response.status_code}")
-            
-            if wni_response.status_code == 200:
-                wni_data = wni_response.json()
-                logger.info(f"[PASSPORT CP] WNI response data: {str(wni_data)[:500]}")
+        # Query WNI passport by NIK using curl
+        logger.info(f"[PASSPORT CP] Querying WNI passport by NIK: {nik}")
+        
+        wni_cmd = f"curl -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={nik}' -s"
+        logger.info(f"[PASSPORT CP] WNI curl command: {wni_cmd[:100]}...")
+        
+        wni_process = subprocess.run(wni_cmd, shell=True, capture_output=True, text=True, timeout=30)
+        
+        logger.info(f"[PASSPORT CP] WNI response: {wni_process.stdout[:500] if wni_process.stdout else 'empty'}")
+        
+        if wni_process.stdout:
+            try:
+                wni_data = json.loads(wni_process.stdout)
                 if wni_data.get("response_status") or wni_data.get("data"):
                     result["wni_data"] = wni_data
                     # Extract passport numbers
@@ -4624,23 +4624,27 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                             if passport_no and passport_no not in result["passports"]:
                                 result["passports"].append(passport_no)
                     logger.info(f"[PASSPORT CP] WNI data found, passports: {result['passports']}")
-            else:
-                logger.warning(f"[PASSPORT CP] WNI API returned status {wni_response.status_code}: {wni_response.text[:200]}")
+            except json.JSONDecodeError as e:
+                logger.warning(f"[PASSPORT CP] WNI JSON decode error: {e}, response: {wni_process.stdout[:200]}")
+        
+        # If name provided, also search WNA
+        if name:
+            logger.info(f"[PASSPORT CP] Querying WNA passport by name: {name}")
             
-            # If name provided, also search WNA
-            if name:
-                logger.info(f"[PASSPORT CP] Querying WNA passport by name: {name}")
-                wna_response = await client.get(
-                    f"{CP_API_URL}/api/v3/imigrasi/wna",
-                    params={"type": "name", "query": name},
-                    headers={"api-key": CP_API_KEY}
-                )
-                
-                logger.info(f"[PASSPORT CP] WNA response status: {wna_response.status_code}")
-                
-                if wna_response.status_code == 200:
-                    wna_data = wna_response.json()
-                    logger.info(f"[PASSPORT CP] WNA response data: {str(wna_data)[:500]}")
+            # URL encode the name
+            import urllib.parse
+            encoded_name = urllib.parse.quote(name)
+            
+            wna_cmd = f"curl -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_name}' -s"
+            logger.info(f"[PASSPORT CP] WNA curl command: {wna_cmd[:100]}...")
+            
+            wna_process = subprocess.run(wna_cmd, shell=True, capture_output=True, text=True, timeout=30)
+            
+            logger.info(f"[PASSPORT CP] WNA response: {wna_process.stdout[:500] if wna_process.stdout else 'empty'}")
+            
+            if wna_process.stdout:
+                try:
+                    wna_data = json.loads(wna_process.stdout)
                     if wna_data.get("response_status") or wna_data.get("data"):
                         result["wna_data"] = wna_data
                         # Extract passport numbers
@@ -4650,11 +4654,15 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                                 if passport_no and passport_no not in result["passports"]:
                                     result["passports"].append(passport_no)
                         logger.info(f"[PASSPORT CP] WNA data found")
-                else:
-                    logger.warning(f"[PASSPORT CP] WNA API returned status {wna_response.status_code}: {wna_response.text[:200]}")
-            
-            result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
-            
+                except json.JSONDecodeError as e:
+                    logger.warning(f"[PASSPORT CP] WNA JSON decode error: {e}, response: {wna_process.stdout[:200]}")
+        
+        result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
+        
+    except subprocess.TimeoutExpired:
+        logger.error(f"[PASSPORT CP] Timeout")
+        result["status"] = "error"
+        result["error"] = "Request timeout"
     except Exception as e:
         logger.error(f"[PASSPORT CP] Error: {e}")
         result["status"] = "error"
@@ -4665,9 +4673,10 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
 
 async def query_perlintasan_cp_api(passport_no: str) -> dict:
     """
-    Query immigration crossing (perlintasan) data via CP API
+    Query immigration crossing (perlintasan) data via CP API using curl command
     """
-    import httpx
+    import subprocess
+    import json
     
     result = {
         "status": "processing",
@@ -4677,18 +4686,19 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
     }
     
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            logger.info(f"[PERLINTASAN CP] Querying crossings for passport: {passport_no}")
-            
-            # Query perlintasan/crossing data
-            response = await client.post(
-                f"{CP_API_URL}/api/v3/imigrasi/lintas",
-                data={"nopas": passport_no},
-                headers={"api-key": CP_API_KEY}
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
+        logger.info(f"[PERLINTASAN CP] Querying crossings for passport: {passport_no}")
+        
+        # Use curl with -d for POST data
+        lintas_cmd = f"curl -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/lintas' -d 'nopas={passport_no}' -s"
+        logger.info(f"[PERLINTASAN CP] curl command: {lintas_cmd[:100]}...")
+        
+        process = subprocess.run(lintas_cmd, shell=True, capture_output=True, text=True, timeout=30)
+        
+        logger.info(f"[PERLINTASAN CP] response: {process.stdout[:500] if process.stdout else 'empty'}")
+        
+        if process.stdout:
+            try:
+                data = json.loads(process.stdout)
                 result["raw_data"] = data
                 
                 if data.get("response_status") and data.get("dataPerlintasan"):
@@ -4707,8 +4717,8 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
                             "movement_date": crossing.get("MOVEMENTDATE", "-"),
                             "direction": "ARRIVAL" if crossing.get("DIRECTIONCODE") == "A" else "DEPARTURE" if crossing.get("DIRECTIONCODE") == "D" else crossing.get("DIRECTIONCODE", "-"),
                             "direction_code": crossing.get("DIRECTIONCODE", "-"),
-                            "tpi_name": crossing.get("TPINAME", "-"),  # TPI = Tempat Pemeriksaan Imigrasi (Immigration checkpoint)
-                            "port_description": crossing.get("PORTDESCRIPTION", "-")  # Destination/Origin port
+                            "tpi_name": crossing.get("TPINAME", "-"),
+                            "port_description": crossing.get("PORTDESCRIPTION", "-")
                         }
                         result["crossings"].append(parsed)
                     
@@ -4719,11 +4729,18 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
                     result["status"] = "no_data"
                     result["message"] = data.get("response_message", "No crossing data found")
                     logger.info(f"[PERLINTASAN CP] No data found: {data.get('response_message')}")
-            else:
+            except json.JSONDecodeError as e:
+                logger.warning(f"[PERLINTASAN CP] JSON decode error: {e}, response: {process.stdout[:200]}")
                 result["status"] = "error"
-                result["error"] = f"API returned status {response.status_code}"
-                logger.warning(f"[PERLINTASAN CP] API returned status {response.status_code}: {response.text[:200]}")
-                
+                result["error"] = f"Invalid JSON response: {process.stdout[:100]}"
+        else:
+            result["status"] = "error"
+            result["error"] = "Empty response from API"
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"[PERLINTASAN CP] Timeout")
+        result["status"] = "error"
+        result["error"] = "Request timeout"
     except Exception as e:
         logger.error(f"[PERLINTASAN CP] Error: {e}")
         result["status"] = "error"
