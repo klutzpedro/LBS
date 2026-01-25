@@ -217,9 +217,15 @@ async def decrement_cp_api_quota():
 async def check_cp_api_connection():
     """Check if CP API is reachable AND authorized (not 403)"""
     try:
-        # Force IPv4 for whitelisted IP
+        # Force IPv4 for whitelisted IP using socket.AF_INET
         transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-        async with httpx.AsyncClient(timeout=10.0, transport=transport) as client:
+        
+        # Create limits that force IPv4
+        async with httpx.AsyncClient(
+            timeout=10.0, 
+            transport=transport,
+            follow_redirects=True
+        ) as client:
             # Try a simple request to check authorization
             response = await client.get(
                 f"{CP_API_URL}/api/v3/cekpos",
