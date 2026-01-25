@@ -5791,40 +5791,60 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         logger.info(f"[FR {session_id}] Photo sent to bot with caption 'FR'")
         
         # Wait for bot response with face match results
-        await asyncio.sleep(5)  # Give bot time to process
+        await asyncio.sleep(8)  # Give bot more time to process
         
         # Get recent messages from bot
-        messages = await telegram_client.get_messages(bot_entity, limit=10)
+        messages = await telegram_client.get_messages(bot_entity, limit=15)
         
         matches = []
         raw_response = ""
+        buttons_message_id = None
         
         for msg in messages:
-            if msg.text and msg.out == False:  # Bot's message (not ours)
-                raw_response = msg.text
-                logger.info(f"[FR {session_id}] Bot response: {msg.text[:200]}...")
+            if msg.out:  # Skip our own messages
+                continue
                 
-                # Parse face match results
-                # Expected format: NIK: 1234567890123456 - 85% or similar patterns
-                nik_pattern = re.findall(r'(\d{16})\s*[-:]\s*(\d{1,3})%', msg.text)
+            # Check if this message has buttons (NIK selection buttons)
+            if msg.buttons and not buttons_message_id:
+                buttons_message_id = msg.id
+                logger.info(f"[FR {session_id}] Found message with buttons, ID: {msg.id}")
+                
+            if msg.text:
+                raw_response = msg.text
+                logger.info(f"[FR {session_id}] Bot response: {msg.text[:300]}...")
+                
+                # Parse face match results - multiple patterns
+                # Pattern 1: NIK - percentage% or NIK: percentage%
+                nik_pattern = re.findall(r'(\d{16})\s*[-:=]\s*(\d{1,3}(?:\.\d+)?)\s*%', msg.text)
                 
                 if nik_pattern:
                     for nik, percentage in nik_pattern:
+                        pct = float(percentage)
                         matches.append({
                             "nik": nik,
-                            "percentage": int(percentage)
+                            "percentage": round(pct, 2)
                         })
                 
-                # Alternative pattern: look for NIK and percentage separately
+                # Pattern 2: percentage% followed by NIK
                 if not matches:
-                    niks = re.findall(r'\b(\d{16})\b', msg.text)
-                    percentages = re.findall(r'(\d{1,3})%', msg.text)
-                    
-                    for i, nik in enumerate(niks):
-                        pct = int(percentages[i]) if i < len(percentages) else 0
+                    pattern2 = re.findall(r'(\d{1,3}(?:\.\d+)?)\s*%\s*[-:=]?\s*(\d{16})', msg.text)
+                    for percentage, nik in pattern2:
+                        pct = float(percentage)
                         matches.append({
                             "nik": nik,
-                            "percentage": pct
+                            "percentage": round(pct, 2)
+                        })
+                
+                # Pattern 3: Look for NIKs and percentages in same message
+                if not matches:
+                    niks = re.findall(r'\b(\d{16})\b', msg.text)
+                    percentages = re.findall(r'(\d{1,3}(?:\.\d+)?)\s*%', msg.text)
+                    
+                    for i, nik in enumerate(niks):
+                        pct = float(percentages[i]) if i < len(percentages) else 0
+                        matches.append({
+                            "nik": nik,
+                            "percentage": round(pct, 2)
                         })
                 
                 if matches:
@@ -5840,7 +5860,8 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
             "created_at": datetime.now(timezone.utc).isoformat(),
             "input_image_full": request.image,  # Store full image for history
             "matches": matches,
-            "raw_response": raw_response
+            "raw_response": raw_response,
+            "buttons_message_id": buttons_message_id
         })
         
         # Cleanup temp file
@@ -5849,7 +5870,7 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         except:
             pass
         
-        logger.info(f"[FR {session_id}] Found {len(matches)} matches")
+        logger.info(f"[FR {session_id}] Found {len(matches)} matches, buttons_msg_id: {buttons_message_id}")
         
         return {
             "session_id": session_id,
@@ -5859,6 +5880,8 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         
     except Exception as e:
         logger.error(f"[FR] Error: {e}")
+        import traceback
+        logger.error(f"[FR] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
