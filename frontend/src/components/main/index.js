@@ -21,3 +21,6 @@ export {
   NikInfoDialog, 
   FamilyTreeDialog 
 } from './TargetDialogs';
+
+// Face Recognition
+export { FaceRecognitionButton, FaceRecognitionDialog } from './FaceRecognition';
