@@ -1869,6 +1869,12 @@ const MainApp = () => {
         open={frDialogOpen}
         onOpenChange={setFrDialogOpen}
       />
+
+      {/* Face Recognition History Dialog */}
+      <FaceRecognitionHistoryDialog
+        open={frHistoryOpen}
+        onOpenChange={setFrHistoryOpen}
+      />
     </div>
   );
 };
