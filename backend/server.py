@@ -5889,7 +5889,7 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
 async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(verify_token)):
     """
     Get detailed NIK data for the selected match.
-    Sends NIK to bot and retrieves full data with photo.
+    Sends NIK to bot, clicks the NIK selection button, and retrieves full data with photo.
     """
     global telegram_client
     
@@ -5903,44 +5903,216 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
         
         # Get messages before we send anything (to track new messages later)
         old_messages = await telegram_client.get_messages(bot_entity, limit=3)
-        last_msg_id = old_messages[0].id if old_messages else 0
-        logger.info(f"[FR] Last message ID before query: {last_msg_id}")
+        last_msg_id_before_send = old_messages[0].id if old_messages else 0
+        logger.info(f"[FR] Last message ID before sending NIK: {last_msg_id_before_send}")
         
-        # First, try to click on the NIK button if it exists in recent messages
+        # Step 1: First check if there's already a button with our NIK from previous FR match
         messages = await telegram_client.get_messages(bot_entity, limit=10)
         
-        nik_clicked = False
+        nik_button_clicked = False
         for msg in messages:
             if msg.buttons:
                 for row in msg.buttons:
                     for button in row:
                         button_text = button.text or ''
-                        # Check if button contains our NIK
                         if request.nik in button_text:
-                            logger.info(f"[FR] Found and clicking NIK button: {button_text}")
+                            logger.info(f"[FR] Found existing NIK button, clicking: {button_text}")
                             try:
                                 await button.click()
-                                nik_clicked = True
-                                logger.info(f"[FR] Successfully clicked NIK button")
+                                nik_button_clicked = True
+                                logger.info(f"[FR] Successfully clicked existing NIK button")
                             except Exception as btn_err:
-                                logger.error(f"[FR] Error clicking button: {btn_err}")
+                                logger.error(f"[FR] Error clicking existing button: {btn_err}")
                             break
-                    if nik_clicked:
+                    if nik_button_clicked:
                         break
-            if nik_clicked:
+            if nik_button_clicked:
                 break
         
-        # If no button found, send NIK as text command
-        if not nik_clicked:
-            logger.info(f"[FR] No button found for NIK, sending as text: {request.nik}")
+        # Step 2: If no existing button, send NIK as text to trigger bot response
+        if not nik_button_clicked:
+            logger.info(f"[FR] No existing button found, sending NIK as text: {request.nik}")
             await telegram_client.send_message(bot_entity, request.nik)
+            
+            # Wait for bot to respond with selection buttons
+            logger.info(f"[FR] Waiting for bot to send selection buttons...")
+            await asyncio.sleep(5)
+            
+            # Get new messages and look for buttons
+            new_messages = await telegram_client.get_messages(bot_entity, limit=10)
+            
+            for msg in new_messages:
+                if msg.id <= last_msg_id_before_send:
+                    continue
+                if msg.out:
+                    continue
+                    
+                # Check if this message has buttons (NIK selection)
+                if msg.buttons:
+                    logger.info(f"[FR] Found message with {len(msg.buttons)} button rows")
+                    
+                    # Try to find and click button with our NIK, or click first button
+                    button_clicked = False
+                    for row in msg.buttons:
+                        for button in row:
+                            button_text = button.text or ''
+                            logger.info(f"[FR] Checking button: '{button_text}'")
+                            
+                            # Click if button contains our NIK or is a numbered option
+                            if request.nik in button_text or button_text.strip().isdigit() or 'NIK' in button_text.upper():
+                                logger.info(f"[FR] Clicking selection button: {button_text}")
+                                try:
+                                    await button.click()
+                                    button_clicked = True
+                                    nik_button_clicked = True
+                                    logger.info(f"[FR] Successfully clicked selection button")
+                                except Exception as btn_err:
+                                    logger.error(f"[FR] Error clicking selection button: {btn_err}")
+                                break
+                        if button_clicked:
+                            break
+                    
+                    # If no specific button found, try clicking the first button
+                    if not button_clicked and msg.buttons[0]:
+                        first_button = msg.buttons[0][0] if msg.buttons[0] else None
+                        if first_button:
+                            logger.info(f"[FR] Clicking first button as fallback: {first_button.text}")
+                            try:
+                                await first_button.click()
+                                nik_button_clicked = True
+                                logger.info(f"[FR] Successfully clicked first button")
+                            except Exception as btn_err:
+                                logger.error(f"[FR] Error clicking first button: {btn_err}")
+                    
+                    if nik_button_clicked:
+                        break
         
-        # Wait longer for bot response (bot might need time to fetch data)
-        logger.info(f"[FR] Waiting for bot response...")
+        # Step 3: Wait for bot to process and send photo + data
+        logger.info(f"[FR] Waiting for bot to process and return data...")
         await asyncio.sleep(8)
         
-        # Get NEW messages from bot (after our query)
-        all_messages = await telegram_client.get_messages(bot_entity, limit=20)
+        # Step 4: Get the response with photo and data
+        # Get fresh message ID to track
+        check_messages = await telegram_client.get_messages(bot_entity, limit=3)
+        last_msg_id_after_click = check_messages[0].id if check_messages else last_msg_id_before_send
+        
+        all_messages = await telegram_client.get_messages(bot_entity, limit=25)
+        
+        nik_data = {}
+        photo = None
+        found_data = False
+        
+        for msg in all_messages:
+            if msg.out:
+                continue
+            
+            # Process messages after our initial send
+            if msg.id <= last_msg_id_before_send:
+                continue
+            
+            logger.info(f"[FR] Processing message ID {msg.id}, has_photo: {msg.photo is not None}, has_text: {msg.text is not None}")
+            
+            # Download photo if available
+            if msg.photo and not photo:
+                logger.info(f"[FR] Found photo in message ID {msg.id}, downloading...")
+                try:
+                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                    if photo_bytes:
+                        import base64
+                        photo = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode()}"
+                        logger.info(f"[FR] Photo downloaded successfully, size: {len(photo_bytes)} bytes")
+                        found_data = True
+                except Exception as photo_err:
+                    logger.error(f"[FR] Error downloading photo: {photo_err}")
+            
+            # Parse text data
+            if msg.text:
+                text = msg.text
+                logger.info(f"[FR] Parsing text: {text[:300]}...")
+                
+                # Parse key-value pairs
+                lines = text.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if not line or len(line) < 3:
+                        continue
+                    
+                    # Try different delimiters
+                    for delimiter in [':', ' - ', '=']:
+                        if delimiter in line:
+                            parts = line.split(delimiter, 1)
+                            if len(parts) == 2:
+                                key = parts[0].strip()
+                                value = parts[1].strip()
+                                if key and value and 2 < len(key) < 30:
+                                    nik_data[key] = value
+                                    found_data = True
+                            break
+                
+                # Extract specific fields with regex
+                # NIK
+                nik_match = re.search(r'NIK\s*[:\-=]?\s*(\d{16})', text, re.IGNORECASE)
+                if nik_match:
+                    nik_data['NIK'] = nik_match.group(1)
+                
+                # Nama
+                nama_match = re.search(r'(?:Nama|Name|NAMA)\s*[:\-=]?\s*([A-Za-z\s\.\']+)', text)
+                if nama_match and len(nama_match.group(1).strip()) > 2:
+                    nik_data['Nama'] = nama_match.group(1).strip()
+                
+                # Tempat/Tanggal Lahir
+                ttl_match = re.search(r'(?:Tempat.*?Lahir|TTL)\s*[:\-=]?\s*([A-Za-z\s,]+[\d\-\/]+)', text, re.IGNORECASE)
+                if ttl_match:
+                    nik_data['Tempat/Tgl Lahir'] = ttl_match.group(1).strip()
+                
+                # Alamat
+                alamat_match = re.search(r'(?:Alamat|Address)\s*[:\-=]?\s*(.+)', text, re.IGNORECASE)
+                if alamat_match:
+                    nik_data['Alamat'] = alamat_match.group(1).strip()
+                
+                # Jenis Kelamin
+                jk_match = re.search(r'(?:Jenis Kelamin|JK|Gender)\s*[:\-=]?\s*([A-Za-z\-]+)', text, re.IGNORECASE)
+                if jk_match:
+                    nik_data['Jenis Kelamin'] = jk_match.group(1).strip()
+                
+                # Agama
+                agama_match = re.search(r'(?:Agama|Religion)\s*[:\-=]?\s*([A-Za-z]+)', text, re.IGNORECASE)
+                if agama_match:
+                    nik_data['Agama'] = agama_match.group(1).strip()
+                
+                # Pekerjaan
+                kerja_match = re.search(r'(?:Pekerjaan|Occupation|Job)\s*[:\-=]?\s*([A-Za-z\s\/]+)', text, re.IGNORECASE)
+                if kerja_match:
+                    nik_data['Pekerjaan'] = kerja_match.group(1).strip()
+        
+        # Always include the queried NIK
+        if 'NIK' not in nik_data:
+            nik_data['NIK'] = request.nik
+        
+        # Update session with NIK details
+        await db.fr_sessions.update_one(
+            {"id": request.fr_session_id},
+            {"$set": {
+                "selected_nik": request.nik,
+                "nik_data": nik_data,
+                "has_photo": photo is not None,
+                "photo": photo
+            }}
+        )
+        
+        logger.info(f"[FR] Result - NIK data keys: {list(nik_data.keys())}, has_photo: {photo is not None}, found_data: {found_data}")
+        
+        return {
+            "nik": request.nik,
+            "nik_data": nik_data,
+            "photo": photo
+        }
+        
+    except Exception as e:
+        logger.error(f"[FR] Error getting NIK details: {e}")
+        import traceback
+        logger.error(f"[FR] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
         
         nik_data = {}
         photo = None
