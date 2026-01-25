@@ -5870,7 +5870,7 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     """
     global telegram_client
     
-    logger.info(f"[FR] Getting NIK details for {request.nik}")
+    logger.info(f"[FR] Getting NIK details for TOP NIK: {request.nik}")
     
     try:
         if not telegram_client or not telegram_client.is_connected():
@@ -5878,81 +5878,146 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
         
         bot_entity = await telegram_client.get_entity("@northarch_bot")
         
-        # First, click on the NIK button if it exists in recent messages
-        messages = await telegram_client.get_messages(bot_entity, limit=5)
+        # Get messages before we send anything (to track new messages later)
+        old_messages = await telegram_client.get_messages(bot_entity, limit=3)
+        last_msg_id = old_messages[0].id if old_messages else 0
+        logger.info(f"[FR] Last message ID before query: {last_msg_id}")
+        
+        # First, try to click on the NIK button if it exists in recent messages
+        messages = await telegram_client.get_messages(bot_entity, limit=10)
         
         nik_clicked = False
         for msg in messages:
             if msg.buttons:
                 for row in msg.buttons:
                     for button in row:
-                        if request.nik in (button.text or ''):
-                            logger.info(f"[FR] Clicking NIK button: {button.text}")
-                            await button.click()
-                            nik_clicked = True
+                        button_text = button.text or ''
+                        # Check if button contains our NIK
+                        if request.nik in button_text:
+                            logger.info(f"[FR] Found and clicking NIK button: {button_text}")
+                            try:
+                                await button.click()
+                                nik_clicked = True
+                                logger.info(f"[FR] Successfully clicked NIK button")
+                            except Exception as btn_err:
+                                logger.error(f"[FR] Error clicking button: {btn_err}")
                             break
                     if nik_clicked:
                         break
             if nik_clicked:
                 break
         
-        # If no button found, send NIK as text
+        # If no button found, send NIK as text command
         if not nik_clicked:
-            logger.info(f"[FR] No button found, sending NIK as text")
+            logger.info(f"[FR] No button found for NIK, sending as text: {request.nik}")
             await telegram_client.send_message(bot_entity, request.nik)
         
-        # Wait for response
-        await asyncio.sleep(5)
+        # Wait longer for bot response (bot might need time to fetch data)
+        logger.info(f"[FR] Waiting for bot response...")
+        await asyncio.sleep(8)
         
-        # Get bot response
-        messages = await telegram_client.get_messages(bot_entity, limit=15)
+        # Get NEW messages from bot (after our query)
+        all_messages = await telegram_client.get_messages(bot_entity, limit=20)
         
         nik_data = {}
         photo = None
+        found_response = False
         
-        for msg in messages:
+        for msg in all_messages:
+            # Skip our own messages
             if msg.out:
                 continue
             
-            # Check for photo
+            # Only process messages AFTER our query
+            if msg.id <= last_msg_id:
+                continue
+                
+            found_response = True
+            logger.info(f"[FR] Processing new message ID {msg.id}")
+            
+            # Check for photo in this message
             if msg.photo and not photo:
-                logger.info(f"[FR] Found photo in message")
-                photo_bytes = await telegram_client.download_media(msg.photo, bytes)
-                if photo_bytes:
-                    import base64
-                    photo = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode()}"
+                logger.info(f"[FR] Found photo in message ID {msg.id}")
+                try:
+                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                    if photo_bytes:
+                        import base64
+                        photo = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode()}"
+                        logger.info(f"[FR] Photo downloaded successfully, size: {len(photo_bytes)} bytes")
+                except Exception as photo_err:
+                    logger.error(f"[FR] Error downloading photo: {photo_err}")
             
             # Parse text data
             if msg.text:
-                logger.info(f"[FR] Parsing NIK data from: {msg.text[:100]}...")
+                logger.info(f"[FR] Parsing text from message: {msg.text[:200]}...")
                 
-                # Parse key-value pairs
+                # Parse key-value pairs from text
                 lines = msg.text.split('\n')
                 for line in lines:
-                    # Try various patterns
-                    patterns = [
-                        r'^([A-Za-z\s]+)\s*:\s*(.+)$',
-                        r'^([A-Za-z_]+)\s*[:\-]\s*(.+)$',
-                    ]
+                    line = line.strip()
+                    if not line:
+                        continue
                     
-                    for pattern in patterns:
-                        match = re.match(pattern, line.strip())
-                        if match:
-                            key = match.group(1).strip()
-                            value = match.group(2).strip()
-                            if key and value:
+                    # Try to parse as key:value or key-value
+                    if ':' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            if key and value and len(key) < 30:  # Reasonable key length
                                 nik_data[key] = value
-                            break
+                    elif ' - ' in line:
+                        parts = line.split(' - ', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            if key and value and len(key) < 30:
+                                nik_data[key] = value
                 
-                # Also look for NIK specifically
+                # Extract NIK specifically
                 nik_match = re.search(r'NIK\s*[:\-]?\s*(\d{16})', msg.text, re.IGNORECASE)
                 if nik_match:
                     nik_data['NIK'] = nik_match.group(1)
                 
-                # Look for name
-                name_match = re.search(r'(?:nama|name|full\s*name)\s*[:\-]?\s*([A-Z\s]+)', msg.text, re.IGNORECASE)
-                if name_match:
-                    nik_data['Nama'] = name_match.group(1).strip()
+                # Extract Nama
+                nama_match = re.search(r'(?:Nama|Name|NAMA)\s*[:\-]?\s*([A-Za-z\s\.]+)', msg.text)
+                if nama_match:
+                    nik_data['Nama'] = nama_match.group(1).strip()
+                
+                # Extract common fields
+                field_patterns = {
+                    'Tempat Lahir': r'(?:Tempat Lahir|TTL|Tempat)\s*[:\-]?\s*([A-Za-z\s]+)',
+                    'Tanggal Lahir': r'(?:Tanggal Lahir|Tgl Lahir)\s*[:\-]?\s*([\d\-\/]+)',
+                    'Alamat': r'(?:Alamat|Address)\s*[:\-]?\s*(.+)',
+                    'Jenis Kelamin': r'(?:Jenis Kelamin|JK|Gender)\s*[:\-]?\s*([A-Za-z\-]+)',
+                    'Agama': r'(?:Agama|Religion)\s*[:\-]?\s*([A-Za-z]+)',
+                    'Status': r'(?:Status Perkawinan|Status)\s*[:\-]?\s*([A-Za-z\s]+)',
+                    'Pekerjaan': r'(?:Pekerjaan|Occupation)\s*[:\-]?\s*([A-Za-z\s\/]+)',
+                }
+                
+                for field_name, pattern in field_patterns.items():
+                    if field_name not in nik_data:
+                        match = re.search(pattern, msg.text, re.IGNORECASE)
+                        if match:
+                            nik_data[field_name] = match.group(1).strip()
+        
+        # If we didn't find new messages, try to parse from any recent bot message
+        if not found_response:
+            logger.warning(f"[FR] No new messages found after query, checking recent messages...")
+            for msg in all_messages[:5]:
+                if msg.out:
+                    continue
+                if msg.photo and not photo:
+                    try:
+                        photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                        if photo_bytes:
+                            import base64
+                            photo = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode()}"
+                    except:
+                        pass
+        
+        # Always set the NIK we queried
+        nik_data['NIK'] = request.nik
         
         # Update session with NIK details
         await db.fr_sessions.update_one(
@@ -5965,7 +6030,7 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
             }}
         )
         
-        logger.info(f"[FR] NIK data keys: {list(nik_data.keys())}, has_photo: {photo is not None}")
+        logger.info(f"[FR] NIK details result - data keys: {list(nik_data.keys())}, has_photo: {photo is not None}")
         
         return {
             "nik": request.nik,
@@ -5975,6 +6040,8 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
         
     except Exception as e:
         logger.error(f"[FR] Error getting NIK details: {e}")
+        import traceback
+        logger.error(f"[FR] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
