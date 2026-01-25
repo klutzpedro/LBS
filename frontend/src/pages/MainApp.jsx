@@ -1861,6 +1861,12 @@ const MainApp = () => {
           setNonGeointDialogOpen(true);
         }}
       />
+
+      {/* Face Recognition Dialog */}
+      <FaceRecognitionDialog
+        open={frDialogOpen}
+        onOpenChange={setFrDialogOpen}
+      />
     </div>
   );
 };
