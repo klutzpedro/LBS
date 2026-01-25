@@ -1618,7 +1618,8 @@ const MainApp = () => {
             className="fixed z-[2000] flex flex-col gap-2"
             style={{
               top: '8px',
-              left: '280px'
+              left: 'calc(260px + ((100vw - 260px) / 2))',
+              transform: 'translateX(-50%)'
             }}
           >
             <NonGeointButton 
