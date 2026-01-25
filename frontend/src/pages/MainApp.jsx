@@ -83,6 +83,7 @@ const MainApp = () => {
   
   // Face Recognition
   const [frDialogOpen, setFrDialogOpen] = useState(false);
+  const [frHistoryOpen, setFrHistoryOpen] = useState(false);
   const [isFrProcessing, setIsFrProcessing] = useState(false);
   
   // Search and duplicate
