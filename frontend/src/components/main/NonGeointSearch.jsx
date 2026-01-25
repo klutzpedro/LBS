@@ -2276,8 +2276,8 @@ export const NonGeointSearchDialog = ({
                     </h3>
                   </div>
                   
-                  {/* Pagination Info Banner */}
-                  {hasMoreBatches && (
+                  {/* Pagination Info Banner - Only show if there are more photos to load */}
+                  {hasMoreBatches && (totalNiks - photosFetched > 0) && (
                     <div 
                       className="mb-3 p-3 rounded-md border"
                       style={{
