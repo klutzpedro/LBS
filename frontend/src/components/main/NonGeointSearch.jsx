@@ -78,7 +78,7 @@ export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating =
         ) : (
           <>
             <Search className="w-4 h-4 mr-2" />
-            NON GEOINT
+            Query Nama
           </>
         )}
       </Button>
