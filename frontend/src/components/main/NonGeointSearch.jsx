@@ -2942,9 +2942,9 @@ export const NonGeointSearchDialog = ({
                     ) : detailDialog.result.regnik_data.data && Object.keys(detailDialog.result.regnik_data.data).length > 0 ? (
                       <div className="space-y-1 text-xs">
                         {Object.entries(detailDialog.result.regnik_data.data).map(([key, value]) => (
-                          <div key={key} className="flex">
+                          <div key={key} className="flex flex-wrap">
                             <span className="font-medium w-28 flex-shrink-0" style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
-                            <span style={{ color: 'var(--foreground-primary)' }}>
+                            <span className="flex-1 break-words" style={{ color: 'var(--foreground-primary)', wordBreak: 'break-word', minWidth: 0 }}>
                               {Array.isArray(value) ? value.join(', ') : String(value)}
                             </span>
                           </div>
