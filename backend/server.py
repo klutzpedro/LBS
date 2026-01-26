@@ -1096,8 +1096,8 @@ async def query_cp_api_for_new_target(target_id: str, phone_number: str):
             {"$set": {"status": "querying"}}
         )
         
-        # Query CP API
-        result = await query_cp_api(phone_number)
+        # Query position (CP API or Telegram bot based on settings)
+        result = await query_position(phone_number)
         
         if result.get("success"):
             # Update target with position
