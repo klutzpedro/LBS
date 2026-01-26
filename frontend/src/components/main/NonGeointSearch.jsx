@@ -2381,7 +2381,7 @@ export const NonGeointSearchDialog = ({
                   <div 
                     className="grid grid-cols-2 gap-3 overflow-y-auto pr-2"
                     style={{ 
-                      maxHeight: '400px',
+                      maxHeight: '55vh',
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'var(--accent-primary) var(--background-tertiary)',
                       pointerEvents: 'auto'
