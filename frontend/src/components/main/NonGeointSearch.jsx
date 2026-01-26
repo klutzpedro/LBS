@@ -2149,15 +2149,17 @@ export const NonGeointSearchDialog = ({
             </div>
           </DraggableDialogHeader>
 
-          {/* Search Input */}
-          <div className="space-y-4 mt-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Masukkan nama lengkap..."
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !isSearching && startSearch()}
-                disabled={isSearching || isInvestigating}
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
+            {/* Search Input */}
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Masukkan nama lengkap..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !isSearching && startSearch()}
+                  disabled={isSearching || isInvestigating}
                 style={{
                   backgroundColor: 'var(--background-tertiary)',
                   borderColor: 'var(--borders-default)',
