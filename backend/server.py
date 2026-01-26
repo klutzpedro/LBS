@@ -700,24 +700,57 @@ async def get_current_user(username: str = Depends(verify_token)):
 @api_router.get("/cp-api/status")
 async def get_cp_api_status(username: str = Depends(verify_token)):
     """Get CP API connection status and quota"""
-    is_connected = await check_cp_api_connection()
+    is_connected, quota_exceeded = await check_cp_api_connection()
     quota = await get_cp_api_quota()
     quota_doc = await db.api_quota.find_one({"type": "cp_api"}, {"_id": 0})
     
+    # Get position source setting
+    settings_doc = await db.settings.find_one({"type": "position_source"}, {"_id": 0})
+    use_telegram = settings_doc.get("use_telegram", False) if settings_doc else False
+    
     # Determine status message
-    if is_connected:
+    if quota_exceeded:
+        status_message = "Quota Exceeded - Silakan gunakan Bot Telegram atau isi ulang quota"
+    elif is_connected:
         status_message = "Connected & Authorized"
     else:
         status_message = "Disconnected (IP not whitelisted or server unreachable)"
     
     return {
         "connected": is_connected,
+        "quota_exceeded": quota_exceeded,
         "status_message": status_message,
         "quota_remaining": quota,
         "quota_initial": quota_doc.get("initial", CP_API_INITIAL_QUOTA) if quota_doc else CP_API_INITIAL_QUOTA,
         "quota_used": quota_doc.get("used", 0) if quota_doc else 0,
         "last_updated": quota_doc.get("last_updated") if quota_doc else None,
-        "api_url": CP_API_URL
+        "api_url": CP_API_URL,
+        "use_telegram": use_telegram
+    }
+
+@api_router.post("/cp-api/toggle-telegram")
+async def toggle_telegram_source(username: str = Depends(verify_token)):
+    """Toggle between CP API and Telegram bot for position queries"""
+    # Get current setting
+    settings_doc = await db.settings.find_one({"type": "position_source"})
+    current_use_telegram = settings_doc.get("use_telegram", False) if settings_doc else False
+    
+    # Toggle
+    new_use_telegram = not current_use_telegram
+    
+    await db.settings.update_one(
+        {"type": "position_source"},
+        {"$set": {"use_telegram": new_use_telegram, "updated_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    source = "Telegram Bot" if new_use_telegram else "CP API"
+    logger.info(f"[Settings] Position source changed to: {source}")
+    
+    return {
+        "success": True,
+        "use_telegram": new_use_telegram,
+        "message": f"Sumber posisi diubah ke {source}"
     }
 
 @api_router.post("/cp-api/reset-quota")
