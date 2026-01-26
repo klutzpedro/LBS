@@ -656,34 +656,35 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                     </p>
                   </div>
                 )}
-
-                {/* Action Buttons */}
-                {currentStep === 'completed' && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={resetSearchState}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Cari Baru
-                    </Button>
-                    {(nikData || (matchResults && matchResults.length > 0)) && (
-                      <Button
-                        onClick={generatePDF}
-                        className="flex-1"
-                        style={{
-                          background: 'linear-gradient(145deg, #10b981, #059669)',
-                          color: '#fff'
-                        }}
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download PDF
-                      </Button>
-                    )}
-                  </div>
-                )}
               </div>
+            )}
+          </div>
+        )}
+        
+        {/* Action Buttons - Fixed at bottom */}
+        {!isMinimized && currentStep === 'completed' && (
+          <div className="flex gap-2 pt-3 mt-3 border-t flex-shrink-0" style={{ borderColor: 'var(--borders-default)' }}>
+            <Button
+              onClick={resetSearchState}
+              variant="outline"
+              className="flex-1"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Cari Baru
+            </Button>
+            {(nikData || (matchResults && matchResults.length > 0)) && (
+              <Button
+                onClick={generatePDF}
+                className="flex-1"
+                style={{
+                  background: 'linear-gradient(145deg, #10b981, #059669)',
+                  color: '#fff'
+                }}
+                data-testid="fr-download-pdf-btn"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
             )}
           </div>
         )}
