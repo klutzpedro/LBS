@@ -24,3 +24,6 @@ export {
 
 // Face Recognition
 export { FaceRecognitionButton, FaceRecognitionDialog, FaceRecognitionHistoryDialog } from './FaceRecognition';
+
+// User Management
+export { UserManagementButton, UserManagementDialog } from './UserManagement';
