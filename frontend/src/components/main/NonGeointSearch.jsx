@@ -2884,9 +2884,9 @@ export const NonGeointSearchDialog = ({
                     {!detailDialog.result.nkk_data.family_data?.members?.length && detailDialog.result.nkk_data.data && Object.keys(detailDialog.result.nkk_data.data).length > 0 && (
                       <div className="space-y-1 text-xs">
                         {Object.entries(detailDialog.result.nkk_data.data).map(([key, value]) => (
-                          <div key={key} className="flex">
+                          <div key={key} className="flex flex-wrap">
                             <span className="font-medium w-28 flex-shrink-0" style={{ color: 'var(--foreground-muted)' }}>{key}:</span>
-                            <span style={{ color: 'var(--foreground-primary)' }}>{String(value)}</span>
+                            <span className="flex-1 break-words" style={{ color: 'var(--foreground-primary)', wordBreak: 'break-word', minWidth: 0 }}>{String(value)}</span>
                           </div>
                         ))}
                       </div>
