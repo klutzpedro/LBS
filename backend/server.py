@@ -3563,10 +3563,15 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
     """Get NON GEOINT search results with investigation if exists"""
     logger.info(f"[NONGEOINT] Fetching search {search_id}")
     
-    search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
+    # Filter by user ownership
+    query = {"id": search_id}
+    if username != "admin":
+        query["created_by"] = username
+    
+    search = await db.nongeoint_searches.find_one(query, {"_id": 0})
     if not search:
-        logger.warning(f"[NONGEOINT] Search {search_id} not found")
-        raise HTTPException(status_code=404, detail="Search not found")
+        logger.warning(f"[NONGEOINT] Search {search_id} not found or access denied")
+        raise HTTPException(status_code=404, detail="Search not found or access denied")
     
     logger.info(f"[NONGEOINT] Found search: {search.get('name')}, status: {search.get('status')}, niks_found: {search.get('niks_found', [])}")
     
@@ -3589,8 +3594,11 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
 @api_router.get("/nongeoint/searches")
 async def list_nongeoint_searches(username: str = Depends(verify_token)):
     """List all NON GEOINT searches for user with investigation status"""
+    # Filter by user - admin sees all
+    query = {} if username == "admin" else {"created_by": username}
+    
     searches = await db.nongeoint_searches.find(
-        {"created_by": username},
+        query,
         {"_id": 0}
     ).sort("created_at", -1).limit(20).to_list(20)
     
