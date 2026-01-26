@@ -4,17 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Lock, User } from 'lucide-react';
+import { Shield, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Login = () => {
+  const [mode, setMode] = useState('login'); // login or register
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
@@ -28,6 +33,59 @@ const Login = () => {
     }
 
     setLoading(false);
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error('Password tidak cocok');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password minimal 6 karakter');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          full_name: fullName
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message || 'Pendaftaran berhasil! Menunggu persetujuan admin.');
+        setMode('login');
+        setPassword('');
+        setConfirmPassword('');
+        setFullName('');
+      } else {
+        toast.error(data.detail || 'Pendaftaran gagal');
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan saat mendaftar');
+    }
+
+    setLoading(false);
+  };
+
+  const resetForm = () => {
+    setUsername('');
+    setPassword('');
+    setFullName('');
+    setConfirmPassword('');
   };
 
   return (
@@ -81,79 +139,224 @@ const Login = () => {
                 color: 'var(--foreground-secondary)'
               }}
             >
-              Location Based System Login
+              {mode === 'login' ? 'Location Based System Login' : 'Pendaftaran Akun Baru'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label 
-                htmlFor="username" 
-                className="text-xs uppercase tracking-wide mb-2 block"
-                style={{ color: 'var(--foreground-secondary)' }}
-              >
-                Username
-              </Label>
-              <div className="relative">
-                <User 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-                  style={{ color: 'var(--foreground-muted)' }}
-                />
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  data-testid="username-input"
-                  className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
-                  style={{ color: '#000000' }}
-                  placeholder="Enter username"
-                  required
-                />
+          {mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <Label 
+                  htmlFor="username" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Username
+                </Label>
+                <div className="relative">
+                  <User 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    data-testid="username-input"
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Enter username"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label 
-                htmlFor="password" 
-                className="text-xs uppercase tracking-wide mb-2 block"
-                style={{ color: 'var(--foreground-secondary)' }}
-              >
-                Password
-              </Label>
-              <div className="relative">
-                <Lock 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-                  style={{ color: 'var(--foreground-muted)' }}
-                />
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  data-testid="password-input"
-                  className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
-                  style={{ color: '#000000' }}
-                  placeholder="Enter password"
-                  required
-                />
+              <div>
+                <Label 
+                  htmlFor="password" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    data-testid="password-input"
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Enter password"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              data-testid="login-submit-button"
-              className="w-full py-6 font-semibold text-base uppercase tracking-wide transition-all duration-300"
-              style={{
-                backgroundColor: 'var(--accent-primary)',
-                color: 'var(--background-primary)',
-                fontFamily: 'Rajdhani, sans-serif'
-              }}
-            >
-              {loading ? 'LOGGING IN...' : 'LOGIN'}
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                disabled={loading}
+                data-testid="login-submit-button"
+                className="w-full py-6 font-semibold text-base uppercase tracking-wide transition-all duration-300"
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'var(--background-primary)',
+                  fontFamily: 'Rajdhani, sans-serif'
+                }}
+              >
+                {loading ? 'LOGGING IN...' : 'LOGIN'}
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setMode('register'); resetForm(); }}
+                  className="text-sm hover:underline flex items-center justify-center gap-2 mx-auto"
+                  style={{ color: 'var(--accent-primary)' }}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Daftar Akun Baru
+                </button>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div>
+                <Label 
+                  htmlFor="fullName" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Nama Lengkap
+                </Label>
+                <div className="relative">
+                  <User 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Masukkan nama lengkap"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label 
+                  htmlFor="regUsername" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Username
+                </Label>
+                <div className="relative">
+                  <User 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="regUsername"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Pilih username"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label 
+                  htmlFor="regPassword" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="regPassword"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Minimal 6 karakter"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label 
+                  htmlFor="confirmPassword" 
+                  className="text-xs uppercase tracking-wide mb-2 block"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  Konfirmasi Password
+                </Label>
+                <div className="relative">
+                  <Lock 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                    style={{ color: 'var(--foreground-muted)' }}
+                  />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                    style={{ color: '#000000' }}
+                    placeholder="Ulangi password"
+                    required
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full py-6 font-semibold text-base uppercase tracking-wide transition-all duration-300"
+                style={{
+                  backgroundColor: 'var(--accent-secondary)',
+                  color: 'var(--background-primary)',
+                  fontFamily: 'Rajdhani, sans-serif'
+                }}
+              >
+                {loading ? 'MENDAFTAR...' : 'DAFTAR'}
+              </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); resetForm(); }}
+                  className="text-sm hover:underline flex items-center justify-center gap-2 mx-auto"
+                  style={{ color: 'var(--foreground-secondary)' }}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Kembali ke Login
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
