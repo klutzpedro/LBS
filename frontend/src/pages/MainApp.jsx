@@ -64,9 +64,9 @@ const MainApp = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
   
-  // Map state
-  const [mapCenter, setMapCenter] = useState([-6.2088, 106.8456]);
-  const [mapZoom, setMapZoom] = useState(13);
+  // Map state - Default zoomed out to show part of Java island
+  const [mapCenter, setMapCenter] = useState([-7.0, 110.0]); // Central Java
+  const [mapZoom, setMapZoom] = useState(7); // Zoom out to show Java
   const [mapKey, setMapKey] = useState(0);
   
   // Pendalaman dialogs
