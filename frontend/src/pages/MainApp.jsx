@@ -64,9 +64,9 @@ const MainApp = () => {
   const [chatMessages, setChatMessages] = useState([]);
   const [selectedTargetForChat, setSelectedTargetForChat] = useState(null);
   
-  // Map state - Default zoomed out to show part of Java island
-  const [mapCenter, setMapCenter] = useState([-7.0, 110.0]); // Central Java
-  const [mapZoom, setMapZoom] = useState(7); // Zoom out to show Java
+  // Map state - Default zoomed to show West Java (Jawa Barat)
+  const [mapCenter, setMapCenter] = useState([-6.6, 107.0]); // West Java center
+  const [mapZoom, setMapZoom] = useState(9); // Zoom to show West Java
   const [mapKey, setMapKey] = useState(0);
   
   // Pendalaman dialogs
