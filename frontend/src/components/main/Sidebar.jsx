@@ -153,7 +153,8 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
   const { telegramConnected, lastChecked, status, refreshStatus, loading } = require('@/context/TelegramContext').useTelegram();
   
   // Import useCpApi for CP API status
-  const { connected: cpApiConnected, quotaRemaining, quotaInitial, loading: cpLoading, refreshStatus: refreshCpStatus } = require('@/context/CpApiContext').useCpApi();
+  const cpApiStatus = require('@/context/CpApiContext').useCpApi();
+  const { connected: cpApiConnected, quotaRemaining, quotaInitial, loading: cpLoading, refreshStatus: refreshCpStatus } = cpApiStatus;
   
   const getStatusInfo = () => {
     switch (status) {
