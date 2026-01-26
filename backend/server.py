@@ -3486,17 +3486,18 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
     """
     NON GEOINT Search - Sequentially queries CAPIL, Pass WNI, Pass WNA
     Uses queue system to prevent race conditions
-    Now with CACHING: checks if name was searched before
+    Now with CACHING: checks if name was searched before BY THE SAME USER
     """
     search_name = request.name.strip().upper()  # Normalize name for caching
     
     # ============================================
-    # CHECK CACHE: Look for existing search with same name
+    # CHECK CACHE: Look for existing search with same name BY THIS USER
     # Only use cache if pagination was properly done (photos_fetched_count <= batch_size for first batch)
     # ============================================
     existing_search = await db.nongeoint_searches.find_one(
         {
             "name_normalized": search_name,
+            "created_by": username,  # Filter by user - each user has their own cache
             "status": {"$in": ["completed", "waiting_selection"]},
             "niks_found": {"$exists": True, "$ne": []},
             # Only use cache if it was created with pagination
