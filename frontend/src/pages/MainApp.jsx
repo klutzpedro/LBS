@@ -33,7 +33,9 @@ import {
   ScheduleDialog,
   ReghpInfoDialog,
   NikInfoDialog,
-  FamilyTreeDialog
+  FamilyTreeDialog,
+  UserManagementButton,
+  UserManagementDialog
 } from '@/components/main';
 
 // NON GEOINT Search
