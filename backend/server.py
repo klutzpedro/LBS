@@ -950,8 +950,8 @@ async def reset_cp_api_quota(username: str = Depends(verify_token)):
 
 @api_router.post("/cp-api/test")
 async def test_cp_api(phone_number: str, username: str = Depends(verify_token)):
-    """Test CP API with a phone number (uses quota)"""
-    result = await query_cp_api(phone_number)
+    """Test position query with a phone number (uses quota or Telegram)"""
+    result = await query_position(phone_number)
     return result
 
 # Case Routes
