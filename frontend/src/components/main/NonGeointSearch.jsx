@@ -1808,18 +1808,43 @@ export const NonGeointSearchDialog = ({
             });
           }
           
-          // Show detailed WNI passport data
-          if (nikResult.passport_data.wni_data?.data && Array.isArray(nikResult.passport_data.wni_data.data)) {
-            nikResult.passport_data.wni_data.data.forEach((passportInfo, idx) => {
+          // Show detailed WNI passport data - handle both 'result' and 'data' arrays
+          const wniDataArray = nikResult.passport_data.wni_data?.result || nikResult.passport_data.wni_data?.data || [];
+          if (Array.isArray(wniDataArray) && wniDataArray.length > 0) {
+            wniDataArray.forEach((passportInfo, idx) => {
               addText(`   --- Detail Passport ${idx + 1} ---`, margin, 10);
-              if (passportInfo.TRAVELDOCUMENTNO) addText(`      No. Dokumen: ${passportInfo.TRAVELDOCUMENTNO}`, margin, 10);
-              if (passportInfo.GIVENNAME) addText(`      Nama: ${passportInfo.GIVENNAME} ${passportInfo.FAMILYNAME || ''}`, margin, 10);
-              if (passportInfo.DATEOFBIRTH) addText(`      Tgl Lahir: ${passportInfo.DATEOFBIRTH}`, margin, 10);
-              if (passportInfo.PLACEOFBIRTH) addText(`      Tempat Lahir: ${passportInfo.PLACEOFBIRTH}`, margin, 10);
-              if (passportInfo.GENDERCODE) addText(`      Jenis Kelamin: ${passportInfo.GENDERCODE === 'M' ? 'Laki-laki' : 'Perempuan'}`, margin, 10);
-              if (passportInfo.ISSUINGSTATEDESCRIPTION) addText(`      Negara Penerbit: ${passportInfo.ISSUINGSTATEDESCRIPTION}`, margin, 10);
-              if (passportInfo.NATIONALITYDESCRIPTION) addText(`      Kewarganegaraan: ${passportInfo.NATIONALITYDESCRIPTION}`, margin, 10);
-              if (passportInfo.EXPIRATIONDATE) addText(`      Berlaku s/d: ${passportInfo.EXPIRATIONDATE}`, margin, 10);
+              if (passportInfo.no_paspor || passportInfo.TRAVELDOCUMENTNO) 
+                addText(`      No. Paspor: ${passportInfo.no_paspor || passportInfo.TRAVELDOCUMENTNO}`, margin, 10);
+              if (passportInfo.nama_lengkap || passportInfo.nama_di_paspor || passportInfo.GIVENNAME) 
+                addText(`      Nama: ${passportInfo.nama_lengkap || passportInfo.nama_di_paspor || passportInfo.GIVENNAME}`, margin, 10);
+              if (passportInfo.tempat_lahir || passportInfo.PLACEOFBIRTH) 
+                addText(`      Tempat Lahir: ${passportInfo.tempat_lahir || passportInfo.PLACEOFBIRTH}`, margin, 10);
+              if (passportInfo.tanggal_lahir || passportInfo.DATEOFBIRTH) 
+                addText(`      Tgl Lahir: ${passportInfo.tanggal_lahir || passportInfo.DATEOFBIRTH}`, margin, 10);
+              if (passportInfo.jenis_kelamin || passportInfo.GENDERCODE) 
+                addText(`      Jenis Kelamin: ${(passportInfo.jenis_kelamin || passportInfo.GENDERCODE) === 'L' || (passportInfo.jenis_kelamin || passportInfo.GENDERCODE) === 'M' ? 'Laki-laki' : 'Perempuan'}`, margin, 10);
+              if (passportInfo.alamat) 
+                addText(`      Alamat: ${passportInfo.alamat}`, margin, 10);
+              if (passportInfo.pekerjaan) 
+                addText(`      Pekerjaan: ${passportInfo.pekerjaan}`, margin, 10);
+              if (passportInfo.status_sipil) 
+                addText(`      Status: ${passportInfo.status_sipil}`, margin, 10);
+              if (passportInfo.jenis_paspor) 
+                addText(`      Jenis Paspor: ${passportInfo.jenis_paspor}`, margin, 10);
+              if (passportInfo.kantor_penerbit || passportInfo.ISSUINGSTATEDESCRIPTION) 
+                addText(`      Kantor Penerbit: ${passportInfo.kantor_penerbit || passportInfo.ISSUINGSTATEDESCRIPTION}`, margin, 10);
+              if (passportInfo.tanggal_diterbitkan_paspor) 
+                addText(`      Tgl Terbit: ${passportInfo.tanggal_diterbitkan_paspor}`, margin, 10);
+              if (passportInfo.tanggal_habis_berlaku_paspor || passportInfo.EXPIRATIONDATE) 
+                addText(`      Berlaku s/d: ${passportInfo.tanggal_habis_berlaku_paspor || passportInfo.EXPIRATIONDATE}`, margin, 10);
+              if (passportInfo.status_paspor) 
+                addText(`      Status Paspor: ${passportInfo.status_paspor}`, margin, 10);
+              if (passportInfo.no_paspor_lama) 
+                addText(`      No. Paspor Lama: ${passportInfo.no_paspor_lama}`, margin, 10);
+              if (passportInfo.email) 
+                addText(`      Email: ${passportInfo.email}`, margin, 10);
+              if (passportInfo.no_hp) 
+                addText(`      No. HP: ${passportInfo.no_hp}`, margin, 10);
             });
           }
         }
