@@ -88,6 +88,9 @@ const MainApp = () => {
   const [frHistoryOpen, setFrHistoryOpen] = useState(false);
   const [isFrProcessing, setIsFrProcessing] = useState(false);
   
+  // User Management (Admin only)
+  const [userManagementOpen, setUserManagementOpen] = useState(false);
+  
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
