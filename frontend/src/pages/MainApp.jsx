@@ -1627,18 +1627,24 @@ const MainApp = () => {
               transform: 'translateX(-50%)'
             }}
           >
-            <NonGeointButton 
-              onOpenSearch={() => {
-                if (isGlobalInvestigating) {
-                  toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
-                  return;
-                }
-                setSelectedNonGeointSearch(null);
-                setNonGeointDialogOpen(true);
-              }} 
-              onOpenHistory={() => setNonGeointHistoryOpen(true)}
-              isInvestigating={isGlobalInvestigating}
-            />
+            <div className="flex items-center gap-2">
+              <NonGeointButton 
+                onOpenSearch={() => {
+                  if (isGlobalInvestigating) {
+                    toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
+                    return;
+                  }
+                  setSelectedNonGeointSearch(null);
+                  setNonGeointDialogOpen(true);
+                }} 
+                onOpenHistory={() => setNonGeointHistoryOpen(true)}
+                isInvestigating={isGlobalInvestigating}
+              />
+              {/* Admin User Management Button */}
+              {isAdmin && (
+                <UserManagementButton onClick={() => setUserManagementOpen(true)} />
+              )}
+            </div>
             <FaceRecognitionButton 
               onOpenSearch={() => setFrDialogOpen(true)}
               onOpenHistory={() => setFrHistoryOpen(true)}
