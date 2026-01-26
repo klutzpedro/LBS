@@ -706,13 +706,17 @@ async def create_case(case_data: CaseCreate, username: str = Depends(verify_toke
     doc = case.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
+    doc['created_by'] = username  # Add user ownership
     
     await db.cases.insert_one(doc)
     return case
 
 @api_router.get("/cases", response_model=List[Case])
 async def get_cases(username: str = Depends(verify_token)):
-    cases = await db.cases.find({}, {"_id": 0}).to_list(1000)
+    # Filter by user - each user only sees their own cases
+    # Admin sees all cases
+    query = {} if username == "admin" else {"created_by": username}
+    cases = await db.cases.find(query, {"_id": 0}).to_list(1000)
     
     for case in cases:
         if isinstance(case.get('created_at'), str):
@@ -724,7 +728,12 @@ async def get_cases(username: str = Depends(verify_token)):
 
 @api_router.get("/cases/{case_id}", response_model=Case)
 async def get_case(case_id: str, username: str = Depends(verify_token)):
-    case = await db.cases.find_one({"id": case_id}, {"_id": 0})
+    # Filter by user ownership
+    query = {"id": case_id}
+    if username != "admin":
+        query["created_by"] = username
+    
+    case = await db.cases.find_one(query, {"_id": 0})
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
@@ -738,6 +747,15 @@ async def get_case(case_id: str, username: str = Depends(verify_token)):
 @api_router.delete("/cases/{case_id}")
 async def delete_case(case_id: str, username: str = Depends(verify_token)):
     """Delete case and all its targets"""
+    # Verify ownership first
+    query = {"id": case_id}
+    if username != "admin":
+        query["created_by"] = username
+    
+    case = await db.cases.find_one(query)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found or access denied")
+    
     # Get all targets in this case
     targets = await db.targets.find({"case_id": case_id}, {"_id": 0}).to_list(1000)
     
