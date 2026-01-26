@@ -3021,7 +3021,7 @@ export const NonGeointSearchDialog = ({
                                       <p><span style={{ color: 'var(--foreground-muted)' }}>Tgl Lahir:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.tanggal_lahir || item.DATEOFBIRTH}</span></p>
                                     )}
                                     {item.alamat && (
-                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Alamat:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.alamat}</span></p>
+                                      <p className="break-words"><span style={{ color: 'var(--foreground-muted)' }}>Alamat:</span> <span style={{ color: 'var(--foreground-primary)', wordBreak: 'break-word' }}>{item.alamat}</span></p>
                                     )}
                                     {item.pekerjaan && (
                                       <p><span style={{ color: 'var(--foreground-muted)' }}>Pekerjaan:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.pekerjaan}</span></p>
