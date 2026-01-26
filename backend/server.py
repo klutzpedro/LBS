@@ -929,7 +929,13 @@ async def process_manual_target(target_id: str, manual_data: dict):
 
 @api_router.get("/targets", response_model=List[Target])
 async def get_targets(case_id: Optional[str] = None, username: str = Depends(verify_token)):
-    query = {"case_id": case_id} if case_id else {}
+    # Filter by user ownership
+    query = {}
+    if case_id:
+        query["case_id"] = case_id
+    if username != "admin":
+        query["created_by"] = username
+    
     targets = await db.targets.find(query, {"_id": 0}).to_list(1000)
     
     for target in targets:
@@ -940,9 +946,14 @@ async def get_targets(case_id: Optional[str] = None, username: str = Depends(ver
 
 @api_router.get("/targets/{target_id}", response_model=Target)
 async def get_target(target_id: str, username: str = Depends(verify_token)):
-    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    # Filter by user ownership
+    query = {"id": target_id}
+    if username != "admin":
+        query["created_by"] = username
+    
+    target = await db.targets.find_one(query, {"_id": 0})
     if not target:
-        raise HTTPException(status_code=404, detail="Target not found")
+        raise HTTPException(status_code=404, detail="Target not found or access denied")
     
     if isinstance(target.get('created_at'), str):
         target['created_at'] = datetime.fromisoformat(target['created_at'])
@@ -952,9 +963,14 @@ async def get_target(target_id: str, username: str = Depends(verify_token)):
 @api_router.delete("/targets/{target_id}")
 async def delete_target(target_id: str, username: str = Depends(verify_token)):
     """Delete target and all associated data"""
-    target = await db.targets.find_one({"id": target_id}, {"_id": 0})
+    # Filter by user ownership
+    query = {"id": target_id}
+    if username != "admin":
+        query["created_by"] = username
+    
+    target = await db.targets.find_one(query, {"_id": 0})
     if not target:
-        raise HTTPException(status_code=404, detail="Target not found")
+        raise HTTPException(status_code=404, detail="Target not found or access denied")
     
     # Delete chat messages
     await db.chat_messages.delete_many({"target_id": target_id})
