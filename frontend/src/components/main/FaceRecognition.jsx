@@ -396,17 +396,17 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className="overflow-hidden flex flex-col"
+        className="overflow-hidden flex flex-col p-4"
         style={{ 
           width: isMinimized ? '300px' : '700px',
           maxWidth: '95vw',
-          height: isMinimized ? 'auto' : '85vh',
-          maxHeight: '90vh',
+          height: isMinimized ? 'auto' : '80vh',
+          maxHeight: '85vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
       >
-        <DraggableDialogHeader className="cursor-move flex-shrink-0">
+        <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-2">
           <div className="flex items-center justify-between w-full">
             <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
               <Camera className="w-5 h-5" style={{ color: '#06b6d4' }} />
@@ -426,7 +426,7 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
         </DraggableDialogHeader>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: 0 }}>
             {/* Status Message */}
             {statusMessage && (
               <div 
