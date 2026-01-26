@@ -4732,23 +4732,31 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
         logger.info(f"[PERLINTASAN CP] Querying crossings for passport: {passport_no}")
         
         # Use curl with -4 for IPv4 and -d for POST data
-        lintas_cmd = f"curl -4 -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/lintas' -d 'nopas={passport_no}' -s"
-        logger.info(f"[PERLINTASAN CP] curl command: {lintas_cmd[:100]}...")
+        lintas_cmd = [
+            "curl", "-4", "-s",
+            "-H", f"api-key: {CP_API_KEY}",
+            "-d", f"nopas={passport_no}",
+            f"{CP_API_URL}/api/v3/imigrasi/lintas"
+        ]
+        logger.info(f"[PERLINTASAN CP] curl command: {' '.join(lintas_cmd[:5])}...")
         
-        process = subprocess.run(lintas_cmd, shell=True, capture_output=True, text=True, timeout=30)
+        process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
         
+        logger.info(f"[PERLINTASAN CP] response code: {process.returncode}")
         logger.info(f"[PERLINTASAN CP] response: {process.stdout[:500] if process.stdout else 'empty'}")
+        logger.info(f"[PERLINTASAN CP] stderr: {process.stderr[:200] if process.stderr else 'none'}")
         
-        if process.stdout:
+        if process.stdout and not process.stdout.strip().startswith('<'):
             try:
                 data = json.loads(process.stdout)
                 result["raw_data"] = data
                 
-                if data.get("response_status") and data.get("dataPerlintasan"):
-                    crossings = data.get("dataPerlintasan", [])
-                    
+                # Check different response formats
+                crossings_data = data.get("dataPerlintasan") or data.get("data") or []
+                
+                if data.get("response_status") or crossings_data:
                     # Parse crossing data
-                    for crossing in crossings:
+                    for crossing in crossings_data:
                         parsed = {
                             "passport_no": crossing.get("TRAVELDOCUMENTNO", passport_no),
                             "name": crossing.get("GIVENNAME", "-"),
@@ -4777,8 +4785,9 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
                 result["status"] = "error"
                 result["error"] = f"Invalid JSON response: {process.stdout[:100]}"
         else:
+            logger.warning(f"[PERLINTASAN CP] Got HTML or empty response")
             result["status"] = "error"
-            result["error"] = "Empty response from API"
+            result["error"] = "Empty or HTML response from API"
             
     except subprocess.TimeoutExpired:
         logger.error(f"[PERLINTASAN CP] Timeout")
@@ -4786,6 +4795,8 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
         result["error"] = "Request timeout"
     except Exception as e:
         logger.error(f"[PERLINTASAN CP] Error: {e}")
+        import traceback
+        logger.error(f"[PERLINTASAN CP] Traceback: {traceback.format_exc()}")
         result["status"] = "error"
         result["error"] = str(e)
     
