@@ -220,16 +220,18 @@ async def check_cp_api_connection():
         # Force IPv4 for whitelisted IP using socket.AF_INET
         transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
         
-        # Create limits that force IPv4
+        # Create client that forces IPv4
         async with httpx.AsyncClient(
-            timeout=10.0, 
+            timeout=15.0, 
             transport=transport,
             follow_redirects=True
         ) as client:
-            # Try a simple request to check authorization
-            response = await client.get(
+            # Try actual API endpoint with a test request
+            # Use POST to /api/v3/cekpos - same as real queries
+            response = await client.post(
                 f"{CP_API_URL}/api/v3/cekpos",
-                headers={"api-key": CP_API_KEY}
+                headers={"api-key": CP_API_KEY},
+                data={"msisdn": "628123456789"}  # Test number
             )
             
             # Check if we get 403 Forbidden (IP not whitelisted)
@@ -243,8 +245,19 @@ async def check_cp_api_connection():
                 logger.warning("[CP API] Received HTML response - likely blocked")
                 return False
             
-            # API is connected and authorized
-            return True
+            # Try to parse JSON - if successful, API is working
+            try:
+                data = response.json()
+                # Even if code != 0, as long as we get JSON response, API is connected
+                logger.info(f"[CP API] Connection check OK - response code: {data.get('code')}")
+                return True
+            except:
+                logger.warning("[CP API] Could not parse JSON response")
+                return False
+                
+    except httpx.TimeoutException:
+        logger.error("[CP API] Connection check timed out")
+        return False
     except Exception as e:
         logger.error(f"[CP API] Connection check failed: {e}")
         return False
