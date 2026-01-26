@@ -4691,10 +4691,12 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                     wna_data = json.loads(wna_process.stdout)
                     result["wna_data"] = wna_data
                     
-                    data_list = wna_data.get("data", [])
+                    # API returns "result" array, not "data"
+                    data_list = wna_data.get("result") or wna_data.get("data") or []
                     if isinstance(data_list, list):
                         for item in data_list:
                             passport_no = (
+                                item.get("no_paspor") or
                                 item.get("TRAVELDOCUMENTNO") or 
                                 item.get("NO_PASPOR") or 
                                 item.get("passport_no") or
