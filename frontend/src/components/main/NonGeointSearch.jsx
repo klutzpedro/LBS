@@ -3081,7 +3081,7 @@ export const NonGeointSearchDialog = ({
                           }) : [];
                           
                           return (
-                          <div key={pIdx}>
+                            <div key={pIdx}>
                             {sortedCrossings.length > 0 ? (
                               <div>
                                 <p className="text-xs font-semibold mb-2" style={{ color: 'var(--accent-primary)' }}>
