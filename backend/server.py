@@ -6408,10 +6408,14 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
 async def fr_get_history(username: str = Depends(verify_token)):
     """
     Get Face Recognition search history for the user.
+    Admin can see all history.
     """
     try:
+        # Filter by user - admin sees all
+        query = {} if username == "admin" else {"created_by": username}
+        
         sessions = await db.fr_sessions.find(
-            {"created_by": username}
+            query
         ).sort("created_at", -1).limit(50).to_list(50)
         
         # Format for frontend
