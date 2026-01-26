@@ -3065,17 +3065,33 @@ export const NonGeointSearchDialog = ({
                   <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
                     {detailDialog.result.perlintasan_data.results && detailDialog.result.perlintasan_data.results.length > 0 ? (
                       <div className="space-y-3">
-                        {detailDialog.result.perlintasan_data.results.map((passportResult, pIdx) => (
+                        {detailDialog.result.perlintasan_data.results.map((passportResult, pIdx) => {
+                          // Sort crossings: oldest first, then departure (D) before arrival (A)
+                          const sortedCrossings = passportResult.crossings ? [...passportResult.crossings].sort((a, b) => {
+                            // First sort by date (oldest first)
+                            const dateA = new Date(a.movement_date);
+                            const dateB = new Date(b.movement_date);
+                            if (dateA.getTime() !== dateB.getTime()) {
+                              return dateA - dateB; // Oldest first
+                            }
+                            // If same date, departure (D) comes before arrival (A)
+                            if (a.direction_code === 'D' && b.direction_code === 'A') return -1;
+                            if (a.direction_code === 'A' && b.direction_code === 'D') return 1;
+                            return 0;
+                          }) : [];
+                          
+                          return (
                           <div key={pIdx}>
-                            {passportResult.crossings && passportResult.crossings.length > 0 ? (
+                            {sortedCrossings.length > 0 ? (
                               <div>
                                 <p className="text-xs font-semibold mb-2" style={{ color: 'var(--accent-primary)' }}>
-                                  Passport {passportResult.passport_no}: {passportResult.crossings.length} perjalanan
+                                  Passport {passportResult.passport_no}: {sortedCrossings.length} perjalanan
                                 </p>
                                 <div className="overflow-x-auto">
                                   <table className="w-full text-xs border-collapse">
                                     <thead>
                                       <tr style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                        <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>No</th>
                                         <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Tanggal</th>
                                         <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>Arah</th>
                                         <th className="py-1.5 px-2 text-left border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>TPI</th>
@@ -3083,8 +3099,11 @@ export const NonGeointSearchDialog = ({
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {passportResult.crossings.map((crossing, cIdx) => (
+                                      {sortedCrossings.map((crossing, cIdx) => (
                                         <tr key={cIdx}>
+                                          <td className="py-1.5 px-2 border text-center" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-muted)' }}>
+                                            {cIdx + 1}
+                                          </td>
                                           <td className="py-1.5 px-2 border" style={{ borderColor: 'var(--borders-subtle)', color: 'var(--foreground-primary)' }}>
                                             {crossing.movement_date}
                                           </td>
