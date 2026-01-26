@@ -791,9 +791,19 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
     if not re.match(r'^62\d{9,12}$', target_data.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number format")
     
+    # Verify case ownership
+    case_query = {"id": target_data.case_id}
+    if username != "admin":
+        case_query["created_by"] = username
+    
+    case = await db.cases.find_one(case_query)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found or access denied")
+    
     target = Target(**target_data.model_dump(exclude={'manual_mode', 'manual_data'}))
     doc = target.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
+    doc['created_by'] = username  # Add user ownership
     
     await db.targets.insert_one(doc)
     
