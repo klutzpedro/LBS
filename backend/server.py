@@ -373,6 +373,184 @@ async def query_cp_api(phone_number: str) -> dict:
         logger.error(f"[CP API] Error: {e}")
         return {"success": False, "error": str(e)}
 
+async def query_telegram_bot_position(phone_number: str) -> dict:
+    """
+    Query position via Telegram bot as fallback when CP API quota is exceeded.
+    
+    Flow:
+    1. Send phone number to bot
+    2. Wait for bot reply with options (buttons)
+    3. Auto-click "CP" button
+    4. Wait for final response with location data
+    5. Parse and extract: lat, long, address, imei, imsi, phone model, etc.
+    """
+    global telegram_client
+    
+    normalized_phone = normalize_phone_number(phone_number)
+    logger.info(f"[TG BOT] Querying position for {normalized_phone} via Telegram bot")
+    
+    try:
+        if not telegram_client or not telegram_client.is_connected():
+            logger.error("[TG BOT] Telegram not connected")
+            return {"success": False, "error": "Telegram tidak terhubung"}
+        
+        bot_entity = await telegram_client.get_entity("@northarch_bot")
+        
+        # Step 1: Send phone number to bot
+        await telegram_client.send_message(bot_entity, normalized_phone)
+        logger.info(f"[TG BOT] Sent phone number: {normalized_phone}")
+        
+        # Step 2: Wait for bot response with buttons
+        await asyncio.sleep(3)
+        
+        messages = await telegram_client.get_messages(bot_entity, limit=10)
+        
+        cp_button_clicked = False
+        for msg in messages:
+            if msg.out:  # Skip our own messages
+                continue
+            
+            # Look for message with buttons
+            if msg.buttons:
+                for row in msg.buttons:
+                    for button in row:
+                        button_text = (button.text or '').upper()
+                        # Click "CP" button
+                        if 'CP' in button_text:
+                            logger.info(f"[TG BOT] Found CP button, clicking: {button.text}")
+                            try:
+                                await button.click()
+                                cp_button_clicked = True
+                                logger.info(f"[TG BOT] CP button clicked successfully")
+                            except Exception as btn_err:
+                                logger.error(f"[TG BOT] Error clicking CP button: {btn_err}")
+                            break
+                    if cp_button_clicked:
+                        break
+            if cp_button_clicked:
+                break
+        
+        if not cp_button_clicked:
+            logger.warning("[TG BOT] CP button not found, trying to send 'CP' as text")
+            await telegram_client.send_message(bot_entity, "CP")
+        
+        # Step 3: Wait for final response with location data
+        await asyncio.sleep(5)
+        
+        messages = await telegram_client.get_messages(bot_entity, limit=10)
+        
+        for msg in messages:
+            if msg.out:
+                continue
+            
+            text = msg.text or ''
+            
+            # Check if this is the location response
+            if 'Phone Location of' in text or ('Lat:' in text and 'Long:' in text):
+                logger.info(f"[TG BOT] Found location response")
+                
+                # Parse the response
+                result = parse_telegram_location_response(text)
+                if result.get("success"):
+                    logger.info(f"[TG BOT] Successfully parsed location: {result.get('latitude')}, {result.get('longitude')}")
+                    return result
+        
+        logger.warning("[TG BOT] No location response found from bot")
+        return {"success": False, "error": "Tidak ada respons lokasi dari bot"}
+        
+    except Exception as e:
+        logger.error(f"[TG BOT] Error: {e}")
+        import traceback
+        logger.error(f"[TG BOT] Traceback: {traceback.format_exc()}")
+        return {"success": False, "error": str(e)}
+
+def parse_telegram_location_response(text: str) -> dict:
+    """
+    Parse Telegram bot location response.
+    
+    Expected format:
+    Phone Location of 6281342046135
+    
+    Imei: 352722665176486
+    Imsi: 510104232046135
+    Phone: SAMSUNG Galaxy S24 Ultra
+    Operator: Telkomsel Kartu Halo
+    Network: 4G
+    Long: 119.8837
+    Lat: -0.92559
+    Address: SULAWESI TENGAH, KOTA PALU, PALU SELATAN, TATURA SELATAN
+    """
+    try:
+        lines = text.strip().split('\n')
+        data = {}
+        
+        for line in lines:
+            line = line.strip()
+            if ':' in line:
+                key, value = line.split(':', 1)
+                key = key.strip().lower()
+                value = value.strip()
+                
+                if key == 'lat':
+                    data['latitude'] = float(value)
+                elif key == 'long':
+                    data['longitude'] = float(value)
+                elif key == 'address':
+                    data['address'] = value
+                elif key == 'imei':
+                    data['imei'] = value
+                elif key == 'imsi':
+                    data['imsi'] = value
+                elif key == 'phone':
+                    data['phone_model'] = value
+                elif key == 'operator':
+                    data['operator'] = value
+                elif key == 'network':
+                    data['network'] = value
+        
+        if 'latitude' in data and 'longitude' in data:
+            return {
+                "success": True,
+                "source": "telegram_bot",
+                "latitude": data.get('latitude', 0),
+                "longitude": data.get('longitude', 0),
+                "address": data.get('address', 'Alamat tidak tersedia'),
+                "network": data.get('network', 'Unknown'),
+                "imsi": data.get('imsi', ''),
+                "imei": data.get('imei', ''),
+                "phone_model": data.get('phone_model', ''),
+                "operator": data.get('operator', ''),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {"success": False, "error": "Could not parse lat/long from response"}
+            
+    except Exception as e:
+        logger.error(f"[TG BOT] Parse error: {e}")
+        return {"success": False, "error": f"Parse error: {e}"}
+
+async def query_position(phone_number: str) -> dict:
+    """
+    Main function to query position - uses CP API or Telegram bot based on settings.
+    """
+    # Check if we should use Telegram bot
+    settings_doc = await db.settings.find_one({"type": "position_source"})
+    use_telegram = settings_doc.get("use_telegram", False) if settings_doc else False
+    
+    if use_telegram:
+        logger.info(f"[POSITION] Using Telegram bot for {phone_number}")
+        return await query_telegram_bot_position(phone_number)
+    else:
+        logger.info(f"[POSITION] Using CP API for {phone_number}")
+        result = await query_cp_api(phone_number)
+        
+        # If CP API returns quota exceeded, try Telegram as fallback
+        if not result.get("success") and "Quota exceeded" in str(result.get("error", "")):
+            logger.warning("[POSITION] CP API quota exceeded, falling back to Telegram bot")
+            return await query_telegram_bot_position(phone_number)
+        
+        return result
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
