@@ -326,6 +326,20 @@ class LoginRequest(BaseModel):
 class LoginResponse(BaseModel):
     token: str
     username: str
+    is_admin: bool = False
+
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    full_name: str
+
+class UserResponse(BaseModel):
+    id: str
+    username: str
+    full_name: str
+    status: str  # pending, approved, rejected
+    is_admin: bool
+    created_at: datetime
 
 class CaseCreate(BaseModel):
     name: str
