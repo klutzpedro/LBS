@@ -2721,6 +2721,7 @@ export const NonGeointSearchDialog = ({
               )}
             </div>
           )}
+          </div>
         </DraggableDialogContent>
       </DraggableDialog>
 
