@@ -4636,11 +4636,15 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                 result["wni_data"] = wni_data
                 
                 # Extract passport numbers from various response formats
-                data_list = wni_data.get("data", [])
+                # API returns "result" array, not "data"
+                data_list = wni_data.get("result") or wni_data.get("data") or []
+                
                 if isinstance(data_list, list):
                     for item in data_list:
-                        # Try different field names
+                        # Try different field names - API uses lowercase "no_paspor"
                         passport_no = (
+                            item.get("no_paspor") or
+                            item.get("no_paspor_lama") or
                             item.get("TRAVELDOCUMENTNO") or 
                             item.get("NO_PASPOR") or 
                             item.get("passport_no") or
@@ -4650,6 +4654,12 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                         if passport_no and passport_no not in result["passports"]:
                             result["passports"].append(passport_no)
                             logger.info(f"[PASSPORT CP] Found passport: {passport_no}")
+                        
+                        # Also check for old passport
+                        old_passport = item.get("no_paspor_lama")
+                        if old_passport and old_passport not in result["passports"]:
+                            result["passports"].append(old_passport)
+                            logger.info(f"[PASSPORT CP] Found old passport: {old_passport}")
                 
                 logger.info(f"[PASSPORT CP] WNI data parsed, total passports: {len(result['passports'])}")
                 
