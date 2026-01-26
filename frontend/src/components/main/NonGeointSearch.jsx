@@ -1800,10 +1800,26 @@ export const NonGeointSearchDialog = ({
           addText('4. DATA PASSPORT (via CP API)');
           addText(`   Status: ${nikResult.passport_data.status}`);
           
+          // Show passport numbers
           if (nikResult.passport_data.passports && nikResult.passport_data.passports.length > 0) {
             addText(`   Jumlah Passport: ${nikResult.passport_data.passports.length}`, margin, 10);
             nikResult.passport_data.passports.forEach((passport, pIdx) => {
-              addText(`      ${pIdx + 1}. ${passport}`, margin, 10);
+              addText(`      ${pIdx + 1}. No. Paspor: ${passport}`, margin, 10);
+            });
+          }
+          
+          // Show detailed WNI passport data
+          if (nikResult.passport_data.wni_data?.data && Array.isArray(nikResult.passport_data.wni_data.data)) {
+            nikResult.passport_data.wni_data.data.forEach((passportInfo, idx) => {
+              addText(`   --- Detail Passport ${idx + 1} ---`, margin, 10);
+              if (passportInfo.TRAVELDOCUMENTNO) addText(`      No. Dokumen: ${passportInfo.TRAVELDOCUMENTNO}`, margin, 10);
+              if (passportInfo.GIVENNAME) addText(`      Nama: ${passportInfo.GIVENNAME} ${passportInfo.FAMILYNAME || ''}`, margin, 10);
+              if (passportInfo.DATEOFBIRTH) addText(`      Tgl Lahir: ${passportInfo.DATEOFBIRTH}`, margin, 10);
+              if (passportInfo.PLACEOFBIRTH) addText(`      Tempat Lahir: ${passportInfo.PLACEOFBIRTH}`, margin, 10);
+              if (passportInfo.GENDERCODE) addText(`      Jenis Kelamin: ${passportInfo.GENDERCODE === 'M' ? 'Laki-laki' : 'Perempuan'}`, margin, 10);
+              if (passportInfo.ISSUINGSTATEDESCRIPTION) addText(`      Negara Penerbit: ${passportInfo.ISSUINGSTATEDESCRIPTION}`, margin, 10);
+              if (passportInfo.NATIONALITYDESCRIPTION) addText(`      Kewarganegaraan: ${passportInfo.NATIONALITYDESCRIPTION}`, margin, 10);
+              if (passportInfo.EXPIRATIONDATE) addText(`      Berlaku s/d: ${passportInfo.EXPIRATIONDATE}`, margin, 10);
             });
           }
         }
@@ -1816,16 +1832,23 @@ export const NonGeointSearchDialog = ({
           
           if (nikResult.perlintasan_data.results && nikResult.perlintasan_data.results.length > 0) {
             nikResult.perlintasan_data.results.forEach((passportResult) => {
+              addText(`   Passport: ${passportResult.passport_no}`, margin, 10);
+              
               if (passportResult.crossings && passportResult.crossings.length > 0) {
-                addText(`   Passport ${passportResult.passport_no}: ${passportResult.crossings.length} perjalanan`, margin, 10);
+                addText(`   Total Perjalanan: ${passportResult.crossings.length}`, margin, 10);
                 passportResult.crossings.forEach((crossing, cIdx) => {
-                  const direction = crossing.direction_code === 'A' ? 'MASUK' : 'KELUAR';
+                  const direction = crossing.direction_code === 'A' ? 'MASUK' : crossing.direction_code === 'D' ? 'KELUAR' : crossing.direction;
                   addText(`      ${cIdx + 1}. ${crossing.movement_date} - ${direction}`, margin, 10);
+                  addText(`         Nama: ${crossing.name} ${crossing.family_name || ''}`, margin, 10);
                   addText(`         TPI: ${crossing.tpi_name}`, margin, 10);
-                  addText(`         ${crossing.direction_code === 'A' ? 'Dari' : 'Ke'}: ${crossing.port_description}`, margin, 10);
+                  addText(`         Port: ${crossing.port_description}`, margin, 10);
                 });
+              } else if (passportResult.status === 'no_data') {
+                addText(`   Tidak ada data perlintasan`, margin, 10);
               }
             });
+          } else {
+            addText(`   Tidak ada data perlintasan (tidak ada nomor paspor)`, margin, 10);
           }
         }
         
