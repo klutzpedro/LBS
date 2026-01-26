@@ -2983,21 +2983,63 @@ export const NonGeointSearchDialog = ({
                           ))}
                         </div>
                         
-                        {/* WNI Data */}
-                        {detailDialog.result.passport_data.wni_data?.data && (
+                        {/* WNI Data - handle both 'result' and 'data' arrays */}
+                        {(detailDialog.result.passport_data.wni_data?.result || detailDialog.result.passport_data.wni_data?.data) && (
                           <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
                             <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-muted)' }}>
-                              Detail WNI:
+                              Detail Data Passport:
                             </p>
-                            {Array.isArray(detailDialog.result.passport_data.wni_data.data) ? (
-                              detailDialog.result.passport_data.wni_data.data.slice(0, 3).map((item, idx) => (
-                                <div key={idx} className="text-xs space-y-1 mb-2 p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
-                                  {item.GIVENNAME && <p><span style={{ color: 'var(--foreground-muted)' }}>Nama:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.GIVENNAME}</span></p>}
-                                  {item.TRAVELDOCUMENTNO && <p><span style={{ color: 'var(--foreground-muted)' }}>No Passport:</span> <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>{item.TRAVELDOCUMENTNO}</span></p>}
-                                  {item.DATEOFBIRTH && <p><span style={{ color: 'var(--foreground-muted)' }}>Tgl Lahir:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.DATEOFBIRTH}</span></p>}
-                                </div>
-                              ))
-                            ) : null}
+                            {(() => {
+                              const wniArray = detailDialog.result.passport_data.wni_data?.result || detailDialog.result.passport_data.wni_data?.data || [];
+                              return Array.isArray(wniArray) ? (
+                                wniArray.slice(0, 5).map((item, idx) => (
+                                  <div key={idx} className="text-xs space-y-1 mb-2 p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                    {(item.nama_lengkap || item.GIVENNAME) && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Nama:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.nama_lengkap || item.GIVENNAME}</span></p>
+                                    )}
+                                    {(item.no_paspor || item.TRAVELDOCUMENTNO) && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>No Passport:</span> <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>{item.no_paspor || item.TRAVELDOCUMENTNO}</span></p>
+                                    )}
+                                    {item.no_paspor_lama && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>No Passport Lama:</span> <span className="font-mono" style={{ color: 'var(--foreground-muted)' }}>{item.no_paspor_lama}</span></p>
+                                    )}
+                                    {(item.tempat_lahir || item.PLACEOFBIRTH) && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Tempat Lahir:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.tempat_lahir || item.PLACEOFBIRTH}</span></p>
+                                    )}
+                                    {(item.tanggal_lahir || item.DATEOFBIRTH) && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Tgl Lahir:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.tanggal_lahir || item.DATEOFBIRTH}</span></p>
+                                    )}
+                                    {item.alamat && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Alamat:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.alamat}</span></p>
+                                    )}
+                                    {item.pekerjaan && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Pekerjaan:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.pekerjaan}</span></p>
+                                    )}
+                                    {item.jenis_paspor && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Jenis Paspor:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.jenis_paspor}</span></p>
+                                    )}
+                                    {item.kantor_penerbit && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Kantor Penerbit:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.kantor_penerbit}</span></p>
+                                    )}
+                                    {item.tanggal_diterbitkan_paspor && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Tgl Terbit:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.tanggal_diterbitkan_paspor}</span></p>
+                                    )}
+                                    {item.tanggal_habis_berlaku_paspor && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Berlaku s/d:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.tanggal_habis_berlaku_paspor}</span></p>
+                                    )}
+                                    {item.status_paspor && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Status:</span> <span className={item.status_paspor === 'TERUJI' ? 'text-green-400' : ''} style={{ color: item.status_paspor === 'TERUJI' ? undefined : 'var(--foreground-primary)' }}>{item.status_paspor}</span></p>
+                                    )}
+                                    {item.email && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>Email:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.email}</span></p>
+                                    )}
+                                    {item.no_hp && (
+                                      <p><span style={{ color: 'var(--foreground-muted)' }}>No HP:</span> <span style={{ color: 'var(--foreground-primary)' }}>{item.no_hp}</span></p>
+                                    )}
+                                  </div>
+                                ))
+                              ) : null;
+                            })()}
                           </div>
                         )}
                       </div>
