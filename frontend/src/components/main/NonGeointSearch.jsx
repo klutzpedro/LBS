@@ -2722,20 +2722,24 @@ export const NonGeointSearchDialog = ({
       {detailDialog.type === 'nik_combined' ? (
         <DraggableDialog open={detailDialog.open} onOpenChange={() => setDetailDialog({ open: false, type: null, result: null, nik: null })}>
           <DraggableDialogContent 
-            className="max-w-2xl max-h-[85vh] overflow-y-auto"
+            className="flex flex-col"
             style={{ 
               backgroundColor: 'var(--background-elevated)',
               border: '1px solid var(--borders-default)',
-              zIndex: 9999
+              zIndex: 9999,
+              width: '700px',
+              maxWidth: '95vw',
+              height: '80vh',
+              maxHeight: '85vh'
             }}
           >
-            <DraggableDialogHeader>
+            <DraggableDialogHeader className="flex-shrink-0">
               <DraggableDialogTitle style={{ color: 'var(--foreground-primary)' }}>
                 Hasil Pendalaman NIK: <span className="font-mono">{detailDialog.nik}</span>
               </DraggableDialogTitle>
             </DraggableDialogHeader>
             
-            <div className="mt-4 space-y-6">
+            <div className="flex-1 overflow-y-auto mt-4 space-y-6 pr-2" style={{ minHeight: 0 }}>
               {/* NIK Data Section */}
               {detailDialog.result?.nik_data && (
                 <div>
