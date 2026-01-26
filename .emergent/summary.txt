@@ -1,90 +1,67 @@
 <analysis>**original_problem_statement:**
-The user is building a Geospatial Information System (GIS) web application, WASKITA LBS, deployed on a private VPS. The application's core purpose is to query location and personal data for given phone numbers.
+The user is building a Geospatial Information System (GIS) web application, WASKITA LBS, deployed on a private VPS. The application's core purpose is to query location and personal data.
 
 PRODUCT REQUIREMENTS:
 1.  **Core Functionality:** Create cases, add target phone numbers, and query for location (via CP API) and personal data (via a private Telegram bot).
-2.  **NON GEOINT Search Engine:** A UI to search for individuals by name, which triggers queries to a Telegram bot and CP API. This involves a multi-step process of searching a name, selecting a target from photos, and then performing a deep dive investigation (NIK, NKK, RegHP, Passport, Immigration).
-3.  **UI/Bug Fixes & Feature Enhancements from this session:**
-    *   Add a search history window with a search filter and vertical scroll.
-    *   Relocate map control buttons to the right side of the map.
-    *   Simplify notification messages during long-running searches.
-    *   Fix NKK data display to show all family members without duplicates.
-    *   Fix the Family Tree dialog to be draggable, minimizable, and appear on top of other windows.
-    *   Implement Passport and Immigration (Perlintasan) checks via the CP API as part of the deep-dive investigation.
-    *   Fix the photo selection flow: photos must appear even for single NIK results, and selecting a photo should bypass the redundant NIK selection step.
-    *   Fix bugs in the paginated photo loading where subsequent batches of photos (e.g., 11-20, 21-30) were not appearing in the UI.
-    *   Ensure the photo loading process resumes correctly if the search window is closed and reopened.
+2.  **Query Nama (formerly NON GEOINT):** A UI to search for individuals by name, triggering queries to a Telegram bot and CP API, followed by a deep dive investigation (NIK, NKK, RegHP, Passport, Immigration).
+3.  **Face Recognition (FR) Feature:** A new feature to identify a person by photo. The flow involves uploading a photo, sending it to a Telegram bot, parsing match results (NIKs with percentages), automatically selecting the top NIK, querying the bot again for full details, and displaying a comparison of the input photo vs. the database photo alongside the person's data. This feature must have its own history and PDF export functionality.
+4.  **UI/Bug Fixes:**
+    *   Fix bugs in the Query Nama photo loading and state management.
+    *   Fix the blocked Immigration/Passport API calls.
+    *   Fix data parsing and display for Passport and Immigration (Perlintasan) results.
+    *   Improve UI layout by adjusting button positions, sizes, and colors.
+    *   Ensure all investigation data (Passport, Perlintasan) is included in downloaded PDFs.
+    *   Sort Perlintasan data by oldest date and departure-first.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A full-stack FastAPI and React application. In this session, the agent has implemented several UI features and bug fixes, primarily within the  component. Key additions include a search history dialog, repositioned map controls, and simplified notifications. The agent also implemented the backend and frontend logic for new immigration/passport API calls. A significant portion of the session was spent debugging the complex, multi-step NON GEOINT search flow, particularly issues with data filtering (NKK), UI interactions (Family Tree dialog), and the paginated photo-fetching process. While many fixes have been implemented, the user's deployment environment remains a major source of friction, and a critical external API is blocked.
+A full-stack FastAPI and React application. In this session, the agent successfully implemented a comprehensive new Face Recognition (FR) feature from scratch, including the frontend UI, backend API endpoints, and complex multi-step interaction logic with a Telegram bot. A major blocker from the previous session, the non-functional Immigration/Passport API, was diagnosed as an IPv4/IPv6 issue and fixed by forcing all external API calls to use IPv4. The agent also fixed numerous bugs related to data parsing for the now-working immigration APIs, UI layout adjustments, and PDF generation.
 
 **Last working item**:
-The agent was addressing a set of related bugs in the NON GEOINT photo loading process after the user reported that closing the window during a long photo fetch would reset the progress.
+The agent was implementing a user request to sort the Perlintasan (Immigration Crossings) data in the Query Nama investigation results.
 
--   Last item agent was working: Fixing the NON GEOINT search to be resumable. The agent implemented a fix using  to store the active . When the search dialog is closed and reopened, it should now check  and automatically resume polling the state of the ongoing search from the backend, instead of starting over. This also included fixes for related bugs where photo batch counts weren't updating and subsequent batches weren't displayed.
+-   Last item agent was working: Sorting the Perlintasan data view. The user wants the list of travel movements to be sorted first by date (oldest to newest) and then by direction (Departures 'D' before Arrivals 'A'). The agent applied a  method with custom logic to the  array within the  component before it's rendered.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? Frontend testing agent. The agent should specifically test the flow:
-    1.  Start a NON GEOINT search with many results (>10).
-    2.  Wait for the first batch of photos to load.
-    3.  Click Muat Foto 11-20.
-    4.  While the second batch is loading, close the NON GEOINT dialog.
-    5.  Reopen the dialog and verify that the search resumes from its previous state (e.g., showing 20 photos loaded or in the process of loading).
+-   Which testing method agent to use? Frontend testing agent. The agent should test the Query Nama flow for a user with immigration data and verify that the Perlintasan table is sorted correctly. A screenshot of the sorted table would be sufficient.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: NON GEOINT Photo Fetching & UI Bugs (P0)**
--   **Issue 2: CP API for Immigration/Passport is Blocked (P0)**
--   **Issue 3: NKK Table only shows one family member (Recurring) (P1)**
--   **Issue 4: Family Tree Graph Not Rendering Correctly (P2)**
+-   **Issue 1: Sorting Perlintasan Data (P0)**
+-   **Issue 2: NKK Table only shows one family member (Recurring) (P1)**
+-   **Issue 3: Family Tree Graph Not Rendering Correctly (P2)**
 
 **Issues Detail:**
--   **Issue 1: NON GEOINT Photo Fetching & UI Bugs (P0)**
-    -   **Attempted fixes:** The agent has just implemented a comprehensive fix in .
-        1.  **Resuming Searches:** Uses  to save the active  on search start/dialog close, and load from it on dialog open.
-        2.  **Photo Batch Display:** Corrected the logic that prevented photos from batches 2, 3, etc., from being appended to the view.
-        3.  **UI Counters:** Fixed UI text to correctly show the number of photos loaded (e.g., 20 dari 40) and the range being fetched (Memuat Foto 21-30...).
+-   **Issue 1: Sorting Perlintasan Data (P0)**
+    -   **Attempted fixes:** The agent added the following  logic in  to the perlintasan data array:
+        
     -   **Next debug checklist:**
-        1.  The next agent must test the resumable search flow as described in the Last working item.
-        2.  Verify that when Muat Foto 11-20 is clicked, the new photos are added to the display alongside the first 10.
-        3.  Verify the text  updates correctly as more photos are loaded.
-    -   **Why fix this issue and what will be achieved with the fix?** This is the core functionality of the NON GEOINT feature. It's currently unusable for searches with many results, which is a primary use case.
+        1.  Verify the fix works as intended by testing the Query Nama -> Pendalaman flow on a target with perlintasan data.
+        2.  Take a screenshot to confirm the UI table is sorted correctly (oldest date first, departures first for same-day travel).
+    -   **Why fix this issue and what will be achieved with the fix?** Improves data readability and meets a direct user request for data presentation.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** Y
+    -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Frontend
     -   **Blocked on other issue:** None
 
--   **Issue 2: CP API for Immigration/Passport is Blocked (P0)**
-    -   **Attempted fixes:** The agent implemented the backend functions in  to call the CP API's , , and  endpoints. The code was refactored from  to use  subprocesses at the user's request. However, all attempts to call these specific endpoints result in a  error, both from the preview environment and the user's own VPS.
+-   **Issue 2: NKK Table only shows one family member (Recurring) (P1)**
+    -   **Attempted fixes:** None in this session. The previous handoff identified this as a likely backend parser issue.
     -   **Next debug checklist:**
-        1.  The root cause has been identified: The user's API subscription for **imigrasi** is locked to the wrong IP () instead of their VPS IP (). Other API calls like  work correctly because they are locked to the correct IP.
-        2.  The next agent MUST NOT try to fix the code. The code is correct.
-        3.  The agent's only action is to instruct the user to **contact their API provider** and ask them to update the **Lock IP** for the imigrasi subscription to .
-    -   **Why fix this issue and what will be achieved with the fix?** This unblocks a major feature request (Passport and Immigration checks).
-    -   **Status:** BLOCKED
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Backend (via curl on the user's VPS)
-    -   **Blocked on other issue:** Blocked by external API provider.
-
--   **Issue 3: NKK Table only shows one family member (Recurring) (P1)**
-    -   **Attempted fixes:** The agent has made multiple attempts to fix this by adjusting the filtering logic in . The logic was changed to filter out entries without a NIK or Name and then to remove duplicates. The user reported it was still only showing one member. The agent's last fix involved making the name-matching more flexible (checking for ).
-    -   **Next debug checklist:** This issue is likely rooted in the backend's data parsing from the Telegram bot ( in ). The parser seems to incorrectly label many members as Unknown.
         1.  Examine the backend parser  in .
         2.  Ask the user for a sample of the raw text from the Telegram bot for an NKK query to create a test case.
-        3.  Refactor the parser to be more robust against formatting variations.
+        3.  Refactor the parser to be more robust.
     -   **Why fix this issue and what will be achieved with the fix?** Fixes a critical data integrity bug in the NKK investigation feature.
-    -   **Status:** IN PROGRESS
+    -   **Status:** NOT STARTED
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on other issue:** None
 
--   **Issue 4: Family Tree Graph Not Rendering Correctly (P2)**
-    -   **Attempted fixes:** The agent fixed related UI issues (making the dialog draggable/minimizable) and filtered out Unknown members. The core graph rendering was not directly addressed.
+-   **Issue 3: Family Tree Graph Not Rendering Correctly (P2)**
+    -   **Attempted fixes:** None in this session.
     -   **Next debug checklist:**
         1.  Examine .
-        2.  Check how the data is passed from .
+        2.  Check how data is passed from .
         3.  The issue may be in the visualization logic itself or the data structure it expects.
     -   **Why fix this issue and what will be achieved with the fix?** Improves the data visualization capabilities of the application.
     -   **Status:** NOT STARTED
@@ -93,7 +70,12 @@ The agent was addressing a set of related bugs in the NON GEOINT photo loading p
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
-None. All current work is classified as bug/issue fixing.
+-   **Task 1: Finalize Face Recognition (FR) Feature (P0)**
+    -   **Where to resume:** The feature's backend logic for interacting with the Telegram bot has been repeatedly patched. It needs comprehensive testing by the user on their live environment to confirm the multi-step flow (send photo -> get matches -> select top NIK -> get details) works reliably.
+    -   **What will be achieved with this?** A fully functional, user-verified Face Recognition feature.
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Should Test frontend/backend/both after fix?** Backend (on user's VPS)
+    -   **Blocked on something:** User testing and feedback.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
@@ -103,74 +85,91 @@ None. All current work is classified as bug/issue fixing.
     -   Build a more robust database migration tool.
 
 **Completed work in this session**
--   **Feature: NON GEOINT Search History:** Implemented a new dialog in  to show past searches with a filter box and vertical scroll.
--   **UI: Map Controls Layout:** Moved the map control buttons to the right side of the map as requested by editing .
--   **UI: Simplified Notifications:** Removed extra text from searching and deepening notifications in .
--   **Bug Fix: NKK/Family Tree Data Filtering:** Added logic in  and  to filter duplicate members and those with Unknown names from the NKK results table and Family Tree.
--   **UI: Family Tree Dialog:** Made the Family Tree dialog draggable, minimizable, and have a higher z-index to appear on top of other elements.
--   **Feature: Immigration/Passport API Integration:**
-    -   Added backend functions in  to query CP API for passport (/) and travel history (). Refactored to use  at user's request.
-    -   Added UI sections in  to display the new data.
--   **Refactor: Removed Initial Passport Search:** Removed the Passport WNI/WNA options from the initial NON GEOINT search UI and backend logic, consolidating passport checks into the deep-dive phase.
--   **Bug Fix: NON GEOINT Photo Selection Flow:**
-    -   Modified  to ensure the photo selection screen appears even if only one NIK is found.
-    -   Streamlined the flow to proceed directly to investigation after photo selection, skipping the redundant Select NIK step.
+-   **Feature: Face Recognition (FR) Implemented:**
+    -   Created UI () for photo upload, results display, and history.
+    -   Added backend endpoints () for matching photos and fetching NIK details via a complex, multi-step Telegram bot interaction.
+    -   Integrated separate History dialog and PDF export (including images).
+-   **Bug Fix: Immigration/Passport API Unblocked:**
+    -   Diagnosed API failure as an IPv6 vs. IPv4 issue on the user's VPS.
+    -   Forced all  and  calls to the CP API to use IPv4 in , successfully unblocking the feature.
+-   **Bug Fix: Passport & Perlintasan Data Handling:**
+    -   Corrected backend parsers in  to handle the actual JSON response format from the now-working CP API.
+    -   Ensured the logic correctly extracts passport numbers to be used in subsequent perlintasan queries.
+    -   Updated frontend UI in  and PDF generation to correctly display all new passport and perlintasan data.
+-   **Bug Fix: Gagal memulai pendalaman Error:**
+    -   Fixed a JavaScript error in  by correcting a call to a non-existent function ( -> ).
+-   **Bug Fix: Muat Foto Button Logic:**
+    -   Corrected logic in  to hide the Load More Photos button when all photos are loaded.
+-   **Bug Fix: Investigation History Display:**
+    -   Improved logic in  to correctly show 'completed' status for sub-queries when viewing results from history.
+-   **UI Enhancements:**
+    -   Renamed NON GEOINT feature to Query Nama.
+    -   Relocated main action buttons (Query Nama, FR) to the top-center of the map.
+    -   Standardized button sizes and aligned history button styles.
+-   **DevOps:**
+    -   Provided the user with simplified one-line commands for updating the application on their VPS.
 
 **Earlier issues found/mentioned but not fixed**
--   The fundamental rendering logic of the Family Tree graph () has not been debugged, only the data fed into it.
--   The backend Telegram data parsers (e.g., ) are brittle and likely the root cause of several data display issues (like the NKK table only showing one member). They have not been significantly refactored.
+-   **Issue 1: Brittle Backend Parsers**: The backend data parsers in  for features like NKK (identified in the initial handoff) have not been refactored for robustness, which may lead to future data display issues.
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** **User's deployment environment.** This is the #1 recurring problem. The user consistently struggles to run  and  correctly. Almost every new feature or bug fix is initially reported as not working because the user is viewing a cached or old version of the code on their VPS. The agent must always start debugging by patiently guiding the user through the full update and restart process.
--   **Recurrence count:** High (10+)
+-   **Issue recurrence in previous fork:** **User's deployment environment.** This remains a major source of friction. The user frequently reports issues that are resolved only after being guided to correctly pull the latest code and perform a hard browser refresh. The user ran into a  conflict due to a new file () created by the agent, highlighting the fragility of their workflow.
+-   **Recurrence count:** High (5+ in this session)
 -   **Status:** BLOCKED (by user's workflow)
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Complex React State Management:** The  component juggles numerous states (, , , , , etc.) across multiple asynchronous, user-driven steps. Race conditions and asynchronous state updates are common sources of bugs.
--   **Resumable Tasks with :** A new pattern was introduced to make the long-running photo search process resumable by storing the  in the browser's .
--   **User Environment Management:** The biggest challenge is the inability to directly access the user's VPS. All debugging and deployment must be done by providing the user with precise, copy-pasteable shell commands and interpreting the output they provide.
--   **External API Dependencies:** The application is critically dependent on two external services: a private Telegram bot (for photos and initial data) and the CP API (for CAPIL, passport, immigration). The CP API is currently a hard blocker due to an IP whitelist misconfiguration on the provider's end.
+-   **Forcing IPv4 for API Calls:** A critical fix was implemented using  and a custom  transport to force IPv4 communication from a dual-stack (IPv4/IPv6) server to an IPv4-whitelisted API.
+-   **Complex Asynchronous Bot Interaction (Telethon):** The FR feature required a stateful, multi-step conversation with a Telegram bot: (1) send photo, (2) parse response for match buttons, (3) click the correct button remotely, (4) wait for a final response with data and a photo, (5) parse and download the final results. This was implemented in .
+-   **Client-Side Data Sorting:** Using  in React () to sort data based on multiple criteria (date and string codes) before rendering in the UI.
+-   **Dynamic PDF Generation with Images (jsPDF):** The PDF export logic was enhanced to fetch and embed images (from user upload and from bot response URLs) into the generated document by converting them to base64 data URLs.
 
 **key DB schema**
--   **non_geoint_searches:** Caches NON GEOINT search results. Contains fields like ,  (, , , ), ,  (a dictionary mapping NIKs to photo data), , and . Clearing this collection is a common and necessary step to test changes to the search flow.
+-   ****: Unchanged.
+-   ****: Unchanged.
+-   **** (NEW): Caches FR results for history. Stores , , ,  (array of ),  (full data for top NIK), and .
 
 **All files of reference**
--   : The single backend file containing all API endpoints, business logic, and interactions with external services (Telegram, CP API).
--   : The most complex frontend component, managing the entire NON GEOINT search and investigation workflow.
--   : The component for map overlay controls.
--   : The component for rendering the family tree visualization.
+-   : The core backend file, heavily modified for the new FR feature and the critical CP API IPv4 fix.
+-   : Main page component, modified to integrate the FR feature and adjust UI layout.
+-   : A new, large component containing the entire UI for the Face Recognition feature.
+-   : Modified for numerous bug fixes, UI tweaks, and data display improvements (Passport, Perlintasan).
 
 **Critical Info for New Agent**
 -   **You MUST communicate in Bahasa Indonesia.**
--   **THE USER'S VPS IS THE BIGGEST PROBLEM.** Always assume the user is running old code. Before debugging any not working feature, you **MUST** guide them to run the full deployment command and clear their browser cache. Be prepared to do this repeatedly. The command is: .
--   **IMMIGRATION API IS EXTERNALLY BLOCKED.** Do not waste time trying to fix the passport/immigration feature code. The problem is the API provider has the wrong IP whitelisted. Your only task for this issue is to remind the user to contact their provider and ask them to update the Lock IP for the immigration subscription to .
--   **CLEAR THE  CACHE.** When testing any changes to the NON GEOINT search flow, you must instruct the user to clear the cache in MongoDB to avoid loading old data structures. The command for the user is: { acknowledged: true, deletedCount: 1 }.
--   The NON GEOINT workflow is very complex. Read the code in  carefully to understand the different steps (, , , etc.) and states.
+-   **User Deployment is Fragile:** Always assume the user is running old code. Before debugging any issue reported by the user, you **MUST** instruct them to run the full, correct update command: . Then, they must perform a hard browser refresh ().
+-   **Immigration/Passport API is working:** The API is unblocked. The backend code in  forces IPv4 for all calls to . Do not change this logic.
+-   **Face Recognition Logic is Complex:** The FR feature's interaction with the Telegram bot () is multi-step and timing-dependent. If the user reports issues with FR data not appearing, the first step is to ask for logs from their VPS to trace the bot interaction: .
 
 **documents and test reports created in this job**
--   None.
+-   
+-   ==========================================
+   WASKITA LBS - UPDATE SCRIPT
+==========================================
+
+[0;31mERROR: Folder /var/www/waskita-lbs tidak ditemukan![0m
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User (LATEST):** When fetching photos for a search with 40 NIKs, if I close the popup and reopen it, the process starts over from the beginning instead of resuming.
-2.  **Agent:** Implemented a fix to make the search resumable using .
-3.  **User:** The photo loading indicator and count are confusing/incorrect when loading subsequent batches.
-4.  **Agent:** Fixed the loading indicator text and the photo count display.
-5.  **User:** After choosing a photo, I have to click Mulai Pendalaman but it fails with Gagal memulai pendalaman.
-6.  **Agent:** Corrected the state management logic in the  handler to fix the flow.
-7.  **User:** I've selected a photo, but I'm still being shown the Select NIK screen. It should go straight to investigation.
-8.  **Agent:** Fixed the logic to bypass the Select NIK step after a photo is chosen.
-9.  **User:** For a target with 40 NIKs, the process gets stuck on waiting_selection and the photos never appear.
-10. **Agent:** Debugged and found the issue was in the frontend logic for displaying photos, not the backend fetching. Implemented several fixes for this flow.
+1.  **User:** Sort the perlintasan data by oldest date and departure-first.
+2.  **Agent:** I will update the sorting logic.
+3.  **User:** Make sure passport and perlintasan info also appears in the view popup for Query Nama.
+4.  **Agent:** Acknowledged. I will check and fix the view dialog.
+5.  **User:** For the target with NIK , passport is working but perlintasan is not. Ensure data is also in the PDF download.
+6.  **Agent:** I will test the perlintasan API and check the PDF generation.
+7.  **User:** (Shares successful curl output for both passport and perlintasan APIs).
+8.  **Agent:** Thank you. The API response format is different than expected. I will fix the backend parser.
+9.  **User:** The perlintasan query should use the passport number from the imigrasi result, not the NIK.
+10. **Agent:** Yes, the flow is already correct. I will verify the implementation.
 
 **Project Health Check:**
--   **Broken:** The core NON GEOINT feature is plagued by several critical bugs related to its paginated photo-fetching and state management. A key new feature (Immigration/Passport) is entirely non-functional due to an external API block. The project's stability is low due to the fragile deployment process.
+-   **Broken:** The NKK table data display and the Family Tree visualization remain broken from the previous fork.
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telethon:** Live integration for querying a private Telegram bot to get photos and initial data.
--   **CP API ():** External JSON API for CAPIL, Cekpos, and Immigration data. **The immigration endpoints are currently blocked by an IP whitelist issue.**
+-   **Telethon:** Live integration for querying a private Telegram bot. The interaction logic was made significantly more complex to support the new Face Recognition feature.
+-   **CP API ():** External JSON API. The previously blocked Immigration endpoints were fixed by forcing IPv4 connections. The data parsers for its responses have been updated.
 -   **Leaflet.js & OpenStreetMap:** For map rendering.
 -   **jsPDF & html2canvas:** For client-side PDF generation.
 
@@ -178,7 +177,7 @@ None. All current work is classified as bug/issue fixing.
 -   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: The NON GEOINT photo-fetching feature has regressed and is currently buggy for searches with many results.
+-   Known regressions: None identified in this session.
 
 **Credentials to test flow:**
 -   **Web App Login:**
@@ -188,5 +187,5 @@ None. All current work is classified as bug/issue fixing.
     -   The agent does not have direct access. All instructions must be provided to the user as bash commands.
 
 **What agent forgot to execute**
--   The agent did not create a simplified deployment script (e.g., ) for the user, which was suggested in the previous handoff and would mitigate the constant deployment problems.
--   The agent has focused on frontend state management fixes for the NKK/photo display issues, but has not performed a deep-dive refactor of the brittle backend data parsers in , which are likely the true root cause of many recurring data integrity bugs.</analysis>
+-   The agent did not fully refactor the brittle backend data parsers () mentioned in the initial handoff, which are the likely root cause of recurring data display issues like the NKK table bug.
+-   The core rendering logic of the Family Tree graph () was not debugged.</analysis>

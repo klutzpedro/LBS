@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 class NortharchAPITester:
-    def __init__(self, base_url="https://datadiscovery.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://locusdata.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
