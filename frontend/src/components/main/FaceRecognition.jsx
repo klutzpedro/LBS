@@ -620,18 +620,18 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                     <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
                       📋 Data NIK (TOP Match):
                     </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="grid grid-cols-1 gap-2 text-xs">
                       {Object.entries(nikData).map(([key, value]) => {
                         if (key === 'photo' || !value) return null;
                         return (
-                          <div key={key} className="flex">
+                          <div key={key} className="flex flex-wrap">
                             <span 
-                              className="w-24 flex-shrink-0 font-medium"
+                              className="w-28 flex-shrink-0 font-medium"
                               style={{ color: 'var(--foreground-muted)' }}
                             >
                               {key}:
                             </span>
-                            <span style={{ color: 'var(--foreground-primary)' }}>
+                            <span className="flex-1 break-words" style={{ color: 'var(--foreground-primary)', wordBreak: 'break-word', minWidth: 0 }}>
                               {String(value)}
                             </span>
                           </div>
