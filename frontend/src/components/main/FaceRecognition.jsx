@@ -396,10 +396,12 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className={`${isMinimized ? 'h-auto' : 'max-h-[85vh]'} overflow-hidden flex flex-col`}
+        className="overflow-hidden flex flex-col"
         style={{ 
           width: isMinimized ? '300px' : '700px',
           maxWidth: '95vw',
+          height: isMinimized ? 'auto' : '85vh',
+          maxHeight: '90vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
