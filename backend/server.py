@@ -476,21 +476,164 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
         raise HTTPException(status_code=401, detail="Invalid token")
 
 # Auth Routes
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "Paparoni290483#"
+
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
-    ADMIN_USERNAME = "admin"
-    ADMIN_PASSWORD = "Paparoni290483#"
+    """Login endpoint - supports admin and registered users"""
     
-    if request.username != ADMIN_USERNAME or request.password != ADMIN_PASSWORD:
+    # Check if admin login
+    if request.username == ADMIN_USERNAME:
+        if request.password != ADMIN_PASSWORD:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        token = jwt.encode(
+            {"username": request.username, "is_admin": True},
+            JWT_SECRET,
+            algorithm=JWT_ALGORITHM
+        )
+        return LoginResponse(token=token, username=request.username, is_admin=True)
+    
+    # Check if registered user
+    user = await db.users.find_one({"username": request.username})
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Verify password
+    if not pwd_context.verify(request.password, user.get("password_hash", "")):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if user is approved
+    if user.get("status") != "approved":
+        if user.get("status") == "pending":
+            raise HTTPException(status_code=403, detail="Akun Anda belum disetujui oleh admin")
+        elif user.get("status") == "rejected":
+            raise HTTPException(status_code=403, detail="Pendaftaran akun Anda ditolak")
+        else:
+            raise HTTPException(status_code=403, detail="Akun tidak aktif")
+    
     token = jwt.encode(
-        {"username": request.username},
+        {"username": request.username, "is_admin": False},
         JWT_SECRET,
         algorithm=JWT_ALGORITHM
     )
+    return LoginResponse(token=token, username=request.username, is_admin=False)
+
+@api_router.post("/auth/register")
+async def register(request: RegisterRequest):
+    """Register new user - requires admin approval"""
     
-    return LoginResponse(token=token, username=request.username)
+    # Check if username already exists
+    if request.username == ADMIN_USERNAME:
+        raise HTTPException(status_code=400, detail="Username tidak tersedia")
+    
+    existing = await db.users.find_one({"username": request.username})
+    if existing:
+        raise HTTPException(status_code=400, detail="Username sudah terdaftar")
+    
+    # Create new user with pending status
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "username": request.username,
+        "password_hash": pwd_context.hash(request.password),
+        "full_name": request.full_name,
+        "status": "pending",  # pending, approved, rejected
+        "is_admin": False,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    await db.users.insert_one(user_doc)
+    
+    return {"success": True, "message": "Pendaftaran berhasil! Menunggu persetujuan admin."}
+
+@api_router.get("/auth/users")
+async def get_users(username: str = Depends(verify_token)):
+    """Get all users - admin only"""
+    
+    # Check if admin
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat melihat daftar pengguna")
+    
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    return {"users": users}
+
+@api_router.get("/auth/users/pending")
+async def get_pending_users(username: str = Depends(verify_token)):
+    """Get pending users - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat melihat pendaftaran")
+    
+    users = await db.users.find({"status": "pending"}, {"_id": 0, "password_hash": 0}).to_list(100)
+    return {"users": users}
+
+@api_router.post("/auth/users/{user_id}/approve")
+async def approve_user(user_id: str, username: str = Depends(verify_token)):
+    """Approve user registration - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat menyetujui pendaftaran")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"status": "approved", "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    return {"success": True, "message": "User berhasil disetujui"}
+
+@api_router.post("/auth/users/{user_id}/reject")
+async def reject_user(user_id: str, username: str = Depends(verify_token)):
+    """Reject user registration - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat menolak pendaftaran")
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"status": "rejected", "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    return {"success": True, "message": "Pendaftaran ditolak"}
+
+@api_router.delete("/auth/users/{user_id}")
+async def delete_user(user_id: str, username: str = Depends(verify_token)):
+    """Delete user - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat menghapus user")
+    
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    return {"success": True, "message": "User berhasil dihapus"}
+
+@api_router.get("/auth/me")
+async def get_current_user(username: str = Depends(verify_token)):
+    """Get current user info"""
+    
+    if username == ADMIN_USERNAME:
+        return {
+            "username": ADMIN_USERNAME,
+            "full_name": "Administrator",
+            "is_admin": True,
+            "status": "approved"
+        }
+    
+    user = await db.users.find_one({"username": username}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    return user
 
 # ============================================
 # CP API Status and Quota Endpoints
