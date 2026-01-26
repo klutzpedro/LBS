@@ -3136,9 +3136,9 @@ export const NonGeointSearchDialog = ({
                               </p>
                             )}
                           </div>
-                          );
-                        })}
-                      </div>
+                        );
+                      })}
+                    </div>
                     ) : detailDialog.result.perlintasan_data.status === 'no_passport' ? (
                       <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                         Tidak ada passport untuk dicek perlintasannya
