@@ -278,53 +278,77 @@ async def query_cp_api(phone_number: str) -> dict:
     """
     Query CP (CEKPOS) API for phone location.
     Returns dict with location data or error.
+    Uses curl -4 to force IPv4 for whitelisted IP.
     """
     normalized_phone = normalize_phone_number(phone_number)
     logger.info(f"[CP API] Querying position for {normalized_phone}")
     
     try:
-        # Force IPv4 for whitelisted IP
-        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-        async with httpx.AsyncClient(timeout=30.0, transport=transport) as http_client:
-            response = await http_client.post(
-                f"{CP_API_URL}/api/v3/cekpos",
-                headers={"api-key": CP_API_KEY},
-                data={"msisdn": normalized_phone}
-            )
+        import subprocess
+        import json
+        
+        # Use curl -4 to force IPv4 (required for IP-whitelisted API)
+        result = subprocess.run(
+            [
+                'curl', '-4', '-s', '-X', 'POST',
+                f'{CP_API_URL}/api/v3/cekpos',
+                '-H', f'api-key: {CP_API_KEY}',
+                '-d', f'msisdn={normalized_phone}',
+                '--connect-timeout', '15',
+                '--max-time', '30'
+            ],
+            capture_output=True,
+            text=True,
+            timeout=35
+        )
+        
+        response_text = result.stdout.strip()
+        
+        if not response_text:
+            logger.error(f"[CP API] Empty response for {normalized_phone}")
+            return {"success": False, "error": "Empty response from API"}
+        
+        # Check for HTML error page
+        if '<html' in response_text.lower():
+            logger.error(f"[CP API] Received HTML error page")
+            return {"success": False, "error": "API blocked or server error"}
+        
+        data = json.loads(response_text)
+        logger.info(f"[CP API] Response code: {data.get('code')}, message: {data.get('message')}")
+        
+        if data.get("code") == 0 and data.get("contents"):
+            contents = data["contents"]
             
-            data = response.json()
-            logger.info(f"[CP API] Response code: {data.get('code')}, message: {data.get('message')}")
+            # Decrement quota on successful query
+            await decrement_cp_api_quota()
             
-            if data.get("code") == 0 and data.get("contents"):
-                contents = data["contents"]
-                
-                # Decrement quota on successful query
-                await decrement_cp_api_quota()
-                
-                return {
-                    "success": True,
-                    "latitude": float(contents.get("latitude", 0)),
-                    "longitude": float(contents.get("longitude", 0)),
-                    "address": contents.get("address", "Alamat tidak tersedia"),
-                    "network": contents.get("network", "Unknown"),
-                    "state": contents.get("state", "Unknown"),
-                    "imsi": contents.get("imsi", ""),
-                    "imei": contents.get("imei", ""),
-                    "phone_model": contents.get("phone", ""),
-                    "prefix_type": contents.get("prefix_type", ""),
-                    "query_time": data.get("queryTime", ""),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": data.get("message", "Unknown error"),
-                    "code": data.get("code", -1)
-                }
-                
-    except httpx.TimeoutException:
+            return {
+                "success": True,
+                "latitude": float(contents.get("latitude", 0)),
+                "longitude": float(contents.get("longitude", 0)),
+                "address": contents.get("address", "Alamat tidak tersedia"),
+                "network": contents.get("network", "Unknown"),
+                "state": contents.get("state", "Unknown"),
+                "imsi": contents.get("imsi", ""),
+                "imei": contents.get("imei", ""),
+                "phone_model": contents.get("phone", ""),
+                "prefix_type": contents.get("prefix_type", ""),
+                "query_time": data.get("queryTime", ""),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "error": data.get("message", "Unknown error"),
+                "code": data.get("code", -1)
+            }
+            
+    except subprocess.TimeoutExpired:
         logger.error(f"[CP API] Timeout for {normalized_phone}")
         return {"success": False, "error": "Request timeout"}
+    except json.JSONDecodeError as e:
+        logger.error(f"[CP API] JSON parse error: {e}, response: {response_text[:200] if response_text else 'empty'}")
+        return {"success": False, "error": "Invalid API response"}
     except Exception as e:
         logger.error(f"[CP API] Error: {e}")
         return {"success": False, "error": str(e)}
