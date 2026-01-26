@@ -2111,10 +2111,14 @@ export const NonGeointSearchDialog = ({
         }
       }}>
         <DraggableDialogContent 
-          className="max-w-2xl max-h-[85vh] overflow-y-auto"
+          className="flex flex-col"
           style={{ 
             backgroundColor: 'var(--background-elevated)',
-            border: '1px solid var(--borders-default)'
+            border: '1px solid var(--borders-default)',
+            width: '700px',
+            maxWidth: '95vw',
+            height: '85vh',
+            maxHeight: '90vh'
           }}
         >
           <DraggableDialogHeader>
