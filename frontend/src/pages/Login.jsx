@@ -154,13 +154,6 @@ const Login = () => {
               {loading ? 'LOGGING IN...' : 'LOGIN'}
             </Button>
           </form>
-
-          <div 
-            className="mt-6 text-center text-xs"
-            style={{ color: 'var(--foreground-muted)' }}
-          >
-            Default: admin / Paparoni83
-          </div>
         </div>
       </div>
     </div>
