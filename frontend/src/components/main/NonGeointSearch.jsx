@@ -90,10 +90,10 @@ export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating =
         size="icon"
         className="shadow-xl hover:scale-105 transition-all duration-200"
         style={{
-          background: 'linear-gradient(145deg, #6366f1, #4f46e5)',
-          color: '#fff',
+          background: 'linear-gradient(145deg, #f59e0b, #d97706)',
+          color: '#000',
           border: 'none',
-          boxShadow: '0 6px 20px rgba(99, 102, 241, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
+          boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4), 0 2px 4px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)',
           borderRadius: '8px',
           width: '42px',
           height: '42px'
