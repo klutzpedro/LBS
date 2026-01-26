@@ -4605,64 +4605,98 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
         "status": "processing",
         "wni_data": None,
         "wna_data": None,
-        "passports": []
+        "passports": [],
+        "raw_response": None
     }
     
     try:
-        # Query WNI passport by NIK using curl
+        # Query WNI passport by NIK using curl with explicit IPv4
         logger.info(f"[PASSPORT CP] Querying WNI passport by NIK: {nik}")
         
-        wni_cmd = f"curl -4 -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={nik}' -s"
-        logger.info(f"[PASSPORT CP] WNI curl command: {wni_cmd[:100]}...")
+        # Build curl command with -4 for IPv4
+        wni_cmd = [
+            "curl", "-4", "-s", 
+            "-H", f"api-key: {CP_API_KEY}",
+            f"{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={nik}"
+        ]
+        logger.info(f"[PASSPORT CP] WNI curl command: {' '.join(wni_cmd[:5])}...")
         
-        wni_process = subprocess.run(wni_cmd, shell=True, capture_output=True, text=True, timeout=30)
+        wni_process = subprocess.run(wni_cmd, capture_output=True, text=True, timeout=30)
         
-        logger.info(f"[PASSPORT CP] WNI response: {wni_process.stdout[:500] if wni_process.stdout else 'empty'}")
+        raw_response = wni_process.stdout
+        result["raw_response"] = raw_response[:1000] if raw_response else None
         
-        if wni_process.stdout:
+        logger.info(f"[PASSPORT CP] WNI response code: {wni_process.returncode}")
+        logger.info(f"[PASSPORT CP] WNI response: {raw_response[:500] if raw_response else 'empty'}")
+        logger.info(f"[PASSPORT CP] WNI stderr: {wni_process.stderr[:200] if wni_process.stderr else 'none'}")
+        
+        if raw_response and not raw_response.strip().startswith('<'):
             try:
-                wni_data = json.loads(wni_process.stdout)
-                if wni_data.get("response_status") or wni_data.get("data"):
-                    result["wni_data"] = wni_data
-                    # Extract passport numbers
-                    if wni_data.get("data"):
-                        for item in wni_data.get("data", []):
-                            passport_no = item.get("TRAVELDOCUMENTNO") or item.get("NO_PASPOR") or item.get("passport_no")
-                            if passport_no and passport_no not in result["passports"]:
-                                result["passports"].append(passport_no)
-                    logger.info(f"[PASSPORT CP] WNI data found, passports: {result['passports']}")
+                wni_data = json.loads(raw_response)
+                result["wni_data"] = wni_data
+                
+                # Extract passport numbers from various response formats
+                data_list = wni_data.get("data", [])
+                if isinstance(data_list, list):
+                    for item in data_list:
+                        # Try different field names
+                        passport_no = (
+                            item.get("TRAVELDOCUMENTNO") or 
+                            item.get("NO_PASPOR") or 
+                            item.get("passport_no") or
+                            item.get("paspor_no") or
+                            item.get("NOPAS")
+                        )
+                        if passport_no and passport_no not in result["passports"]:
+                            result["passports"].append(passport_no)
+                            logger.info(f"[PASSPORT CP] Found passport: {passport_no}")
+                
+                logger.info(f"[PASSPORT CP] WNI data parsed, total passports: {len(result['passports'])}")
+                
             except json.JSONDecodeError as e:
-                logger.warning(f"[PASSPORT CP] WNI JSON decode error: {e}, response: {wni_process.stdout[:200]}")
+                logger.warning(f"[PASSPORT CP] WNI JSON decode error: {e}")
+                logger.warning(f"[PASSPORT CP] Raw response was: {raw_response[:300]}")
+        else:
+            logger.warning(f"[PASSPORT CP] WNI returned HTML or empty response")
         
         # If name provided, also search WNA
         if name:
             logger.info(f"[PASSPORT CP] Querying WNA passport by name: {name}")
             
-            # URL encode the name
             import urllib.parse
             encoded_name = urllib.parse.quote(name)
             
-            wna_cmd = f"curl -4 -H 'api-key: {CP_API_KEY}' '{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_name}' -s"
-            logger.info(f"[PASSPORT CP] WNA curl command: {wna_cmd[:100]}...")
+            wna_cmd = [
+                "curl", "-4", "-s",
+                "-H", f"api-key: {CP_API_KEY}",
+                f"{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_name}"
+            ]
             
-            wna_process = subprocess.run(wna_cmd, shell=True, capture_output=True, text=True, timeout=30)
+            wna_process = subprocess.run(wna_cmd, capture_output=True, text=True, timeout=30)
             
             logger.info(f"[PASSPORT CP] WNA response: {wna_process.stdout[:500] if wna_process.stdout else 'empty'}")
             
-            if wna_process.stdout:
+            if wna_process.stdout and not wna_process.stdout.strip().startswith('<'):
                 try:
                     wna_data = json.loads(wna_process.stdout)
-                    if wna_data.get("response_status") or wna_data.get("data"):
-                        result["wna_data"] = wna_data
-                        # Extract passport numbers
-                        if wna_data.get("data"):
-                            for item in wna_data.get("data", []):
-                                passport_no = item.get("TRAVELDOCUMENTNO") or item.get("NO_PASPOR") or item.get("passport_no")
-                                if passport_no and passport_no not in result["passports"]:
-                                    result["passports"].append(passport_no)
-                        logger.info(f"[PASSPORT CP] WNA data found")
+                    result["wna_data"] = wna_data
+                    
+                    data_list = wna_data.get("data", [])
+                    if isinstance(data_list, list):
+                        for item in data_list:
+                            passport_no = (
+                                item.get("TRAVELDOCUMENTNO") or 
+                                item.get("NO_PASPOR") or 
+                                item.get("passport_no") or
+                                item.get("paspor_no") or
+                                item.get("NOPAS")
+                            )
+                            if passport_no and passport_no not in result["passports"]:
+                                result["passports"].append(passport_no)
+                    
+                    logger.info(f"[PASSPORT CP] WNA data parsed")
                 except json.JSONDecodeError as e:
-                    logger.warning(f"[PASSPORT CP] WNA JSON decode error: {e}, response: {wna_process.stdout[:200]}")
+                    logger.warning(f"[PASSPORT CP] WNA JSON decode error: {e}")
         
         result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
         
@@ -4672,6 +4706,8 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
         result["error"] = "Request timeout"
     except Exception as e:
         logger.error(f"[PASSPORT CP] Error: {e}")
+        import traceback
+        logger.error(f"[PASSPORT CP] Traceback: {traceback.format_exc()}")
         result["status"] = "error"
         result["error"] = str(e)
     
