@@ -620,7 +620,7 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                     <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground-primary)' }}>
                       📋 Data NIK (TOP Match):
                     </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs max-h-40 overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       {Object.entries(nikData).map(([key, value]) => {
                         if (key === 'photo' || !value) return null;
                         return (
