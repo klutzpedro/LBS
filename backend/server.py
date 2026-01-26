@@ -215,7 +215,10 @@ async def decrement_cp_api_quota():
     return 0
 
 async def check_cp_api_connection():
-    """Check if CP API is reachable AND authorized (not 403)"""
+    """Check if CP API is reachable AND authorized (not 403)
+    Also detects quota exceeded status
+    Returns tuple: (is_connected: bool, quota_exceeded: bool)
+    """
     try:
         # Use subprocess curl with -4 flag to force IPv4
         # This is more reliable than httpx for IPv4-only servers
@@ -237,31 +240,48 @@ async def check_cp_api_connection():
         
         if not response_text:
             logger.warning("[CP API] Empty response from curl")
-            return False
+            return False, False
         
         # Check for HTML (blocked/error page)
         if '<html' in response_text.lower():
             logger.warning("[CP API] Received HTML response - likely blocked")
-            return False
+            return False, False
         
         # Try to parse as JSON
         try:
             import json
             data = json.loads(response_text)
+            
+            # Check for quota exceeded
+            if data.get("error") == "Quota exceeded":
+                logger.warning("[CP API] Quota exceeded!")
+                # Store quota exceeded status in database
+                await db.api_quota.update_one(
+                    {"type": "cp_api"},
+                    {"$set": {"quota_exceeded": True, "last_check": datetime.now(timezone.utc).isoformat()}},
+                    upsert=True
+                )
+                return True, True  # Connected but quota exceeded
+            
             # Any valid JSON response means API is connected
-            # Even "Quota exceeded" or error codes are valid responses
             logger.info(f"[CP API] Connection check OK - response: {response_text[:100]}")
-            return True
+            # Clear quota exceeded flag
+            await db.api_quota.update_one(
+                {"type": "cp_api"},
+                {"$set": {"quota_exceeded": False}},
+                upsert=True
+            )
+            return True, False
         except json.JSONDecodeError:
             logger.warning(f"[CP API] Could not parse response: {response_text[:100]}")
-            return False
+            return False, False
             
     except subprocess.TimeoutExpired:
         logger.error("[CP API] Connection check timed out")
-        return False
+        return False, False
     except Exception as e:
         logger.error(f"[CP API] Connection check failed: {e}")
-        return False
+        return False, False
 
 def normalize_phone_number(phone: str) -> str:
     """Convert phone number to 628xxx format"""
