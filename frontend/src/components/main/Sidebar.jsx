@@ -229,43 +229,80 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
 
       {/* CP API Status (Position Query) */}
       <div 
-        className="p-3 rounded-lg border text-sm cursor-pointer hover:opacity-90 transition-opacity mb-2"
+        className="p-3 rounded-lg border text-sm mb-2"
         style={{
-          backgroundColor: cpApiConnected ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 59, 92, 0.1)',
-          borderColor: cpApiConnected ? 'var(--status-success)' : 'var(--status-error)'
+          backgroundColor: cpApiStatus.quotaExceeded 
+            ? 'rgba(255, 184, 0, 0.1)' 
+            : cpApiConnected 
+              ? 'rgba(0, 255, 136, 0.1)' 
+              : 'rgba(255, 59, 92, 0.1)',
+          borderColor: cpApiStatus.quotaExceeded 
+            ? 'var(--status-warning)' 
+            : cpApiConnected 
+              ? 'var(--status-success)' 
+              : 'var(--status-error)'
         }}
-        onClick={refreshCpStatus}
-        title="CP API - Click to refresh"
       >
-        <div className="flex items-center justify-between">
+        <div 
+          className="flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={refreshCpStatus}
+          title="Click to refresh status"
+        >
           <div className="flex items-center gap-2">
             <div 
-              className={`w-2.5 h-2.5 rounded-full ${cpApiConnected ? 'animate-pulse' : ''}`}
-              style={{ backgroundColor: cpApiConnected ? 'var(--status-success)' : 'var(--status-error)' }}
+              className={`w-2.5 h-2.5 rounded-full ${cpApiConnected && !cpApiStatus.quotaExceeded ? 'animate-pulse' : ''}`}
+              style={{ 
+                backgroundColor: cpApiStatus.quotaExceeded 
+                  ? 'var(--status-warning)' 
+                  : cpApiConnected 
+                    ? 'var(--status-success)' 
+                    : 'var(--status-error)' 
+              }}
             />
             <div>
               <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
-                CP API {cpApiConnected ? 'Connected' : 'Disconnected'}
+                {cpApiStatus.useTelegram ? 'Telegram Bot' : 'CP API'} 
+                {cpApiStatus.quotaExceeded ? ' (Quota Habis)' : cpApiConnected ? '' : ' Disconnected'}
               </span>
               <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
-                Position Query Service
+                {cpApiStatus.useTelegram ? 'Via Bot Telegram' : 'Position Query Service'}
               </p>
             </div>
           </div>
           {/* Quota Counter */}
-          <div className="flex flex-col items-end">
-            <div 
-              className="text-sm font-bold px-2 py-0.5 rounded"
-              style={{ 
-                backgroundColor: quotaRemaining > 50 ? 'rgba(0, 255, 136, 0.2)' : quotaRemaining > 10 ? 'rgba(255, 184, 0, 0.2)' : 'rgba(255, 59, 92, 0.2)',
-                color: quotaRemaining > 50 ? 'var(--status-success)' : quotaRemaining > 10 ? 'var(--status-warning)' : 'var(--status-error)'
-              }}
-            >
-              {cpLoading ? '...' : quotaRemaining}
+          {!cpApiStatus.useTelegram && (
+            <div className="flex flex-col items-end">
+              <div 
+                className="text-sm font-bold px-2 py-0.5 rounded"
+                style={{ 
+                  backgroundColor: quotaRemaining > 50 ? 'rgba(0, 255, 136, 0.2)' : quotaRemaining > 10 ? 'rgba(255, 184, 0, 0.2)' : 'rgba(255, 59, 92, 0.2)',
+                  color: quotaRemaining > 50 ? 'var(--status-success)' : quotaRemaining > 10 ? 'var(--status-warning)' : 'var(--status-error)'
+                }}
+              >
+                {cpLoading ? '...' : quotaRemaining}
+              </div>
+              <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Quota</span>
             </div>
-            <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Quota</span>
-          </div>
+          )}
         </div>
+        
+        {/* Toggle Button - Show when quota exceeded or user wants to switch */}
+        {(cpApiStatus.quotaExceeded || cpApiStatus.useTelegram) && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              cpApiStatus.toggleTelegram && cpApiStatus.toggleTelegram();
+            }}
+            className="w-full mt-2 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: cpApiStatus.useTelegram ? 'rgba(0, 255, 136, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+              color: cpApiStatus.useTelegram ? 'var(--status-success)' : '#3b82f6',
+              border: `1px solid ${cpApiStatus.useTelegram ? 'var(--status-success)' : '#3b82f6'}`
+            }}
+          >
+            {cpApiStatus.useTelegram ? '↩ Kembali ke CP API' : '🤖 Gunakan Bot Telegram'}
+          </button>
+        )}
       </div>
 
       {/* Telegram Status (NIK/NKK Query) */}
