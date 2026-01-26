@@ -1,14 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 
 const CpApiContext = createContext(null);
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export const CpApiProvider = ({ children }) => {
   const [cpApiStatus, setCpApiStatus] = useState({
     connected: false,
+    quotaExceeded: false,
     quotaRemaining: 0,
     quotaInitial: 300,
     quotaUsed: 0,
     lastUpdated: null,
+    useTelegram: false,
     loading: true,
     error: null
   });
@@ -18,7 +23,6 @@ export const CpApiProvider = ({ children }) => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const API_URL = process.env.REACT_APP_BACKEND_URL;
       const response = await fetch(`${API_URL}/api/cp-api/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -29,10 +33,13 @@ export const CpApiProvider = ({ children }) => {
         const data = await response.json();
         setCpApiStatus({
           connected: data.connected,
+          quotaExceeded: data.quota_exceeded || false,
           quotaRemaining: data.quota_remaining,
           quotaInitial: data.quota_initial,
           quotaUsed: data.quota_used,
           lastUpdated: data.last_updated ? new Date(data.last_updated) : null,
+          useTelegram: data.use_telegram || false,
+          statusMessage: data.status_message,
           loading: false,
           error: null
         });
@@ -79,11 +86,41 @@ export const CpApiProvider = ({ children }) => {
     }));
   }, []);
 
+  // Toggle between CP API and Telegram bot
+  const toggleTelegram = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/cp-api/toggle-telegram`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCpApiStatus(prev => ({
+          ...prev,
+          useTelegram: data.use_telegram
+        }));
+        toast.success(data.message);
+      } else {
+        toast.error('Gagal mengubah sumber posisi');
+      }
+    } catch (error) {
+      console.error('Error toggling telegram:', error);
+      toast.error('Terjadi kesalahan');
+    }
+  }, []);
+
   return (
     <CpApiContext.Provider value={{
       ...cpApiStatus,
       refreshStatus,
-      decrementQuota
+      decrementQuota,
+      toggleTelegram
     }}>
       {children}
     </CpApiContext.Provider>
