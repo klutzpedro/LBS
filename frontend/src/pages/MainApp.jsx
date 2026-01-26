@@ -1886,6 +1886,14 @@ const MainApp = () => {
         open={frHistoryOpen}
         onOpenChange={setFrHistoryOpen}
       />
+
+      {/* User Management Dialog (Admin Only) */}
+      {isAdmin && (
+        <UserManagementDialog
+          open={userManagementOpen}
+          onOpenChange={setUserManagementOpen}
+        />
+      )}
     </div>
   );
 };
