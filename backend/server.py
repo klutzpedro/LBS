@@ -1352,10 +1352,10 @@ async def query_cp_api_refresh(target_id: str, phone_number: str):
     Uses the new CP API instead of Telegram bot.
     """
     try:
-        logging.info(f"[CP API REFRESH] Querying position for {phone_number}")
+        logging.info(f"[POSITION REFRESH] Querying position for {phone_number}")
         
-        # Query CP API
-        result = await query_cp_api(phone_number)
+        # Query position (CP API or Telegram bot based on settings)
+        result = await query_position(phone_number)
         
         if result.get("success"):
             # Update target with new position
@@ -1371,7 +1371,7 @@ async def query_cp_api_refresh(target_id: str, phone_number: str):
                 "prefix_type": result.get("prefix_type"),
                 "query_time": result.get("query_time"),
                 "timestamp": result["timestamp"],
-                "source": "cp_api"  # Mark as from CP API
+                "source": result.get("source", "cp_api")  # Mark source
             }
             
             await db.targets.update_one(
