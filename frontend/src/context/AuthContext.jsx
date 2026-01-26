@@ -9,6 +9,7 @@ const API = `${BACKEND_URL}/api`;
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [username, setUsername] = useState(localStorage.getItem('username'));
+  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
   const [isAuthenticated, setIsAuthenticated] = useState(!!token);
 
   useEffect(() => {
@@ -28,11 +29,13 @@ export const AuthProvider = ({ children }) => {
         password
       });
 
-      const { token: newToken, username: user } = response.data;
+      const { token: newToken, username: user, is_admin } = response.data;
       localStorage.setItem('token', newToken);
       localStorage.setItem('username', user);
+      localStorage.setItem('isAdmin', is_admin ? 'true' : 'false');
       setToken(newToken);
       setUsername(user);
+      setIsAdmin(is_admin || false);
       return { success: true };
     } catch (error) {
       return {
@@ -45,8 +48,10 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('isAdmin');
     setToken(null);
     setUsername(null);
+    setIsAdmin(false);
   };
 
   return (
@@ -54,6 +59,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         token,
         username,
+        isAdmin,
         isAuthenticated,
         login,
         logout
