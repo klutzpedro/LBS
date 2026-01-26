@@ -217,45 +217,46 @@ async def decrement_cp_api_quota():
 async def check_cp_api_connection():
     """Check if CP API is reachable AND authorized (not 403)"""
     try:
-        # Force IPv4 for whitelisted IP using socket.AF_INET
-        transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+        # Use subprocess curl with -4 flag to force IPv4
+        # This is more reliable than httpx for IPv4-only servers
+        import subprocess
+        result = subprocess.run(
+            [
+                'curl', '-4', '-s', '-X', 'POST',
+                f'{CP_API_URL}/api/v3/cekpos',
+                '-H', f'api-key: {CP_API_KEY}',
+                '-d', 'msisdn=628123456789',
+                '--connect-timeout', '10'
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
         
-        # Create client that forces IPv4
-        async with httpx.AsyncClient(
-            timeout=15.0, 
-            transport=transport,
-            follow_redirects=True
-        ) as client:
-            # Try actual API endpoint with a test request
-            # Use POST to /api/v3/cekpos - same as real queries
-            response = await client.post(
-                f"{CP_API_URL}/api/v3/cekpos",
-                headers={"api-key": CP_API_KEY},
-                data={"msisdn": "628123456789"}  # Test number
-            )
+        response_text = result.stdout.strip()
+        
+        if not response_text:
+            logger.warning("[CP API] Empty response from curl")
+            return False
+        
+        # Check for HTML (blocked/error page)
+        if '<html' in response_text.lower():
+            logger.warning("[CP API] Received HTML response - likely blocked")
+            return False
+        
+        # Try to parse as JSON
+        try:
+            import json
+            data = json.loads(response_text)
+            # Any valid JSON response means API is connected
+            # Even "Quota exceeded" or error codes are valid responses
+            logger.info(f"[CP API] Connection check OK - response: {response_text[:100]}")
+            return True
+        except json.JSONDecodeError:
+            logger.warning(f"[CP API] Could not parse response: {response_text[:100]}")
+            return False
             
-            # Check if we get 403 Forbidden (IP not whitelisted)
-            if response.status_code == 403:
-                logger.warning("[CP API] 403 Forbidden - IP not whitelisted")
-                return False
-            
-            # Check if response is HTML (error page)
-            content_type = response.headers.get('content-type', '')
-            if 'text/html' in content_type:
-                logger.warning("[CP API] Received HTML response - likely blocked")
-                return False
-            
-            # Try to parse JSON - if successful, API is working
-            try:
-                data = response.json()
-                # Even if code != 0, as long as we get JSON response, API is connected
-                logger.info(f"[CP API] Connection check OK - response code: {data.get('code')}")
-                return True
-            except:
-                logger.warning("[CP API] Could not parse JSON response")
-                return False
-                
-    except httpx.TimeoutException:
+    except subprocess.TimeoutExpired:
         logger.error("[CP API] Connection check timed out")
         return False
     except Exception as e:
