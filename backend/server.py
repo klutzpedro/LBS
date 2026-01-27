@@ -5294,6 +5294,189 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
     return result
 
 
+async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dict:
+    """
+    Query passport data via CP API for Simple Query feature.
+    
+    Types:
+    - passport_wna: Search WNA passport by name
+    - passport_wni: Search WNI passport by name  
+    - passport_number: Search passport by passport number
+    
+    Returns formatted raw_response string similar to Telegram bot output.
+    """
+    import subprocess
+    import json
+    import urllib.parse
+    
+    result = {
+        "success": False,
+        "raw_response": None,
+        "error": None
+    }
+    
+    try:
+        encoded_value = urllib.parse.quote(query_value)
+        
+        if query_type == 'passport_wna':
+            # WNA search by name
+            url = f"{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_value}"
+            logger.info(f"[PASSPORT SIMPLE CP] Querying WNA by name: {query_value}")
+            
+        elif query_type == 'passport_wni':
+            # WNI search by name
+            url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=name&query={encoded_value}"
+            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI by name: {query_value}")
+            
+        elif query_type == 'passport_number':
+            # Search by passport number - try both WNI and WNA, also get perlintasan
+            logger.info(f"[PASSPORT SIMPLE CP] Querying by passport number: {query_value}")
+            
+            # First try to get perlintasan (crossing) data which has most info
+            lintas_cmd = [
+                "curl", "-4", "-s", "-X", "POST",
+                "-H", f"api-key: {CP_API_KEY}",
+                "-d", f"nopas={query_value}",
+                f"{CP_API_URL}/api/v3/imigrasi/lintas"
+            ]
+            
+            lintas_process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
+            
+            if lintas_process.stdout and not lintas_process.stdout.strip().startswith('<'):
+                try:
+                    lintas_data = json.loads(lintas_process.stdout)
+                    crossings = lintas_data.get("dataPerlintasan") or lintas_data.get("data") or []
+                    
+                    if crossings:
+                        # Format perlintasan data as readable text
+                        output_lines = [f"Passport Crossing Data for: {query_value}\n"]
+                        output_lines.append("=" * 50)
+                        
+                        for i, crossing in enumerate(crossings, 1):
+                            output_lines.append(f"\n--- Record {i} ---")
+                            output_lines.append(f"Passport No: {crossing.get('TRAVELDOCUMENTNO', '-')}")
+                            output_lines.append(f"Name: {crossing.get('GIVENNAME', '-')} {crossing.get('FAMILYNAME', '-')}")
+                            output_lines.append(f"Nationality: {crossing.get('NATIONALITYDESCRIPTION', '-')}")
+                            output_lines.append(f"Date of Birth: {crossing.get('DATEOFBIRTH', '-')}")
+                            output_lines.append(f"Gender: {crossing.get('GENDERCODE', '-')}")
+                            output_lines.append(f"Issuing State: {crossing.get('ISSUINGSTATEDESCRIPTION', '-')}")
+                            
+                            direction = crossing.get('DIRECTIONCODE', '-')
+                            direction_text = "ARRIVAL (Masuk)" if direction == 'A' else "DEPARTURE (Keluar)" if direction == 'D' else direction
+                            output_lines.append(f"Movement: {direction_text}")
+                            output_lines.append(f"Movement Date: {crossing.get('MOVEMENTDATE', '-')}")
+                            output_lines.append(f"Port: {crossing.get('TPINAME', '-')} - {crossing.get('PORTDESCRIPTION', '-')}")
+                        
+                        output_lines.append("\n" + "=" * 50)
+                        output_lines.append(f"Total Records: {len(crossings)}")
+                        
+                        result["success"] = True
+                        result["raw_response"] = "\n".join(output_lines)
+                        return result
+                        
+                except json.JSONDecodeError:
+                    pass
+            
+            # If no perlintasan data, return error
+            result["error"] = "Tidak ditemukan data untuk nomor passport ini"
+            return result
+        else:
+            result["error"] = f"Unknown query type: {query_type}"
+            return result
+        
+        # Execute curl for WNA/WNI name queries
+        cmd = [
+            "curl", "-4", "-s",
+            "-H", f"api-key: {CP_API_KEY}",
+            url
+        ]
+        
+        logger.info(f"[PASSPORT SIMPLE CP] Executing: curl -4 -s -H 'api-key: ***' {url}")
+        
+        process = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        raw_api_response = process.stdout
+        logger.info(f"[PASSPORT SIMPLE CP] Response: {raw_api_response[:500] if raw_api_response else 'empty'}")
+        
+        if not raw_api_response or raw_api_response.strip().startswith('<'):
+            result["error"] = "Empty or HTML response from CP API"
+            return result
+        
+        try:
+            data = json.loads(raw_api_response)
+        except json.JSONDecodeError as e:
+            logger.error(f"[PASSPORT SIMPLE CP] JSON decode error: {e}")
+            result["error"] = f"Invalid JSON response: {raw_api_response[:100]}"
+            return result
+        
+        # Check for API error responses
+        if data.get("error"):
+            result["error"] = data.get("error")
+            return result
+        
+        # Extract results
+        results_list = data.get("result") or data.get("data") or []
+        
+        if not results_list:
+            result["error"] = "Tidak ditemukan data passport untuk query ini"
+            return result
+        
+        # Format results as readable text
+        type_label = "Passport WNA" if query_type == 'passport_wna' else "Passport WNI"
+        output_lines = [f"{type_label} Data for: {query_value}\n"]
+        output_lines.append("=" * 50)
+        
+        for i, item in enumerate(results_list, 1):
+            output_lines.append(f"\n--- Result {i} ---")
+            
+            # Common fields
+            output_lines.append(f"Nama: {item.get('nama') or item.get('NAMA') or item.get('name') or '-'}")
+            output_lines.append(f"No Paspor: {item.get('no_paspor') or item.get('NO_PASPOR') or item.get('TRAVELDOCUMENTNO') or '-'}")
+            
+            if item.get('no_paspor_lama'):
+                output_lines.append(f"No Paspor Lama: {item.get('no_paspor_lama')}")
+            
+            output_lines.append(f"Tempat Lahir: {item.get('tempat_lahir') or item.get('TEMPAT_LAHIR') or '-'}")
+            output_lines.append(f"Tanggal Lahir: {item.get('tanggal_lahir') or item.get('TANGGAL_LAHIR') or item.get('tgl_lahir') or '-'}")
+            output_lines.append(f"Jenis Kelamin: {item.get('jenis_kelamin') or item.get('JENIS_KELAMIN') or item.get('jk') or '-'}")
+            
+            # WNI specific fields
+            if query_type == 'passport_wni':
+                output_lines.append(f"NIK: {item.get('nik') or item.get('NIK') or '-'}")
+                output_lines.append(f"Alamat: {item.get('alamat') or item.get('ALAMAT') or '-'}")
+                output_lines.append(f"Pekerjaan: {item.get('pekerjaan') or item.get('PEKERJAAN') or '-'}")
+            
+            # WNA specific fields  
+            if query_type == 'passport_wna':
+                output_lines.append(f"Kewarganegaraan: {item.get('kewarganegaraan') or item.get('KEWARGANEGARAAN') or item.get('nationality') or '-'}")
+                output_lines.append(f"Negara Penerbit: {item.get('negara_penerbit') or item.get('issuing_country') or '-'}")
+            
+            # Passport details
+            output_lines.append(f"Tanggal Terbit: {item.get('tanggal_terbit') or item.get('issue_date') or '-'}")
+            output_lines.append(f"Tanggal Expired: {item.get('tanggal_expired') or item.get('expiry_date') or item.get('tgl_expired') or '-'}")
+            output_lines.append(f"Kantor Terbit: {item.get('kantor_terbit') or item.get('issuing_office') or '-'}")
+        
+        output_lines.append("\n" + "=" * 50)
+        output_lines.append(f"Total Results: {len(results_list)}")
+        
+        result["success"] = True
+        result["raw_response"] = "\n".join(output_lines)
+        
+        logger.info(f"[PASSPORT SIMPLE CP] Successfully formatted {len(results_list)} results")
+        
+    except subprocess.TimeoutExpired:
+        logger.error(f"[PASSPORT SIMPLE CP] Timeout")
+        result["error"] = "Request timeout - CP API tidak merespons"
+    except Exception as e:
+        logger.error(f"[PASSPORT SIMPLE CP] Error: {e}")
+        import traceback
+        logger.error(f"[PASSPORT SIMPLE CP] Traceback: {traceback.format_exc()}")
+        result["error"] = str(e)
+    
+    return result
+
+
+
 async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
     """Execute a single NIK/NKK/RegNIK query"""
     global telegram_client
