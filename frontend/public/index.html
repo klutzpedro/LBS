@@ -39,7 +39,7 @@
                 document.head.appendChild(tailwindScript);
             }
             
-            // Anti-cloning: Disable right-click in production
+            // Anti-cloning: Disable right-click in production (not localhost)
             if (!window.location.hostname.includes('localhost') && 
                 !window.location.hostname.includes('127.0.0.1')) {
                 document.addEventListener('contextmenu', function(e) {
