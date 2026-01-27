@@ -5340,46 +5340,69 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
                 f"{CP_API_URL}/api/v3/imigrasi/lintas"
             ]
             
-            lintas_process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
-            
-            if lintas_process.stdout and not lintas_process.stdout.strip().startswith('<'):
-                try:
-                    lintas_data = json.loads(lintas_process.stdout)
-                    crossings = lintas_data.get("dataPerlintasan") or lintas_data.get("data") or []
-                    
-                    if crossings:
-                        # Format perlintasan data as readable text
-                        output_lines = [f"Passport Crossing Data for: {query_value}\n"]
-                        output_lines.append("=" * 50)
+            try:
+                lintas_process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
+                
+                logger.info(f"[PASSPORT SIMPLE CP] Lintas response: {lintas_process.stdout[:300] if lintas_process.stdout else 'empty'}")
+                
+                # Check if response is HTML (IP not whitelisted or API error)
+                if lintas_process.stdout and lintas_process.stdout.strip().startswith('<'):
+                    logger.warning(f"[PASSPORT SIMPLE CP] Got HTML response - CP API may not be accessible (IP not whitelisted)")
+                    result["error"] = "CP API tidak dapat diakses. Pastikan IP VPS sudah di-whitelist untuk layanan Imigrasi."
+                    return result
+                
+                if lintas_process.stdout:
+                    try:
+                        lintas_data = json.loads(lintas_process.stdout)
+                        crossings = lintas_data.get("dataPerlintasan") or lintas_data.get("data") or []
                         
-                        for i, crossing in enumerate(crossings, 1):
-                            output_lines.append(f"\n--- Record {i} ---")
-                            output_lines.append(f"Passport No: {crossing.get('TRAVELDOCUMENTNO', '-')}")
-                            output_lines.append(f"Name: {crossing.get('GIVENNAME', '-')} {crossing.get('FAMILYNAME', '-')}")
-                            output_lines.append(f"Nationality: {crossing.get('NATIONALITYDESCRIPTION', '-')}")
-                            output_lines.append(f"Date of Birth: {crossing.get('DATEOFBIRTH', '-')}")
-                            output_lines.append(f"Gender: {crossing.get('GENDERCODE', '-')}")
-                            output_lines.append(f"Issuing State: {crossing.get('ISSUINGSTATEDESCRIPTION', '-')}")
+                        if crossings:
+                            # Format perlintasan data as readable text
+                            output_lines = [f"Passport Crossing Data for: {query_value}\n"]
+                            output_lines.append("=" * 50)
                             
-                            direction = crossing.get('DIRECTIONCODE', '-')
-                            direction_text = "ARRIVAL (Masuk)" if direction == 'A' else "DEPARTURE (Keluar)" if direction == 'D' else direction
-                            output_lines.append(f"Movement: {direction_text}")
-                            output_lines.append(f"Movement Date: {crossing.get('MOVEMENTDATE', '-')}")
-                            output_lines.append(f"Port: {crossing.get('TPINAME', '-')} - {crossing.get('PORTDESCRIPTION', '-')}")
-                        
-                        output_lines.append("\n" + "=" * 50)
-                        output_lines.append(f"Total Records: {len(crossings)}")
-                        
-                        result["success"] = True
-                        result["raw_response"] = "\n".join(output_lines)
+                            for i, crossing in enumerate(crossings, 1):
+                                output_lines.append(f"\n--- Record {i} ---")
+                                output_lines.append(f"Passport No: {crossing.get('TRAVELDOCUMENTNO', '-')}")
+                                output_lines.append(f"Name: {crossing.get('GIVENNAME', '-')} {crossing.get('FAMILYNAME', '-')}")
+                                output_lines.append(f"Nationality: {crossing.get('NATIONALITYDESCRIPTION', '-')}")
+                                output_lines.append(f"Date of Birth: {crossing.get('DATEOFBIRTH', '-')}")
+                                output_lines.append(f"Gender: {crossing.get('GENDERCODE', '-')}")
+                                output_lines.append(f"Issuing State: {crossing.get('ISSUINGSTATEDESCRIPTION', '-')}")
+                                
+                                direction = crossing.get('DIRECTIONCODE', '-')
+                                direction_text = "ARRIVAL (Masuk)" if direction == 'A' else "DEPARTURE (Keluar)" if direction == 'D' else direction
+                                output_lines.append(f"Movement: {direction_text}")
+                                output_lines.append(f"Movement Date: {crossing.get('MOVEMENTDATE', '-')}")
+                                output_lines.append(f"Port: {crossing.get('TPINAME', '-')} - {crossing.get('PORTDESCRIPTION', '-')}")
+                            
+                            output_lines.append("\n" + "=" * 50)
+                            output_lines.append(f"Total Records: {len(crossings)}")
+                            
+                            result["success"] = True
+                            result["raw_response"] = "\n".join(output_lines)
+                            return result
+                        else:
+                            # No crossing data found
+                            error_msg = lintas_data.get("response_message") or lintas_data.get("message") or "Tidak ditemukan data perlintasan"
+                            result["error"] = f"Tidak ditemukan data untuk nomor passport {query_value}. {error_msg}"
+                            return result
+                            
+                    except json.JSONDecodeError as e:
+                        logger.error(f"[PASSPORT SIMPLE CP] JSON decode error: {e}")
+                        result["error"] = "Response dari CP API tidak valid"
                         return result
-                        
-                except json.JSONDecodeError:
-                    pass
-            
-            # If no perlintasan data, return error
-            result["error"] = "Tidak ditemukan data untuk nomor passport ini"
-            return result
+                else:
+                    result["error"] = "Tidak ada response dari CP API"
+                    return result
+                    
+            except subprocess.TimeoutExpired:
+                result["error"] = "Request timeout - CP API tidak merespons"
+                return result
+            except Exception as e:
+                logger.error(f"[PASSPORT SIMPLE CP] Error: {e}")
+                result["error"] = f"Error: {str(e)}"
+                return result
         else:
             result["error"] = f"Unknown query type: {query_type}"
             return result
