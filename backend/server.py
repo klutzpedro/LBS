@@ -5422,7 +5422,8 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
         logger.info(f"[PASSPORT SIMPLE CP] Response: {raw_api_response[:500] if raw_api_response else 'empty'}")
         
         if not raw_api_response or raw_api_response.strip().startswith('<'):
-            result["error"] = "Empty or HTML response from CP API"
+            logger.warning(f"[PASSPORT SIMPLE CP] Got HTML or empty response - CP API may not be accessible")
+            result["error"] = "CP API tidak dapat diakses. Pastikan IP VPS sudah di-whitelist untuk layanan Imigrasi."
             return result
         
         try:
