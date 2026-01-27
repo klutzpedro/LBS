@@ -6963,15 +6963,64 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             elif query_type == 'capil_nik':
                 # Send NIK number directly (16 digits)
                 sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                # Wait for buttons and click NIK
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'NIK' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked NIK button")
+                                    break
+                        break
+                
                 await asyncio.sleep(5)
                 
             elif query_type == 'nkk':
                 # Send NKK number directly (16 digits)
                 sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                # Wait for buttons and click NKK
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'NKK' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked NKK button")
+                                    break
+                        break
+                
                 await asyncio.sleep(5)
                 
             elif query_type == 'reghp':
-                sent_message = await telegram_client.send_message(bot_entity, f"REGHP {query_value}")
+                # Send NIK for RegHP query
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                # Wait for buttons and click REGHP
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'REGHP' in (button.text or '').upper() or 'REG' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked REGHP button")
+                                    break
+                        break
+                
                 await asyncio.sleep(5)
                 
             elif query_type == 'passport_wna':
