@@ -61,17 +61,15 @@ export const CpApiProvider = ({ children }) => {
     }
   }, []);
 
-  // Initial fetch
+  // Initial fetch only on login - NO POLLING
+  // Status is updated automatically when user performs real queries
   useEffect(() => {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Poll every 5 MINUTES instead of 30 seconds (to save CP API quota)
-  // Status is cached on backend and updated during real queries
-  useEffect(() => {
-    const interval = setInterval(fetchStatus, 300000); // 5 minutes
-    return () => clearInterval(interval);
-  }, [fetchStatus]);
+  // POLLING DISABLED - quota only used when user makes actual requests
+  // Status is cached in database and updated during real position queries
+  // User can manually refresh if needed via manualRefresh()
 
   const refreshStatus = useCallback(() => {
     setCpApiStatus(prev => ({ ...prev, loading: true }));
