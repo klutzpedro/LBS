@@ -157,6 +157,10 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
 
     try {
       const token = localStorage.getItem('token');
+      
+      // Show queue message
+      setStatusMessage('Menunggu antrian (query diproses satu per satu untuk menghindari tabrakan data)...');
+      
       const response = await fetch(`${API_URL}/api/simple-query`, {
         method: 'POST',
         headers: {
@@ -173,19 +177,26 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
 
       if (response.ok) {
         setResult(data);
+        setStatusMessage('');
         if (data.success) {
-          toast.success('Query berhasil');
+          if (data.verified === false) {
+            toast.warning('Query berhasil, tapi respons mungkin tidak sesuai. Coba ulangi jika hasil tidak relevan.');
+          } else {
+            toast.success('Query berhasil');
+          }
         } else {
           toast.warning(data.error || 'Tidak ada hasil');
         }
       } else {
         toast.error(data.detail || 'Query gagal');
         setResult({ success: false, error: data.detail });
+        setStatusMessage('');
       }
     } catch (error) {
       console.error('Query error:', error);
       toast.error('Terjadi kesalahan');
       setResult({ success: false, error: error.message });
+      setStatusMessage('');
     } finally {
       setIsLoading(false);
     }
