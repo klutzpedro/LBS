@@ -1663,6 +1663,7 @@ const MainApp = () => {
             isFrProcessing={isFrProcessing}
             // Simple Query
             onOpenSimpleQuery={() => setSimpleQueryOpen(true)}
+            onOpenSimpleQueryHistory={() => setSimpleQueryHistoryOpen(true)}
             // User Management
             isAdmin={isAdmin}
             onOpenUserManagement={() => setUserManagementOpen(true)}
