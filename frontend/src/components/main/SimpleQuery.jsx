@@ -100,6 +100,16 @@ const QUERY_TYPES = [
     placeholder: 'Masukkan plat nomor (ex: B1171BAM)...',
     validation: (v) => v.length >= 4,
     errorMsg: 'Plat nomor minimal 4 karakter'
+  },
+  { 
+    id: 'perlintasan', 
+    label: 'Perlintasan (No Passport)', 
+    description: 'Cari data perlintasan/keluar masuk berdasarkan nomor passport',
+    icon: Plane,
+    placeholder: 'Masukkan nomor passport (ex: X1122553)...',
+    validation: (v) => v.length >= 6,
+    errorMsg: 'Nomor passport minimal 6 karakter',
+    fullWidth: true  // Flag for full width display
   }
 ];
 
