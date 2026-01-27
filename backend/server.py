@@ -7383,7 +7383,8 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 await asyncio.sleep(5)
                 
             elif query_type == 'plat_mobil':
-                sent_message = await telegram_client.send_message(bot_entity, f"PLAT {query_value}")
+                # Send plate number directly without "PLAT " prefix
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
                 await asyncio.sleep(5)
                 
             else:
