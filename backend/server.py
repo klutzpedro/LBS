@@ -6961,11 +6961,13 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 await asyncio.sleep(5)
                 
             elif query_type == 'capil_nik':
-                sent_message = await telegram_client.send_message(bot_entity, f"NIK {query_value}")
+                # Send NIK number directly (16 digits)
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
                 await asyncio.sleep(5)
                 
             elif query_type == 'nkk':
-                sent_message = await telegram_client.send_message(bot_entity, f"NKK {query_value}")
+                # Send NKK number directly (16 digits)
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
                 await asyncio.sleep(5)
                 
             elif query_type == 'reghp':
