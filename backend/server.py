@@ -215,14 +215,66 @@ async def decrement_cp_api_quota():
     return 0
 
 async def check_cp_api_connection():
-    """Check if CP API is reachable AND authorized (not 403)
-    Also detects quota exceeded status
+    """Check if CP API is reachable AND authorized
+    
+    IMPORTANT: This function NO LONGER makes actual API calls to CP API!
+    It only checks the cached status from database to avoid wasting quota.
+    
+    Actual CP API status is updated ONLY when:
+    1. User performs a real query (position query)
+    2. User manually clicks "refresh" on status
+    
     Returns tuple: (is_connected: bool, quota_exceeded: bool)
     """
     try:
-        # Use subprocess curl with -4 flag to force IPv4
-        # This is more reliable than httpx for IPv4-only servers
+        # Get cached status from database
+        quota_doc = await db.api_quota.find_one({"type": "cp_api"}, {"_id": 0})
+        
+        if quota_doc:
+            quota_exceeded = quota_doc.get("quota_exceeded", False)
+            last_check = quota_doc.get("last_check")
+            is_connected = quota_doc.get("is_connected", True)  # Assume connected unless proven otherwise
+            
+            # If we have a recent check (within last hour), use cached status
+            if last_check:
+                try:
+                    last_check_time = datetime.fromisoformat(last_check.replace('Z', '+00:00'))
+                    time_since_check = (datetime.now(timezone.utc) - last_check_time).total_seconds()
+                    
+                    # If last check was within 1 hour, trust the cached status
+                    if time_since_check < 3600:
+                        logger.info(f"[CP API] Using cached status (checked {int(time_since_check)}s ago): connected={is_connected}, quota_exceeded={quota_exceeded}")
+                        return is_connected, quota_exceeded
+                except:
+                    pass
+            
+            # Return cached status even if old
+            logger.info(f"[CP API] Using cached status: connected={is_connected}, quota_exceeded={quota_exceeded}")
+            return is_connected, quota_exceeded
+        
+        # No cached status, assume connected (will be updated on first real query)
+        logger.info("[CP API] No cached status, assuming connected")
+        return True, False
+        
+    except Exception as e:
+        logger.error(f"[CP API] Error checking cached status: {e}")
+        return True, False  # Assume connected on error
+
+
+async def verify_cp_api_connection_real():
+    """
+    Actually test CP API connection by making a real request.
+    This should ONLY be called when user explicitly requests a refresh
+    or during actual query operations.
+    
+    WARNING: This uses CP API quota!
+    """
+    try:
         import subprocess
+        import json
+        
+        # Use a minimal test - check if API responds at all
+        # Using a test number that won't return real data
         result = subprocess.run(
             [
                 'curl', '-4', '-s', '-X', 'POST',
@@ -239,49 +291,55 @@ async def check_cp_api_connection():
         response_text = result.stdout.strip()
         
         if not response_text:
-            logger.warning("[CP API] Empty response from curl")
+            logger.warning("[CP API REAL CHECK] Empty response")
+            await update_cp_api_status(False, False)
             return False, False
         
-        # Check for HTML (blocked/error page)
         if '<html' in response_text.lower():
-            logger.warning("[CP API] Received HTML response - likely blocked")
+            logger.warning("[CP API REAL CHECK] Received HTML response - likely blocked")
+            await update_cp_api_status(False, False)
             return False, False
         
-        # Try to parse as JSON
         try:
-            import json
             data = json.loads(response_text)
             
-            # Check for quota exceeded
             if data.get("error") == "Quota exceeded":
-                logger.warning("[CP API] Quota exceeded!")
-                # Store quota exceeded status in database
-                await db.api_quota.update_one(
-                    {"type": "cp_api"},
-                    {"$set": {"quota_exceeded": True, "last_check": datetime.now(timezone.utc).isoformat()}},
-                    upsert=True
-                )
-                return True, True  # Connected but quota exceeded
+                logger.warning("[CP API REAL CHECK] Quota exceeded!")
+                await update_cp_api_status(True, True)
+                return True, True
             
-            # Any valid JSON response means API is connected
-            logger.info(f"[CP API] Connection check OK - response: {response_text[:100]}")
-            # Clear quota exceeded flag
-            await db.api_quota.update_one(
-                {"type": "cp_api"},
-                {"$set": {"quota_exceeded": False}},
-                upsert=True
-            )
+            logger.info(f"[CP API REAL CHECK] Connection OK")
+            await update_cp_api_status(True, False)
             return True, False
+            
         except json.JSONDecodeError:
-            logger.warning(f"[CP API] Could not parse response: {response_text[:100]}")
+            logger.warning(f"[CP API REAL CHECK] Could not parse response")
+            await update_cp_api_status(False, False)
             return False, False
             
     except subprocess.TimeoutExpired:
-        logger.error("[CP API] Connection check timed out")
+        logger.error("[CP API REAL CHECK] Connection timed out")
+        await update_cp_api_status(False, False)
         return False, False
     except Exception as e:
-        logger.error(f"[CP API] Connection check failed: {e}")
+        logger.error(f"[CP API REAL CHECK] Failed: {e}")
+        await update_cp_api_status(False, False)
         return False, False
+
+
+async def update_cp_api_status(is_connected: bool, quota_exceeded: bool):
+    """Update CP API status in database"""
+    await db.api_quota.update_one(
+        {"type": "cp_api"},
+        {
+            "$set": {
+                "is_connected": is_connected,
+                "quota_exceeded": quota_exceeded,
+                "last_check": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
 
 def normalize_phone_number(phone: str) -> str:
     """Convert phone number to 628xxx format"""
