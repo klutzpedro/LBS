@@ -7434,7 +7434,8 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 if not vehicle_clicked:
                     logger.warning("[SIMPLE QUERY] Vehicle button not found, waiting for direct response...")
                 
-                await asyncio.sleep(5)
+                # IMPORTANT: Wait longer after clicking button for response to arrive
+                await asyncio.sleep(7)
                 
             else:
                 raise HTTPException(status_code=400, detail=f"Unknown query type: {query_type}")
