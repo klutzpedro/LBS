@@ -96,6 +96,7 @@ const MainApp = () => {
   
   // Simple Query
   const [simpleQueryOpen, setSimpleQueryOpen] = useState(false);
+  const [simpleQueryHistoryOpen, setSimpleQueryHistoryOpen] = useState(false);
   
   // Tools Panel
   const [toolsPanelOpen, setToolsPanelOpen] = useState(true); // Open by default
