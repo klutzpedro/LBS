@@ -7341,7 +7341,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                                     break
                         break
                 
-                await asyncio.sleep(5)
+                await asyncio.sleep(7)
                 
             elif query_type == 'capil_nik':
                 # Send NIK number directly (16 digits)
@@ -7362,7 +7362,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                                     break
                         break
                 
-                await asyncio.sleep(5)
+                await asyncio.sleep(7)
                 
             elif query_type == 'nkk':
                 # Send NKK number directly (16 digits)
@@ -7383,7 +7383,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                                     break
                         break
                 
-                await asyncio.sleep(5)
+                await asyncio.sleep(7)
                 
             elif query_type == 'reghp':
                 # Send NIK for RegHP query
@@ -7404,7 +7404,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                                     break
                         break
                 
-                await asyncio.sleep(5)
+                await asyncio.sleep(7)
                 
             elif query_type == 'plat_mobil':
                 # Send plate number to Telegram bot
