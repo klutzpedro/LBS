@@ -6920,6 +6920,29 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     
     logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
     
+    # ============================================
+    # CHECK CACHE FIRST
+    # ============================================
+    cache_key = f"{query_type}:{query_value}"
+    cached_result = await db.simple_query_cache.find_one(
+        {"cache_key": cache_key},
+        {"_id": 0}
+    )
+    
+    if cached_result and cached_result.get("raw_response"):
+        logger.info(f"[SIMPLE QUERY] Cache HIT for {cache_key}")
+        return {
+            "success": True,
+            "query_type": query_type,
+            "query_value": query_value,
+            "raw_response": cached_result["raw_response"],
+            "verified": True,
+            "cached": True,
+            "cached_at": cached_result.get("created_at")
+        }
+    
+    logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}, querying Telegram...")
+    
     if not telegram_client or not telegram_client.is_connected():
         raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
     
