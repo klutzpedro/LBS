@@ -1623,7 +1623,7 @@ const MainApp = () => {
           />
 
           {/* NON GEOINT Search Button - Top Center of Map */}
-          {/* Query Nama & Face Recognition Buttons */}
+          {/* Full Query, Simple Query & Face Recognition Buttons */}
           <div 
             className="fixed z-[2000] flex flex-col gap-2"
             style={{
@@ -1645,6 +1645,8 @@ const MainApp = () => {
                 onOpenHistory={() => setNonGeointHistoryOpen(true)}
                 isInvestigating={isGlobalInvestigating}
               />
+              {/* Simple Query Button */}
+              <SimpleQueryButton onClick={() => setSimpleQueryOpen(true)} />
               {/* Admin User Management Button */}
               {isAdmin && (
                 <UserManagementButton onClick={() => setUserManagementOpen(true)} />
