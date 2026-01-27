@@ -782,3 +782,30 @@ pm2 restart waskita-backend
 2. Test NKK query to verify all family members are displayed
 3. Verify FULL QUERY investigation shows passport/perlintasan data
 
+
+### UI Restructure: Tools Panel (January 27, 2026)
+
+**Request:**
+1. Rename "Query" button to "SIMPLE QUERY"
+2. Create a floating, draggable, minimizable, maximizable window containing all query tools
+
+**Implementation:**
+- Created new component: `/app/frontend/src/components/main/ToolsPanel.jsx`
+- Features:
+  - Draggable window with grip handle
+  - Minimize/Maximize/Close buttons
+  - Auto-centers on screen when opened
+  - Stays within viewport bounds
+
+**Tools Panel Contents (in order):**
+1. FULL QUERY - Cari button + History button
+2. FACE RECOGNITION - Scan button + History button  
+3. SIMPLE QUERY - "Buka Simple Query" button (green)
+4. USER MANAGEMENT - "Buka User Management" button (purple, admin only)
+
+**Files Modified:**
+- `/app/frontend/src/components/main/ToolsPanel.jsx` - NEW
+- `/app/frontend/src/components/main/index.js` - Added exports
+- `/app/frontend/src/components/main/SimpleQuery.jsx` - Changed title to "SIMPLE QUERY"
+- `/app/frontend/src/pages/MainApp.jsx` - Replaced individual buttons with ToolsPanel
+
