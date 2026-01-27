@@ -26,6 +26,7 @@ const ToolsPanel = ({
   
   // Simple Query
   onOpenSimpleQuery,
+  onOpenSimpleQueryHistory,
   
   // User Management (Admin)
   isAdmin,
