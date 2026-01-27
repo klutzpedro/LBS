@@ -1917,6 +1917,18 @@ const MainApp = () => {
         open={simpleQueryOpen}
         onOpenChange={setSimpleQueryOpen}
       />
+      
+      {/* Simple Query History Dialog */}
+      <SimpleQueryHistoryDialog
+        open={simpleQueryHistoryOpen}
+        onOpenChange={setSimpleQueryHistoryOpen}
+        onSelectHistory={(item) => {
+          // When user selects from history, open SimpleQuery and show the result
+          setSimpleQueryHistoryOpen(false);
+          setSimpleQueryOpen(true);
+          // The result will be shown from cache automatically
+        }}
+      />
     </div>
   );
 };
