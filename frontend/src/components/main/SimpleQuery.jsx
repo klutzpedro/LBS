@@ -137,6 +137,7 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
 
   const handleSearch = async () => {
     if (!selectedType) {
@@ -152,6 +153,7 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
 
     setIsLoading(true);
     setResult(null);
+    setStatusMessage('Mengirim query ke server...');
 
     try {
       const token = localStorage.getItem('token');
