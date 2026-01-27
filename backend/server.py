@@ -7407,8 +7407,33 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 await asyncio.sleep(5)
                 
             elif query_type == 'plat_mobil':
-                # Send plate number directly without "PLAT " prefix
+                # Send plate number to Telegram bot
                 sent_message = await telegram_client.send_message(bot_entity, query_value)
+                logger.info(f"[SIMPLE QUERY] Sent plate number: {query_value}")
+                await asyncio.sleep(3)
+                
+                # Wait for response with buttons and click "Vehicle"
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                vehicle_clicked = False
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                button_text = (button.text or '').upper()
+                                if 'VEHICLE' in button_text or 'KENDARAAN' in button_text:
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked Vehicle button: {button.text}")
+                                    vehicle_clicked = True
+                                    break
+                            if vehicle_clicked:
+                                break
+                        break
+                
+                if not vehicle_clicked:
+                    logger.warning("[SIMPLE QUERY] Vehicle button not found, waiting for direct response...")
+                
                 await asyncio.sleep(5)
                 
             else:
