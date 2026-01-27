@@ -38,7 +38,7 @@ import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
-// 3D styled Query Nama Button
+// 3D styled Full Query Button (previously Query Nama)
 export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating = false }) => {
   return (
     <div className="flex gap-2">
