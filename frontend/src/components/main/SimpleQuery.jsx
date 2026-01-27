@@ -253,6 +253,17 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
 
         {!isMinimized && (
           <div className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: 0 }}>
+            {/* Status Message */}
+            {isLoading && statusMessage && (
+              <div 
+                className="p-3 rounded-lg flex items-center gap-3"
+                style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b' }}
+              >
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#f59e0b' }} />
+                <span className="text-sm" style={{ color: '#f59e0b' }}>{statusMessage}</span>
+              </div>
+            )}
+            
             {/* Query Type Selection */}
             {!result && (
               <>
