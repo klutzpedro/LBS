@@ -247,8 +247,8 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
         <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-3">
           <div className="flex items-center justify-between w-full">
             <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <Search className="w-5 h-5" style={{ color: '#f59e0b' }} />
-              Query Satuan
+              <Search className="w-5 h-5" style={{ color: '#10b981' }} />
+              SIMPLE QUERY
             </DraggableDialogTitle>
             <div className="flex items-center gap-1">
               <Button
