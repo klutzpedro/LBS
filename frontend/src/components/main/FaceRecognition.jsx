@@ -129,6 +129,14 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
     setCurrentSessionId(null);
   };
 
+  // Reset state when dialog opens (always show fresh form)
+  useEffect(() => {
+    if (open) {
+      console.log('[FR] Dialog opened - resetting to fresh state');
+      resetSearchState();
+    }
+  }, [open]);
+
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
