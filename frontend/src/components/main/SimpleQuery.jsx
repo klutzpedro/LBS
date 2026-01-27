@@ -139,6 +139,18 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
   const [copied, setCopied] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
+  // Reset state when dialog opens (always show fresh form)
+  useEffect(() => {
+    if (open) {
+      console.log('[SimpleQuery] Dialog opened - resetting to fresh state');
+      setSelectedType(null);
+      setSearchValue('');
+      setResult(null);
+      setStatusMessage('');
+      setCopied(false);
+    }
+  }, [open]);
+
   const handleSearch = async () => {
     if (!selectedType) {
       toast.error('Pilih jenis query terlebih dahulu');
