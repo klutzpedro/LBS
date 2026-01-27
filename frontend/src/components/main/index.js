@@ -30,3 +30,6 @@ export { UserManagementButton, UserManagementDialog } from './UserManagement';
 
 // Simple Query
 export { SimpleQueryButton, SimpleQueryDialog } from './SimpleQuery';
+
+// Tools Panel
+export { default as ToolsPanel, ToolsPanelToggle } from './ToolsPanel';
