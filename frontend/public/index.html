@@ -4,27 +4,50 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
-        <meta name="description" content="A product of emergent.sh" />
-        <!--
-        manifest.json provides metadata used when your web app is installed on a
-        user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-        -->
-        <!--
-        Notice the use of %PUBLIC_URL% in the tags above.
-        It will be replaced with the URL of the `public` folder during the build.
-        Only files inside the `public` folder can be referenced from the HTML.
-
-        Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-        work correctly both with client-side routing and a non-root public URL.
-        Learn how to configure a non-root public URL by running `npm run build`.
-        -->
+        <meta name="description" content="WASKITA LBS - Location Based System" />
+        
+        <!-- Security Meta Tags -->
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        
+        <!-- Prevent Caching -->
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta http-equiv="Pragma" content="no-cache" />
+        <meta http-equiv="Expires" content="0" />
+        
+        <!-- Prevent Clickjacking -->
+        <meta http-equiv="X-Frame-Options" content="DENY" />
+        
+        <!-- Anti-Cloning: Disable Right Click via CSP (will be enforced by server headers too) -->
+        
         <title>Waskita LBS | Location Based System</title>
-        <!-- <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script> -->
-        <!--
-        These two scripts have been added for the Visual Edits, please do not edit or remove them
-        -->
+        
+        <!-- Prevent page from being embedded in iframes (anti-clickjacking) -->
+        <style>
+            /* Hide content if loaded in iframe (anti-clickjacking backup) */
+            html { display: none; }
+        </style>
         <script>
-            // Only load visual edit scripts when inside an iframe
+            // Anti-clickjacking: only show content if not in iframe
+            if (self === top) {
+                document.documentElement.style.display = 'block';
+            } else {
+                // If in iframe (except for development), redirect to top
+                if (!window.location.hostname.includes('localhost') && 
+                    !window.location.hostname.includes('127.0.0.1') &&
+                    !window.location.hostname.includes('emergent')) {
+                    top.location = self.location;
+                } else {
+                    document.documentElement.style.display = 'block';
+                }
+            }
+        </script>
+        
+        <script>
+            // Only load visual edit scripts when inside an iframe (development)
             if (window.self !== window.top) {
                 // Load debug monitor script
                 var debugMonitorScript = document.createElement('script');
@@ -41,6 +64,26 @@
                 var tailwindScript = document.createElement('script');
                 tailwindScript.src = 'https://cdn.tailwindcss.com';
                 document.head.appendChild(tailwindScript);
+            }
+            
+            // Anti-cloning: Disable right-click in production
+            if (!window.location.hostname.includes('localhost') && 
+                !window.location.hostname.includes('127.0.0.1')) {
+                document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                // Disable keyboard shortcuts for view source
+                document.addEventListener('keydown', function(e) {
+                    // Ctrl+U, Ctrl+Shift+I, F12
+                    if ((e.ctrlKey && e.key === 'u') || 
+                        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                        e.key === 'F12') {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
             }
         </script>
     </head>
