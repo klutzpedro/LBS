@@ -34,10 +34,10 @@ import {
   ReghpInfoDialog,
   NikInfoDialog,
   FamilyTreeDialog,
-  UserManagementButton,
   UserManagementDialog,
-  SimpleQueryButton,
-  SimpleQueryDialog
+  SimpleQueryDialog,
+  ToolsPanel,
+  ToolsPanelToggle
 } from '@/components/main';
 
 // NON GEOINT Search
