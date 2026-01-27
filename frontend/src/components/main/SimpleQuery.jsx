@@ -269,10 +269,10 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
             {isLoading && statusMessage && (
               <div 
                 className="p-3 rounded-lg flex items-center gap-3"
-                style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b' }}
+                style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981' }}
               >
-                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#f59e0b' }} />
-                <span className="text-sm" style={{ color: '#f59e0b' }}>{statusMessage}</span>
+                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#10b981' }} />
+                <span className="text-sm" style={{ color: '#10b981' }}>{statusMessage}</span>
               </div>
             )}
             
