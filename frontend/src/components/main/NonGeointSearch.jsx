@@ -1283,20 +1283,29 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
-    // SKIP person selection setup ONLY if investigation is COMPLETED (loaded from history with results)
-    // For 'waiting_selection' status, we MUST show photo selection even if investigation object exists
-    if (investigation && investigation.status === 'completed' && searchResults?.status !== 'waiting_selection') {
-      console.log('[NonGeoint] Investigation completed from history, skipping person selection setup');
-      return;
+    console.log('[NonGeoint] Processing search results useEffect:', {
+      status: searchResults?.status,
+      nik_photos_count: Object.keys(searchResults?.nik_photos || {}).length,
+      investigation_exists: !!investigation,
+      investigation_status: investigation?.status
+    });
+    
+    // For 'waiting_selection' status, ALWAYS force show photo selection
+    // This is critical for reopening from history
+    const isWaitingSelection = searchResults?.status === 'waiting_selection';
+    
+    if (isWaitingSelection) {
+      console.log('[NonGeoint] WAITING_SELECTION detected - forcing photo selection display');
+      // Force reset investigation for waiting_selection
+      setInvestigation(null);
     }
     
-    // If status is 'waiting_selection', ALWAYS show photo selection
-    if (searchResults?.status === 'waiting_selection') {
-      console.log('[NonGeoint] Status is waiting_selection, showing photo selection');
-      // Reset investigation state if any (user hasn't selected yet)
-      if (!investigation?.results || Object.keys(investigation.results || {}).length === 0) {
-        setInvestigation(null);
-      }
+    // SKIP person selection setup ONLY if:
+    // 1. Investigation exists AND is COMPLETED 
+    // 2. AND search status is NOT 'waiting_selection'
+    if (investigation && investigation.status === 'completed' && !isWaitingSelection) {
+      console.log('[NonGeoint] Investigation completed from history, skipping person selection setup');
+      return;
     }
     
     // Update pagination state
@@ -1307,15 +1316,11 @@ export const NonGeointSearchDialog = ({
     
     // Check if we have nik_photos from backend (new flow with auto photo fetch)
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      console.log('[NonGeoint] Using nik_photos from backend:', searchResults.nik_photos);
-      console.log('[NonGeoint] Number of NIK photos:', Object.keys(searchResults.nik_photos).length);
-      console.log('[NonGeoint] Total NIKs available:', searchResults.total_niks);
-      console.log('[NonGeoint] Has more batches:', searchResults.has_more_batches);
+      console.log('[NonGeoint] Using nik_photos from backend:', Object.keys(searchResults.nik_photos).length, 'photos');
       
       // Convert nik_photos object to persons array and sort by similarity
       const persons = Object.entries(searchResults.nik_photos)
         .map(([nik, data]) => {
-          console.log(`[NonGeoint] Processing NIK ${nik}:`, data);
           return {
             nik: nik,
             nama: data.name || data.nama,
@@ -1337,15 +1342,13 @@ export const NonGeointSearchDialog = ({
           return (a.nama || '').localeCompare(b.nama || '');
         });
       
-      console.log('[NonGeoint] Persons array created and sorted by similarity:', persons.length);
+      console.log('[NonGeoint] Persons array created:', persons.length, 'persons');
       setPersonsFound(persons);
       
-      // ALWAYS show person selection for verification (even for single NIK)
-      // BUT don't reset selectedPersonIndex if user already selected one
-      if (persons.length >= 1) {
+      // ALWAYS show person selection for waiting_selection or if we have persons
+      if (persons.length >= 1 || isWaitingSelection) {
+        console.log('[NonGeoint] Setting showPersonSelection = true');
         setShowPersonSelection(true);
-        // Only reset selection if this is initial load (not batch update)
-        // We can detect batch update by checking if personsFound already has items
       } else {
         setShowPersonSelection(false);
       }
@@ -1363,7 +1366,12 @@ export const NonGeointSearchDialog = ({
         setShowPersonSelection(false);
       }
     }
-  }, [searchResults]);
+    // If waiting_selection but no nik_photos yet, still set showPersonSelection
+    else if (isWaitingSelection) {
+      console.log('[NonGeoint] Waiting selection but no nik_photos - will wait for data');
+      setShowPersonSelection(true);
+    }
+  }, [searchResults?.id, searchResults?.status, searchResults?.nik_photos]);
 
   const startSearch = async () => {
     if (!searchName.trim()) {
