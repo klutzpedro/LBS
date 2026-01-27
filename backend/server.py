@@ -1,7 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -17,6 +19,10 @@ from telethon import TelegramClient, events
 import re
 import httpx  # For CP API calls
 import socket  # For forcing IPv4
+import hashlib
+import secrets
+import time
+from collections import defaultdict
 
 ROOT_DIR = Path(__file__).parent
 env_path = ROOT_DIR / '.env'
@@ -35,8 +41,34 @@ db = client[os.environ['DB_NAME']]
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
-JWT_SECRET = os.getenv('JWT_SECRET', 'northarch-secret-key-2024')
+JWT_SECRET = os.getenv('JWT_SECRET', secrets.token_hex(32))  # Use random secret if not set
 JWT_ALGORITHM = "HS256"
+
+# ============================================
+# SECURITY HARDENING CONFIGURATION
+# ============================================
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+RATE_LIMIT_REQUESTS = int(os.getenv('RATE_LIMIT_REQUESTS', '100'))  # requests per window
+RATE_LIMIT_WINDOW = int(os.getenv('RATE_LIMIT_WINDOW', '60'))  # seconds
+MAX_REQUEST_SIZE = int(os.getenv('MAX_REQUEST_SIZE', '10485760'))  # 10MB
+BLOCKED_USER_AGENTS = ['sqlmap', 'nikto', 'nmap', 'masscan', 'zgrab', 'gobuster', 'dirbuster', 'wpscan']
+SECURITY_HEADERS = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https:;",
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+}
+
+# Rate limiting storage (in-memory, consider Redis for production cluster)
+rate_limit_storage = defaultdict(list)
+blocked_ips = set()
+failed_login_attempts = defaultdict(list)
 
 # CP API Configuration
 CP_API_URL = os.getenv('CP_API_URL', 'https://gate-amg.blackopium.xyz')
