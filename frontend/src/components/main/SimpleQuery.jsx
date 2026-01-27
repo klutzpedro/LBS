@@ -440,9 +440,21 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
                       {result.raw_response}
                     </pre>
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--status-error)' }}>
-                      {result.error || 'Tidak ada hasil'}
-                    </p>
+                    <div className="space-y-3">
+                      <p className="text-sm" style={{ color: 'var(--status-error)' }}>
+                        {result.error || 'Tidak ada hasil'}
+                      </p>
+                      {result.retry_suggested && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleSearch}
+                          className="mt-2"
+                        >
+                          Coba Lagi
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
