@@ -7713,6 +7713,95 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         finally:
             logger.info(f"[SIMPLE QUERY] Lock released for user: {username}")
 
+# ============================================
+# SIMPLE QUERY HISTORY ENDPOINT
+# ============================================
+@api_router.get("/simple-query/history")
+async def get_simple_query_history(
+    limit: int = 50,
+    query_type: str = None,
+    username: str = Depends(verify_token)
+):
+    """
+    Get Simple Query history from cache.
+    This data is shared across all users.
+    """
+    try:
+        # Build query filter
+        query_filter = {"raw_response": {"$exists": True, "$ne": None}}
+        
+        if query_type:
+            query_filter["query_type"] = query_type
+        
+        # Get history sorted by created_at descending (most recent first)
+        cursor = db.simple_query_cache.find(
+            query_filter,
+            {"_id": 0}
+        ).sort("created_at", -1).limit(limit)
+        
+        history = await cursor.to_list(length=limit)
+        
+        # Add query type labels
+        type_labels = {
+            "capil_name": "CAPIL (Nama)",
+            "capil_nik": "CAPIL (NIK)",
+            "nkk": "Kartu Keluarga (NKK)",
+            "reghp": "RegHP (NIK)",
+            "passport_wna": "Passport WNA (Nama)",
+            "passport_wni": "Passport WNI (Nama)",
+            "passport_number": "Passport (Nomor)",
+            "plat_mobil": "Plat Nomor Kendaraan",
+            "perlintasan": "Perlintasan (No Passport)"
+        }
+        
+        for item in history:
+            item["type_label"] = type_labels.get(item.get("query_type"), item.get("query_type"))
+        
+        logger.info(f"[SIMPLE QUERY HISTORY] Returning {len(history)} items for user {username}")
+        
+        return {
+            "success": True,
+            "history": history,
+            "total": len(history)
+        }
+        
+    except Exception as e:
+        logger.error(f"[SIMPLE QUERY HISTORY] Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/simple-query/cache/{cache_key}")
+async def delete_simple_query_cache(
+    cache_key: str,
+    username: str = Depends(verify_token)
+):
+    """Delete a specific cache entry (admin only or owner)"""
+    try:
+        # Check if user is admin
+        user = await db.users.find_one({"username": username})
+        is_admin = user and user.get("role") == "admin"
+        
+        # Find the cache entry
+        cache_entry = await db.simple_query_cache.find_one({"cache_key": cache_key})
+        
+        if not cache_entry:
+            raise HTTPException(status_code=404, detail="Cache entry not found")
+        
+        # Only admin or creator can delete
+        if not is_admin and cache_entry.get("created_by") != username:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this entry")
+        
+        await db.simple_query_cache.delete_one({"cache_key": cache_key})
+        
+        logger.info(f"[SIMPLE QUERY] Cache deleted by {username}: {cache_key}")
+        
+        return {"success": True, "message": "Cache entry deleted"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[SIMPLE QUERY] Delete cache error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/telegram/force-restore-session")
 async def force_restore_session(username: str = Depends(verify_token)):
     """Force restore Telegram session from MongoDB backup"""
