@@ -197,7 +197,7 @@ const ToolsPanel = ({
                   color: isInvestigating ? 'var(--foreground-muted)' : 'var(--background-primary)'
                 }}
                 disabled={isInvestigating}
-                onClick={onOpenFullQuery}
+                onClick={() => { onOpenFullQuery(); onClose(); }}
               >
                 <Search className="w-3 h-3 mr-1" />
                 {isInvestigating ? 'Processing...' : 'Cari'}
@@ -205,7 +205,7 @@ const ToolsPanel = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onOpenFullQueryHistory}
+                onClick={() => { onOpenFullQueryHistory(); onClose(); }}
               >
                 <History className="w-3 h-3 mr-1" />
                 History
@@ -236,7 +236,7 @@ const ToolsPanel = ({
                   color: isFrProcessing ? 'var(--foreground-muted)' : '#000'
                 }}
                 disabled={isFrProcessing}
-                onClick={onOpenFaceRecognition}
+                onClick={() => { onOpenFaceRecognition(); onClose(); }}
               >
                 <ScanFace className="w-3 h-3 mr-1" />
                 {isFrProcessing ? 'Processing...' : 'Scan'}
@@ -244,7 +244,7 @@ const ToolsPanel = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onOpenFaceRecognitionHistory}
+                onClick={() => { onOpenFaceRecognitionHistory(); onClose(); }}
               >
                 <History className="w-3 h-3 mr-1" />
                 History
@@ -273,7 +273,7 @@ const ToolsPanel = ({
                 backgroundColor: '#10b981',
                 color: '#000'
               }}
-              onClick={onOpenSimpleQuery}
+              onClick={() => { onOpenSimpleQuery(); onClose(); }}
             >
               <Search className="w-3 h-3 mr-1" />
               Buka Simple Query
@@ -302,7 +302,7 @@ const ToolsPanel = ({
                   backgroundColor: '#8b5cf6',
                   color: '#fff'
                 }}
-                onClick={onOpenUserManagement}
+                onClick={() => { onOpenUserManagement(); onClose(); }}
               >
                 <Settings className="w-3 h-3 mr-1" />
                 Buka User Management
