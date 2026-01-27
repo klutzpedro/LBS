@@ -486,4 +486,297 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
   );
 };
 
+// ============================================
+// SIMPLE QUERY HISTORY DIALOG
+// ============================================
+export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }) => {
+  const [history, setHistory] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filterType, setFilterType] = useState('');
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const loadHistory = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const params = new URLSearchParams();
+      params.append('limit', '100');
+      if (filterType) params.append('query_type', filterType);
+      
+      const response = await fetch(`${API_URL}/api/simple-query/history?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHistory(data.history || []);
+      } else {
+        toast.error('Gagal memuat history');
+      }
+    } catch (error) {
+      console.error('Load history error:', error);
+      toast.error('Gagal memuat history');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      loadHistory();
+    }
+  }, [open, filterType]);
+
+  const handleViewDetail = (item) => {
+    setSelectedItem(item);
+    setDetailOpen(true);
+  };
+
+  const handleUseResult = (item) => {
+    if (onSelectHistory) {
+      onSelectHistory(item);
+    }
+    onOpenChange(false);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const getTypeIcon = (type) => {
+    const icons = {
+      capil_name: User,
+      capil_nik: CreditCard,
+      nkk: Users,
+      reghp: Phone,
+      passport_wna: Plane,
+      passport_wni: Plane,
+      passport_number: FileText,
+      plat_mobil: Car,
+      perlintasan: Plane
+    };
+    const Icon = icons[type] || Search;
+    return <Icon className="w-4 h-4" />;
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent 
+          className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
+              <History className="w-5 h-5" style={{ color: '#10b981' }} />
+              History Simple Query
+              <span className="text-xs font-normal px-2 py-1 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
+                Shared Cache - Semua User
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Filter */}
+          <div className="flex gap-2 flex-wrap py-2">
+            <Button
+              size="sm"
+              variant={filterType === '' ? 'default' : 'outline'}
+              onClick={() => setFilterType('')}
+              style={filterType === '' ? { backgroundColor: '#10b981', color: '#000' } : {}}
+            >
+              Semua
+            </Button>
+            {QUERY_TYPES.map(type => (
+              <Button
+                key={type.id}
+                size="sm"
+                variant={filterType === type.id ? 'default' : 'outline'}
+                onClick={() => setFilterType(type.id)}
+                style={filterType === type.id ? { backgroundColor: '#10b981', color: '#000' } : {}}
+              >
+                {type.label}
+              </Button>
+            ))}
+          </div>
+
+          {/* History List */}
+          <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#10b981' }} />
+                <span className="ml-2" style={{ color: 'var(--foreground-muted)' }}>Memuat history...</span>
+              </div>
+            ) : history.length === 0 ? (
+              <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                Belum ada history pencarian
+              </div>
+            ) : (
+              history.map((item, index) => (
+                <div
+                  key={item.cache_key || index}
+                  className="p-3 rounded-lg border cursor-pointer hover:border-green-500 transition-colors"
+                  style={{ 
+                    backgroundColor: 'var(--background-tertiary)',
+                    borderColor: 'var(--borders-default)'
+                  }}
+                  onClick={() => handleViewDetail(item)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div 
+                        className="p-2 rounded"
+                        style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)' }}
+                      >
+                        {getTypeIcon(item.query_type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="text-xs px-2 py-0.5 rounded"
+                            style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--foreground-muted)' }}
+                          >
+                            {item.type_label || item.query_type}
+                          </span>
+                        </div>
+                        <p 
+                          className="font-medium truncate mt-1"
+                          style={{ color: 'var(--foreground-primary)' }}
+                        >
+                          {item.query_value}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs flex items-center gap-1" style={{ color: 'var(--foreground-muted)' }}>
+                            <Clock className="w-3 h-3" />
+                            {formatDate(item.created_at)}
+                          </span>
+                          {item.created_by && (
+                            <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                              oleh: {item.created_by}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUseResult(item);
+                      }}
+                      style={{ borderColor: '#10b981', color: '#10b981' }}
+                    >
+                      Gunakan
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-between items-center pt-3 border-t" style={{ borderColor: 'var(--borders-default)' }}>
+            <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+              Total: {history.length} hasil tersimpan
+            </span>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Tutup
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent 
+          className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)'
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
+              {selectedItem && getTypeIcon(selectedItem.query_type)}
+              Detail: {selectedItem?.type_label || selectedItem?.query_type}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedItem && (
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {/* Query Info */}
+              <div 
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--background-tertiary)' }}
+              >
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Query:</span>
+                    <p className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                      {selectedItem.query_value}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Waktu Cache:</span>
+                    <p className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                      {formatDate(selectedItem.created_at)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Raw Response */}
+              <div 
+                className="p-4 rounded-lg border overflow-auto"
+                style={{ 
+                  backgroundColor: '#1a1a2e',
+                  borderColor: 'var(--borders-default)',
+                  maxHeight: '50vh'
+                }}
+              >
+                <pre 
+                  className="text-xs whitespace-pre-wrap font-mono"
+                  style={{ color: '#00ff88' }}
+                >
+                  {selectedItem.raw_response || 'Tidak ada data'}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--borders-default)' }}>
+            <Button variant="outline" onClick={() => setDetailOpen(false)}>
+              Tutup
+            </Button>
+            <Button
+              onClick={() => {
+                handleUseResult(selectedItem);
+                setDetailOpen(false);
+              }}
+              style={{ backgroundColor: '#10b981', color: '#000' }}
+            >
+              Gunakan Hasil Ini
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
 export default SimpleQueryDialog;
