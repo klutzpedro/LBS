@@ -1023,22 +1023,13 @@ export const NonGeointSearchDialog = ({
         } else {
           setIsLoadingFromHistory(false); // Already loaded
         }
-      } else if (searchResults?.id) {
-        // Reopening with existing search in progress - just reload latest data
-        console.log('[NonGeoint] Reopening with existing search:', searchResults.id);
-        reloadCurrentSearch();
       } else {
-        // Check if there's an ongoing search saved in localStorage
-        const ongoingSearchId = localStorage.getItem('nongeoint_ongoing_search_id');
-        if (ongoingSearchId) {
-          console.log('[NonGeoint] Found ongoing search in localStorage:', ongoingSearchId);
-          loadOngoingSearch(ongoingSearchId);
-        } else {
-          // New search - reset everything to show fresh form
-          console.log('[NonGeoint] Dialog open for NEW search, resetting all states');
-          resetAllStates();
-          lastOpenedWithSearchRef.current = null;
-        }
+        // NEW SEARCH - Always reset to show fresh form
+        // Clear localStorage ongoing search and reset all states
+        console.log('[NonGeoint] Dialog open for NEW search, clearing all states');
+        localStorage.removeItem('nongeoint_ongoing_search_id');
+        resetAllStates();
+        lastOpenedWithSearchRef.current = null;
       }
     }
   }, [initialSearch?.id, open]);
