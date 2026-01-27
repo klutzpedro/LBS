@@ -935,7 +935,7 @@ async def get_current_user(username: str = Depends(verify_token)):
 
 @api_router.get("/cp-api/status")
 async def get_cp_api_status(username: str = Depends(verify_token)):
-    """Get CP API connection status and quota"""
+    """Get CP API connection status and quota (uses CACHED status, no API call)"""
     is_connected, quota_exceeded = await check_cp_api_connection()
     quota = await get_cp_api_quota()
     quota_doc = await db.api_quota.find_one({"type": "cp_api"}, {"_id": 0})
@@ -960,8 +960,49 @@ async def get_cp_api_status(username: str = Depends(verify_token)):
         "quota_initial": quota_doc.get("initial", CP_API_INITIAL_QUOTA) if quota_doc else CP_API_INITIAL_QUOTA,
         "quota_used": quota_doc.get("used", 0) if quota_doc else 0,
         "last_updated": quota_doc.get("last_updated") if quota_doc else None,
+        "last_check": quota_doc.get("last_check") if quota_doc else None,
         "api_url": CP_API_URL,
-        "use_telegram": use_telegram
+        "use_telegram": use_telegram,
+        "cached": True  # Indicate this is cached status
+    }
+
+@api_router.post("/cp-api/refresh-status")
+async def refresh_cp_api_status(username: str = Depends(verify_token)):
+    """
+    Manually refresh CP API status by making a REAL API call.
+    WARNING: This will use 1 quota point!
+    Use sparingly.
+    """
+    logger.info(f"[CP API] Manual refresh requested by {username}")
+    
+    is_connected, quota_exceeded = await verify_cp_api_connection_real()
+    quota = await get_cp_api_quota()
+    quota_doc = await db.api_quota.find_one({"type": "cp_api"}, {"_id": 0})
+    
+    # Get position source setting
+    settings_doc = await db.settings.find_one({"type": "position_source"}, {"_id": 0})
+    use_telegram = settings_doc.get("use_telegram", False) if settings_doc else False
+    
+    # Determine status message
+    if quota_exceeded:
+        status_message = "Quota Exceeded - Silakan gunakan Bot Telegram atau isi ulang quota"
+    elif is_connected:
+        status_message = "Connected & Authorized"
+    else:
+        status_message = "Disconnected (IP not whitelisted or server unreachable)"
+    
+    return {
+        "connected": is_connected,
+        "quota_exceeded": quota_exceeded,
+        "status_message": status_message,
+        "quota_remaining": quota,
+        "quota_initial": quota_doc.get("initial", CP_API_INITIAL_QUOTA) if quota_doc else CP_API_INITIAL_QUOTA,
+        "quota_used": quota_doc.get("used", 0) if quota_doc else 0,
+        "last_updated": quota_doc.get("last_updated") if quota_doc else None,
+        "last_check": quota_doc.get("last_check") if quota_doc else None,
+        "api_url": CP_API_URL,
+        "use_telegram": use_telegram,
+        "refreshed": True  # Indicate this was a real check
     }
 
 @api_router.post("/cp-api/toggle-telegram")
