@@ -381,6 +381,14 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
                         DARI CACHE
                       </span>
                     )}
+                    {result.source === 'CP_API' && (
+                      <span 
+                        className="px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}
+                      >
+                        VIA CP API
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button
