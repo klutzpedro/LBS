@@ -5500,6 +5500,112 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
     return result
 
 
+async def query_perlintasan_simple_cp_api(passport_number: str) -> dict:
+    """
+    Query perlintasan (border crossing) data via CP API for Simple Query feature.
+    
+    This queries the /api/v3/imigrasi/lintas endpoint with passport number
+    and returns formatted crossing records.
+    """
+    import subprocess
+    import json
+    
+    result = {
+        "success": False,
+        "raw_response": None,
+        "error": None
+    }
+    
+    try:
+        logger.info(f"[PERLINTASAN SIMPLE CP] Querying by passport number: {passport_number}")
+        
+        # Query perlintasan (crossing) data
+        lintas_cmd = [
+            "curl", "-4", "-s", "-X", "POST",
+            "-H", f"api-key: {CP_API_KEY}",
+            "-d", f"nopas={passport_number}",
+            f"{CP_API_URL}/api/v3/imigrasi/lintas"
+        ]
+        
+        lintas_process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
+        
+        logger.info(f"[PERLINTASAN SIMPLE CP] Response: {lintas_process.stdout[:300] if lintas_process.stdout else 'empty'}")
+        
+        # Check if response is HTML (IP not whitelisted or API error)
+        if lintas_process.stdout and lintas_process.stdout.strip().startswith('<'):
+            logger.warning(f"[PERLINTASAN SIMPLE CP] Got HTML response - CP API may not be accessible")
+            result["error"] = "CP API tidak dapat diakses. Pastikan IP VPS sudah di-whitelist untuk layanan Imigrasi."
+            return result
+        
+        if not lintas_process.stdout:
+            result["error"] = "Tidak ada response dari CP API"
+            return result
+        
+        try:
+            lintas_data = json.loads(lintas_process.stdout)
+        except json.JSONDecodeError as e:
+            logger.error(f"[PERLINTASAN SIMPLE CP] JSON decode error: {e}")
+            result["error"] = "Response dari CP API tidak valid"
+            return result
+        
+        crossings = lintas_data.get("dataPerlintasan") or lintas_data.get("data") or []
+        
+        if crossings:
+            # Format perlintasan data as readable text
+            output_lines = [f"═══════════════════════════════════════════════════"]
+            output_lines.append(f"      DATA PERLINTASAN - PASSPORT: {passport_number}")
+            output_lines.append(f"═══════════════════════════════════════════════════\n")
+            
+            for i, crossing in enumerate(crossings, 1):
+                direction = crossing.get('DIRECTIONCODE', '-')
+                if direction == 'A':
+                    direction_text = "🛬 ARRIVAL (Masuk Indonesia)"
+                    direction_emoji = "🟢"
+                elif direction == 'D':
+                    direction_text = "🛫 DEPARTURE (Keluar Indonesia)"
+                    direction_emoji = "🔴"
+                else:
+                    direction_text = direction
+                    direction_emoji = "⚪"
+                
+                output_lines.append(f"─── Record {i} {direction_emoji} ───")
+                output_lines.append(f"Movement     : {direction_text}")
+                output_lines.append(f"Date         : {crossing.get('MOVEMENTDATE', '-')}")
+                output_lines.append(f"Passport No  : {crossing.get('TRAVELDOCUMENTNO', '-')}")
+                output_lines.append(f"Name         : {crossing.get('GIVENNAME', '-')} {crossing.get('FAMILYNAME', '-')}")
+                output_lines.append(f"Nationality  : {crossing.get('NATIONALITYDESCRIPTION', '-')}")
+                output_lines.append(f"Birth Date   : {crossing.get('DATEOFBIRTH', '-')}")
+                output_lines.append(f"Gender       : {'Laki-laki' if crossing.get('GENDERCODE') == 'M' else 'Perempuan' if crossing.get('GENDERCODE') == 'F' else crossing.get('GENDERCODE', '-')}")
+                output_lines.append(f"Issuing State: {crossing.get('ISSUINGSTATEDESCRIPTION', '-')}")
+                output_lines.append(f"Port         : {crossing.get('TPINAME', '-')}")
+                output_lines.append(f"Location     : {crossing.get('PORTDESCRIPTION', '-')}")
+                output_lines.append("")
+            
+            output_lines.append(f"═══════════════════════════════════════════════════")
+            output_lines.append(f"Total Records: {len(crossings)}")
+            output_lines.append(f"═══════════════════════════════════════════════════")
+            
+            result["success"] = True
+            result["raw_response"] = "\n".join(output_lines)
+            
+            logger.info(f"[PERLINTASAN SIMPLE CP] Successfully formatted {len(crossings)} crossing records")
+        else:
+            # No crossing data found
+            error_msg = lintas_data.get("response_message") or lintas_data.get("message") or ""
+            result["error"] = f"Tidak ditemukan data perlintasan untuk nomor passport {passport_number}. {error_msg}"
+            
+    except subprocess.TimeoutExpired:
+        result["error"] = "Request timeout - CP API tidak merespons"
+    except Exception as e:
+        logger.error(f"[PERLINTASAN SIMPLE CP] Error: {e}")
+        import traceback
+        logger.error(f"[PERLINTASAN SIMPLE CP] Traceback: {traceback.format_exc()}")
+        result["error"] = str(e)
+    
+    return result
+
+
+
 
 async def execute_nik_button_query(investigation_id: str, nik: str, button_type: str) -> dict:
     """Execute a single NIK/NKK/RegNIK query"""
