@@ -7227,7 +7227,57 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             "cached_at": cached_result.get("created_at")
         }
     
-    logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}, querying Telegram...")
+    logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}")
+    
+    # ============================================
+    # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
+    # ============================================
+    if query_type in ['passport_wna', 'passport_wni', 'passport_number']:
+        logger.info(f"[SIMPLE QUERY] Passport query via CP API: {query_type} = {query_value}")
+        
+        cp_result = await query_passport_simple_cp_api(query_type, query_value)
+        
+        if cp_result.get("success"):
+            raw_response = cp_result.get("raw_response", "")
+            
+            # Save to cache
+            cache_doc = {
+                "cache_key": cache_key,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "created_by": username,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.simple_query_cache.update_one(
+                {"cache_key": cache_key},
+                {"$set": cache_doc},
+                upsert=True
+            )
+            logger.info(f"[SIMPLE QUERY] Saved passport result to cache: {cache_key}")
+            
+            return {
+                "success": True,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "verified": True,
+                "cached": False,
+                "source": "CP_API"
+            }
+        else:
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": cp_result.get("error", "Gagal mengambil data passport dari CP API"),
+                "source": "CP_API"
+            }
+    
+    # ============================================
+    # NON-PASSPORT QUERIES USE TELEGRAM BOT
+    # ============================================
+    logger.info(f"[SIMPLE QUERY] Querying via Telegram bot...")
     
     if not telegram_client or not telegram_client.is_connected():
         raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
