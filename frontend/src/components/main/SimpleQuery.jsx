@@ -21,9 +21,19 @@ import {
   Car,
   FileText,
   Copy,
-  Check
+  Check,
+  History,
+  Clock,
+  Trash2,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
