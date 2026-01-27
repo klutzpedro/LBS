@@ -305,21 +305,21 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
                           }}
                           className={`p-3 rounded-lg border text-left transition-all ${
                             selectedType === type.id ? 'ring-2' : ''
-                          }`}
+                          } ${type.fullWidth ? 'col-span-2' : ''}`}
                           style={{
                             backgroundColor: selectedType === type.id 
-                              ? 'rgba(245, 158, 11, 0.15)' 
+                              ? 'rgba(16, 185, 129, 0.15)' 
                               : 'var(--background-tertiary)',
                             borderColor: selectedType === type.id 
-                              ? '#f59e0b' 
+                              ? '#10b981' 
                               : 'var(--borders-default)',
-                            ringColor: '#f59e0b'
+                            ringColor: '#10b981'
                           }}
                         >
                           <div className="flex items-center gap-2">
                             <IconComponent 
                               className="w-4 h-4" 
-                              style={{ color: selectedType === type.id ? '#f59e0b' : 'var(--foreground-muted)' }} 
+                              style={{ color: selectedType === type.id ? '#10b981' : 'var(--foreground-muted)' }} 
                             />
                             <span 
                               className="text-sm font-medium"
