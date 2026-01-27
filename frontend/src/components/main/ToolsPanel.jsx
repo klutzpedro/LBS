@@ -267,18 +267,28 @@ const ToolsPanel = ({
             <p className="text-xs mb-2" style={{ color: 'var(--foreground-muted)' }}>
               Query tunggal: NIK, NKK, Plat Nomor, Passport, dll
             </p>
-            <Button
-              size="sm"
-              className="w-full"
-              style={{
-                backgroundColor: '#10b981',
-                color: '#000'
-              }}
-              onClick={() => { onOpenSimpleQuery(); onClose(); }}
-            >
-              <Search className="w-3 h-3 mr-1" />
-              Buka Simple Query
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1"
+                style={{
+                  backgroundColor: '#10b981',
+                  color: '#000'
+                }}
+                onClick={() => { onOpenSimpleQuery(); onClose(); }}
+              >
+                <Search className="w-3 h-3 mr-1" />
+                Query
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => { onOpenSimpleQueryHistory(); onClose(); }}
+              >
+                <History className="w-3 h-3 mr-1" />
+                History
+              </Button>
+            </div>
           </div>
 
           {/* USER MANAGEMENT Section (Admin Only) */}
