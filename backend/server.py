@@ -7133,13 +7133,33 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 if not is_related:
                     logger.warning(f"[SIMPLE QUERY] Response may not match query. Query: {query_value}, Response preview: {raw_response[:100]}")
                 
+                # ============================================
+                # SAVE TO CACHE
+                # ============================================
+                if is_related:
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "created_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    logger.info(f"[SIMPLE QUERY] Saved to cache: {cache_key}")
+                
                 logger.info(f"[SIMPLE QUERY] Success for user {username}")
                 return {
                     "success": True,
                     "query_type": query_type,
                     "query_value": query_value,
                     "raw_response": raw_response,
-                    "verified": is_related
+                    "verified": is_related,
+                    "cached": False
                 }
             else:
                 logger.warning(f"[SIMPLE QUERY] No response from bot for user {username}")
