@@ -7046,47 +7046,50 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 
                 await asyncio.sleep(5)
                 
-            elif query_type == 'passport_wna':
-                sent_message = await telegram_client.send_message(bot_entity, query_value)
-                await asyncio.sleep(3)
+            elif query_type in ['passport_wna', 'passport_wni', 'passport_number']:
+                # ============================================
+                # PASSPORT QUERIES USE CP API, NOT TELEGRAM BOT
+                # ============================================
+                logger.info(f"[SIMPLE QUERY] Passport query via CP API: {query_type} = {query_value}")
                 
-                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
-                for msg in messages:
-                    if msg.out:
-                        continue
-                    if msg.buttons:
-                        for row in msg.buttons:
-                            for button in row:
-                                if 'PASS WNA' in (button.text or '').upper() or 'WNA' in (button.text or '').upper():
-                                    await button.click()
-                                    logger.info(f"[SIMPLE QUERY] Clicked PASS WNA button")
-                                    break
-                        break
+                cp_result = await query_passport_simple_cp_api(query_type, query_value)
                 
-                await asyncio.sleep(5)
-                
-            elif query_type == 'passport_wni':
-                sent_message = await telegram_client.send_message(bot_entity, query_value)
-                await asyncio.sleep(3)
-                
-                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
-                for msg in messages:
-                    if msg.out:
-                        continue
-                    if msg.buttons:
-                        for row in msg.buttons:
-                            for button in row:
-                                if 'PASS WNI' in (button.text or '').upper() or 'WNI' in (button.text or '').upper():
-                                    await button.click()
-                                    logger.info(f"[SIMPLE QUERY] Clicked PASS WNI button")
-                                    break
-                        break
-                
-                await asyncio.sleep(5)
-                
-            elif query_type == 'passport_number':
-                sent_message = await telegram_client.send_message(bot_entity, f"PASS {query_value}")
-                await asyncio.sleep(5)
+                if cp_result.get("success"):
+                    raw_response = cp_result.get("raw_response", "")
+                    
+                    # Save to cache
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "created_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    logger.info(f"[SIMPLE QUERY] Saved passport result to cache: {cache_key}")
+                    
+                    return {
+                        "success": True,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "verified": True,
+                        "cached": False,
+                        "source": "CP_API"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": cp_result.get("error", "Gagal mengambil data passport dari CP API"),
+                        "source": "CP_API"
+                    }
                 
             elif query_type == 'plat_mobil':
                 sent_message = await telegram_client.send_message(bot_entity, f"PLAT {query_value}")
