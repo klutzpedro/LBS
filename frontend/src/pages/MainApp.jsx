@@ -93,6 +93,9 @@ const MainApp = () => {
   // User Management (Admin only)
   const [userManagementOpen, setUserManagementOpen] = useState(false);
   
+  // Simple Query
+  const [simpleQueryOpen, setSimpleQueryOpen] = useState(false);
+  
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
