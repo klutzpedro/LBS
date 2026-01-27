@@ -27,3 +27,6 @@ export { FaceRecognitionButton, FaceRecognitionDialog, FaceRecognitionHistoryDia
 
 // User Management
 export { UserManagementButton, UserManagementDialog } from './UserManagement';
+
+// Simple Query
+export { SimpleQueryButton, SimpleQueryDialog } from './SimpleQuery';
