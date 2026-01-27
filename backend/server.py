@@ -7459,24 +7459,50 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         break
             
             if raw_response:
-                # Verify response is related to our query (basic check)
-                query_words = query_value.split()
-                response_upper = raw_response.upper()
+                # Verify response is related to our query (STRICT check)
+                query_upper = query_value.upper().replace(" ", "").replace("-", "")
+                response_upper = raw_response.upper().replace(" ", "").replace("-", "")
                 
-                # Check if at least one word from query appears in response
                 is_related = False
-                for word in query_words:
-                    if len(word) >= 3 and word in response_upper:
+                
+                # For plate number queries - check if plate appears in response
+                if query_type == 'plat_mobil':
+                    # Extract alphanumeric from query for flexible matching
+                    import re
+                    plate_clean = re.sub(r'[^A-Z0-9]', '', query_upper)
+                    if plate_clean in response_upper or query_upper in response_upper:
                         is_related = True
-                        break
+                        logger.info(f"[SIMPLE QUERY] Plate {query_value} found in response")
+                    else:
+                        logger.warning(f"[SIMPLE QUERY] PLATE MISMATCH! Query: {query_value} not found in response")
+                        # This is likely another user's response - DON'T return it
+                        is_related = False
                 
                 # For NIK/NKK queries, check if the number appears
-                if query_type in ['capil_nik', 'nkk', 'reghp']:
+                elif query_type in ['capil_nik', 'nkk', 'reghp']:
                     if query_value in response_upper:
                         is_related = True
+                    else:
+                        logger.warning(f"[SIMPLE QUERY] NIK/NKK MISMATCH! Query: {query_value} not found in response")
                 
+                # For name queries, check if at least one word appears
+                elif query_type in ['capil_name']:
+                    query_words = query_value.upper().split()
+                    for word in query_words:
+                        if len(word) >= 3 and word in response_upper:
+                            is_related = True
+                            break
+                
+                # If response doesn't match our query, it's likely another user's data
                 if not is_related:
-                    logger.warning(f"[SIMPLE QUERY] Response may not match query. Query: {query_value}, Response preview: {raw_response[:100]}")
+                    logger.error(f"[SIMPLE QUERY] DATA MISMATCH DETECTED! User {username} query '{query_value}' got unrelated response. DISCARDING.")
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": "Data tidak sesuai dengan query. Kemungkinan terjadi tabrakan dengan user lain. Silakan coba lagi.",
+                        "retry_suggested": True
+                    }
                 
                 # ============================================
                 # SAVE TO CACHE
