@@ -400,6 +400,9 @@ async def query_cp_api(phone_number: str) -> dict:
             # Decrement quota on successful query
             await decrement_cp_api_quota()
             
+            # Update CP API status - we know it's connected now
+            await update_cp_api_status(True, False)
+            
             return {
                 "success": True,
                 "latitude": float(contents.get("latitude", 0)),
@@ -414,7 +417,17 @@ async def query_cp_api(phone_number: str) -> dict:
                 "query_time": data.get("queryTime", ""),
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
+        elif data.get("error") == "Quota exceeded":
+            # Update status - connected but quota exceeded
+            await update_cp_api_status(True, True)
+            return {
+                "success": False,
+                "error": "Quota exceeded",
+                "code": -1
+            }
         else:
+            # Update status - connected (got valid response)
+            await update_cp_api_status(True, False)
             return {
                 "success": False,
                 "error": data.get("message", "Unknown error"),
