@@ -726,3 +726,59 @@ pm2 restart waskita-backend
 
 ### Test Reports Created
 - `/app/test_reports/iteration_4.json` - NON GEOINT UI testing (100% pass rate)
+
+## January 27, 2026 Updates
+
+### P0: Passport Queries via CP API (IMPLEMENTED)
+- **Request:** User requested Passport queries (WNA Nama, WNI Nama, Nomor) use CP API instead of Telegram Bot
+- **Implementation:**
+  1. Created new function `query_passport_simple_cp_api()` in server.py
+  2. Modified `/api/simple-query` endpoint to route passport queries directly to CP API (bypassing Telegram)
+  3. Passport queries no longer require Telegram connection
+  4. Results are cached in `simple_query_cache` collection
+  5. UI shows "VIA CP API" badge for passport queries
+  
+- **CP API Endpoints Used:**
+  - WNI by name: `GET /api/v3/imigrasi/wni?type=name&query={name}`
+  - WNA by name: `GET /api/v3/imigrasi/wna?type=name&query={name}`
+  - By passport number: `POST /api/v3/imigrasi/lintas` with `nopas={passport_no}`
+
+- **Query Types Affected:**
+  - `passport_wna` - Search WNA passport by name → CP API
+  - `passport_wni` - Search WNI passport by name → CP API
+  - `passport_number` - Search by passport number → CP API
+  
+- **Files Modified:**
+  - `/app/backend/server.py`:
+    - New function: `query_passport_simple_cp_api()`
+    - Modified: `/api/simple-query` endpoint to handle passport queries before Telegram check
+  - `/app/frontend/src/components/main/SimpleQuery.jsx`:
+    - Added "VIA CP API" badge indicator
+
+### P1: NKK Parser Fix (IMPLEMENTED & VERIFIED)
+- **Issue:** NKK table only showing 1 family member (recurring bug from previous forks)
+- **Root Cause:** Parser was detecting NIK patterns too aggressively, not properly handling block-based format
+- **Solution:** Rewrote `parse_nkk_family_data()` function with proper block-by-block parsing:
+  1. Each member block starts with "Nik: {16-digit-NIK}"
+  2. Parses all fields: Full Name, Address, Dob, Religion, Relationship, Blood, Type of Work, Gender, Marital, Father/Mother Name/NIK
+  3. Fallback method for alternative formats
+  
+- **Test Result:** Successfully parsed 4 family members from sample data:
+  - NUR ENDAH DWIJAYANTO (KEPALA KELUARGA, L)
+  - KEANA LOVA SHAFEEQA (ANAK, P)
+  - KEANU ALTAF AL-FARUQ (ANAK, L)
+  - DEWI ARIYANTI (ISTRI, P)
+
+- **Files Modified:**
+  - `/app/backend/server.py`: Function `parse_nkk_family_data()` completely rewritten
+
+### CP API Note
+- CP API requires IP whitelist - queries will fail if VPS IP is not whitelisted
+- In preview environment, CP API returns HTML (not whitelisted)
+- User must ensure VPS IP is whitelisted for all API subscriptions (CP, Imigrasi)
+
+### Pending for User Verification
+1. Test Passport queries on VPS where CP API IP is whitelisted
+2. Test NKK query to verify all family members are displayed
+3. Verify FULL QUERY investigation shows passport/perlintasan data
+
