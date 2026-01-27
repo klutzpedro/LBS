@@ -36,6 +36,7 @@ import {
   FamilyTreeDialog,
   UserManagementDialog,
   SimpleQueryDialog,
+  SimpleQueryHistoryDialog,
   ToolsPanel,
   ToolsPanelToggle
 } from '@/components/main';
