@@ -319,7 +319,7 @@ const ToolsPanel = ({
             size="sm"
             variant="ghost"
             className="p-2"
-            onClick={onOpenFullQuery}
+            onClick={() => { onOpenFullQuery(); onClose(); }}
             title="FULL QUERY"
             disabled={isInvestigating}
           >
@@ -329,7 +329,7 @@ const ToolsPanel = ({
             size="sm"
             variant="ghost"
             className="p-2"
-            onClick={onOpenFaceRecognition}
+            onClick={() => { onOpenFaceRecognition(); onClose(); }}
             title="Face Recognition"
             disabled={isFrProcessing}
           >
@@ -339,7 +339,7 @@ const ToolsPanel = ({
             size="sm"
             variant="ghost"
             className="p-2"
-            onClick={onOpenSimpleQuery}
+            onClick={() => { onOpenSimpleQuery(); onClose(); }}
             title="Simple Query"
           >
             <Search className="w-4 h-4" style={{ color: '#10b981' }} />
@@ -349,7 +349,7 @@ const ToolsPanel = ({
               size="sm"
               variant="ghost"
               className="p-2"
-              onClick={onOpenUserManagement}
+              onClick={() => { onOpenUserManagement(); onClose(); }}
               title="User Management"
             >
               <Users className="w-4 h-4" style={{ color: '#8b5cf6' }} />
