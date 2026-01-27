@@ -434,7 +434,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
             style={{ color: 'var(--foreground-primary)' }}
           >
             <History className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
-            History Pencarian Query Nama
+            History Pencarian FULL QUERY
           </DialogTitle>
         </DialogHeader>
 
