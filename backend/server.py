@@ -1154,6 +1154,84 @@ async def delete_user(user_id: str, username: str = Depends(verify_token)):
     
     return {"success": True, "message": "User berhasil dihapus"}
 
+# ============================================
+# SECURITY ENDPOINTS (Admin Only)
+# ============================================
+
+@api_router.get("/security/logs")
+async def get_security_logs(
+    limit: int = 100,
+    event_type: str = None,
+    username: str = Depends(verify_token)
+):
+    """Get security logs - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat melihat log keamanan")
+    
+    query = {}
+    if event_type:
+        query["event_type"] = event_type
+    
+    logs = await db.security_logs.find(
+        query, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    
+    return {"logs": logs, "total": len(logs)}
+
+@api_router.get("/security/blocked-ips")
+async def get_blocked_ips(username: str = Depends(verify_token)):
+    """Get list of blocked IPs - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin")
+    
+    return {"blocked_ips": list(blocked_ips), "count": len(blocked_ips)}
+
+@api_router.post("/security/unblock-ip/{ip}")
+async def unblock_ip(ip: str, username: str = Depends(verify_token)):
+    """Unblock an IP address - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin")
+    
+    if ip in blocked_ips:
+        blocked_ips.remove(ip)
+        # Clear failed login attempts for this IP
+        keys_to_remove = [k for k in failed_login_attempts.keys() if k.startswith(ip)]
+        for key in keys_to_remove:
+            del failed_login_attempts[key]
+        
+        await db.security_logs.insert_one({
+            "ip": ip,
+            "event_type": "ip_unblocked",
+            "details": f"Unblocked by admin: {username}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return {"success": True, "message": f"IP {ip} berhasil di-unblock"}
+    
+    return {"success": False, "message": f"IP {ip} tidak dalam daftar blokir"}
+
+@api_router.post("/security/block-ip/{ip}")
+async def block_ip(ip: str, username: str = Depends(verify_token)):
+    """Manually block an IP address - admin only"""
+    
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=403, detail="Hanya admin")
+    
+    blocked_ips.add(ip)
+    
+    await db.security_logs.insert_one({
+        "ip": ip,
+        "event_type": "ip_blocked_manual",
+        "details": f"Blocked manually by admin: {username}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {"success": True, "message": f"IP {ip} berhasil diblokir"}
+
 @api_router.get("/auth/me")
 async def get_current_user(username: str = Depends(verify_token)):
     """Get current user info"""
