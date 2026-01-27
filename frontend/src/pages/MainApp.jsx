@@ -1625,42 +1625,46 @@ const MainApp = () => {
             hasActiveQueries={hasActiveQueries}
           />
 
-          {/* NON GEOINT Search Button - Top Center of Map */}
-          {/* Full Query, Simple Query & Face Recognition Buttons */}
+          {/* Tools Panel Toggle Button - Top Center of Map */}
           <div 
-            className="fixed z-[2000] flex flex-col gap-2"
+            className="fixed z-[2000]"
             style={{
               top: '8px',
               left: 'calc(260px + ((100vw - 260px) / 2))',
               transform: 'translateX(-50%)'
             }}
           >
-            <div className="flex items-center gap-2">
-              <NonGeointButton 
-                onOpenSearch={() => {
-                  if (isGlobalInvestigating) {
-                    toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
-                    return;
-                  }
-                  setSelectedNonGeointSearch(null);
-                  setNonGeointDialogOpen(true);
-                }} 
-                onOpenHistory={() => setNonGeointHistoryOpen(true)}
-                isInvestigating={isGlobalInvestigating}
-              />
-              {/* Simple Query Button */}
-              <SimpleQueryButton onClick={() => setSimpleQueryOpen(true)} />
-              {/* Admin User Management Button */}
-              {isAdmin && (
-                <UserManagementButton onClick={() => setUserManagementOpen(true)} />
-              )}
-            </div>
-            <FaceRecognitionButton 
-              onOpenSearch={() => setFrDialogOpen(true)}
-              onOpenHistory={() => setFrHistoryOpen(true)}
-              isProcessing={isFrProcessing}
+            <ToolsPanelToggle 
+              onClick={() => setToolsPanelOpen(!toolsPanelOpen)}
+              isOpen={toolsPanelOpen}
             />
           </div>
+
+          {/* Tools Panel - Draggable Window */}
+          <ToolsPanel
+            isOpen={toolsPanelOpen}
+            onClose={() => setToolsPanelOpen(false)}
+            // Full Query
+            onOpenFullQuery={() => {
+              if (isGlobalInvestigating) {
+                toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
+                return;
+              }
+              setSelectedNonGeointSearch(null);
+              setNonGeointDialogOpen(true);
+            }}
+            onOpenFullQueryHistory={() => setNonGeointHistoryOpen(true)}
+            isInvestigating={isGlobalInvestigating}
+            // Face Recognition
+            onOpenFaceRecognition={() => setFrDialogOpen(true)}
+            onOpenFaceRecognitionHistory={() => setFrHistoryOpen(true)}
+            isFrProcessing={isFrProcessing}
+            // Simple Query
+            onOpenSimpleQuery={() => setSimpleQueryOpen(true)}
+            // User Management
+            isAdmin={isAdmin}
+            onOpenUserManagement={() => setUserManagementOpen(true)}
+          />
 
           {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
             <div className="h-full flex items-center justify-center">
