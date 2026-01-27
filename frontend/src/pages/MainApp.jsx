@@ -41,10 +41,10 @@ import {
 } from '@/components/main';
 
 // NON GEOINT Search
-import { NonGeointButton, NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main/NonGeointSearch';
+import { NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main/NonGeointSearch';
 
 // Face Recognition
-import { FaceRecognitionButton, FaceRecognitionDialog, FaceRecognitionHistoryDialog } from '@/components/main/FaceRecognition';
+import { FaceRecognitionDialog, FaceRecognitionHistoryDialog } from '@/components/main/FaceRecognition';
 
 const MainApp = () => {
   const { username, logout, isAdmin } = useAuth();
