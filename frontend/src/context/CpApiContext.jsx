@@ -66,9 +66,10 @@ export const CpApiProvider = ({ children }) => {
     fetchStatus();
   }, [fetchStatus]);
 
-  // Poll every 30 seconds
+  // Poll every 5 MINUTES instead of 30 seconds (to save CP API quota)
+  // Status is cached on backend and updated during real queries
   useEffect(() => {
-    const interval = setInterval(fetchStatus, 30000);
+    const interval = setInterval(fetchStatus, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, [fetchStatus]);
 
@@ -76,6 +77,46 @@ export const CpApiProvider = ({ children }) => {
     setCpApiStatus(prev => ({ ...prev, loading: true }));
     fetchStatus();
   }, [fetchStatus]);
+  
+  // Manual refresh - makes a REAL API call (uses quota!)
+  const manualRefresh = useCallback(async () => {
+    setCpApiStatus(prev => ({ ...prev, loading: true }));
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/api/cp-api/refresh-status`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCpApiStatus({
+          connected: data.connected,
+          quotaExceeded: data.quota_exceeded || false,
+          quotaRemaining: data.quota_remaining,
+          quotaInitial: data.quota_initial,
+          quotaUsed: data.quota_used,
+          lastUpdated: data.last_updated ? new Date(data.last_updated) : null,
+          useTelegram: data.use_telegram || false,
+          statusMessage: data.status_message,
+          loading: false,
+          error: null
+        });
+        toast.success('Status CP API diperbarui (menggunakan 1 quota)');
+      } else {
+        toast.error('Gagal refresh status');
+        setCpApiStatus(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error('Error refreshing CP API status:', error);
+      toast.error('Gagal refresh status');
+      setCpApiStatus(prev => ({ ...prev, loading: false }));
+    }
+  }, []);
 
   // Update quota after successful request
   const decrementQuota = useCallback(() => {
