@@ -2025,8 +2025,21 @@ export const NonGeointSearchDialog = ({
     if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
-    // PRIORITY 1: If investigation exists (from history), show investigation results
-    if (investigation) {
+    // SPECIAL CASE: For 'waiting_selection' status, ALWAYS show photo selection
+    // This is critical for reopening from history where user hasn't selected yet
+    if (searchResults.status === 'waiting_selection') {
+      if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+        return 'select_person';
+      }
+      if (personsFound.length >= 1) {
+        return 'select_person';
+      }
+      // If no photos yet for waiting_selection, show searching
+      return 'searching';
+    }
+    
+    // PRIORITY 1: If investigation exists AND is completed (from history), show investigation results
+    if (investigation && investigation.status === 'completed') {
       return 'investigation';
     }
     
