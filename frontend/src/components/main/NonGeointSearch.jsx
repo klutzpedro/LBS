@@ -81,7 +81,7 @@ export const NonGeointButton = ({ onOpenSearch, onOpenHistory, isInvestigating =
         ) : (
           <>
             <Search className="w-4 h-4 mr-2" />
-            Query Nama
+            FULL QUERY
           </>
         )}
       </Button>
@@ -2128,7 +2128,7 @@ export const NonGeointSearchDialog = ({
                 style={{ color: 'var(--foreground-primary)' }}
               >
                 <Search className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
-                Query Nama
+                FULL QUERY
                 {isInvestigating && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white animate-pulse">
                     PROCESSING
