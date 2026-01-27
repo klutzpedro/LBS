@@ -19,27 +19,6 @@
         
         <title>Waskita LBS | Location Based System</title>
         
-        <!-- Prevent page from being embedded in iframes (anti-clickjacking) -->
-        <style>
-            /* Hide content if loaded in iframe (anti-clickjacking backup) */
-            html { display: none; }
-        </style>
-        <script>
-            // Anti-clickjacking: only show content if not in iframe
-            if (self === top) {
-                document.documentElement.style.display = 'block';
-            } else {
-                // If in iframe (except for development), redirect to top
-                if (!window.location.hostname.includes('localhost') && 
-                    !window.location.hostname.includes('127.0.0.1') &&
-                    !window.location.hostname.includes('emergent')) {
-                    top.location = self.location;
-                } else {
-                    document.documentElement.style.display = 'block';
-                }
-            }
-        </script>
-        
         <script>
             // Only load visual edit scripts when inside an iframe (development)
             if (window.self !== window.top) {
