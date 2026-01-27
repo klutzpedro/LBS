@@ -1246,10 +1246,20 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
-    // SKIP person selection setup if investigation already exists (loaded from history)
-    if (investigation) {
-      console.log('[NonGeoint] Investigation exists from history, skipping person selection setup');
+    // SKIP person selection setup ONLY if investigation is COMPLETED (loaded from history with results)
+    // For 'waiting_selection' status, we MUST show photo selection even if investigation object exists
+    if (investigation && investigation.status === 'completed' && searchResults?.status !== 'waiting_selection') {
+      console.log('[NonGeoint] Investigation completed from history, skipping person selection setup');
       return;
+    }
+    
+    // If status is 'waiting_selection', ALWAYS show photo selection
+    if (searchResults?.status === 'waiting_selection') {
+      console.log('[NonGeoint] Status is waiting_selection, showing photo selection');
+      // Reset investigation state if any (user hasn't selected yet)
+      if (!investigation?.results || Object.keys(investigation.results || {}).length === 0) {
+        setInvestigation(null);
+      }
     }
     
     // Update pagination state
