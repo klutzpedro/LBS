@@ -7444,19 +7444,32 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             sent_msg_id = sent_message.id if sent_message else last_msg_id_before
             logger.info(f"[SIMPLE QUERY] Sent message ID: {sent_msg_id}")
             
-            # Fetch messages that came AFTER our sent message
-            messages = await telegram_client.get_messages(bot_entity, limit=10, min_id=sent_msg_id)
-            
+            # ============================================
+            # RETRY MECHANISM: Try multiple times to get the correct response
+            # ============================================
             raw_response = None
-            for msg in messages:
-                if msg.out:
-                    continue
-                if msg.text and len(msg.text) > 20:
-                    # Skip button prompts and get actual data
-                    if not any(skip in msg.text.lower() for skip in ['pilih', 'choose', 'select', 'silakan']):
-                        raw_response = msg.text
-                        logger.info(f"[SIMPLE QUERY] Found response (msg_id={msg.id}): {raw_response[:50]}...")
-                        break
+            max_retries = 3
+            
+            for retry in range(max_retries):
+                # Fetch messages that came AFTER our sent message
+                messages = await telegram_client.get_messages(bot_entity, limit=15, min_id=sent_msg_id)
+                
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.text and len(msg.text) > 20:
+                        # Skip button prompts and get actual data
+                        if not any(skip in msg.text.lower() for skip in ['pilih', 'choose', 'select', 'silakan']):
+                            raw_response = msg.text
+                            logger.info(f"[SIMPLE QUERY] Found response (msg_id={msg.id}, retry={retry}): {raw_response[:50]}...")
+                            break
+                
+                if raw_response:
+                    break
+                    
+                # Wait a bit more and retry
+                logger.info(f"[SIMPLE QUERY] No response yet, retry {retry + 1}/{max_retries}...")
+                await asyncio.sleep(3)
             
             if raw_response:
                 # Verify response is related to our query (STRICT check)
