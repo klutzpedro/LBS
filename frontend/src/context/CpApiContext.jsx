@@ -160,6 +160,7 @@ export const CpApiProvider = ({ children }) => {
     <CpApiContext.Provider value={{
       ...cpApiStatus,
       refreshStatus,
+      manualRefresh,  // New: manual refresh (uses quota)
       decrementQuota,
       toggleTelegram
     }}>
