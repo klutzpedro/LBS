@@ -369,9 +369,19 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
             {result && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
-                    Hasil Query: {currentType?.label}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
+                      Hasil Query: {currentType?.label}
+                    </h3>
+                    {result.cached && (
+                      <span 
+                        className="px-2 py-0.5 rounded text-xs font-medium"
+                        style={{ backgroundColor: 'rgba(0, 255, 136, 0.2)', color: '#00ff88' }}
+                      >
+                        DARI CACHE
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -398,6 +408,11 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
                 >
                   <span style={{ color: 'var(--foreground-muted)' }}>Query: </span>
                   <span style={{ color: 'var(--foreground-primary)' }}>{searchValue.toUpperCase()}</span>
+                  {result.cached && result.cached_at && (
+                    <span style={{ color: 'var(--foreground-muted)', marginLeft: '10px' }}>
+                      (disimpan: {new Date(result.cached_at).toLocaleDateString('id-ID')})
+                    </span>
+                  )}
                 </div>
 
                 {/* Raw Response Display */}
