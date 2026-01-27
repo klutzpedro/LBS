@@ -96,6 +96,9 @@ const MainApp = () => {
   // Simple Query
   const [simpleQueryOpen, setSimpleQueryOpen] = useState(false);
   
+  // Tools Panel
+  const [toolsPanelOpen, setToolsPanelOpen] = useState(true); // Open by default
+  
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
