@@ -35,7 +35,9 @@ import {
   NikInfoDialog,
   FamilyTreeDialog,
   UserManagementButton,
-  UserManagementDialog
+  UserManagementDialog,
+  SimpleQueryButton,
+  SimpleQueryDialog
 } from '@/components/main';
 
 // NON GEOINT Search
