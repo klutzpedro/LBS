@@ -654,8 +654,171 @@ async def query_position(phone_number: str) -> dict:
         
         return result
 
-app = FastAPI()
+app = FastAPI(
+    title="WASKITA LBS API",
+    docs_url=None,  # Disable Swagger docs in production
+    redoc_url=None,  # Disable ReDoc in production
+    openapi_url=None  # Disable OpenAPI schema
+)
 api_router = APIRouter(prefix="/api")
+
+# ============================================
+# SECURITY MIDDLEWARE
+# ============================================
+
+class SecurityMiddleware(BaseHTTPMiddleware):
+    """
+    Comprehensive security middleware for:
+    - Rate limiting
+    - Blocked user agents detection
+    - Security headers injection
+    - Request logging
+    - IP blocking
+    """
+    
+    async def dispatch(self, request: Request, call_next):
+        client_ip = self.get_client_ip(request)
+        user_agent = request.headers.get('user-agent', '').lower()
+        path = request.url.path
+        
+        # Skip security for health checks
+        if path in ['/health', '/api/health']:
+            return await call_next(request)
+        
+        # 1. Check if IP is blocked
+        if client_ip in blocked_ips:
+            logger.warning(f"[SECURITY] Blocked IP attempted access: {client_ip}")
+            return Response(
+                content='{"error": "Access denied"}',
+                status_code=403,
+                media_type='application/json'
+            )
+        
+        # 2. Check for malicious user agents
+        for blocked_agent in BLOCKED_USER_AGENTS:
+            if blocked_agent in user_agent:
+                logger.warning(f"[SECURITY] Blocked user agent: {user_agent} from {client_ip}")
+                await self.log_security_event(client_ip, 'blocked_agent', user_agent)
+                return Response(
+                    content='{"error": "Access denied"}',
+                    status_code=403,
+                    media_type='application/json'
+                )
+        
+        # 3. Rate limiting
+        if not await self.check_rate_limit(client_ip, path):
+            logger.warning(f"[SECURITY] Rate limit exceeded for {client_ip}")
+            await self.log_security_event(client_ip, 'rate_limit', path)
+            return Response(
+                content='{"error": "Too many requests. Please try again later."}',
+                status_code=429,
+                media_type='application/json',
+                headers={'Retry-After': str(RATE_LIMIT_WINDOW)}
+            )
+        
+        # 4. Process request
+        response = await call_next(request)
+        
+        # 5. Add security headers
+        for header, value in SECURITY_HEADERS.items():
+            response.headers[header] = value
+        
+        # Add custom headers to prevent caching of sensitive data
+        if '/api/' in path:
+            response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+        
+        return response
+    
+    def get_client_ip(self, request: Request) -> str:
+        """Extract real client IP from headers"""
+        forwarded = request.headers.get('x-forwarded-for')
+        if forwarded:
+            return forwarded.split(',')[0].strip()
+        real_ip = request.headers.get('x-real-ip')
+        if real_ip:
+            return real_ip
+        return request.client.host if request.client else 'unknown'
+    
+    async def check_rate_limit(self, client_ip: str, path: str) -> bool:
+        """Check if request is within rate limit"""
+        current_time = time.time()
+        window_start = current_time - RATE_LIMIT_WINDOW
+        
+        # Clean old entries
+        rate_limit_storage[client_ip] = [
+            t for t in rate_limit_storage[client_ip] 
+            if t > window_start
+        ]
+        
+        # Check limit
+        if len(rate_limit_storage[client_ip]) >= RATE_LIMIT_REQUESTS:
+            return False
+        
+        # Add current request
+        rate_limit_storage[client_ip].append(current_time)
+        return True
+    
+    async def log_security_event(self, ip: str, event_type: str, details: str):
+        """Log security events to database"""
+        try:
+            await db.security_logs.insert_one({
+                "ip": ip,
+                "event_type": event_type,
+                "details": details,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            logger.error(f"[SECURITY] Failed to log event: {e}")
+
+# Add security middleware
+app.add_middleware(SecurityMiddleware)
+
+# ============================================
+# BRUTE FORCE PROTECTION
+# ============================================
+
+async def check_login_attempts(ip: str, username: str) -> bool:
+    """Check if login should be allowed based on failed attempts"""
+    current_time = time.time()
+    window_start = current_time - 900  # 15 minute window
+    
+    key = f"{ip}:{username}"
+    
+    # Clean old entries
+    failed_login_attempts[key] = [
+        t for t in failed_login_attempts[key]
+        if t > window_start
+    ]
+    
+    # Block after 5 failed attempts in 15 minutes
+    if len(failed_login_attempts[key]) >= 5:
+        return False
+    
+    return True
+
+async def record_failed_login(ip: str, username: str):
+    """Record a failed login attempt"""
+    key = f"{ip}:{username}"
+    failed_login_attempts[key].append(time.time())
+    
+    # Log to database
+    await db.security_logs.insert_one({
+        "ip": ip,
+        "event_type": "failed_login",
+        "details": f"Failed login for user: {username}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Block IP after 20 total failed attempts
+    total_failures = sum(len(v) for k, v in failed_login_attempts.items() if k.startswith(ip))
+    if total_failures >= 20:
+        blocked_ips.add(ip)
+        logger.warning(f"[SECURITY] IP blocked due to excessive failed logins: {ip}")
+
+async def clear_failed_logins(ip: str, username: str):
+    """Clear failed login attempts after successful login"""
+    key = f"{ip}:{username}"
+    failed_login_attempts[key] = []
 
 # Models
 class LoginRequest(BaseModel):
