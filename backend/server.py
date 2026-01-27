@@ -6890,6 +6890,9 @@ async def telegram_keepalive_task():
 # Simple Query Endpoint
 # ============================================
 
+# Global lock to prevent race conditions between concurrent queries
+simple_query_lock = asyncio.Lock()
+
 class SimpleQueryRequest(BaseModel):
     query_type: str
     query_value: str
@@ -6898,6 +6901,7 @@ class SimpleQueryRequest(BaseModel):
 async def simple_query(request: SimpleQueryRequest, username: str = Depends(verify_token)):
     """
     Simple query - sends query to Telegram bot and returns raw response.
+    Uses a global lock to prevent race conditions between users.
     
     Query types:
     - capil_name: CAPIL search by name
@@ -6914,39 +6918,171 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     query_type = request.query_type
     query_value = request.query_value.strip().upper()
     
-    logger.info(f"[SIMPLE QUERY] Type: {query_type}, Value: {query_value}")
+    logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
     
     if not telegram_client or not telegram_client.is_connected():
         raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
     
-    try:
-        bot_entity = await telegram_client.get_entity(BOT_USERNAME)
+    # Acquire lock to prevent race conditions
+    # Only one query can be processed at a time
+    async with simple_query_lock:
+        logger.info(f"[SIMPLE QUERY] Lock acquired for user: {username}")
         
-        # Map query type to bot command
-        if query_type == 'capil_name':
-            # Send name directly for CAPIL search
-            await telegram_client.send_message(bot_entity, query_value)
-            await asyncio.sleep(3)
+        try:
+            bot_entity = await telegram_client.get_entity(BOT_USERNAME)
             
-            # Wait for buttons and click CAPIL
-            messages = await telegram_client.get_messages(bot_entity, limit=10)
+            # Get last message ID before sending our query
+            last_messages = await telegram_client.get_messages(bot_entity, limit=1)
+            last_msg_id_before = last_messages[0].id if last_messages else 0
+            logger.info(f"[SIMPLE QUERY] Last message ID before query: {last_msg_id_before}")
+            
+            # Send query based on type
+            sent_message = None
+            
+            if query_type == 'capil_name':
+                # Send name directly for CAPIL search
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                # Wait for buttons and click CAPIL
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'CAPIL' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked CAPIL button")
+                                    break
+                        break
+                
+                await asyncio.sleep(5)
+                
+            elif query_type == 'capil_nik':
+                sent_message = await telegram_client.send_message(bot_entity, f"NIK {query_value}")
+                await asyncio.sleep(5)
+                
+            elif query_type == 'nkk':
+                sent_message = await telegram_client.send_message(bot_entity, f"NKK {query_value}")
+                await asyncio.sleep(5)
+                
+            elif query_type == 'reghp':
+                sent_message = await telegram_client.send_message(bot_entity, f"REGHP {query_value}")
+                await asyncio.sleep(5)
+                
+            elif query_type == 'passport_wna':
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'PASS WNA' in (button.text or '').upper() or 'WNA' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked PASS WNA button")
+                                    break
+                        break
+                
+                await asyncio.sleep(5)
+                
+            elif query_type == 'passport_wni':
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'PASS WNI' in (button.text or '').upper() or 'WNI' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked PASS WNI button")
+                                    break
+                        break
+                
+                await asyncio.sleep(5)
+                
+            elif query_type == 'passport_number':
+                sent_message = await telegram_client.send_message(bot_entity, f"PASS {query_value}")
+                await asyncio.sleep(5)
+                
+            elif query_type == 'plat_mobil':
+                sent_message = await telegram_client.send_message(bot_entity, f"PLAT {query_value}")
+                await asyncio.sleep(5)
+                
+            else:
+                raise HTTPException(status_code=400, detail=f"Unknown query type: {query_type}")
+            
+            # Get responses ONLY after our sent message
+            sent_msg_id = sent_message.id if sent_message else last_msg_id_before
+            logger.info(f"[SIMPLE QUERY] Sent message ID: {sent_msg_id}")
+            
+            # Fetch messages that came AFTER our sent message
+            messages = await telegram_client.get_messages(bot_entity, limit=10, min_id=sent_msg_id)
+            
+            raw_response = None
             for msg in messages:
                 if msg.out:
                     continue
-                if msg.buttons:
-                    for row in msg.buttons:
-                        for button in row:
-                            if 'CAPIL' in (button.text or '').upper():
-                                await button.click()
-                                break
-                    break
+                if msg.text and len(msg.text) > 20:
+                    # Skip button prompts and get actual data
+                    if not any(skip in msg.text.lower() for skip in ['pilih', 'choose', 'select', 'silakan']):
+                        raw_response = msg.text
+                        logger.info(f"[SIMPLE QUERY] Found response (msg_id={msg.id}): {raw_response[:50]}...")
+                        break
             
-            await asyncio.sleep(5)
-            
-        elif query_type == 'capil_nik':
-            # Send NIK with prefix
-            await telegram_client.send_message(bot_entity, f"NIK {query_value}")
-            await asyncio.sleep(5)
+            if raw_response:
+                # Verify response is related to our query (basic check)
+                query_words = query_value.split()
+                response_upper = raw_response.upper()
+                
+                # Check if at least one word from query appears in response
+                is_related = False
+                for word in query_words:
+                    if len(word) >= 3 and word in response_upper:
+                        is_related = True
+                        break
+                
+                # For NIK/NKK queries, check if the number appears
+                if query_type in ['capil_nik', 'nkk', 'reghp']:
+                    if query_value in response_upper:
+                        is_related = True
+                
+                if not is_related:
+                    logger.warning(f"[SIMPLE QUERY] Response may not match query. Query: {query_value}, Response preview: {raw_response[:100]}")
+                
+                logger.info(f"[SIMPLE QUERY] Success for user {username}")
+                return {
+                    "success": True,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "raw_response": raw_response,
+                    "verified": is_related
+                }
+            else:
+                logger.warning(f"[SIMPLE QUERY] No response from bot for user {username}")
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "Tidak ada respons dari bot. Coba lagi."
+                }
+                
+        except Exception as e:
+            logger.error(f"[SIMPLE QUERY] Error for user {username}: {e}")
+            import traceback
+            logger.error(f"[SIMPLE QUERY] Traceback: {traceback.format_exc()}")
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            logger.info(f"[SIMPLE QUERY] Lock released for user: {username}")
             
         elif query_type == 'nkk':
             # Send NKK command
