@@ -1901,6 +1901,12 @@ const MainApp = () => {
           onOpenChange={setUserManagementOpen}
         />
       )}
+
+      {/* Simple Query Dialog */}
+      <SimpleQueryDialog
+        open={simpleQueryOpen}
+        onOpenChange={setSimpleQueryOpen}
+      />
     </div>
   );
 };
