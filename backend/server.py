@@ -982,28 +982,53 @@ ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "Paparoni290483#"
 
 @api_router.post("/auth/login", response_model=LoginResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, req: Request):
     """Login endpoint - supports admin and registered users"""
+    
+    client_ip = req.headers.get('x-forwarded-for', req.headers.get('x-real-ip', req.client.host if req.client else 'unknown'))
+    if ',' in client_ip:
+        client_ip = client_ip.split(',')[0].strip()
+    
+    # Check brute force protection
+    if not await check_login_attempts(client_ip, request.username):
+        logger.warning(f"[SECURITY] Login blocked due to too many attempts: {request.username} from {client_ip}")
+        raise HTTPException(
+            status_code=429, 
+            detail="Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit."
+        )
     
     # Check if admin login
     if request.username == ADMIN_USERNAME:
         if request.password != ADMIN_PASSWORD:
+            await record_failed_login(client_ip, request.username)
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
+        await clear_failed_logins(client_ip, request.username)
         token = jwt.encode(
-            {"username": request.username, "is_admin": True},
+            {"username": request.username, "is_admin": True, "iat": datetime.now(timezone.utc)},
             JWT_SECRET,
             algorithm=JWT_ALGORITHM
         )
+        
+        # Log successful login
+        await db.security_logs.insert_one({
+            "ip": client_ip,
+            "event_type": "login_success",
+            "details": f"Admin login: {request.username}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
         return LoginResponse(token=token, username=request.username, is_admin=True)
     
     # Check if registered user
     user = await db.users.find_one({"username": request.username})
     if not user:
+        await record_failed_login(client_ip, request.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Verify password
     if not pwd_context.verify(request.password, user.get("password_hash", "")):
+        await record_failed_login(client_ip, request.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     # Check if user is approved
@@ -1015,11 +1040,21 @@ async def login(request: LoginRequest):
         else:
             raise HTTPException(status_code=403, detail="Akun tidak aktif")
     
+    await clear_failed_logins(client_ip, request.username)
     token = jwt.encode(
-        {"username": request.username, "is_admin": False},
+        {"username": request.username, "is_admin": False, "iat": datetime.now(timezone.utc)},
         JWT_SECRET,
         algorithm=JWT_ALGORITHM
     )
+    
+    # Log successful login
+    await db.security_logs.insert_one({
+        "ip": client_ip,
+        "event_type": "login_success",
+        "details": f"User login: {request.username}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
     return LoginResponse(token=token, username=request.username, is_admin=False)
 
 @api_router.post("/auth/register")
