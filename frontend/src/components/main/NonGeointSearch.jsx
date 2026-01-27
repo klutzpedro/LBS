@@ -1648,7 +1648,7 @@ export const NonGeointSearchDialog = ({
     // Title
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('LAPORAN QUERY NAMA', 105, yPos, { align: 'center' });
+    pdf.text('LAPORAN FULL QUERY', 105, yPos, { align: 'center' });
     yPos += 10;
 
     // Search Info
