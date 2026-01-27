@@ -306,7 +306,7 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
                           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                           disabled={isLoading}
                           className="flex-1"
-                          style={{ color: '#000' }}
+                          style={{ color: '#fff', backgroundColor: 'var(--background-tertiary)' }}
                         />
                         <Button
                           onClick={handleSearch}
