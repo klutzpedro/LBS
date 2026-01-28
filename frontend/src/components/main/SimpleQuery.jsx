@@ -280,10 +280,10 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
       <DraggableDialogContent 
         className="flex flex-col p-4"
         style={{ 
-          width: isMinimized ? '300px' : '600px',
+          width: isMinimized ? '300px' : '650px',
           maxWidth: '95vw',
-          height: isMinimized ? 'auto' : '75vh',
-          maxHeight: '85vh',
+          height: isMinimized ? 'auto' : '85vh',
+          maxHeight: '90vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
