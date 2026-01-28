@@ -1904,6 +1904,11 @@ const MainApp = () => {
           // Reset selected search when dialog closes so next open will fetch fresh data
           if (!open) {
             setSelectedNonGeointSearch(null);
+            // Restore Tools Panel if it was open before
+            if (toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
         onNikPendalaman={handleNonGeointNikPendalaman}
@@ -1915,7 +1920,13 @@ const MainApp = () => {
       {/* NON GEOINT History Dialog */}
       <NonGeointHistoryDialog
         open={nonGeointHistoryOpen}
-        onOpenChange={setNonGeointHistoryOpen}
+        onOpenChange={(open) => {
+          setNonGeointHistoryOpen(open);
+          if (!open && toolsPanelWasOpen) {
+            setToolsPanelOpen(true);
+            setToolsPanelWasOpen(false);
+          }
+        }}
         onSelectSearch={(search) => {
           // Check if investigation is running
           if (isGlobalInvestigating) {
@@ -1930,33 +1941,63 @@ const MainApp = () => {
       {/* Face Recognition Dialog */}
       <FaceRecognitionDialog
         open={frDialogOpen}
-        onOpenChange={setFrDialogOpen}
+        onOpenChange={(open) => {
+          setFrDialogOpen(open);
+          if (!open && toolsPanelWasOpen) {
+            setToolsPanelOpen(true);
+            setToolsPanelWasOpen(false);
+          }
+        }}
       />
 
       {/* Face Recognition History Dialog */}
       <FaceRecognitionHistoryDialog
         open={frHistoryOpen}
-        onOpenChange={setFrHistoryOpen}
+        onOpenChange={(open) => {
+          setFrHistoryOpen(open);
+          if (!open && toolsPanelWasOpen) {
+            setToolsPanelOpen(true);
+            setToolsPanelWasOpen(false);
+          }
+        }}
       />
 
       {/* User Management Dialog (Admin Only) */}
       {isAdmin && (
         <UserManagementDialog
           open={userManagementOpen}
-          onOpenChange={setUserManagementOpen}
+          onOpenChange={(open) => {
+            setUserManagementOpen(open);
+            if (!open && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
+          }}
         />
       )}
 
       {/* Simple Query Dialog */}
       <SimpleQueryDialog
         open={simpleQueryOpen}
-        onOpenChange={setSimpleQueryOpen}
+        onOpenChange={(open) => {
+          setSimpleQueryOpen(open);
+          if (!open && toolsPanelWasOpen) {
+            setToolsPanelOpen(true);
+            setToolsPanelWasOpen(false);
+          }
+        }}
       />
       
       {/* Simple Query History Dialog */}
       <SimpleQueryHistoryDialog
         open={simpleQueryHistoryOpen}
-        onOpenChange={setSimpleQueryHistoryOpen}
+        onOpenChange={(open) => {
+          setSimpleQueryHistoryOpen(open);
+          if (!open && toolsPanelWasOpen) {
+            setToolsPanelOpen(true);
+            setToolsPanelWasOpen(false);
+          }
+        }}
         onSelectHistory={(item) => {
           // When user selects from history, open SimpleQuery and show the result
           setSimpleQueryHistoryOpen(false);
