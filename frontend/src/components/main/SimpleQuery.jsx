@@ -197,6 +197,7 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
+  const [resettingCache, setResettingCache] = useState(false);
 
   // Reset state when dialog opens
   useEffect(() => {
