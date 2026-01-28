@@ -2037,6 +2037,51 @@ const MainApp = () => {
           }, 200);
         }}
       />
+
+      {/* Session Invalidated Alert - shown when user is logged out from another device */}
+      <AlertDialog open={sessionCheckFailed} onOpenChange={() => {}}>
+        <AlertDialogContent 
+          style={{ 
+            backgroundColor: 'var(--background-secondary)', 
+            borderColor: 'var(--borders-default)',
+            color: 'var(--foreground-primary)'
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2" style={{ color: '#ef4444' }}>
+              <AlertTriangle className="w-6 h-6" />
+              Sesi Berakhir
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3" style={{ color: 'var(--foreground-secondary)' }}>
+              <p>
+                Akun Anda telah <strong>login di device lain</strong>.
+              </p>
+              <p>
+                Untuk alasan keamanan, hanya satu device yang dapat menggunakan akun ini dalam waktu bersamaan.
+              </p>
+              <p className="text-sm italic" style={{ color: 'var(--foreground-muted)' }}>
+                Anda akan diarahkan ke halaman login.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction 
+              onClick={() => {
+                acknowledgeSessionInvalid();
+                navigate('/login');
+              }}
+              className="flex items-center gap-2"
+              style={{ 
+                backgroundColor: 'var(--accent-primary)', 
+                color: 'var(--background-primary)' 
+              }}
+            >
+              <LogOut className="w-4 h-4" />
+              OK, Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
