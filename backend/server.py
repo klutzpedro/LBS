@@ -8050,13 +8050,26 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 "Content-Type": "application/json"
             }
             
-            # Force IPv4 connection
+            # Force IPv4 connection by binding to 0.0.0.0
             import socket
+            
+            # Resolve hostname to IPv4 only
+            hostname = "gate-amg.blackopium.xyz"
+            try:
+                ipv4_addr = socket.gethostbyname(hostname)
+                logger.info(f"[BREACH] Resolved {hostname} to IPv4: {ipv4_addr}")
+                # Replace hostname with IPv4 in endpoint
+                endpoint_ipv4 = endpoint.replace(hostname, ipv4_addr)
+                headers["Host"] = hostname  # Keep original host header
+            except Exception as dns_err:
+                logger.warning(f"[BREACH] DNS resolution failed, using original endpoint: {dns_err}")
+                endpoint_ipv4 = endpoint
+            
             transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
             
-            async with httpx.AsyncClient(timeout=60.0, transport=transport) as client:
+            async with httpx.AsyncClient(timeout=60.0, transport=transport, verify=False) as client:
                 response = await client.get(
-                    endpoint,
+                    endpoint_ipv4,
                     params={"query": query_value},
                     headers=headers
                 )
