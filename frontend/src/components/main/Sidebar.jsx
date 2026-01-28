@@ -202,7 +202,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
               className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
-              Location Based System
+              Netra
             </h1>
           </div>
         </div>
