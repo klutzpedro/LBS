@@ -194,10 +194,10 @@ const TargetPopup = ({
   
   return (
     <Popup>
-      <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '280px', maxWidth: '350px' }}>
+      <div className="p-1.5" style={{ color: 'var(--foreground-primary)', minWidth: '220px', maxWidth: '260px' }}>
         {/* Group indicator */}
         {isGrouped && (
-          <div className="mb-2 px-2 py-1 rounded text-xs font-semibold text-center"
+          <div className="mb-1 px-1.5 py-0.5 rounded text-xs font-semibold text-center"
             style={{ 
               backgroundColor: 'var(--accent-primary)', 
               color: 'var(--background-primary)' 
@@ -206,34 +206,31 @@ const TargetPopup = ({
           </div>
         )}
         
-        {/* Header: Name & Phone */}
-        <p className="font-bold mb-1 text-base" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
-          {target.data.name}
-        </p>
-        <p className="text-sm mb-2 font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
+        {/* Header: Phone Number */}
+        <p className="text-xs font-mono font-semibold mb-1" style={{ color: 'var(--accent-primary)' }}>
           {target.phone_number}
         </p>
         
-        {/* Device Info Section */}
+        {/* Device Info Section - Compact */}
         {(target.data.phone_model || target.data.imei || target.data.imsi) && (
-          <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
-              DEVICE INFO
+          <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+            <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
+              DEVICE
             </p>
             {target.data.phone_model && (
-              <div className="text-xs flex justify-between">
+              <div className="text-[10px] flex justify-between leading-tight">
                 <span style={{ color: 'var(--foreground-muted)' }}>Phone:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.phone_model}</span>
+                <span className="font-mono truncate ml-1" style={{ color: 'var(--foreground-primary)', maxWidth: '140px' }}>{target.data.phone_model}</span>
               </div>
             )}
             {target.data.imei && (
-              <div className="text-xs flex justify-between">
+              <div className="text-[10px] flex justify-between leading-tight">
                 <span style={{ color: 'var(--foreground-muted)' }}>IMEI:</span>
                 <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imei}</span>
               </div>
             )}
             {target.data.imsi && (
-              <div className="text-xs flex justify-between">
+              <div className="text-[10px] flex justify-between leading-tight">
                 <span style={{ color: 'var(--foreground-muted)' }}>IMSI:</span>
                 <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imsi}</span>
               </div>
@@ -241,111 +238,85 @@ const TargetPopup = ({
           </div>
         )}
         
-        {/* Network Info Section */}
+        {/* Network Info Section - Compact */}
         {(target.data.operator || target.data.network || target.data.mcc || target.data.lac || target.data.cgi || target.data.ci) && (
-          <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
-              NETWORK INFO
+          <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+            <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
+              NETWORK
             </p>
-            {target.data.operator && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>Operator:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.operator}</span>
-              </div>
-            )}
-            {target.data.network && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>Network:</span>
-                <span className="font-mono" style={{ color: 'var(--accent-secondary)' }}>{target.data.network}</span>
-              </div>
-            )}
-            {target.data.mcc && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>MCC:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.mcc}</span>
-              </div>
-            )}
-            {target.data.lac && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>LAC:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.lac}</span>
-              </div>
-            )}
-            {target.data.ci && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>CI:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.ci}</span>
-              </div>
-            )}
-            {target.data.cgi && (
-              <div className="text-xs flex justify-between">
-                <span style={{ color: 'var(--foreground-muted)' }}>CGI:</span>
-                <span className="font-mono text-xs" style={{ color: 'var(--foreground-primary)' }}>{target.data.cgi}</span>
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-0">
+              {target.data.network && (
+                <div className="text-[10px] flex justify-between leading-tight col-span-2">
+                  <span style={{ color: 'var(--foreground-muted)' }}>Type:</span>
+                  <span className="font-mono" style={{ color: 'var(--accent-secondary)' }}>{target.data.network}</span>
+                </div>
+              )}
+              {target.data.mcc && (
+                <div className="text-[10px] flex justify-between leading-tight">
+                  <span style={{ color: 'var(--foreground-muted)' }}>MCC:</span>
+                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.mcc}</span>
+                </div>
+              )}
+              {target.data.lac && (
+                <div className="text-[10px] flex justify-between leading-tight">
+                  <span style={{ color: 'var(--foreground-muted)' }}>LAC:</span>
+                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.lac}</span>
+                </div>
+              )}
+              {target.data.ci && (
+                <div className="text-[10px] flex justify-between leading-tight">
+                  <span style={{ color: 'var(--foreground-muted)' }}>CI:</span>
+                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.ci}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
         
-        {/* Location Info Section */}
-        <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
+        {/* Location Info Section - Compact */}
+        <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+          <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
             LOCATION
           </p>
-          <div className="text-xs flex justify-between">
+          <div className="text-[10px] flex justify-between leading-tight">
             <span style={{ color: 'var(--foreground-muted)' }}>Lat:</span>
             <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
               {target.data.latitude?.toFixed(6)}
             </span>
           </div>
-          <div className="text-xs flex justify-between">
+          <div className="text-[10px] flex justify-between leading-tight">
             <span style={{ color: 'var(--foreground-muted)' }}>Long:</span>
             <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
               {target.data.longitude?.toFixed(6)}
             </span>
           </div>
           {target.data.address && (
-            <div className="text-xs mt-1">
-              <span style={{ color: 'var(--foreground-muted)' }}>Address:</span>
-              <p className="mt-0.5" style={{ color: 'var(--foreground-primary)' }}>{target.data.address}</p>
-            </div>
+            <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'var(--foreground-primary)' }}>
+              {target.data.address}
+            </p>
           )}
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex gap-2 mb-2">
-          {target.data.maps_link && (
-            <a
-              href={target.data.maps_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-1.5 px-2 rounded text-xs font-semibold text-center"
-              style={{ 
-                backgroundColor: 'var(--accent-primary)', 
-                color: 'var(--background-primary)',
-                textDecoration: 'none'
-              }}
-            >
-              🗺️ Google Maps
-            </a>
-          )}
+        {/* Action Buttons - Compact */}
+        <div className="flex gap-1 mb-1">
           <button
             onClick={handleShare}
-            className="flex-1 py-1.5 px-2 rounded text-xs font-semibold"
+            className="flex-1 py-1 px-1.5 rounded text-[10px] font-semibold"
             style={{ 
               backgroundColor: copied ? '#22c55e' : 'var(--accent-secondary)', 
               color: 'var(--background-primary)'
             }}
           >
-            {copied ? '✓ Link Copied!' : '📤 Share'}
+            {copied ? '✓ Copied' : '📤 Share'}
           </button>
         </div>
         
-        {/* Pendalaman / Info Button */}
-        <div className="pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
+        {/* Pendalaman / Info Button - Compact */}
+        <div className="pt-1 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
           {target.reghp_status === 'completed' ? (
             <button
               onClick={() => onShowReghpInfo(target)}
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase"
               style={{
                 backgroundColor: 'var(--accent-secondary)',
                 color: 'var(--background-primary)'
@@ -356,18 +327,18 @@ const TargetPopup = ({
           ) : target.reghp_status === 'not_found' ? (
             <button
               onClick={() => onShowReghpInfo(target)}
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase"
               style={{
                 backgroundColor: 'var(--status-warning)',
                 color: 'var(--background-primary)'
               }}
             >
-              ⚠️ Data Not Found
+              ⚠️ Not Found
             </button>
           ) : target.reghp_status === 'processing' || loadingPendalaman === target.id ? (
-            <div className="text-center py-2">
-              <p className="text-xs" style={{ color: 'var(--status-processing)' }}>
-                ⏳ Pendalaman sedang diproses...
+            <div className="text-center py-1">
+              <p className="text-[10px]" style={{ color: 'var(--status-processing)' }}>
+                ⏳ Processing...
               </p>
             </div>
           ) : (
@@ -378,13 +349,13 @@ const TargetPopup = ({
               }}
               disabled={loadingPendalaman === target.id}
               data-testid="pendalaman-button"
-              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase disabled:opacity-50"
+              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase disabled:opacity-50"
               style={{
                 backgroundColor: 'var(--status-warning)',
                 color: 'var(--background-primary)'
               }}
             >
-              🔍 Pendalaman (Reghp)
+              🔍 Pendalaman
             </button>
           )}
         </div>
