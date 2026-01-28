@@ -198,7 +198,7 @@ const ToolsPanel = ({
                   color: isInvestigating ? 'var(--foreground-muted)' : 'var(--background-primary)'
                 }}
                 disabled={isInvestigating}
-                onClick={() => { onOpenFullQuery(); onClose(); }}
+                onClick={onOpenFullQuery}
               >
                 <Search className="w-3 h-3 mr-1" />
                 {isInvestigating ? 'Processing...' : 'Cari'}
@@ -206,7 +206,7 @@ const ToolsPanel = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { onOpenFullQueryHistory(); onClose(); }}
+                onClick={onOpenFullQueryHistory}
               >
                 <History className="w-3 h-3 mr-1" />
                 History
@@ -237,7 +237,7 @@ const ToolsPanel = ({
                   color: isFrProcessing ? 'var(--foreground-muted)' : '#000'
                 }}
                 disabled={isFrProcessing}
-                onClick={() => { onOpenFaceRecognition(); onClose(); }}
+                onClick={onOpenFaceRecognition}
               >
                 <ScanFace className="w-3 h-3 mr-1" />
                 {isFrProcessing ? 'Processing...' : 'Scan'}
@@ -245,7 +245,7 @@ const ToolsPanel = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { onOpenFaceRecognitionHistory(); onClose(); }}
+                onClick={onOpenFaceRecognitionHistory}
               >
                 <History className="w-3 h-3 mr-1" />
                 History
@@ -275,7 +275,7 @@ const ToolsPanel = ({
                   backgroundColor: '#10b981',
                   color: '#000'
                 }}
-                onClick={() => { onOpenSimpleQuery(); onClose(); }}
+                onClick={onOpenSimpleQuery}
               >
                 <Search className="w-3 h-3 mr-1" />
                 Query
@@ -283,7 +283,7 @@ const ToolsPanel = ({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => { onOpenSimpleQueryHistory(); onClose(); }}
+                onClick={onOpenSimpleQueryHistory}
               >
                 <History className="w-3 h-3 mr-1" />
                 History
@@ -313,7 +313,7 @@ const ToolsPanel = ({
                   backgroundColor: '#8b5cf6',
                   color: '#fff'
                 }}
-                onClick={() => { onOpenUserManagement(); onClose(); }}
+                onClick={onOpenUserManagement}
               >
                 <Settings className="w-3 h-3 mr-1" />
                 Buka User Management
