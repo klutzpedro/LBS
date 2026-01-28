@@ -130,7 +130,7 @@ const Login = () => {
                 color: 'var(--foreground-primary)'
               }}
             >
-              Location Based System
+              Netra
             </h1>
             <p 
               className="text-sm"
