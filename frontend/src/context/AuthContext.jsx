@@ -30,16 +30,22 @@ export const AuthProvider = ({ children }) => {
     if (!token) return;
     
     try {
+      console.log('[Auth] Checking session validity...');
       const response = await axios.post(`${API}/auth/check-session`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('[Auth] Session check response:', response.data);
+      
       if (!response.data.valid) {
         console.log('[Auth] Session invalidated:', response.data.reason);
         setSessionCheckFailed(true);
+      } else {
+        console.log('[Auth] Session is valid');
       }
     } catch (error) {
-      console.error('[Auth] Session check error:', error);
+      console.error('[Auth] Session check error:', error.response?.status, error.message);
+      // Don't set sessionCheckFailed on network errors
     }
   }, [token]);
 
