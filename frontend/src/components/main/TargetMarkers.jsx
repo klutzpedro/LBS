@@ -160,64 +160,197 @@ const TargetPopup = ({
   isGrouped,
   groupCount,
   selectedIndex
-}) => (
-  <Popup>
-    <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '200px' }}>
-      {/* Group indicator */}
-      {isGrouped && (
-        <div className="mb-2 px-2 py-1 rounded text-xs font-semibold text-center"
-          style={{ 
-            backgroundColor: 'var(--accent-primary)', 
-            color: 'var(--background-primary)' 
-          }}>
-          📍 Target {selectedIndex + 1} dari {groupCount}
+}) => {
+  const [copied, setCopied] = useState(false);
+  
+  // Generate shareable link
+  const generateShareLink = () => {
+    const lat = target.data.latitude;
+    const lng = target.data.longitude;
+    const name = encodeURIComponent(target.data.name || target.phone_number);
+    // Google Maps link
+    return `https://www.google.com/maps?q=${lat},${lng}&z=17&marker=${lat},${lng}(${name})`;
+  };
+  
+  // Copy share link to clipboard
+  const handleShare = async () => {
+    const link = generateShareLink();
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = link;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  
+  return (
+    <Popup>
+      <div className="p-2" style={{ color: 'var(--foreground-primary)', minWidth: '280px', maxWidth: '350px' }}>
+        {/* Group indicator */}
+        {isGrouped && (
+          <div className="mb-2 px-2 py-1 rounded text-xs font-semibold text-center"
+            style={{ 
+              backgroundColor: 'var(--accent-primary)', 
+              color: 'var(--background-primary)' 
+            }}>
+            📍 Target {selectedIndex + 1} dari {groupCount}
+          </div>
+        )}
+        
+        {/* Header: Name & Phone */}
+        <p className="font-bold mb-1 text-base" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
+          {target.data.name}
+        </p>
+        <p className="text-sm mb-2 font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
+          {target.phone_number}
+        </p>
+        
+        {/* Device Info Section */}
+        {(target.data.phone_model || target.data.imei || target.data.imsi) && (
+          <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
+              DEVICE INFO
+            </p>
+            {target.data.phone_model && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>Phone:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.phone_model}</span>
+              </div>
+            )}
+            {target.data.imei && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>IMEI:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imei}</span>
+              </div>
+            )}
+            {target.data.imsi && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>IMSI:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imsi}</span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Network Info Section */}
+        {(target.data.operator || target.data.network || target.data.mcc || target.data.lac || target.data.cgi || target.data.ci) && (
+          <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
+              NETWORK INFO
+            </p>
+            {target.data.operator && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>Operator:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.operator}</span>
+              </div>
+            )}
+            {target.data.network && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>Network:</span>
+                <span className="font-mono" style={{ color: 'var(--accent-secondary)' }}>{target.data.network}</span>
+              </div>
+            )}
+            {target.data.mcc && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>MCC:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.mcc}</span>
+              </div>
+            )}
+            {target.data.lac && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>LAC:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.lac}</span>
+              </div>
+            )}
+            {target.data.ci && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>CI:</span>
+                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.ci}</span>
+              </div>
+            )}
+            {target.data.cgi && (
+              <div className="text-xs flex justify-between">
+                <span style={{ color: 'var(--foreground-muted)' }}>CGI:</span>
+                <span className="font-mono text-xs" style={{ color: 'var(--foreground-primary)' }}>{target.data.cgi}</span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Location Info Section */}
+        <div className="mb-3 p-2 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+          <p className="text-xs font-semibold mb-1" style={{ color: 'var(--foreground-secondary)' }}>
+            LOCATION
+          </p>
+          <div className="text-xs flex justify-between">
+            <span style={{ color: 'var(--foreground-muted)' }}>Lat:</span>
+            <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
+              {target.data.latitude?.toFixed(6)}
+            </span>
+          </div>
+          <div className="text-xs flex justify-between">
+            <span style={{ color: 'var(--foreground-muted)' }}>Long:</span>
+            <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
+              {target.data.longitude?.toFixed(6)}
+            </span>
+          </div>
+          {target.data.address && (
+            <div className="text-xs mt-1">
+              <span style={{ color: 'var(--foreground-muted)' }}>Address:</span>
+              <p className="mt-0.5" style={{ color: 'var(--foreground-primary)' }}>{target.data.address}</p>
+            </div>
+          )}
         </div>
-      )}
-      
-      <p className="font-bold mb-1" style={{ fontFamily: 'Barlow Condensed, sans-serif' }}>
-        {target.data.name}
-      </p>
-      <p className="text-xs mb-1 font-mono" style={{ color: 'var(--accent-primary)' }}>
-        {target.phone_number}
-      </p>
-      <p className="text-xs mb-1" style={{ color: 'var(--foreground-secondary)' }}>
-        {target.data.address}
-      </p>
-      <div className="text-xs mt-2">
-        <span style={{ color: 'var(--foreground-muted)' }}>Lat:</span>{' '}
-        <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>
-          {target.data.latitude.toFixed(6)}
-        </span>
-      </div>
-      <div className="text-xs">
-        <span style={{ color: 'var(--foreground-muted)' }}>Long:</span>{' '}
-        <span className="font-mono" style={{ color: 'var(--accent-primary)' }}>
-          {target.data.longitude.toFixed(6)}
-        </span>
-      </div>
-      {target.data.maps_link && (
-        <a
-          href={target.data.maps_link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs mt-2 inline-block hover:underline"
-          style={{ color: 'var(--accent-primary)' }}
-        >
-          Open in Google Maps
-        </a>
-      )}
-      
-      {/* Pendalaman / Info Button */}
-      <div className="mt-3 pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
-        {target.reghp_status === 'completed' ? (
+        
+        {/* Action Buttons */}
+        <div className="flex gap-2 mb-2">
+          {target.data.maps_link && (
+            <a
+              href={target.data.maps_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-1.5 px-2 rounded text-xs font-semibold text-center"
+              style={{ 
+                backgroundColor: 'var(--accent-primary)', 
+                color: 'var(--background-primary)',
+                textDecoration: 'none'
+              }}
+            >
+              🗺️ Google Maps
+            </a>
+          )}
           <button
-            onClick={() => onShowReghpInfo(target)}
-            className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
-            style={{
-              backgroundColor: 'var(--accent-secondary)',
+            onClick={handleShare}
+            className="flex-1 py-1.5 px-2 rounded text-xs font-semibold"
+            style={{ 
+              backgroundColor: copied ? '#22c55e' : 'var(--accent-secondary)', 
               color: 'var(--background-primary)'
             }}
           >
+            {copied ? '✓ Link Copied!' : '📤 Share'}
+          </button>
+        </div>
+        
+        {/* Pendalaman / Info Button */}
+        <div className="pt-2 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
+          {target.reghp_status === 'completed' ? (
+            <button
+              onClick={() => onShowReghpInfo(target)}
+              className="w-full py-2 px-3 rounded text-xs font-semibold uppercase"
+              style={{
+                backgroundColor: 'var(--accent-secondary)',
+                color: 'var(--background-primary)'
+              }}
+            >
             📋 Info Pendalaman
           </button>
         ) : target.reghp_status === 'not_found' ? (
