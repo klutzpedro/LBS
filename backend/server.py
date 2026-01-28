@@ -833,6 +833,8 @@ async def clear_failed_logins(ip: str, username: str):
 # ============================================
 # SINGLE DEVICE SESSION MANAGEMENT
 # ============================================
+TRANSFER_REQUEST_TIMEOUT = 60  # seconds to wait for approval
+
 async def get_active_session(username: str):
     """Get active session for a user"""
     session = await db.active_sessions.find_one({"username": username})
@@ -866,12 +868,45 @@ async def check_session_valid(username: str, session_id: str) -> bool:
     })
     return session is not None
 
+# Device Transfer Request Management
+async def create_transfer_request(username: str, new_device_info: str, request_id: str):
+    """Create a device transfer request"""
+    await db.device_transfer_requests.delete_many({"username": username})  # Clear old requests
+    await db.device_transfer_requests.insert_one({
+        "request_id": request_id,
+        "username": username,
+        "new_device_info": new_device_info,
+        "status": "pending",  # pending, approved, rejected
+        "created_at": datetime.now(timezone.utc).isoformat()
+    })
+
+async def get_transfer_request(request_id: str):
+    """Get transfer request by ID"""
+    return await db.device_transfer_requests.find_one({"request_id": request_id})
+
+async def get_pending_transfer_request(username: str):
+    """Get pending transfer request for a user"""
+    return await db.device_transfer_requests.find_one({
+        "username": username,
+        "status": "pending"
+    })
+
+async def update_transfer_request_status(request_id: str, status: str):
+    """Update transfer request status"""
+    await db.device_transfer_requests.update_one(
+        {"request_id": request_id},
+        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+
+async def delete_transfer_request(request_id: str):
+    """Delete transfer request"""
+    await db.device_transfer_requests.delete_one({"request_id": request_id})
+
 # Models
 class LoginRequest(BaseModel):
     username: str
     password: str
     device_info: Optional[str] = "Unknown Device"
-    force_login: bool = False  # If true, force logout from other device
 
 class LoginResponse(BaseModel):
     token: str
@@ -880,6 +915,8 @@ class LoginResponse(BaseModel):
     session_id: str = ""
     has_existing_session: bool = False
     existing_device_info: Optional[str] = None
+    transfer_request_id: Optional[str] = None  # ID for polling transfer status
+    waiting_approval: bool = False  # True if waiting for approval from other device
 
 class RegisterRequest(BaseModel):
     username: str
