@@ -2082,6 +2082,70 @@ const MainApp = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Pending Device Transfer Request - Someone wants to take over this session */}
+      <AlertDialog open={!!pendingTransfer} onOpenChange={() => {}}>
+        <AlertDialogContent 
+          style={{ 
+            backgroundColor: 'var(--background-secondary)', 
+            borderColor: 'var(--borders-default)',
+            color: 'var(--foreground-primary)'
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2" style={{ color: '#f59e0b' }}>
+              <Smartphone className="w-6 h-6" />
+              Permintaan Pindah Device
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3" style={{ color: 'var(--foreground-secondary)' }}>
+              <p>
+                Seseorang mencoba login ke akun <strong style={{ color: 'var(--accent-primary)' }}>{username}</strong> dari device baru:
+              </p>
+              <div 
+                className="flex items-center gap-2 p-3 rounded-lg"
+                style={{ backgroundColor: 'var(--background-tertiary)' }}
+              >
+                <Smartphone className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+                <span className="font-medium">{pendingTransfer?.new_device_info}</span>
+              </div>
+              <p>
+                Apakah Anda mengizinkan login dari device tersebut?
+              </p>
+              <p className="text-sm italic" style={{ color: 'var(--foreground-muted)' }}>
+                Jika Anda setuju, Anda akan otomatis logout dari device ini.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => respondToTransfer(pendingTransfer?.request_id, false)}
+              className="flex items-center gap-2"
+              style={{ 
+                borderColor: '#ef4444',
+                color: '#ef4444'
+              }}
+            >
+              <X className="w-4 h-4" />
+              Tolak
+            </Button>
+            <Button
+              onClick={async () => {
+                await respondToTransfer(pendingTransfer?.request_id, true);
+                navigate('/login');
+              }}
+              className="flex items-center gap-2"
+              style={{ 
+                backgroundColor: '#22c55e', 
+                color: '#fff' 
+              }}
+            >
+              <Check className="w-4 h-4" />
+              Setuju
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
