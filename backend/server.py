@@ -8050,7 +8050,11 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 "Content-Type": "application/json"
             }
             
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            # Force IPv4 connection
+            import socket
+            transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+            
+            async with httpx.AsyncClient(timeout=60.0, transport=transport) as client:
                 response = await client.get(
                     endpoint,
                     params={"query": query_value},
