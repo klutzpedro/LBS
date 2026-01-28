@@ -1668,21 +1668,40 @@ const MainApp = () => {
                 toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
                 return;
               }
+              setToolsPanelWasOpen(true);
               setSelectedNonGeointSearch(null);
               setNonGeointDialogOpen(true);
             }}
-            onOpenFullQueryHistory={() => setNonGeointHistoryOpen(true)}
+            onOpenFullQueryHistory={() => {
+              setToolsPanelWasOpen(true);
+              setNonGeointHistoryOpen(true);
+            }}
             isInvestigating={isGlobalInvestigating}
             // Face Recognition
-            onOpenFaceRecognition={() => setFrDialogOpen(true)}
-            onOpenFaceRecognitionHistory={() => setFrHistoryOpen(true)}
+            onOpenFaceRecognition={() => {
+              setToolsPanelWasOpen(true);
+              setFrDialogOpen(true);
+            }}
+            onOpenFaceRecognitionHistory={() => {
+              setToolsPanelWasOpen(true);
+              setFrHistoryOpen(true);
+            }}
             isFrProcessing={isFrProcessing}
             // Simple Query
-            onOpenSimpleQuery={() => setSimpleQueryOpen(true)}
-            onOpenSimpleQueryHistory={() => setSimpleQueryHistoryOpen(true)}
+            onOpenSimpleQuery={() => {
+              setToolsPanelWasOpen(true);
+              setSimpleQueryOpen(true);
+            }}
+            onOpenSimpleQueryHistory={() => {
+              setToolsPanelWasOpen(true);
+              setSimpleQueryHistoryOpen(true);
+            }}
             // User Management
             isAdmin={isAdmin}
-            onOpenUserManagement={() => setUserManagementOpen(true)}
+            onOpenUserManagement={() => {
+              setToolsPanelWasOpen(true);
+              setUserManagementOpen(true);
+            }}
           />
 
           {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
