@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, User, UserPlus, ArrowLeft, AlertTriangle, Smartphone } from 'lucide-react';
+import { Lock, User, UserPlus, ArrowLeft, AlertTriangle, Smartphone, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import netraLogo from '@/assets/logo.png';
 import {
@@ -27,24 +27,68 @@ const Login = () => {
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showDeviceConfirm, setShowDeviceConfirm] = useState(false);
+  
+  // Waiting for approval state
+  const [waitingApproval, setWaitingApproval] = useState(false);
+  const [transferRequestId, setTransferRequestId] = useState(null);
   const [existingDeviceInfo, setExistingDeviceInfo] = useState('');
-  const { login } = useAuth();
+  const [waitingMessage, setWaitingMessage] = useState('');
+  const pollingRef = useRef(null);
+  
+  const { login, checkTransferStatus, completeTransferLogin } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e, forceLogin = false) => {
+  // Poll for transfer approval
+  useEffect(() => {
+    if (waitingApproval && transferRequestId) {
+      pollingRef.current = setInterval(async () => {
+        const result = await checkTransferStatus(transferRequestId);
+        
+        if (result.status === 'approved') {
+          // Login successful!
+          clearInterval(pollingRef.current);
+          completeTransferLogin(result);
+          toast.success('Login berhasil! Device sebelumnya telah logout.');
+          navigate('/');
+        } else if (result.status === 'rejected') {
+          // Rejected
+          clearInterval(pollingRef.current);
+          setWaitingApproval(false);
+          setTransferRequestId(null);
+          toast.error('Permintaan pindah device ditolak oleh device sebelumnya.');
+        } else if (result.status === 'timeout' || result.status === 'not_found') {
+          // Timeout
+          clearInterval(pollingRef.current);
+          setWaitingApproval(false);
+          setTransferRequestId(null);
+          toast.error(result.message || 'Request kedaluwarsa. Silakan coba lagi.');
+        }
+        // If still pending, continue polling
+      }, 2000); // Check every 2 seconds
+    }
+    
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [waitingApproval, transferRequestId, checkTransferStatus, completeTransferLogin, navigate]);
+
+  const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
 
-    const result = await login(username, password, forceLogin);
+    const result = await login(username, password);
 
     if (result.success) {
       toast.success('Login berhasil!');
       navigate('/');
-    } else if (result.hasExistingSession) {
-      // Show confirmation dialog
+    } else if (result.waitingApproval) {
+      // Need to wait for approval from other device
       setExistingDeviceInfo(result.existingDeviceInfo || 'Unknown Device');
-      setShowDeviceConfirm(true);
+      setTransferRequestId(result.transferRequestId);
+      setWaitingApproval(true);
+      setWaitingMessage('Menunggu persetujuan dari device lain...');
     } else {
       toast.error(result.error);
     }
@@ -52,9 +96,13 @@ const Login = () => {
     setLoading(false);
   };
 
-  const handleForceLogin = async () => {
-    setShowDeviceConfirm(false);
-    await handleLogin(null, true);
+  const cancelWaiting = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+    setWaitingApproval(false);
+    setTransferRequestId(null);
+    setWaitingMessage('');
   };
 
   const handleRegister = async (e) => {
