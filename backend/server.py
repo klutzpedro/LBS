@@ -2313,7 +2313,44 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
         return {
             "message": "Reusing existing Reghp & NIK data",
             "target_id": target_id,
-            "reused": True
+            "reused": True,
+            "source": "target_history"
+        }
+    
+    # Check Simple Query Cache for this phone (reghp)
+    phone_number = target['phone_number']
+    cache_key = f"reghp:{phone_number}"
+    cached_reghp = await db.simple_query_cache.find_one({"cache_key": cache_key})
+    
+    # Also check reghp_phone cache (search by phone)
+    if not cached_reghp:
+        cache_key_phone = f"reghp_phone:{phone_number}"
+        cached_reghp = await db.simple_query_cache.find_one({"cache_key": cache_key_phone})
+    
+    if cached_reghp and cached_reghp.get("raw_response"):
+        logging.info(f"Reusing Reghp data for {phone_number} from Simple Query Cache")
+        
+        reghp_data = {
+            "raw_response": cached_reghp.get("raw_response"),
+            "parsed_data": {},
+            "from_cache": True
+        }
+        
+        await db.targets.update_one(
+            {"id": target_id},
+            {
+                "$set": {
+                    "reghp_status": "completed",
+                    "reghp_data": reghp_data
+                }
+            }
+        )
+        
+        return {
+            "message": "Reusing Reghp data from Simple Query Cache",
+            "target_id": target_id,
+            "reused": True,
+            "source": "simple_query_cache"
         }
     
     # No existing data, proceed with new query
