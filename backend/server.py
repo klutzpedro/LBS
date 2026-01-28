@@ -851,11 +851,10 @@ async def clear_failed_logins(ip: str, username: str):
     failed_login_attempts[key] = []
 
 # ============================================
-# SINGLE DEVICE SESSION MANAGEMENT
+# SINGLE DEVICE SESSION MANAGEMENT (SIMPLE VERSION)
 # ============================================
-# Set SINGLE_DEVICE_LOGIN=false in .env to disable this feature
-SINGLE_DEVICE_LOGIN_ENABLED = os.getenv('SINGLE_DEVICE_LOGIN', 'false').lower() == 'true'
-TRANSFER_REQUEST_TIMEOUT = 60  # seconds to wait for approval
+# Set SINGLE_DEVICE_LOGIN=true in .env to enable this feature
+SINGLE_DEVICE_LOGIN_ENABLED = os.getenv('SINGLE_DEVICE_LOGIN', 'true').lower() == 'true'
 SESSION_INACTIVITY_TIMEOUT = 1800  # 30 minutes - session considered stale if no activity
 
 logger.info(f"[CONFIG] Single Device Login: {'ENABLED' if SINGLE_DEVICE_LOGIN_ENABLED else 'DISABLED'}")
@@ -885,16 +884,6 @@ async def get_active_session(username: str):
     
     return session
 
-async def cleanup_stale_sessions():
-    """Cleanup all stale sessions (utility function)"""
-    cutoff_time = datetime.now(timezone.utc) - timedelta(seconds=SESSION_INACTIVITY_TIMEOUT)
-    result = await db.active_sessions.delete_many({
-        "last_activity": {"$lt": cutoff_time.isoformat()}
-    })
-    if result.deleted_count > 0:
-        logger.info(f"[SESSION] Cleaned up {result.deleted_count} stale sessions")
-    return result.deleted_count
-
 async def create_session(username: str, session_id: str, device_info: str):
     """Create or update session for user"""
     await db.active_sessions.update_one(
@@ -912,15 +901,11 @@ async def create_session(username: str, session_id: str, device_info: str):
     )
 
 async def invalidate_session(username: str):
-    """Invalidate session for user (for force logout)"""
+    """Invalidate session for user (logout)"""
     await db.active_sessions.delete_one({"username": username})
 
 async def check_session_valid(username: str, session_id: str) -> bool:
-    """Check if session is still valid (exists with matching session_id)
-    
-    NOTE: If SINGLE_DEVICE_LOGIN is disabled, always return True.
-    This does NOT check for staleness. Staleness is only checked during login.
-    """
+    """Check if session is still valid (exists with matching session_id)"""
     if not SINGLE_DEVICE_LOGIN_ENABLED:
         return True  # Feature disabled, session always valid
         
@@ -929,34 +914,7 @@ async def check_session_valid(username: str, session_id: str) -> bool:
         "session_id": session_id
     })
     
-    if not session:
-        return False
-    
-    # Session exists and session_id matches - it's valid
-    return True
-
-# Device Transfer Request Management
-async def create_transfer_request(username: str, new_device_info: str, request_id: str):
-    """Create a device transfer request"""
-    await db.device_transfer_requests.delete_many({"username": username})  # Clear old requests
-    await db.device_transfer_requests.insert_one({
-        "request_id": request_id,
-        "username": username,
-        "new_device_info": new_device_info,
-        "status": "pending",  # pending, approved, rejected
-        "created_at": datetime.now(timezone.utc).isoformat()
-    })
-
-async def get_transfer_request(request_id: str):
-    """Get transfer request by ID"""
-    return await db.device_transfer_requests.find_one({"request_id": request_id})
-
-async def get_pending_transfer_request(username: str):
-    """Get pending transfer request for a user"""
-    return await db.device_transfer_requests.find_one({
-        "username": username,
-        "status": "pending"
-    })
+    return session is not None
 
 async def update_transfer_request_status(request_id: str, status: str):
     """Update transfer request status"""
