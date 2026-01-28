@@ -477,12 +477,40 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                   }}
                 >
                   {result.success && result.raw_response ? (
-                    <pre 
-                      className="text-xs whitespace-pre-wrap font-mono"
-                      style={{ color: '#00ff88' }}
-                    >
-                      {result.raw_response}
-                    </pre>
+                    <div className="space-y-3">
+                      {/* Photo Display for CAPIL NIK */}
+                      {result.photo && (
+                        <div className="flex flex-col items-center mb-4 p-3 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <img 
+                            src={result.photo} 
+                            alt="Foto KTP"
+                            className="max-w-[150px] max-h-[200px] rounded border mb-2"
+                            style={{ borderColor: 'var(--borders-default)' }}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = result.photo;
+                              link.download = `foto_${result.query_value || 'nik'}.jpg`;
+                              link.click();
+                              toast.success('Foto berhasil didownload');
+                            }}
+                            className="text-xs"
+                          >
+                            <Download className="w-3 h-3 mr-1" />
+                            Download Foto
+                          </Button>
+                        </div>
+                      )}
+                      <pre 
+                        className="text-xs whitespace-pre-wrap font-mono"
+                        style={{ color: '#00ff88' }}
+                      >
+                        {result.raw_response}
+                      </pre>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       <p className="text-sm" style={{ color: 'var(--status-error)' }}>
