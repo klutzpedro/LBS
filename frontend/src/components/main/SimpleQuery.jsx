@@ -448,12 +448,28 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                       Hasil Query: {currentType?.label}
                     </h3>
                     {result.cached && (
-                      <span 
-                        className="px-2 py-0.5 rounded text-xs font-medium"
-                        style={{ backgroundColor: 'rgba(0, 255, 136, 0.2)', color: '#00ff88' }}
-                      >
-                        DARI CACHE
-                      </span>
+                      <>
+                        <span 
+                          className="px-2 py-0.5 rounded text-xs font-medium"
+                          style={{ backgroundColor: 'rgba(0, 255, 136, 0.2)', color: '#00ff88' }}
+                        >
+                          DARI CACHE
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleResetCache}
+                          disabled={resettingCache}
+                          className="h-6 px-2 text-xs"
+                          style={{ 
+                            borderColor: '#ef4444', 
+                            color: '#ef4444',
+                            fontSize: '10px'
+                          }}
+                        >
+                          {resettingCache ? '...' : 'RESET'}
+                        </Button>
+                      </>
                     )}
                     {result.source === 'CP_API' && (
                       <span 
