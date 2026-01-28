@@ -1206,8 +1206,6 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
         
         if username:
             await invalidate_session(username)
-            # Also clean up any pending transfer requests
-            await db.device_transfer_requests.delete_many({"username": username})
         
         return {"success": True, "message": "Logged out successfully"}
     except:
