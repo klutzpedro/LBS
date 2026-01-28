@@ -1976,7 +1976,7 @@ const MainApp = () => {
           open={userManagementOpen}
           onOpenChange={(open) => {
             setUserManagementOpen(open);
-            if (!open && toolsPanelWasOpen) {
+            if (!open && !dialogTransitionRef.current && toolsPanelWasOpen) {
               setToolsPanelOpen(true);
               setToolsPanelWasOpen(false);
             }
@@ -1990,12 +1990,10 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setSimpleQueryOpen(open);
           if (!open) {
-            setTimeout(() => {
-              if (!simpleQueryHistoryOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
       />
@@ -2006,18 +2004,22 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setSimpleQueryHistoryOpen(open);
           if (!open) {
-            setTimeout(() => {
-              if (!simpleQueryOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
         onSelectHistory={(item) => {
+          // Mark that we're transitioning to another dialog
+          dialogTransitionRef.current = true;
           // When user selects from history, open SimpleQuery and show the result
           setSimpleQueryHistoryOpen(false);
           setSimpleQueryOpen(true);
+          // Reset transition flag after a short delay
+          setTimeout(() => {
+            dialogTransitionRef.current = false;
+          }, 200);
           // The result will be shown from cache automatically
         }}
       />
