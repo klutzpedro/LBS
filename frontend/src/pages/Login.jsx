@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, User, UserPlus, ArrowLeft, AlertTriangle, Smartphone, Loader2, X } from 'lucide-react';
+import { Lock, User, UserPlus, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import netraLogo from '@/assets/logo.png';
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -28,59 +27,12 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Waiting for approval state
-  const [waitingApproval, setWaitingApproval] = useState(false);
-  const [transferRequestId, setTransferRequestId] = useState(null);
-  const [existingDeviceInfo, setExistingDeviceInfo] = useState('');
-  const [waitingMessage, setWaitingMessage] = useState('');
-  const pollingRef = useRef(null);
+  // Session active dialog state
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [activeDeviceInfo, setActiveDeviceInfo] = useState('');
   
-  const { login, checkTransferStatus, completeTransferLogin } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
-
-  // Poll for transfer approval
-  useEffect(() => {
-    if (waitingApproval && transferRequestId) {
-      console.log('[Login] Starting polling for transfer:', transferRequestId);
-      
-      pollingRef.current = setInterval(async () => {
-        console.log('[Login] Polling transfer status...');
-        const result = await checkTransferStatus(transferRequestId);
-        console.log('[Login] Poll result:', result);
-        
-        if (result.status === 'approved') {
-          // Login successful!
-          console.log('[Login] Transfer APPROVED! Completing login...');
-          clearInterval(pollingRef.current);
-          completeTransferLogin(result);
-          toast.success('Login berhasil! Device sebelumnya telah logout.');
-          navigate('/');
-        } else if (result.status === 'rejected') {
-          // Rejected
-          console.log('[Login] Transfer REJECTED');
-          clearInterval(pollingRef.current);
-          setWaitingApproval(false);
-          setTransferRequestId(null);
-          toast.error('Permintaan pindah device ditolak oleh device sebelumnya.');
-        } else if (result.status === 'timeout' || result.status === 'not_found') {
-          // Timeout
-          console.log('[Login] Transfer TIMEOUT/NOT_FOUND');
-          clearInterval(pollingRef.current);
-          setWaitingApproval(false);
-          setTransferRequestId(null);
-          toast.error(result.message || 'Request kedaluwarsa. Silakan coba lagi.');
-        }
-        // If still pending, continue polling
-      }, 2000); // Check every 2 seconds
-    }
-    
-    return () => {
-      if (pollingRef.current) {
-        console.log('[Login] Cleaning up polling interval');
-        clearInterval(pollingRef.current);
-      }
-    };
-  }, [waitingApproval, transferRequestId, checkTransferStatus, completeTransferLogin, navigate]);
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
@@ -91,26 +43,15 @@ const Login = () => {
     if (result.success) {
       toast.success('Login berhasil!');
       navigate('/');
-    } else if (result.waitingApproval) {
-      // Need to wait for approval from other device
-      setExistingDeviceInfo(result.existingDeviceInfo || 'Unknown Device');
-      setTransferRequestId(result.transferRequestId);
-      setWaitingApproval(true);
-      setWaitingMessage('Menunggu persetujuan dari device lain...');
+    } else if (result.sessionActive) {
+      // Show session active dialog
+      setActiveDeviceInfo(result.deviceInfo || 'Unknown Device');
+      setShowSessionDialog(true);
     } else {
       toast.error(result.error);
     }
 
     setLoading(false);
-  };
-
-  const cancelWaiting = () => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-    }
-    setWaitingApproval(false);
-    setTransferRequestId(null);
-    setWaitingMessage('');
   };
 
   const handleRegister = async (e) => {
