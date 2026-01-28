@@ -36,25 +36,42 @@ const ToolsPanel = ({
   isOpen,
   onClose
 }) => {
-  const [position, setPosition] = useState({ x: 100, y: 100 });
+  // Default position: below MAP TYPE selector (top-right area)
+  const getDefaultPosition = () => {
+    const windowWidth = window.innerWidth;
+    const panelWidth = 320;
+    return {
+      x: windowWidth - panelWidth - 80, // 80px from right edge (space for other buttons)
+      y: 120 // Below MAP TYPE selector
+    };
+  };
+
+  const [position, setPosition] = useState(getDefaultPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const panelRef = useRef(null);
 
-  // Reset position when panel opens
+  // Reset position when panel opens - always return to default position
   useEffect(() => {
     if (isOpen) {
-      // Center the panel
-      const windowWidth = window.innerWidth;
-      const panelWidth = isMaximized ? windowWidth - 40 : 320;
-      setPosition({
-        x: Math.max(20, (windowWidth - panelWidth) / 2),
-        y: 80
-      });
+      setPosition(getDefaultPosition());
+      setIsMinimized(false);
+      setIsMaximized(false);
     }
   }, [isOpen]);
+
+  // Update position on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (!isDragging && !isMaximized) {
+        setPosition(getDefaultPosition());
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDragging, isMaximized]);
 
   // Handle dragging
   const handleMouseDown = (e) => {
