@@ -8046,7 +8046,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 endpoint = f"{CP_API_URL}/api/v3/breach/name"
             
             headers = {
-                "x-api-key": CP_API_KEY,
+                "api-key": CP_API_KEY,
                 "Content-Type": "application/json"
             }
             
