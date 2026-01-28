@@ -8136,6 +8136,27 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         break
                 
                 await asyncio.sleep(7)
+            
+            elif query_type == 'reghp_phone':
+                # RegHP by Phone Number - send phone number and click REGHP
+                sent_message = await telegram_client.send_message(bot_entity, query_value)
+                await asyncio.sleep(3)
+                
+                # Wait for buttons and click REGHP
+                messages = await telegram_client.get_messages(bot_entity, limit=5, min_id=last_msg_id_before)
+                for msg in messages:
+                    if msg.out:
+                        continue
+                    if msg.buttons:
+                        for row in msg.buttons:
+                            for button in row:
+                                if 'REGHP' in (button.text or '').upper() or 'REG' in (button.text or '').upper():
+                                    await button.click()
+                                    logger.info(f"[SIMPLE QUERY] Clicked REGHP button for phone query")
+                                    break
+                        break
+                
+                await asyncio.sleep(7)
                 
             elif query_type == 'plat_mobil':
                 # Send plate number to Telegram bot
