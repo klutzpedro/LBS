@@ -2028,9 +2028,13 @@ const MainApp = () => {
         open={simpleQueryOpen}
         onOpenChange={(open) => {
           setSimpleQueryOpen(open);
-          if (!open && toolsPanelWasOpen) {
-            setToolsPanelOpen(true);
-            setToolsPanelWasOpen(false);
+          if (!open) {
+            setTimeout(() => {
+              if (!simpleQueryHistoryOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
       />
@@ -2040,9 +2044,13 @@ const MainApp = () => {
         open={simpleQueryHistoryOpen}
         onOpenChange={(open) => {
           setSimpleQueryHistoryOpen(open);
-          if (!open && toolsPanelWasOpen) {
-            setToolsPanelOpen(true);
-            setToolsPanelWasOpen(false);
+          if (!open) {
+            setTimeout(() => {
+              if (!simpleQueryOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
         onSelectHistory={(item) => {
