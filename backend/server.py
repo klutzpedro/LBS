@@ -8229,6 +8229,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 response_upper = raw_response.upper().replace(" ", "").replace("-", "")
                 
                 is_related = False
+                photo_base64 = None
                 
                 # For plate number queries - check if plate appears in response
                 if query_type == 'plat_mobil':
@@ -8250,6 +8251,15 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     else:
                         logger.warning(f"[SIMPLE QUERY] NIK/NKK MISMATCH! Query: {query_value} not found in response")
                 
+                # For reghp_phone queries, check if phone number appears or name/NIK in response
+                elif query_type == 'reghp_phone':
+                    # Phone number may not appear in response, check for typical REGHP data markers
+                    phone_clean = query_value.replace("+", "").replace(" ", "")
+                    if phone_clean in response_upper or 'NIK' in response_upper or 'NAMA' in response_upper:
+                        is_related = True
+                    else:
+                        logger.warning(f"[SIMPLE QUERY] REGHP_PHONE MISMATCH for {query_value}")
+                
                 # For name queries, check if at least one word appears
                 elif query_type in ['capil_name']:
                     query_words = query_value.upper().split()
@@ -8257,6 +8267,33 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         if len(word) >= 3 and word in response_upper:
                             is_related = True
                             break
+                
+                # ============================================
+                # FOR CAPIL_NIK - TRY TO CAPTURE PHOTO
+                # ============================================
+                if query_type == 'capil_nik' and is_related:
+                    logger.info(f"[SIMPLE QUERY] Attempting to capture photo for CAPIL NIK query...")
+                    try:
+                        # Wait a bit more for photo to arrive
+                        await asyncio.sleep(2)
+                        
+                        # Fetch recent messages including photos
+                        photo_messages = await telegram_client.get_messages(bot_entity, limit=10, min_id=sent_msg_id)
+                        
+                        for msg in photo_messages:
+                            if msg.out:
+                                continue
+                            if msg.photo:
+                                try:
+                                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                                    if photo_bytes:
+                                        photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                        logger.info(f"[SIMPLE QUERY] Photo captured for CAPIL NIK ({len(photo_bytes)} bytes)")
+                                        break
+                                except Exception as photo_err:
+                                    logger.error(f"[SIMPLE QUERY] Error downloading photo: {photo_err}")
+                    except Exception as e:
+                        logger.error(f"[SIMPLE QUERY] Error capturing photo: {e}")
                 
                 # If response doesn't match our query, it's likely another user's data
                 if not is_related:
@@ -8270,7 +8307,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     }
                 
                 # ============================================
-                # SAVE TO CACHE
+                # SAVE TO CACHE (with photo if available)
                 # ============================================
                 if is_related:
                     cache_doc = {
@@ -8278,6 +8315,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         "query_type": query_type,
                         "query_value": query_value,
                         "raw_response": raw_response,
+                        "photo": photo_base64,
                         "created_by": username,
                         "created_at": datetime.now(timezone.utc).isoformat()
                     }
