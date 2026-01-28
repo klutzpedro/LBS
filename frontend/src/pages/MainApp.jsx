@@ -1935,11 +1935,13 @@ const MainApp = () => {
           // Reset selected search when dialog closes so next open will fetch fresh data
           if (!open) {
             setSelectedNonGeointSearch(null);
-            // Restore Tools Panel if it was open before
-            if (toolsPanelWasOpen) {
-              setToolsPanelOpen(true);
-              setToolsPanelWasOpen(false);
-            }
+            // Restore Tools Panel only if no other dialog is open
+            setTimeout(() => {
+              if (!nonGeointHistoryOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
         onNikPendalaman={handleNonGeointNikPendalaman}
