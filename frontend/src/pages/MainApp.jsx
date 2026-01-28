@@ -57,7 +57,7 @@ import { NonGeointSearchDialog, NonGeointHistoryDialog } from '@/components/main
 import { FaceRecognitionDialog, FaceRecognitionHistoryDialog } from '@/components/main/FaceRecognition';
 
 const MainApp = () => {
-  const { username, logout, isAdmin, sessionCheckFailed, acknowledgeSessionInvalid } = useAuth();
+  const { username, logout, isAdmin, sessionCheckFailed, acknowledgeSessionInvalid, pendingTransfer, respondToTransfer } = useAuth();
   const { telegramAuthorized, telegramUser } = useTelegram();
   const navigate = useNavigate();
   
