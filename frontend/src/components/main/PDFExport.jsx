@@ -562,7 +562,7 @@ export const generateTargetPDF = async (target, mapScreenshot = null) => {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | Location Based System | Target: ${target.phone_number} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | Netra | Target: ${target.phone_number} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
       // Save PDF
