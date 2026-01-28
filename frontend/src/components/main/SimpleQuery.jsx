@@ -288,6 +288,37 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
     }
   };
 
+  // Reset cache for current query
+  const handleResetCache = async () => {
+    if (!result || !selectedType || !searchValue) return;
+    
+    setResettingCache(true);
+    try {
+      const token = localStorage.getItem('token');
+      const cacheKey = `${selectedType}:${searchValue.toUpperCase()}`;
+      
+      const response = await fetch(`${API_URL}/api/simple-query/cache/${encodeURIComponent(cacheKey)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        toast.success('Cache berhasil direset. Silakan query ulang untuk data terbaru.');
+        setResult(null);
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || 'Gagal reset cache');
+      }
+    } catch (error) {
+      console.error('Reset cache error:', error);
+      toast.error('Terjadi kesalahan saat reset cache');
+    } finally {
+      setResettingCache(false);
+    }
+  };
+
   const handleCopy = () => {
     if (result?.raw_response) {
       navigator.clipboard.writeText(result.raw_response);
