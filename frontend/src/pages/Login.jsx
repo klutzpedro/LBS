@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
+import { Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import netraLogo from '@/assets/logo.png';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -113,13 +114,13 @@ const Login = () => {
           }}
         >
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div 
-              className="w-16 h-16 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
-            >
-              <Shield className="w-10 h-10" style={{ color: 'var(--background-primary)' }} />
-            </div>
+          <div className="flex justify-center mb-6">
+            <img 
+              src={netraLogo} 
+              alt="NETRA Logo" 
+              className="w-32 h-32 object-contain"
+              data-testid="netra-logo"
+            />
           </div>
 
           <div className="text-center mb-8">
