@@ -5665,30 +5665,69 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}.regnik_data": regnik_result}}
                 )
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 
-                # Query 4: Passport via CP API (WNI by NIK)
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Passport for {nik}")
-                await db.nik_investigations.update_one(
-                    {"id": investigation_id},
-                    {"$set": {f"results.{nik}.status": "processing_passport"}}
-                )
-                
-                # Get target name from NIK data if available
+                # Query 4: Passport via CP API (WNI by NIK) - Check cache first
                 target_name = None
                 if nik_result.get('data'):
                     target_name = nik_result['data'].get('Full Name') or nik_result['data'].get('Name') or nik_result['data'].get('Nama')
                 
-                passport_result = await query_passport_cp_api(nik, target_name)
+                # Check cache for passport by name
+                if target_name:
+                    cache_key_passport = f"passport_wni:{target_name.upper()}"
+                    cached_passport = await db.simple_query_cache.find_one({"cache_key": cache_key_passport})
+                    
+                    if cached_passport and cached_passport.get("raw_response"):
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Passport {target_name}")
+                        # Try to extract passport numbers from cached data
+                        import re
+                        passport_numbers = re.findall(r'[A-Z]\d{6,8}', cached_passport.get("raw_response", ""))
+                        passport_result = {
+                            "status": "success",
+                            "raw_text": cached_passport.get("raw_response"),
+                            "passports": list(set(passport_numbers)),
+                            "from_cache": True
+                        }
+                    else:
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Passport for {nik}")
+                        await db.nik_investigations.update_one(
+                            {"id": investigation_id},
+                            {"$set": {f"results.{nik}.status": "processing_passport"}}
+                        )
+                        passport_result = await query_passport_cp_api(nik, target_name)
+                        
+                        # Save to cache if successful
+                        if passport_result.get("raw_text") and target_name:
+                            cache_doc = {
+                                "cache_key": cache_key_passport,
+                                "query_type": "passport_wni",
+                                "query_value": target_name.upper(),
+                                "raw_response": passport_result.get("raw_text"),
+                                "created_by": "investigation",
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            }
+                            await db.simple_query_cache.update_one(
+                                {"cache_key": cache_key_passport},
+                                {"$set": cache_doc},
+                                upsert=True
+                            )
+                else:
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] No name found, querying Passport directly")
+                    await db.nik_investigations.update_one(
+                        {"id": investigation_id},
+                        {"$set": {f"results.{nik}.status": "processing_passport"}}
+                    )
+                    passport_result = await query_passport_cp_api(nik, target_name)
+                
                 nik_results["passport_data"] = passport_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, passports found: {len(passport_result.get('passports', []))}")
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, from_cache: {passport_result.get('from_cache', False)}")
                 
                 # Save immediately after passport query
                 await db.nik_investigations.update_one(
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}.passport_data": passport_result}}
                 )
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 
                 # Query 5: Perlintasan (Immigration Crossing) via CP API - for each passport found
                 perlintasan_results = []
@@ -5702,9 +5741,39 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     )
                     
                     for passport_no in passports_to_check:
-                        perlintasan_result = await query_perlintasan_cp_api(passport_no)
+                        # Check cache first for perlintasan
+                        cache_key_perl = f"perlintasan:{passport_no}"
+                        cached_perl = await db.simple_query_cache.find_one({"cache_key": cache_key_perl})
+                        
+                        if cached_perl and cached_perl.get("raw_response"):
+                            logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Perlintasan {passport_no}")
+                            perlintasan_result = {
+                                "passport": passport_no,
+                                "status": "success",
+                                "raw_text": cached_perl.get("raw_response"),
+                                "from_cache": True
+                            }
+                        else:
+                            perlintasan_result = await query_perlintasan_cp_api(passport_no)
+                            
+                            # Save to cache
+                            if perlintasan_result.get("raw_text"):
+                                cache_doc = {
+                                    "cache_key": cache_key_perl,
+                                    "query_type": "perlintasan",
+                                    "query_value": passport_no,
+                                    "raw_response": perlintasan_result.get("raw_text"),
+                                    "created_by": "investigation",
+                                    "created_at": datetime.now(timezone.utc).isoformat()
+                                }
+                                await db.simple_query_cache.update_one(
+                                    {"cache_key": cache_key_perl},
+                                    {"$set": cache_doc},
+                                    upsert=True
+                                )
+                        
                         perlintasan_results.append(perlintasan_result)
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(0.5)
                     
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] Perlintasan query complete")
                 else:
