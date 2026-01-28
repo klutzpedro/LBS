@@ -130,8 +130,35 @@ const QUERY_TYPES = [
     icon: Plane,
     placeholder: 'Masukkan nomor passport (ex: X1122553)...',
     validation: (v) => v.length >= 6,
-    errorMsg: 'Nomor passport minimal 6 karakter',
-    fullWidth: true  // Flag for full width display
+    errorMsg: 'Nomor passport minimal 6 karakter'
+  },
+  // Data Breach Section
+  { 
+    id: 'breach_phone', 
+    label: 'Data Breach (HP)', 
+    description: 'Cari data breach berdasarkan nomor HP',
+    icon: ShieldAlert,
+    placeholder: 'Masukkan nomor HP (62xxxxxxxxx)...',
+    validation: (v) => /^62\d{8,13}$/.test(v.replace(/\s/g, '')),
+    errorMsg: 'Format: 62xxxxxxxxx (10-15 digit)'
+  },
+  { 
+    id: 'breach_email', 
+    label: 'Data Breach (Email)', 
+    description: 'Cari data breach berdasarkan email',
+    icon: Mail,
+    placeholder: 'Masukkan email (xxx@xxx.xxx)...',
+    validation: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    errorMsg: 'Format email tidak valid'
+  },
+  { 
+    id: 'breach_name', 
+    label: 'Data Breach (Nama)', 
+    description: 'Cari data breach berdasarkan nama',
+    icon: ShieldAlert,
+    placeholder: 'Masukkan nama lengkap...',
+    validation: (v) => v.length >= 3,
+    errorMsg: 'Nama minimal 3 karakter'
   }
 ];
 
