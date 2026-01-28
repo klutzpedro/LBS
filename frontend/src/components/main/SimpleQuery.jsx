@@ -76,6 +76,15 @@ const QUERY_TYPES = [
     errorMsg: 'NIK harus 16 angka'
   },
   { 
+    id: 'reghp_phone', 
+    label: 'RegHP (HP)', 
+    description: 'Cari NIK berdasarkan nomor HP',
+    icon: Phone,
+    placeholder: 'Masukkan nomor HP (62xxxxxxxxx)...',
+    validation: (v) => /^62\d{8,13}$/.test(v.replace(/\s/g, '')),
+    errorMsg: 'Format: 62xxxxxxxxx (10-15 digit)'
+  },
+  { 
     id: 'passport_wna', 
     label: 'Passport WNA (Nama)', 
     description: 'Cari data passport WNA berdasarkan nama',
