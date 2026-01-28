@@ -41,23 +41,30 @@ const Login = () => {
   // Poll for transfer approval
   useEffect(() => {
     if (waitingApproval && transferRequestId) {
+      console.log('[Login] Starting polling for transfer:', transferRequestId);
+      
       pollingRef.current = setInterval(async () => {
+        console.log('[Login] Polling transfer status...');
         const result = await checkTransferStatus(transferRequestId);
+        console.log('[Login] Poll result:', result);
         
         if (result.status === 'approved') {
           // Login successful!
+          console.log('[Login] Transfer APPROVED! Completing login...');
           clearInterval(pollingRef.current);
           completeTransferLogin(result);
           toast.success('Login berhasil! Device sebelumnya telah logout.');
           navigate('/');
         } else if (result.status === 'rejected') {
           // Rejected
+          console.log('[Login] Transfer REJECTED');
           clearInterval(pollingRef.current);
           setWaitingApproval(false);
           setTransferRequestId(null);
           toast.error('Permintaan pindah device ditolak oleh device sebelumnya.');
         } else if (result.status === 'timeout' || result.status === 'not_found') {
           // Timeout
+          console.log('[Login] Transfer TIMEOUT/NOT_FOUND');
           clearInterval(pollingRef.current);
           setWaitingApproval(false);
           setTransferRequestId(null);
@@ -69,6 +76,7 @@ const Login = () => {
     
     return () => {
       if (pollingRef.current) {
+        console.log('[Login] Cleaning up polling interval');
         clearInterval(pollingRef.current);
       }
     };
