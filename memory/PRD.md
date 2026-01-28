@@ -874,3 +874,42 @@ pm2 restart waskita-backend
 - Export to Excel/CSV functionality
 - Enhanced Family Tree visualization
 - Backend parser refactoring for robustness
+
+## January 28, 2026 - Bug Fixes (Continued)
+
+### P0: CP Query Auto-Refresh Not Working - FIXED
+- **Issue:** Setelah CP query selesai, user harus manual refresh halaman untuk melihat hasil posisi
+- **Root Cause:** Closure issue di useEffect - variabel `targets` yang digunakan dalam `setInterval` tidak mendapatkan nilai terbaru karena hanya di-capture saat pertama kali mount
+- **Solution:**
+  1. Ditambahkan `targetsRef` (useRef) untuk melacak targets terbaru
+  2. Polling sekarang menggunakan `targetsRef.current` bukan closure variable
+  3. Interval polling dikurangi dari 10 detik ke 5 detik untuk responsivitas lebih baik
+  4. Polling sekarang juga memeriksa `reghp_status` dan `nik_queries` processing status
+- **Files Modified:**
+  - `/app/frontend/src/pages/MainApp.jsx` - Lines 158-161 (targetsRef), 620-644 (polling logic)
+
+### Status Change Toast Detection - FIXED
+- **Issue:** Toast notification tidak muncul saat target status berubah
+- **Root Cause:** Logic deteksi perubahan salah - mencari `prevTarget` di array yang sama (bukan previous state)
+- **Solution:**
+  1. Ditambahkan `prevTargetsRef` untuk menyimpan state targets sebelumnya
+  2. Bandingkan status target saat ini dengan status di previous render
+  3. Toast hanya muncul saat ada perubahan nyata (processing → completed/error)
+- **Files Modified:**
+  - `/app/frontend/src/pages/MainApp.jsx` - Lines 654-680 (status change detection)
+
+### Pendalaman Button Debugging
+- **Issue:** User melaporkan tombol Pendalaman (REGHP) tidak berfungsi meskipun response Telegram sudah ada
+- **Debug Added:** Console logs di TargetMarkers.jsx dan MainApp.jsx untuk melacak event handler
+- **Next Steps:** Verifikasi dengan user apakah issue masih terjadi setelah fix polling
+
+### Files Modified Summary
+- `/app/frontend/src/pages/MainApp.jsx`:
+  - Added `targetsRef` useRef to track latest targets (line 161)
+  - Added `prevTargetsRef` for status change detection
+  - Improved polling logic with ref-based target checking
+  - Reduced polling interval from 10s to 5s
+  - Added debug logging for handlePendalaman
+- `/app/frontend/src/components/main/TargetMarkers.jsx`:
+  - Added debug logging for Pendalaman button click
+  - Added data-testid for testing
