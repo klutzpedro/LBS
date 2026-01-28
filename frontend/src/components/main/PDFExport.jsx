@@ -793,7 +793,7 @@ export const generateCasePDF = async (caseName, targets, mapScreenshots = {}) =>
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | WASKITA LBS | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | Location Based System | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
       // Save PDF
