@@ -21,9 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
   const [isAuthenticated, setIsAuthenticated] = useState(!!token);
   const [sessionCheckFailed, setSessionCheckFailed] = useState(false);
-  const [pendingTransfer, setPendingTransfer] = useState(null); // {request_id, new_device_info}
   const sessionCheckInterval = useRef(null);
-  const transferCheckInterval = useRef(null);
 
   // Session validation - runs every 10 seconds
   const checkSession = useCallback(async () => {
@@ -49,28 +47,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Check for pending transfer requests (device wants to take over)
-  const checkPendingTransfer = useCallback(async () => {
-    if (!token) return;
-    
-    try {
-      const response = await axios.get(`${API}/auth/pending-transfer`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.has_pending) {
-        setPendingTransfer({
-          request_id: response.data.request_id,
-          new_device_info: response.data.new_device_info
-        });
-      } else {
-        setPendingTransfer(null);
-      }
-    } catch (error) {
-      console.error('[Auth] Pending transfer check error:', error);
-    }
-  }, [token]);
-
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -79,34 +55,24 @@ export const AuthProvider = ({ children }) => {
       // Start session check interval
       sessionCheckInterval.current = setInterval(checkSession, 10000);
       
-      // Start transfer request check interval (check more frequently)
-      transferCheckInterval.current = setInterval(checkPendingTransfer, 3000);
-      
-      // Initial checks
+      // Initial check
       checkSession();
-      checkPendingTransfer();
     } else {
       delete axios.defaults.headers.common['Authorization'];
       setIsAuthenticated(false);
       setSessionCheckFailed(false);
-      setPendingTransfer(null);
       
-      // Clear intervals
+      // Clear interval
       if (sessionCheckInterval.current) {
         clearInterval(sessionCheckInterval.current);
         sessionCheckInterval.current = null;
-      }
-      if (transferCheckInterval.current) {
-        clearInterval(transferCheckInterval.current);
-        transferCheckInterval.current = null;
       }
     }
     
     return () => {
       if (sessionCheckInterval.current) clearInterval(sessionCheckInterval.current);
-      if (transferCheckInterval.current) clearInterval(transferCheckInterval.current);
     };
-  }, [token, checkSession, checkPendingTransfer]);
+  }, [token, checkSession]);
 
   const login = async (usernameInput, password) => {
     try {
@@ -116,29 +82,9 @@ export const AuthProvider = ({ children }) => {
         device_info: getDeviceInfo()
       });
 
-      const { 
-        token: newToken, 
-        username: user, 
-        is_admin, 
-        session_id,
-        has_existing_session,
-        existing_device_info,
-        transfer_request_id,
-        waiting_approval
-      } = response.data;
+      const { token: newToken, username: user, is_admin, session_id } = response.data;
       
-      // Check if waiting for approval from other device
-      if (waiting_approval && transfer_request_id) {
-        return { 
-          success: false, 
-          waitingApproval: true,
-          transferRequestId: transfer_request_id,
-          existingDeviceInfo: existing_device_info,
-          error: `Akun sedang digunakan di device lain: ${existing_device_info}`
-        };
-      }
-      
-      // Direct login (no existing session)
+      // Direct login success
       localStorage.setItem('token', newToken);
       localStorage.setItem('sessionId', session_id);
       localStorage.setItem('username', user);
@@ -150,55 +96,20 @@ export const AuthProvider = ({ children }) => {
       setSessionCheckFailed(false);
       return { success: true };
     } catch (error) {
+      // Check if this is a session_active error (HTTP 409)
+      if (error.response?.status === 409 && error.response?.data?.detail?.error === 'session_active') {
+        return {
+          success: false,
+          sessionActive: true,
+          deviceInfo: error.response.data.detail.device_info,
+          error: error.response.data.detail.message
+        };
+      }
+      
       return {
         success: false,
         error: error.response?.data?.detail || 'Login failed'
       };
-    }
-  };
-
-  // Poll for transfer approval status
-  const checkTransferStatus = async (requestId) => {
-    try {
-      const response = await axios.get(`${API}/auth/transfer-request/${requestId}`);
-      return response.data;
-    } catch (error) {
-      return { status: 'error', message: error.response?.data?.detail || 'Error checking status' };
-    }
-  };
-
-  // Complete login after transfer approval
-  const completeTransferLogin = (transferData) => {
-    localStorage.setItem('token', transferData.token);
-    localStorage.setItem('sessionId', transferData.session_id);
-    localStorage.setItem('username', transferData.username);
-    localStorage.setItem('isAdmin', transferData.is_admin ? 'true' : 'false');
-    setToken(transferData.token);
-    setSessionId(transferData.session_id);
-    setUsername(transferData.username);
-    setIsAdmin(transferData.is_admin || false);
-    setSessionCheckFailed(false);
-  };
-
-  // Respond to transfer request (approve/reject)
-  const respondToTransfer = async (requestId, approve) => {
-    try {
-      const response = await axios.post(
-        `${API}/auth/transfer-response/${requestId}`,
-        { action: approve ? 'approve' : 'reject' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setPendingTransfer(null);
-      
-      if (approve) {
-        // We approved, so we'll be logged out
-        setSessionCheckFailed(true);
-      }
-      
-      return response.data;
-    } catch (error) {
-      return { success: false, error: error.response?.data?.detail || 'Error' };
     }
   };
 
@@ -223,7 +134,6 @@ export const AuthProvider = ({ children }) => {
     setUsername(null);
     setIsAdmin(false);
     setSessionCheckFailed(false);
-    setPendingTransfer(null);
   };
 
   // Acknowledge session invalidation
@@ -241,13 +151,9 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         isAuthenticated,
         sessionCheckFailed,
-        pendingTransfer,
         login,
         logout,
-        acknowledgeSessionInvalid,
-        checkTransferStatus,
-        completeTransferLogin,
-        respondToTransfer
+        acknowledgeSessionInvalid
       }}
     >
       {children}
