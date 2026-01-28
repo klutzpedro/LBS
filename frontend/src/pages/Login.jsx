@@ -139,7 +139,7 @@ const Login = () => {
                 color: 'var(--foreground-secondary)'
               }}
             >
-              {mode === 'login' ? 'Location Based System Login' : 'Pendaftaran Akun Baru'}
+              {mode === 'login' ? 'Netra Login' : 'Pendaftaran Akun Baru'}
             </p>
           </div>
 
