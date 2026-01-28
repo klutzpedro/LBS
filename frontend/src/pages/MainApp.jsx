@@ -651,20 +651,29 @@ const MainApp = () => {
     }
   }, [targets, selectedCase]);
 
+  // Detect status changes and show toast notifications
   useEffect(() => {
+    const prevTargets = prevTargetsRef.current;
+    
     targets.forEach(target => {
-      const prevTarget = targets.find(t => t.id === target.id);
+      const prevTarget = prevTargets.find(t => t.id === target.id);
       
-      if (target.status === 'completed' && prevTarget?.status !== 'completed') {
-        toast.success(`✓ Lokasi ${target.phone_number} ditemukan!`);
-      }
-      if (target.status === 'not_found' && prevTarget?.status !== 'not_found') {
-        toast.warning(`⚠ Target ${target.phone_number} tidak ditemukan atau sedang OFF`);
-      }
-      if (target.status === 'error' && prevTarget?.status !== 'error') {
-        toast.error(`✗ Query gagal untuk ${target.phone_number}`);
+      // Only show toast if we have previous state to compare
+      if (prevTarget) {
+        if (target.status === 'completed' && prevTarget.status === 'processing') {
+          toast.success(`✓ Lokasi ${target.phone_number} ditemukan!`);
+        }
+        if (target.status === 'not_found' && prevTarget.status === 'processing') {
+          toast.warning(`⚠ Target ${target.phone_number} tidak ditemukan atau sedang OFF`);
+        }
+        if (target.status === 'error' && prevTarget.status === 'processing') {
+          toast.error(`✗ Query gagal untuk ${target.phone_number}`);
+        }
       }
     });
+    
+    // Update prev targets ref for next comparison
+    prevTargetsRef.current = targets;
   }, [targets]);
 
   useEffect(() => {
