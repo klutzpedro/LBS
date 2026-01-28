@@ -130,7 +130,7 @@ const Login = () => {
                 color: 'var(--foreground-primary)'
               }}
             >
-              WASKITA LBS
+              Location Based System
             </h1>
             <p 
               className="text-sm"
