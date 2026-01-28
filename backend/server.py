@@ -1874,7 +1874,7 @@ async def query_cp_api_for_new_target(target_id: str, phone_number: str):
         result = await query_position(phone_number)
         
         if result.get("success"):
-            # Update target with position
+            # Update target with position - include all available data
             new_data = {
                 "latitude": result["latitude"],
                 "longitude": result["longitude"],
@@ -1884,10 +1884,16 @@ async def query_cp_api_for_new_target(target_id: str, phone_number: str):
                 "imsi": result.get("imsi"),
                 "imei": result.get("imei"),
                 "phone_model": result.get("phone_model"),
+                "operator": result.get("operator"),
+                "mcc": result.get("mcc"),
+                "mnc": result.get("mnc"),
+                "lac": result.get("lac"),
+                "ci": result.get("ci"),
+                "cgi": result.get("cgi"),
                 "prefix_type": result.get("prefix_type"),
                 "query_time": result.get("query_time"),
                 "timestamp": result["timestamp"],
-                "source": "cp_api"
+                "source": result.get("source", "cp_api")
             }
             
             await db.targets.update_one(
@@ -1909,14 +1915,14 @@ async def query_cp_api_for_new_target(target_id: str, phone_number: str):
                 result["address"], result["timestamp"]
             )
             
-            logging.info(f"[CP API NEW] ✓ Position found for {phone_number}: {result['latitude']}, {result['longitude']}")
+            logging.info(f"[POSITION] ✓ Position found for {phone_number}: {result['latitude']}, {result['longitude']}")
             
             # Check AOI alerts
             await check_aoi_alerts(target_id, phone_number, result["latitude"], result["longitude"])
             
         else:
             error_msg = result.get("error", "Unknown error")
-            logging.warning(f"[CP API NEW] Failed for {phone_number}: {error_msg}")
+            logging.warning(f"[POSITION] Failed for {phone_number}: {error_msg}")
             
             await db.targets.update_one(
                 {"id": target_id},
