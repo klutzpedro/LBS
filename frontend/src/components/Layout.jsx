@@ -47,7 +47,7 @@ export const Layout = ({ children }) => {
               <h1 className="text-xl font-bold" style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}>
                 WASKITA
               </h1>
-              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Location Based System</p>
+              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Netra</p>
             </div>
           </div>
         </div>
