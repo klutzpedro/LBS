@@ -830,15 +830,56 @@ async def clear_failed_logins(ip: str, username: str):
     key = f"{ip}:{username}"
     failed_login_attempts[key] = []
 
+# ============================================
+# SINGLE DEVICE SESSION MANAGEMENT
+# ============================================
+async def get_active_session(username: str):
+    """Get active session for a user"""
+    session = await db.active_sessions.find_one({"username": username})
+    return session
+
+async def create_session(username: str, session_id: str, device_info: str):
+    """Create or update session for user"""
+    await db.active_sessions.update_one(
+        {"username": username},
+        {
+            "$set": {
+                "username": username,
+                "session_id": session_id,
+                "device_info": device_info,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "last_activity": datetime.now(timezone.utc).isoformat()
+            }
+        },
+        upsert=True
+    )
+
+async def invalidate_session(username: str):
+    """Invalidate session for user (for force logout)"""
+    await db.active_sessions.delete_one({"username": username})
+
+async def check_session_valid(username: str, session_id: str) -> bool:
+    """Check if session is still valid"""
+    session = await db.active_sessions.find_one({
+        "username": username,
+        "session_id": session_id
+    })
+    return session is not None
+
 # Models
 class LoginRequest(BaseModel):
     username: str
     password: str
+    device_info: Optional[str] = "Unknown Device"
+    force_login: bool = False  # If true, force logout from other device
 
 class LoginResponse(BaseModel):
     token: str
     username: str
     is_admin: bool = False
+    session_id: str = ""
+    has_existing_session: bool = False
+    existing_device_info: Optional[str] = None
 
 class RegisterRequest(BaseModel):
     username: str
