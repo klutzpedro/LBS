@@ -7,7 +7,7 @@ import { API } from '@/context/AuthContext';
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Button } from '@/components/ui/button';
-import { MapPin, Plus, FolderOpen, Minimize2, LogOut, AlertTriangle } from 'lucide-react';
+import { MapPin, Plus, FolderOpen, Minimize2, LogOut, AlertTriangle, Smartphone, Check, X } from 'lucide-react';
 import { HistoryDialog } from '@/components/HistoryDialog';
 import { AOIPanel, AOIAlertNotification } from '@/components/AOIComponents';
 import { toast } from 'sonner';
