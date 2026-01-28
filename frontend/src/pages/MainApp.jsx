@@ -158,6 +158,9 @@ const MainApp = () => {
   // Track executing schedules
   const executingSchedulesRef = useRef(new Set());
   
+  // Track targets for polling (to avoid stale closure issues)
+  const targetsRef = useRef([]);
+  
   // Loading states
   const [loadingPendalaman, setLoadingPendalaman] = useState(null);
   const [loadingNikPendalaman, setLoadingNikPendalaman] = useState(null);
