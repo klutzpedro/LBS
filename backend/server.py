@@ -8031,6 +8031,112 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             }
     
     # ============================================
+    # DATA BREACH QUERIES USE CP API DIRECTLY (NO TELEGRAM)
+    # ============================================
+    if query_type in ['breach_phone', 'breach_email', 'breach_name']:
+        logger.info(f"[SIMPLE QUERY] Data Breach query via CP API: {query_type} = {query_value}")
+        
+        try:
+            # Determine endpoint based on query type
+            if query_type == 'breach_phone':
+                endpoint = f"{CP_API_URL}/api/v3/breach/phone"
+            elif query_type == 'breach_email':
+                endpoint = f"{CP_API_URL}/api/v3/breach/email"
+            else:  # breach_name
+                endpoint = f"{CP_API_URL}/api/v3/breach/name"
+            
+            headers = {
+                "x-api-key": CP_API_KEY,
+                "Content-Type": "application/json"
+            }
+            
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(
+                    endpoint,
+                    params={"query": query_value},
+                    headers=headers
+                )
+                
+                logger.info(f"[BREACH] Response status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Format response as readable text
+                    if isinstance(data, list):
+                        if len(data) == 0:
+                            raw_response = "Tidak ada data breach ditemukan."
+                        else:
+                            lines = [f"=== DATA BREACH RESULTS ===", f"Query: {query_value}", f"Total: {len(data)} record(s)", "=" * 30, ""]
+                            for i, item in enumerate(data, 1):
+                                lines.append(f"--- Record {i} ---")
+                                if isinstance(item, dict):
+                                    for key, value in item.items():
+                                        if value:
+                                            lines.append(f"{key}: {value}")
+                                else:
+                                    lines.append(str(item))
+                                lines.append("")
+                            raw_response = "\n".join(lines)
+                    elif isinstance(data, dict):
+                        if data.get("error") or data.get("message"):
+                            raw_response = data.get("error") or data.get("message") or "Tidak ada data"
+                        else:
+                            lines = [f"=== DATA BREACH RESULT ===", f"Query: {query_value}", "=" * 30, ""]
+                            for key, value in data.items():
+                                if value:
+                                    lines.append(f"{key}: {value}")
+                            raw_response = "\n".join(lines)
+                    else:
+                        raw_response = str(data) if data else "Tidak ada data breach ditemukan."
+                    
+                    # Save to cache
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "created_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    logger.info(f"[BREACH] Saved result to cache: {cache_key}")
+                    
+                    return {
+                        "success": True,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "verified": True,
+                        "cached": False,
+                        "source": "CP_API"
+                    }
+                else:
+                    error_text = response.text
+                    logger.error(f"[BREACH] API error: {response.status_code} - {error_text}")
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": f"API Error: {response.status_code}",
+                        "source": "CP_API"
+                    }
+                    
+        except Exception as e:
+            logger.error(f"[BREACH] Exception: {e}")
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "CP_API"
+            }
+    
+    # ============================================
     # NON-PASSPORT QUERIES USE TELEGRAM BOT
     # ============================================
     logger.info(f"[SIMPLE QUERY] Querying via Telegram bot...")
