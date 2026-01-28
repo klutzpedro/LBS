@@ -916,17 +916,6 @@ async def check_session_valid(username: str, session_id: str) -> bool:
     
     return session is not None
 
-async def update_transfer_request_status(request_id: str, status: str):
-    """Update transfer request status"""
-    await db.device_transfer_requests.update_one(
-        {"request_id": request_id},
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-
-async def delete_transfer_request(request_id: str):
-    """Delete transfer request"""
-    await db.device_transfer_requests.delete_one({"request_id": request_id})
-
 # Models
 class LoginRequest(BaseModel):
     username: str
