@@ -5456,20 +5456,6 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
     
     async with nongeoint_queue_lock:
         try:
-            # Ensure Telegram connection
-            connected = await safe_telegram_operation(
-                lambda: ensure_telegram_connected(),
-                f"nik_invest_connect_{investigation_id}",
-                max_retries=5
-            )
-            
-            if not connected:
-                await db.nik_investigations.update_one(
-                    {"id": investigation_id},
-                    {"$set": {"status": "error", "error": "Telegram connection failed"}}
-                )
-                return
-            
             # Process each NIK sequentially
             for nik in niks:
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] Processing NIK: {nik}")
@@ -5484,30 +5470,95 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     "status": "processing"
                 }
                 
-                # Query 1: NIK
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NIK for {nik}")
-                await db.nik_investigations.update_one(
-                    {"id": investigation_id},
-                    {"$set": {f"results.{nik}.status": "processing_nik"}}
-                )
-                nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
+                # ============================================
+                # CHECK CACHE FIRST BEFORE QUERYING TELEGRAM
+                # ============================================
+                
+                # Query 1: NIK - Check cache first
+                cache_key_nik = f"capil_nik:{nik}"
+                cached_nik = await db.simple_query_cache.find_one({"cache_key": cache_key_nik})
+                
+                if cached_nik and cached_nik.get("raw_response"):
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for NIK {nik}")
+                    nik_result = {
+                        "status": "success",
+                        "raw_text": cached_nik.get("raw_response"),
+                        "data": {},
+                        "photo": cached_nik.get("photo"),
+                        "from_cache": True
+                    }
+                    # Try to parse data from raw text
+                    try:
+                        raw_text = cached_nik.get("raw_response", "")
+                        import re
+                        # Extract Family ID/NKK
+                        family_match = re.search(r'(?:Family ID|No KK|NKK|NO\.?\s*KK)[:\s]*(\d{16})', raw_text, re.IGNORECASE)
+                        if family_match:
+                            nik_result['data']['Family ID'] = family_match.group(1)
+                        # Extract Name
+                        name_match = re.search(r'(?:Nama|Full Name|NAME)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                        if name_match:
+                            nik_result['data']['Full Name'] = name_match.group(1).strip()
+                    except:
+                        pass
+                else:
+                    # No cache, query Telegram
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] No cache, querying NIK for {nik}")
+                    
+                    # Ensure Telegram connection
+                    connected = await safe_telegram_operation(
+                        lambda: ensure_telegram_connected(),
+                        f"nik_invest_connect_{investigation_id}",
+                        max_retries=5
+                    )
+                    
+                    if not connected:
+                        await db.nik_investigations.update_one(
+                            {"id": investigation_id},
+                            {"$set": {"status": "error", "error": "Telegram connection failed"}}
+                        )
+                        return
+                    
+                    await db.nik_investigations.update_one(
+                        {"id": investigation_id},
+                        {"$set": {f"results.{nik}.status": "processing_nik"}}
+                    )
+                    nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
+                    
+                    # Save to Simple Query Cache
+                    if nik_result.get("status") == "success" and nik_result.get("raw_text"):
+                        cache_doc = {
+                            "cache_key": cache_key_nik,
+                            "query_type": "capil_nik",
+                            "query_value": nik,
+                            "raw_response": nik_result.get("raw_text"),
+                            "photo": nik_result.get("photo"),
+                            "created_by": "investigation",
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.simple_query_cache.update_one(
+                            {"cache_key": cache_key_nik},
+                            {"$set": cache_doc},
+                            upsert=True
+                        )
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Saved NIK result to cache")
+                
                 nik_results["nik_data"] = nik_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] NIK result status: {nik_result.get('status')}")
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] NIK result status: {nik_result.get('status')}, from_cache: {nik_result.get('from_cache', False)}")
+                
                 # Save immediately after each query
                 await db.nik_investigations.update_one(
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}.nik_data": nik_result}}
                 )
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 
-                # Query 2: NKK - MUST USE FAMILY ID from NIK data, not NIK
+                # Query 2: NKK - MUST USE FAMILY ID from NIK data
                 family_id = None
                 if nik_result.get('data'):
-                    # Try to extract Family ID from parsed data
                     family_id = nik_result['data'].get('Family ID') or nik_result['data'].get('No KK') or nik_result['data'].get('NKK') or nik_result['data'].get('family_id')
                 
                 if not family_id and nik_result.get('raw_text'):
-                    # Try to extract from raw text
                     import re
                     family_match = re.search(r'(?:Family ID|No KK|NKK)[:\s]*(\d{16})', nik_result['raw_text'], re.IGNORECASE)
                     if family_match:
@@ -5516,15 +5567,44 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] Extracted Family ID: {family_id}")
                 
                 if family_id:
-                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NKK with Family ID: {family_id}")
-                    await db.nik_investigations.update_one(
-                        {"id": investigation_id},
-                        {"$set": {f"results.{nik}.status": "processing_nkk"}}
-                    )
-                    # Use Family ID instead of NIK for NKK query
-                    nkk_result = await execute_nik_button_query(investigation_id, family_id, "NKK")
+                    # Check NKK cache first
+                    cache_key_nkk = f"nkk:{family_id}"
+                    cached_nkk = await db.simple_query_cache.find_one({"cache_key": cache_key_nkk})
+                    
+                    if cached_nkk and cached_nkk.get("raw_response"):
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for NKK {family_id}")
+                        nkk_result = {
+                            "status": "success",
+                            "raw_text": cached_nkk.get("raw_response"),
+                            "data": {},
+                            "from_cache": True
+                        }
+                    else:
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying NKK with Family ID: {family_id}")
+                        await db.nik_investigations.update_one(
+                            {"id": investigation_id},
+                            {"$set": {f"results.{nik}.status": "processing_nkk"}}
+                        )
+                        nkk_result = await execute_nik_button_query(investigation_id, family_id, "NKK")
+                        
+                        # Save to cache
+                        if nkk_result.get("status") == "success" and nkk_result.get("raw_text"):
+                            cache_doc = {
+                                "cache_key": cache_key_nkk,
+                                "query_type": "nkk",
+                                "query_value": family_id,
+                                "raw_response": nkk_result.get("raw_text"),
+                                "created_by": "investigation",
+                                "created_at": datetime.now(timezone.utc).isoformat()
+                            }
+                            await db.simple_query_cache.update_one(
+                                {"cache_key": cache_key_nkk},
+                                {"$set": cache_doc},
+                                upsert=True
+                            )
+                    
                     nik_results["nkk_data"] = nkk_result
-                    logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}")
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}, from_cache: {nkk_result.get('from_cache', False)}")
                 else:
                     logger.warning(f"[NIK INVESTIGATION {investigation_id}] No Family ID found, skipping NKK query")
                     nkk_result = {"status": "skipped", "error": "No Family ID found in NIK data"}
@@ -5535,17 +5615,50 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     {"id": investigation_id},
                     {"$set": {f"results.{nik}.nkk_data": nkk_result}}
                 )
-                await asyncio.sleep(3)
+                await asyncio.sleep(1)
                 
-                # Query 3: RegNIK - Handle multiple phone numbers
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying RegNIK for {nik}")
-                await db.nik_investigations.update_one(
-                    {"id": investigation_id},
-                    {"$set": {f"results.{nik}.status": "processing_regnik"}}
-                )
-                regnik_result = await execute_regnik_query(investigation_id, nik)
+                # Query 3: RegNIK - Check cache first
+                cache_key_reghp = f"reghp:{nik}"
+                cached_reghp = await db.simple_query_cache.find_one({"cache_key": cache_key_reghp})
+                
+                if cached_reghp and cached_reghp.get("raw_response"):
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for RegHP {nik}")
+                    regnik_result = {
+                        "status": "success",
+                        "raw_text": cached_reghp.get("raw_response"),
+                        "phones": [],
+                        "from_cache": True
+                    }
+                    # Try to extract phone numbers from raw text
+                    import re
+                    phones = re.findall(r'62\d{9,13}', cached_reghp.get("raw_response", ""))
+                    regnik_result["phones"] = list(set(phones))
+                else:
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying RegNIK for {nik}")
+                    await db.nik_investigations.update_one(
+                        {"id": investigation_id},
+                        {"$set": {f"results.{nik}.status": "processing_regnik"}}
+                    )
+                    regnik_result = await execute_regnik_query(investigation_id, nik)
+                    
+                    # Save to cache
+                    if regnik_result.get("status") == "success" and regnik_result.get("raw_text"):
+                        cache_doc = {
+                            "cache_key": cache_key_reghp,
+                            "query_type": "reghp",
+                            "query_value": nik,
+                            "raw_response": regnik_result.get("raw_text"),
+                            "created_by": "investigation",
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.simple_query_cache.update_one(
+                            {"cache_key": cache_key_reghp},
+                            {"$set": cache_doc},
+                            upsert=True
+                        )
+                
                 nik_results["regnik_data"] = regnik_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}, phones found: {len(regnik_result.get('phones', []))}")
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] RegNIK result status: {regnik_result.get('status')}, from_cache: {regnik_result.get('from_cache', False)}")
                 
                 # Save immediately after each query
                 await db.nik_investigations.update_one(
