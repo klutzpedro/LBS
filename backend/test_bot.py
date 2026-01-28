@@ -21,7 +21,7 @@ BOT_USERNAME = '@northarch_bot'
 async def test_bot_query(phone_number: str):
     """Test complete bot query flow"""
     print("=" * 60)
-    print("Location Based System - Bot Communication Test")
+    print("Netra - Bot Communication Test")
     print("=" * 60)
     print(f"\nTarget Bot: {BOT_USERNAME}")
     print(f"Phone Number: {phone_number}")
