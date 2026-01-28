@@ -1668,38 +1668,45 @@ const MainApp = () => {
                 toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
                 return;
               }
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setSelectedNonGeointSearch(null);
               setNonGeointDialogOpen(true);
             }}
             onOpenFullQueryHistory={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setNonGeointHistoryOpen(true);
             }}
             isInvestigating={isGlobalInvestigating}
             // Face Recognition
             onOpenFaceRecognition={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setFrDialogOpen(true);
             }}
             onOpenFaceRecognitionHistory={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setFrHistoryOpen(true);
             }}
             isFrProcessing={isFrProcessing}
             // Simple Query
             onOpenSimpleQuery={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setSimpleQueryOpen(true);
             }}
             onOpenSimpleQueryHistory={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setSimpleQueryHistoryOpen(true);
             }}
             // User Management
             isAdmin={isAdmin}
             onOpenUserManagement={() => {
-              setToolsPanelWasOpen(true);
+              setToolsPanelWasOpen(toolsPanelOpen);
+              setToolsPanelOpen(false);
               setUserManagementOpen(true);
             }}
           />
