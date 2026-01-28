@@ -1034,11 +1034,13 @@ ADMIN_PASSWORD = "Paparoni290483#"
 
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, req: Request):
-    """Login endpoint - supports admin and registered users"""
+    """Login endpoint - supports admin and registered users with single-device enforcement"""
     
     client_ip = req.headers.get('x-forwarded-for', req.headers.get('x-real-ip', req.client.host if req.client else 'unknown'))
     if ',' in client_ip:
         client_ip = client_ip.split(',')[0].strip()
+    
+    device_info = request.device_info or f"Unknown Device ({client_ip})"
     
     # Check brute force protection
     if not await check_login_attempts(client_ip, request.username):
@@ -1054,9 +1056,31 @@ async def login(request: LoginRequest, req: Request):
             await record_failed_login(client_ip, request.username)
             raise HTTPException(status_code=401, detail="Invalid credentials")
         
+        # Check for existing session (single device enforcement)
+        existing_session = await get_active_session(request.username)
+        if existing_session and not request.force_login:
+            # Return info about existing session without logging in
+            return LoginResponse(
+                token="",
+                username=request.username,
+                is_admin=True,
+                session_id="",
+                has_existing_session=True,
+                existing_device_info=existing_session.get("device_info", "Unknown Device")
+            )
+        
+        # Create new session
+        session_id = secrets.token_hex(32)
+        await create_session(request.username, session_id, device_info)
+        
         await clear_failed_logins(client_ip, request.username)
         token = jwt.encode(
-            {"username": request.username, "is_admin": True, "iat": datetime.now(timezone.utc)},
+            {
+                "username": request.username, 
+                "is_admin": True, 
+                "session_id": session_id,
+                "iat": datetime.now(timezone.utc)
+            },
             JWT_SECRET,
             algorithm=JWT_ALGORITHM
         )
@@ -1065,11 +1089,11 @@ async def login(request: LoginRequest, req: Request):
         await db.security_logs.insert_one({
             "ip": client_ip,
             "event_type": "login_success",
-            "details": f"Admin login: {request.username}",
+            "details": f"Admin login: {request.username} from {device_info}" + (" (forced)" if request.force_login else ""),
             "timestamp": datetime.now(timezone.utc).isoformat()
         })
         
-        return LoginResponse(token=token, username=request.username, is_admin=True)
+        return LoginResponse(token=token, username=request.username, is_admin=True, session_id=session_id)
     
     # Check if registered user
     user = await db.users.find_one({"username": request.username})
@@ -1091,9 +1115,31 @@ async def login(request: LoginRequest, req: Request):
         else:
             raise HTTPException(status_code=403, detail="Akun tidak aktif")
     
+    # Check for existing session (single device enforcement)
+    existing_session = await get_active_session(request.username)
+    if existing_session and not request.force_login:
+        # Return info about existing session without logging in
+        return LoginResponse(
+            token="",
+            username=request.username,
+            is_admin=False,
+            session_id="",
+            has_existing_session=True,
+            existing_device_info=existing_session.get("device_info", "Unknown Device")
+        )
+    
+    # Create new session
+    session_id = secrets.token_hex(32)
+    await create_session(request.username, session_id, device_info)
+    
     await clear_failed_logins(client_ip, request.username)
     token = jwt.encode(
-        {"username": request.username, "is_admin": False, "iat": datetime.now(timezone.utc)},
+        {
+            "username": request.username, 
+            "is_admin": False, 
+            "session_id": session_id,
+            "iat": datetime.now(timezone.utc)
+        },
         JWT_SECRET,
         algorithm=JWT_ALGORITHM
     )
@@ -1102,11 +1148,54 @@ async def login(request: LoginRequest, req: Request):
     await db.security_logs.insert_one({
         "ip": client_ip,
         "event_type": "login_success",
-        "details": f"User login: {request.username}",
+        "details": f"User login: {request.username} from {device_info}" + (" (forced)" if request.force_login else ""),
         "timestamp": datetime.now(timezone.utc).isoformat()
     })
     
-    return LoginResponse(token=token, username=request.username, is_admin=False)
+    return LoginResponse(token=token, username=request.username, is_admin=False, session_id=session_id)
+
+@api_router.post("/auth/check-session")
+async def check_session(req: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Check if current session is still valid"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        username = payload.get("username")
+        session_id = payload.get("session_id")
+        
+        if not username or not session_id:
+            return {"valid": False, "reason": "invalid_token"}
+        
+        is_valid = await check_session_valid(username, session_id)
+        if not is_valid:
+            return {"valid": False, "reason": "session_invalidated"}
+        
+        # Update last activity
+        await db.active_sessions.update_one(
+            {"username": username, "session_id": session_id},
+            {"$set": {"last_activity": datetime.now(timezone.utc).isoformat()}}
+        )
+        
+        return {"valid": True}
+    except jwt.ExpiredSignatureError:
+        return {"valid": False, "reason": "token_expired"}
+    except jwt.InvalidTokenError:
+        return {"valid": False, "reason": "invalid_token"}
+
+@api_router.post("/auth/logout")
+async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Logout and invalidate session"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        username = payload.get("username")
+        
+        if username:
+            await invalidate_session(username)
+        
+        return {"success": True, "message": "Logged out successfully"}
+    except:
+        return {"success": True, "message": "Logged out"}
 
 @api_router.post("/auth/register")
 async def register(request: RegisterRequest):
