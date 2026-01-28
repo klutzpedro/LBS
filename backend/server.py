@@ -1087,87 +1087,80 @@ async def login(request: LoginRequest, req: Request):
             detail="Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit."
         )
     
+    is_admin = False
+    
     # Check if admin login
     if request.username == ADMIN_USERNAME:
         if request.password != ADMIN_PASSWORD:
             await record_failed_login(client_ip, request.username)
             raise HTTPException(status_code=401, detail="Invalid credentials")
+        is_admin = True
+    else:
+        # Check if registered user
+        user = await db.users.find_one({"username": request.username})
+        if not user:
+            await record_failed_login(client_ip, request.username)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        # Check for existing session (single device enforcement)
-        existing_session = await get_active_session(request.username)
-        if existing_session and not request.force_login:
-            # Return info about existing session without logging in
-            return LoginResponse(
-                token="",
-                username=request.username,
-                is_admin=True,
-                session_id="",
-                has_existing_session=True,
-                existing_device_info=existing_session.get("device_info", "Unknown Device")
-            )
+        # Verify password
+        if not pwd_context.verify(request.password, user.get("password_hash", "")):
+            await record_failed_login(client_ip, request.username)
+            raise HTTPException(status_code=401, detail="Invalid credentials")
         
-        # Create new session
-        session_id = secrets.token_hex(32)
-        await create_session(request.username, session_id, device_info)
-        
-        await clear_failed_logins(client_ip, request.username)
-        token = jwt.encode(
-            {
-                "username": request.username, 
-                "is_admin": True, 
-                "session_id": session_id,
-                "iat": datetime.now(timezone.utc)
-            },
-            JWT_SECRET,
-            algorithm=JWT_ALGORITHM
-        )
-        
-        # Log successful login
-        await db.security_logs.insert_one({
-            "ip": client_ip,
-            "event_type": "login_success",
-            "details": f"Admin login: {request.username} from {device_info}" + (" (forced)" if request.force_login else ""),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
-        
-        return LoginResponse(token=token, username=request.username, is_admin=True, session_id=session_id)
-    
-    # Check if registered user
-    user = await db.users.find_one({"username": request.username})
-    if not user:
-        await record_failed_login(client_ip, request.username)
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Verify password
-    if not pwd_context.verify(request.password, user.get("password_hash", "")):
-        await record_failed_login(client_ip, request.username)
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    # Check if user is approved
-    if user.get("status") != "approved":
-        if user.get("status") == "pending":
-            raise HTTPException(status_code=403, detail="Akun Anda belum disetujui oleh admin")
-        elif user.get("status") == "rejected":
-            raise HTTPException(status_code=403, detail="Pendaftaran akun Anda ditolak")
-        else:
-            raise HTTPException(status_code=403, detail="Akun tidak aktif")
+        # Check if user is approved
+        if user.get("status") != "approved":
+            if user.get("status") == "pending":
+                raise HTTPException(status_code=403, detail="Akun Anda belum disetujui oleh admin")
+            elif user.get("status") == "rejected":
+                raise HTTPException(status_code=403, detail="Pendaftaran akun Anda ditolak")
+            else:
+                raise HTTPException(status_code=403, detail="Akun tidak aktif")
     
     # Check for existing session (single device enforcement)
     existing_session = await get_active_session(request.username)
-    if existing_session and not request.force_login:
-        # Return info about existing session without logging in
+    if existing_session:
+        # Create transfer request and wait for approval
+        request_id = secrets.token_hex(16)
+        await create_transfer_request(request.username, device_info, request_id)
+        
+        logger.info(f"[SESSION] Transfer request created for {request.username}, request_id: {request_id}")
+        
         return LoginResponse(
             token="",
             username=request.username,
-            is_admin=False,
+            is_admin=is_admin,
             session_id="",
             has_existing_session=True,
-            existing_device_info=existing_session.get("device_info", "Unknown Device")
+            existing_device_info=existing_session.get("device_info", "Unknown Device"),
+            transfer_request_id=request_id,
+            waiting_approval=True
         )
     
-    # Create new session
+    # No existing session - create new session directly
     session_id = secrets.token_hex(32)
     await create_session(request.username, session_id, device_info)
+    
+    await clear_failed_logins(client_ip, request.username)
+    token = jwt.encode(
+        {
+            "username": request.username, 
+            "is_admin": is_admin, 
+            "session_id": session_id,
+            "iat": datetime.now(timezone.utc)
+        },
+        JWT_SECRET,
+        algorithm=JWT_ALGORITHM
+    )
+    
+    # Log successful login
+    await db.security_logs.insert_one({
+        "ip": client_ip,
+        "event_type": "login_success",
+        "details": f"{'Admin' if is_admin else 'User'} login: {request.username} from {device_info}",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return LoginResponse(token=token, username=request.username, is_admin=is_admin, session_id=session_id)
     
     await clear_failed_logins(client_ip, request.username)
     token = jwt.encode(
