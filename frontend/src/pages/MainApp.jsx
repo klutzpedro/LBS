@@ -102,21 +102,45 @@ const MainApp = () => {
   const [toolsPanelOpen, setToolsPanelOpen] = useState(true); // Open by default
   const [toolsPanelWasOpen, setToolsPanelWasOpen] = useState(false); // Track if panel was open before dialog
   
-  // Helper functions to handle dialog open/close with Tools Panel state
-  const openDialogFromTools = (openDialog) => {
-    setToolsPanelWasOpen(toolsPanelOpen);
-    setToolsPanelOpen(false);
-    openDialog(true);
+  // Helper function to check if any tool dialog is open
+  const isAnyToolDialogOpen = (excludeDialog = null) => {
+    const dialogs = {
+      nonGeointDialogOpen,
+      nonGeointHistoryOpen,
+      frDialogOpen,
+      frHistoryOpen,
+      simpleQueryOpen,
+      simpleQueryHistoryOpen,
+      userManagementOpen
+    };
+    
+    return Object.entries(dialogs).some(([key, value]) => {
+      if (excludeDialog && key === excludeDialog) return false;
+      return value;
+    });
   };
   
-  const closeDialogAndRestoreTools = (closeDialog) => {
-    closeDialog(false);
-    // Restore Tools Panel if it was open before
-    if (toolsPanelWasOpen) {
-      setToolsPanelOpen(true);
-    }
+  // Helper to restore Tools Panel only if no other dialogs are open
+  const restoreToolsPanelIfNoDialogs = (closingDialogKey) => {
+    // Use setTimeout to check after state updates
+    setTimeout(() => {
+      // Check current dialog states (after the closing dialog is closed)
+      const anyOpen = 
+        (closingDialogKey !== 'nonGeointDialogOpen' && nonGeointDialogOpen) ||
+        (closingDialogKey !== 'nonGeointHistoryOpen' && nonGeointHistoryOpen) ||
+        (closingDialogKey !== 'frDialogOpen' && frDialogOpen) ||
+        (closingDialogKey !== 'frHistoryOpen' && frHistoryOpen) ||
+        (closingDialogKey !== 'simpleQueryOpen' && simpleQueryOpen) ||
+        (closingDialogKey !== 'simpleQueryHistoryOpen' && simpleQueryHistoryOpen) ||
+        (closingDialogKey !== 'userManagementOpen' && userManagementOpen);
+      
+      if (!anyOpen && toolsPanelWasOpen) {
+        setToolsPanelOpen(true);
+        setToolsPanelWasOpen(false);
+      }
+    }, 50);
   };
-  
+
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
