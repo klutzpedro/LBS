@@ -8322,30 +8322,59 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             # ============================================
             # RETRY MECHANISM: Try multiple times to get the correct response
+            # Collect ALL messages (not just the first one)
             # ============================================
             raw_response = None
-            max_retries = 3
+            all_responses = []
+            max_retries = 4  # Increased retries for multi-message responses
             
             for retry in range(max_retries):
                 # Fetch messages that came AFTER our sent message
-                messages = await telegram_client.get_messages(bot_entity, limit=15, min_id=sent_msg_id)
+                # Increase limit to capture multiple consecutive messages
+                messages = await telegram_client.get_messages(bot_entity, limit=20, min_id=sent_msg_id)
+                
+                # Sort messages by ID (oldest first) to maintain order
+                messages = sorted([m for m in messages if not m.out], key=lambda x: x.id)
                 
                 for msg in messages:
-                    if msg.out:
-                        continue
                     if msg.text and len(msg.text) > 20:
                         # Skip button prompts and get actual data
                         if not any(skip in msg.text.lower() for skip in ['pilih', 'choose', 'select', 'silakan']):
-                            raw_response = msg.text
-                            logger.info(f"[SIMPLE QUERY] Found response (msg_id={msg.id}, retry={retry}): {raw_response[:50]}...")
-                            break
+                            # Check if this message is already collected
+                            msg_text = msg.text.strip()
+                            if msg_text not in all_responses:
+                                all_responses.append(msg_text)
+                                logger.info(f"[SIMPLE QUERY] Collected response (msg_id={msg.id}, retry={retry}): {msg_text[:50]}...")
                 
-                if raw_response:
-                    break
+                # If we found responses, wait a bit more to see if there are more messages coming
+                if all_responses:
+                    prev_count = len(all_responses)
+                    await asyncio.sleep(2)
                     
-                # Wait a bit more and retry
-                logger.info(f"[SIMPLE QUERY] No response yet, retry {retry + 1}/{max_retries}...")
-                await asyncio.sleep(3)
+                    # Check for more messages
+                    new_messages = await telegram_client.get_messages(bot_entity, limit=20, min_id=sent_msg_id)
+                    new_messages = sorted([m for m in new_messages if not m.out], key=lambda x: x.id)
+                    
+                    for msg in new_messages:
+                        if msg.text and len(msg.text) > 20:
+                            if not any(skip in msg.text.lower() for skip in ['pilih', 'choose', 'select', 'silakan']):
+                                msg_text = msg.text.strip()
+                                if msg_text not in all_responses:
+                                    all_responses.append(msg_text)
+                                    logger.info(f"[SIMPLE QUERY] Collected additional response (msg_id={msg.id}): {msg_text[:50]}...")
+                    
+                    # If no new messages, we're done
+                    if len(all_responses) == prev_count:
+                        break
+                else:
+                    # Wait and retry
+                    logger.info(f"[SIMPLE QUERY] No response yet, retry {retry + 1}/{max_retries}...")
+                    await asyncio.sleep(3)
+            
+            # Combine all responses into one
+            if all_responses:
+                raw_response = "\n\n".join(all_responses)
+                logger.info(f"[SIMPLE QUERY] Combined {len(all_responses)} message(s) into response")
             
             if raw_response:
                 # Verify response is related to our query (STRICT check)
