@@ -25,7 +25,8 @@ import {
   History,
   Clock,
   Trash2,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
