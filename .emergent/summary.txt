@@ -1,78 +1,79 @@
 <analysis>**original_problem_statement:**
-The user is building a Geospatial Information System (GIS) web application, now named NETRA, deployed on a private VPS. The application's core purpose is to query location and personal data from external sources (a CP API and a private Telegram bot).
+The user is building a Geospatial Information System (GIS) web application, NETRA, to query location and personal data from external sources (a CP API and a private Telegram bot).
 
 PRODUCT REQUIREMENTS:
-1.  **Core Functionality:** Create cases, add target phone numbers, and query for location (CP API) and personal data (Telegram bot).
-2.  **FULL QUERY:** A UI to search for individuals by name, triggering queries to external systems, followed by a deep dive investigation (NIK, NKK, RegHP, Passport, etc.).
-3.  **Face Recognition (FR) Feature:** A feature to identify a person by photo.
-4.  **SIMPLE QUERY:** A feature for single, targeted searches (e.g., NIK only, Plate Number only).
-5.  **User Management System:** Admin must approve all new user registrations.
-6.  **Data Isolation (Multi-Tenancy):** Each user's data (cases, searches, history) must be isolated.
-7.  **Database Caching:** All queries to external systems should be cached. A shared cache for all users for the SIMPLE QUERY feature has been specifically requested and implemented.
-8.  **API Fallback System:** Allow users to switch between the CP API and Telegram bot for location queries.
-9.  **Security Hardening:** Implement security measures to protect the app from common web vulnerabilities.
-10. **UI/UX Improvements:** Refactor the main UI into a floating, draggable Tools Panel. The application name should be NETRA and feature a logo.
-11. **Bug Fixes:**
+1.  **Core Functionality:** Create cases, add targets, and query external APIs for data.
+2.  **User Management:** Admin must approve new users. A user's account should only be active on one device at a time.
+3.  **UI/UX:**
+    *   The main UI should be a floating, draggable Tools Panel.
+    *   The application must be branded with the NETRA name and a logo.
+    *   The Tools Panel should auto-hide when other dialogs (like Full Query, Simple Query) are open and reappear when they are closed.
+    *   The Tools Panel default position should be neatly aligned under the Map Type selector.
+4.  **Data Display:** The map marker popup for a location point must show all available details from the Telegram bot (IMEI, IMSI, MCC, CGI, LAC, CI, etc.) and include a Share button to copy the location link.
+5.  **Caching & History:** All external queries should be cached. A shared cache and history view for SIMPLE QUERY is required.
+6.  **Security & Stability:**
+    *   Harden the application against common web vulnerabilities.
     *   Fix race conditions causing data mix-ups between concurrent users.
-    *   Fix a bug wasting CP API quota due to excessive polling.
-    *   Fix a bug where loading a waiting_selection search from history didn't show the photo choices.
-    *   Fix incorrect data parsing for NKK results.
+    *   Fix a bug causing excessive CP API quota usage.
+    *   Fix a bug where stale sessions lock users out, requiring them to wait for approval even when no other device is active.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A full-stack FastAPI and React application named NETRA. The application has a multi-user system with admin approval and data tenancy. The UI has been refactored into a central, floating Tools Panel that is draggable and minimizable.
+A full-stack FastAPI and React application named NETRA. It features a multi-user system with admin approval and data tenancy. The UI has a draggable, floating Tools Panel which contains the main feature buttons. The application has been branded with the NETRA logo.
 
-Key features and fixes from this session include:
-- **CP API Quota Fix:** A critical bug causing massive quota waste via constant polling has been eliminated. The system now uses a cached status and only makes live API calls on direct user command.
-- **Race Condition V2 Fix:** The mechanism to prevent data mix-ups between users has been significantly hardened with stricter server-side validation, longer wait times, and a retry loop.
-- **Shared Cache & History:** A shared database cache for all SIMPLE QUERY results has been implemented to improve speed and reduce external calls. A corresponding history dialog allows all users to view and reuse these cached results.
-- **Security Hardening:** Basic security features like rate limiting, brute-force protection on login, and security headers (CSP) have been added. The headers are configurable to allow the app to run over HTTP.
-- **Rebranding:** The application has been renamed to NETRA across all files. A logo has been generated but not yet implemented.
-- **Bug Fixes:** The waiting_selection history bug in FULL QUERY is fixed. The NKK parser has been improved. The plat_mobil query flow now correctly performs a multi-step interaction with the Telegram bot.
+A single-device login feature has been implemented to prevent concurrent sessions. The initial complex implementation involved an approval flow between devices, which caused several bugs and usability issues. A simpler version that blocks a new login and shows a notification was started but not completed. A session timeout mechanism was also added to clean up stale sessions from the database during new login attempts.
 
 **Last working item**:
--   Last item agent was working: Rebranding the application to NETRA and adding a logo. The agent successfully replaced all text instances with NETRA and generated a logo image. However, the agent **did not** download the generated logo or integrate it into the application's UI.
+-   Last item agent was working: The user requested a much simpler single-device login mechanism. Instead of a complex approval flow, if a user tries to log in while their account is active elsewhere, the new login should be blocked, and a notification should appear saying, akun ini sudah dibuka di tempat lain, mohon logout terlebih dahulu baru login di tempat baru with only an OK button. The agent started implementing this but did not finish.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? screenshot tool. The agent needs to download the logo, add it to the  directory, and modify the  and  components to display it. A screenshot of the login page will verify the change.
+-   Which testing method agent to use? both. Use  to test the backend  endpoint to ensure it correctly returns an error when a session is active. Use the  to verify the new notification dialog appears on the frontend login page.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Implement the generated NETRA logo (P0)**
--   **Issue 2: Verify the fix for the waiting_selection history bug in FULL QUERY (P1)**
--   **Issue 3: Verify the robust race condition fix for plat_mobil queries (P2)**
+-   **Issue 1: Simplify and complete the single-device login feature (P0)**
+-   **Issue 2: Verify extended location info in map popup (P1)**
+-   **Issue 3: Fix broken Family Tree graph (P2)**
 
 **Issues Detail:**
--   **Issue 1: Implement the generated NETRA logo (P0)**
-    -   **Attempted fixes:** A logo was generated with the slug  but was not downloaded or added to the frontend code.
+-   **Issue 1: Simplify and complete the single-device login feature (P0)**
+    -   **Attempted fixes:** A complex, buggy approval-based system was implemented. The agent then started refactoring to a simpler block-and-notify system as requested by the user, but the work is incomplete.
     -   **Next debug checklist:**
-        1.  Download the generated logo image and save it to .
-        2.  Edit  to import and display the logo instead of the NETRA text header.
-        3.  Edit  to also display the logo.
-        4.  Use the screenshot tool to verify the logo appears on the login page.
-    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a direct user request to complete the application's rebranding.
+        1.  In , refactor the  endpoint. Remove all logic related to  and the approval flow.
+        2.  The login logic should simply check . If a session for the user exists, return a specific error (e.g., ).
+        3.  Delete the  collection and associated backend endpoints (, ) as they are now obsolete.
+        4.  In , update the  function. If the API returns the  error, display a simple  with the user-requested message and a single OK button that closes the dialog.
+        5.  Remove the polling logic from  and the notification logic from  related to the old approval flow.
+        6.  Remove the  environment variable toggle; this feature is now a permanent, simplified part of the application.
+    -   **Why fix this issue and what will be achieved with the fix?** To fulfill the user's latest, simplified requirement for session management and eliminate the bugs and complexity of the previous implementation.
     -   **Status:** IN PROGRESS
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on other issue:** None
-
--   **Issue 2: Verify the fix for the waiting_selection history bug in FULL QUERY (P1)**
-    -   **Attempted fixes:** The agent refactored logic in  to ensure the photo selection UI appears when loading a search from history with a  status. The agent could not test this due to a lack of test data.
-    -   **Next debug checklist:** This requires user verification on their production server. The user needs to open a FULL QUERY history item with the waiting selection status and confirm the photo choices now appear.
-    -   **Why fix this issue and what will be achieved with the fix?** Fixes a critical workflow bug, allowing users to complete multi-step investigations from the history page.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on other issue:** None
-
--   **Issue 3: Verify the robust race condition fix for plat_mobil queries (P2)**
-    -   **Attempted fixes:** The agent implemented a multi-layered fix in  for the Simple Query endpoint, including stricter response validation, longer wait times, and a server-side retry loop to prevent data mix-ups.
-    -   **Next debug checklist:** This requires live user testing on their production server, ideally with two users performing plat_mobil queries simultaneously to confirm they receive the correct data.
-    -   **Why fix this issue and what will be achieved with the fix?** Solves a critical data integrity issue where concurrent users were receiving each other's search results.
-    -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Should Test frontend/backend/both after fix?** both
+    -   **Blocked on other issue:** None
+
+-   **Issue 2: Verify extended location info in map popup (P1)**
+    -   **Attempted fixes:** The backend parser ( in ) was updated to extract MCC, LAC, CI, CGI. The frontend component () was updated to display these new fields. However, it was not tested with real data.
+    -   **Next debug checklist:**
+        1.  This requires user verification with their live Telegram bot.
+        2.  The user needs to perform a location query that returns the full dataset.
+        3.  Click the map marker and check if the popup correctly displays all the new fields (IMEI, IMSI, Network, MCC, CGI, LAC, CI).
+    -   **Why fix this issue and what will be achieved with the fix?** To complete a user-requested feature to display all available data on the map.
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend (Visual Verification)
+    -   **Blocked on other issue:** None
+
+-   **Issue 3: Fix broken Family Tree graph (P2)**
+    -   **Attempted fixes:** None in this session. This is a known issue from a previous handoff.
+    -   **Next debug checklist:**
+        1.  Examine .
+        2.  Investigate the data structure being passed to the component.
+        3.  Debug the d3.js logic, which is likely failing due to an incorrect data format or rendering issue.
+    -   **Why fix this issue and what will be achieved with the fix?** To restore a broken data visualization feature.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Frontend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
@@ -80,25 +81,20 @@ Key features and fixes from this session include:
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P1) Create UI for Security Logs: Build a view in the frontend for the admin to see the logs from the  endpoint.
-    -   (P2) Verify NKK Parser Fix: The improved NKK parser in  needs to be verified by the user with real-world data to confirm it correctly handles all cases of multiple family members.
-    -   (P3) Fix Family Tree Graph: The  component is still not rendering correctly and needs to be debugged.
+    -   (P1) Create UI for Admin Security Logs: The backend endpoint  exists, but there is no frontend interface for admins to view these logs.
+    -   (P2) Verify NKK Parser Fix: A fix for parsing NKK data with multiple family members was implemented in  but requires user verification with real data.
 -   **Future Tasks:**
     -   Add Export to Excel/CSV functionality.
-    -   Enhance the Family Tree visualization.
-    -   Conduct a full refactor of all backend parsers in  to make them more robust and less brittle.
+    -   Enhance the Family Tree visualization (after fixing the rendering bug).
+    -   Refactor all backend parsers in  for robustness.
 
 **Completed work in this session**
--   **Critical Fix: CP API Quota Waste:** Removed the frontend polling mechanism that was making constant, unnecessary API calls, replacing it with a database-cached status check.
--   **Critical Fix: Race Condition Hardening:** Implemented a robust fix for data mix-ups by adding strict server-side response validation and a retry mechanism for Telegram bot interactions.
--   **Feature: Shared Cache & History for Simple Query:** Implemented a shared cache for all users and a new history dialog in the UI.
--   **Feature: Floating Tools Panel UI:** Refactored the main UI buttons into a single, draggable, and minimizable floating panel.
--   **Feature: App Rebranding to NETRA**: Changed all application text from Waskita LBS to NETRA.
--   **Feature: Security Hardening:** Added rate limiting, brute-force protection, and configurable security headers (CSP).
--   **Bug Fix: Waiting Selection History:** Fixed a bug where loading a search from history would not show the photo selection UI.
--   **Improvement: Query Logic:** Updated plat_mobil query to handle multi-step bot interactions and moved all passport queries to use the CP API.
--   **Improvement: NKK Parser:** Improved the NKK parser to handle multiple family members based on user-provided data.
--   **Improvement: UX Flow:** The Tools Panel now automatically hides when a dialog is opened and reappears when it is closed.
+-   **Implemented NETRA Logo:** Successfully added the logo to the Login page and Sidebar.
+-   **Fixed Tools Panel UI Logic:** The Tools Panel now correctly hides when other dialogs are opened and reappears when they are closed, including during complex transitions between dialogs (e.g., History -> Full Query). The default position has also been set as per the user's request.
+-   **Implemented Use Result from History:** The button in the Simple Query History dialog now correctly populates the Simple Query form with the selected result.
+-   **Added Session Timeout & Cleanup:** Implemented logic in the backend to detect and clean up stale sessions (inactive > 30 mins) during a new login attempt, preventing users from being locked out by zombie sessions. This fix, however, is not yet deployed on the user's VPS.
+-   **Added Detailed Location Info:** The backend parser and frontend map popup were updated to include additional fields (IMEI, IMSI, MCC, etc.) from the Telegram bot response and a Share button.
+-   **(DEPRECATED) Implemented Complex Single-Device Login:** A full approval-based flow was built and then debugged extensively before the user requested it be replaced with a simpler version.
 
 **Earlier issues found/mentioned but not fixed**
 -   **Issue 1: Family Tree Graph Not Rendering Correctly**
@@ -108,7 +104,7 @@ Key features and fixes from this session include:
     -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** **NKK Table only shows one family member**.
+-   **Issue recurrence in previous fork:** NKK Table only shows one family member.
 -   **Recurrence count:** 2
 -   **Status:** IN PROGRESS (A fix was implemented in  in , but it requires user verification with real data).
 
@@ -116,19 +112,16 @@ Key features and fixes from this session include:
 
 
 **Key Technical Concepts**
--   **Advanced Race Condition Mitigation:** The system now uses a server-side retry loop with strict content validation () to ensure the correct data is fetched from the external bot, making it resilient to timing issues.
--   **API Quota Management:** A costly  polling mechanism was removed and replaced with a database-cached status. The API status is now only updated on explicit user actions, saving thousands of API calls.
--   **Configurable Security Headers:** Security features like HSTS and CSP are now conditional on a  variable (), allowing the app to function in an HTTP-only environment without being blocked by browser security policies.
--   **Dynamic Floating Panel UI:** The primary UI controls have been centralized into a  component using , with global state management in  to control its visibility.
--   **Shared Data Cache:** A non-user-specific cache () was implemented, allowing all users to benefit from previously fetched data for Simple Queries.
+-   **Simplified Single-Device Login:** The new target architecture is to block any login attempt for an account that already has a record in the  collection, returning a simple error to the frontend.
+-   **Stale Session Cleanup:** To prevent lockouts from zombie sessions (e.g., user closes browser without logging out), a cleanup mechanism was added. It runs *only* during a new login attempt, checking for sessions with a  timestamp older than 30 minutes and removing them before proceeding.
+-   **UI State Race Condition Handling:** The auto-hiding Tools Panel required using  as a transition flag () in  to prevent the panel from incorrectly reappearing during transitions between two different dialogs (e.g., closing a history dialog to open a details dialog).
 
 **key DB schema**
--   **** (NEW): 
--   ****: Modified to include a document for .
--   ****: The lookup logic was modified to ignore the  field, effectively making it a global cache for all users.
+-   ****: . The  field was added to enable stale session detection.
+-   ****: . This collection and its related logic should be **removed** as part of the simplification task.
 
 **changes in tech stack**
--   **Backend:** Added  and  for rate limiting.
+-   None.
 
 **All files of reference**
 -   
@@ -140,52 +133,44 @@ Key features and fixes from this session include:
 -   
 
 **Areas that need refactoring**:
--   The  function in  is overly complex and could be broken down into smaller helper functions.
--    manages a large amount of state for all dialogs, which could be refactored into more focused custom hooks or contexts.
+-   The entire single-device login implementation across , , , and  must be refactored to remove the obsolete, complex approval/transfer flow and leave only the simple block-and-notify mechanism.
 
 **key api endpoints**
--   : Heavily modified with new race condition logic and query routing.
--   : New endpoint to retrieve the shared cache history.
--   : Now reads from a database cache instead of a live API call.
--   : New endpoint for manual, real-time status checks.
--   : Now includes brute-force protection.
--   : New endpoint for viewing security events (UI not yet built).
+-   : Heavily modified. Needs to be simplified to just check for an active session and return an error if one exists.
+-   **(TO BE DELETED)** , , : These endpoints were part of the complex flow and are now obsolete.
+-   : This endpoint was used for polling session validity. Its role will change to not perform stale checks, which are now only done at login.
 
 **Critical Info for New Agent**
 -   **You MUST communicate in Bahasa Indonesia.**
--   **The app name is NETRA.** The immediate next step is to implement the generated logo.
--   **The CP API quota issue is considered solved.** Do not re-introduce any frequent, automated polling. All status checks now use a database cache.
--   **The race condition fix is critical.** Maintain the server-side logic that validates the response content against the query input.
--   **Security headers are configurable.** The app works over HTTP. To enable HSTS and other HTTPS-only headers,  must be set in .
--   **The UI is centered around .** This component is the hub for all primary user actions.
+-   **The user wants a SIMPLE single-device login.** The complex approval system is **DEPRECATED**. The new logic is: if a session exists, block the new login and show a message. Do not re-implement any transfer/approval logic.
+-   **The user's VPS is out of sync.** The user repeatedly reports being locked out because the session-timeout fixes are not on their production server. The solution is to guide them to deploy the latest code, but for now, they are manually clearing the database. The next agent's first task is to implement the simple login, which will eventually be deployed.
+-   **Stale session cleanup ONLY happens at login.** The bug where active users were logged out was fixed by moving the stale-check logic from the periodic session validation endpoint to the initial login endpoint. This is a critical distinction to maintain.
 
 **documents and test reports created in this job**
--   
 -    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: The app is inaccessible via HTTP after security hardening. (COMPLETED - Agent fixed CSP/HSTS to be configurable).
-2.  **User**: The tools panel should reappear when a dialog is closed. (COMPLETED - Agent implemented this).
-3.  **User**: Change Waskita LBS to Location Based System. (COMPLETED).
-4.  **User**: Change Location Based System to Netra. (COMPLETED).
-5.  **User**: Change Netra to NETRA and add a logo. (IN PROGRESS - Text changed, but the logo was generated and NOT implemented).
-6.  **User**: Asked to turn off polling completely. (COMPLETED).
-7.  **User**: Asked for security hardening. (COMPLETED).
-8.  **User**: Reported the CP API quota waste issue. (COMPLETED - Agent fixed it).
-9.  **User**: Requested shared cache and history for Simple Query. (COMPLETED).
-10. **User**: Reported that the  history item was still not working. (COMPLETED - Agent implemented a more robust fix, which now needs user verification).
+1.  **User**: I am still getting locked out, waiting for approval when no other device is active. (PENDING - User's VPS code is outdated. Agent provided a manual DB clear command.)
+2.  **User**: Can the Tools Panel default position be right under the map type selector? (COMPLETED - Agent adjusted the default position.)
+3.  **User**: I suddenly got a Session has ended notification while actively using the app. (COMPLETED - Agent fixed the bug by moving stale session checks to only happen at login.)
+4.  **User**: Add all info from the Telegram bot (IMEI, IMSI, etc.) to the map popup and add a share button. (COMPLETED - Implemented but needs user verification.)
+5.  **User**: Make the single-device login simpler. Just block the new login with a notification. (IN PROGRESS - Agent started this simplification.)
+6.  **User**: I can't log in after approving a device transfer. (COMPLETED - Agent debugged and fixed the entire approval-based login flow, which is now being deprecated.)
+7.  **User**: On a new login, the app should wait for approval from the old device. The old device should have approve and reject buttons. (COMPLETED - This complex flow was implemented before the user requested to simplify it.)
+8.  **User**: The Use this result button in the history doesn't do anything. (COMPLETED - Agent fixed it to populate the Simple Query dialog.)
+9.  **User**: When opening a history item from the history dialog, the Tools Panel reappears when it shouldn't. (COMPLETED - Agent fixed the UI logic with a transition flag.)
+10. **User**: The Tools Panel should hide when any feature sub-window is opened. (COMPLETED - Agent implemented this.)
 
 **Project Health Check:**
 -   **Broken:**
-    -   The Family Tree visualization () is still not rendering correctly.
+    -    component does not render the graph.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telethon (Telegram Bot):** Live integration.
--   **CP API ():** External JSON API.
--   **Leaflet.js & OpenStreetMap:** Map rendering.
--   **jsPDF & html2canvas:** Client-side PDF generation.
--   No new integrations were added.
+-   **Telethon (Telegram Bot)**
+-   **CP API ()**
+-   **Leaflet.js & OpenStreetMap**
+-   **jsPDF & html2canvas**
 
 **Testing status**
 -   Testing agent used after significant changes: NO
@@ -197,9 +182,6 @@ Key features and fixes from this session include:
 -   **Web App Login:**
     -   Admin Username: 
     -   Admin Password: 
-    -   (New users can be registered via the UI and approved by the admin)
 
 **What agent forgot to execute**
--   The agent generated a logo but **forgot to download it and implement it in the frontend**. This is the highest priority next step.
--   The agent created a backend endpoint  but **forgot to create a UI for the admin to view these logs**.
--   The agent did not address the broken Family Tree Graph issue mentioned in the previous handoff.</analysis>
+-   The agent started the simplification of the single-device login feature but did not complete it. The agent has left a significant amount of obsolete code from the previous, more complex approval-based system in the frontend and backend that now needs to be identified and removed to avoid confusion and future bugs.</analysis>
