@@ -1140,9 +1140,9 @@ const MainApp = () => {
     setGlobalProcessType('pendalaman');
     setLoadingPendalaman(target.id);
     
-    // Auto-open chat panel and set target for chat
-    setSelectedTargetForChat(target.id);
-    setShowChatPanel(true);
+    // Don't auto-open chat panel for Pendalaman - user requested to hide it
+    // setSelectedTargetForChat(target.id);
+    // setShowChatPanel(true);
     
     const updatedTargets = targets.map(t => 
       t.id === target.id ? { ...t, reghp_status: 'processing' } : t
