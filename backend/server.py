@@ -8115,6 +8115,15 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         "cached": False,
                         "source": "CP_API"
                     }
+                elif response.status_code == 403:
+                    logger.error(f"[BREACH] API 403 Forbidden - IP not whitelisted")
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": "Akses ditolak (403). API hanya bisa diakses dari IP yang terdaftar.",
+                        "source": "CP_API"
+                    }
                 else:
                     error_text = response.text
                     logger.error(f"[BREACH] API error: {response.status_code} - {error_text}")
