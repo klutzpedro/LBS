@@ -8066,84 +8066,82 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 ) as response:
                     status_code = response.status
                     logger.info(f"[BREACH] Response status: {status_code}")
-                
-                logger.info(f"[BREACH] Response status: {response.status_code}")
-                
-                if response.status_code == 200:
-                    data = response.json()
                     
-                    # Format response as readable text
-                    if isinstance(data, list):
-                        if len(data) == 0:
-                            raw_response = "Tidak ada data breach ditemukan."
+                    if status_code == 200:
+                        data = await response.json()
+                        
+                        # Format response as readable text
+                        if isinstance(data, list):
+                            if len(data) == 0:
+                                raw_response = "Tidak ada data breach ditemukan."
+                            else:
+                                lines = [f"=== DATA BREACH RESULTS ===", f"Query: {query_value}", f"Total: {len(data)} record(s)", "=" * 30, ""]
+                                for i, item in enumerate(data, 1):
+                                    lines.append(f"--- Record {i} ---")
+                                    if isinstance(item, dict):
+                                        for key, value in item.items():
+                                            if value:
+                                                lines.append(f"{key}: {value}")
+                                    else:
+                                        lines.append(str(item))
+                                    lines.append("")
+                                raw_response = "\n".join(lines)
+                        elif isinstance(data, dict):
+                            if data.get("error") or data.get("message"):
+                                raw_response = data.get("error") or data.get("message") or "Tidak ada data"
+                            else:
+                                lines = [f"=== DATA BREACH RESULT ===", f"Query: {query_value}", "=" * 30, ""]
+                                for key, value in data.items():
+                                    if value:
+                                        lines.append(f"{key}: {value}")
+                                raw_response = "\n".join(lines)
                         else:
-                            lines = [f"=== DATA BREACH RESULTS ===", f"Query: {query_value}", f"Total: {len(data)} record(s)", "=" * 30, ""]
-                            for i, item in enumerate(data, 1):
-                                lines.append(f"--- Record {i} ---")
-                                if isinstance(item, dict):
-                                    for key, value in item.items():
-                                        if value:
-                                            lines.append(f"{key}: {value}")
-                                else:
-                                    lines.append(str(item))
-                                lines.append("")
-                            raw_response = "\n".join(lines)
-                    elif isinstance(data, dict):
-                        if data.get("error") or data.get("message"):
-                            raw_response = data.get("error") or data.get("message") or "Tidak ada data"
-                        else:
-                            lines = [f"=== DATA BREACH RESULT ===", f"Query: {query_value}", "=" * 30, ""]
-                            for key, value in data.items():
-                                if value:
-                                    lines.append(f"{key}: {value}")
-                            raw_response = "\n".join(lines)
+                            raw_response = str(data) if data else "Tidak ada data breach ditemukan."
+                        
+                        # Save to cache
+                        cache_doc = {
+                            "cache_key": cache_key,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "raw_response": raw_response,
+                            "created_by": username,
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.simple_query_cache.update_one(
+                            {"cache_key": cache_key},
+                            {"$set": cache_doc},
+                            upsert=True
+                        )
+                        logger.info(f"[BREACH] Saved result to cache: {cache_key}")
+                        
+                        return {
+                            "success": True,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "raw_response": raw_response,
+                            "verified": True,
+                            "cached": False,
+                            "source": "CP_API"
+                        }
+                    elif status_code == 403:
+                        logger.error(f"[BREACH] API 403 Forbidden - IP not whitelisted")
+                        return {
+                            "success": False,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "error": "Akses ditolak (403). API hanya bisa diakses dari IP yang terdaftar.",
+                            "source": "CP_API"
+                        }
                     else:
-                        raw_response = str(data) if data else "Tidak ada data breach ditemukan."
-                    
-                    # Save to cache
-                    cache_doc = {
-                        "cache_key": cache_key,
-                        "query_type": query_type,
-                        "query_value": query_value,
-                        "raw_response": raw_response,
-                        "created_by": username,
-                        "created_at": datetime.now(timezone.utc).isoformat()
-                    }
-                    await db.simple_query_cache.update_one(
-                        {"cache_key": cache_key},
-                        {"$set": cache_doc},
-                        upsert=True
-                    )
-                    logger.info(f"[BREACH] Saved result to cache: {cache_key}")
-                    
-                    return {
-                        "success": True,
-                        "query_type": query_type,
-                        "query_value": query_value,
-                        "raw_response": raw_response,
-                        "verified": True,
-                        "cached": False,
-                        "source": "CP_API"
-                    }
-                elif response.status_code == 403:
-                    logger.error(f"[BREACH] API 403 Forbidden - IP not whitelisted")
-                    return {
-                        "success": False,
-                        "query_type": query_type,
-                        "query_value": query_value,
-                        "error": "Akses ditolak (403). API hanya bisa diakses dari IP yang terdaftar.",
-                        "source": "CP_API"
-                    }
-                else:
-                    error_text = response.text
-                    logger.error(f"[BREACH] API error: {response.status_code} - {error_text}")
-                    return {
-                        "success": False,
-                        "query_type": query_type,
-                        "query_value": query_value,
-                        "error": f"API Error: {response.status_code}",
-                        "source": "CP_API"
-                    }
+                        error_text = await response.text()
+                        logger.error(f"[BREACH] API error: {status_code} - {error_text}")
+                        return {
+                            "success": False,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "error": f"API Error: {status_code}",
+                            "source": "CP_API"
+                        }
                     
         except Exception as e:
             logger.error(f"[BREACH] Exception: {e}")
