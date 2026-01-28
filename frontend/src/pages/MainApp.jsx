@@ -100,6 +100,22 @@ const MainApp = () => {
   
   // Tools Panel
   const [toolsPanelOpen, setToolsPanelOpen] = useState(true); // Open by default
+  const [toolsPanelWasOpen, setToolsPanelWasOpen] = useState(false); // Track if panel was open before dialog
+  
+  // Helper functions to handle dialog open/close with Tools Panel state
+  const openDialogFromTools = (openDialog) => {
+    setToolsPanelWasOpen(toolsPanelOpen);
+    setToolsPanelOpen(false);
+    openDialog(true);
+  };
+  
+  const closeDialogAndRestoreTools = (closeDialog) => {
+    closeDialog(false);
+    // Restore Tools Panel if it was open before
+    if (toolsPanelWasOpen) {
+      setToolsPanelOpen(true);
+    }
+  };
   
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
