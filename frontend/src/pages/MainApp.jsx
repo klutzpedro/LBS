@@ -1991,12 +1991,15 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setSimpleQueryOpen(open);
           if (!open) {
+            // Clear history selection when dialog closes
+            setSelectedSimpleQueryHistory(null);
             if (!dialogTransitionRef.current && toolsPanelWasOpen) {
               setToolsPanelOpen(true);
               setToolsPanelWasOpen(false);
             }
           }
         }}
+        initialResult={selectedSimpleQueryHistory}
       />
       
       {/* Simple Query History Dialog */}
@@ -2014,14 +2017,15 @@ const MainApp = () => {
         onSelectHistory={(item) => {
           // Mark that we're transitioning to another dialog
           dialogTransitionRef.current = true;
-          // When user selects from history, open SimpleQuery and show the result
+          // Store the selected history item
+          setSelectedSimpleQueryHistory(item);
+          // Close history and open SimpleQuery with result
           setSimpleQueryHistoryOpen(false);
           setSimpleQueryOpen(true);
           // Reset transition flag after a short delay
           setTimeout(() => {
             dialogTransitionRef.current = false;
           }, 200);
-          // The result will be shown from cache automatically
         }}
       />
     </div>
