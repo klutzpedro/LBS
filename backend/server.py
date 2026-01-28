@@ -2368,7 +2368,46 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
         return {
             "message": "Reusing existing NIK data",
             "nik": nik,
-            "reused": True
+            "reused": True,
+            "source": "target_history"
+        }
+    
+    # Check Simple Query Cache for this NIK (capil_nik)
+    cache_key = f"capil_nik:{nik}"
+    cached_nik = await db.simple_query_cache.find_one({"cache_key": cache_key})
+    
+    if cached_nik and cached_nik.get("raw_response"):
+        logging.info(f"Reusing NIK {nik} data from Simple Query Cache")
+        
+        # Initialize nik_queries if not exists
+        if not target.get('nik_queries'):
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"nik_queries": {}}}
+            )
+        
+        # Build nik_query_data from cache
+        nik_query_data = {
+            "status": "completed",
+            "data": {
+                "raw_response": cached_nik.get("raw_response"),
+                "parsed_data": {}  # Will be parsed by frontend if needed
+            },
+            "photo": cached_nik.get("photo"),
+            "queried_at": cached_nik.get("created_at"),
+            "from_cache": True
+        }
+        
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {f"nik_queries.{nik}": nik_query_data}}
+        )
+        
+        return {
+            "message": "Reusing NIK data from Simple Query Cache",
+            "nik": nik,
+            "reused": True,
+            "source": "simple_query_cache"
         }
     
     # No existing data, proceed with new query
