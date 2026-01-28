@@ -589,6 +589,11 @@ def parse_telegram_location_response(text: str) -> dict:
     Phone: SAMSUNG Galaxy S24 Ultra
     Operator: Telkomsel Kartu Halo
     Network: 4G
+    MCC: 510
+    MNC: 10
+    LAC: 12345
+    CI: 67890
+    CGI: 510-10-12345-67890
     Long: 119.8837
     Lat: -0.92559
     Address: SULAWESI TENGAH, KOTA PALU, PALU SELATAN, TATURA SELATAN
@@ -620,6 +625,16 @@ def parse_telegram_location_response(text: str) -> dict:
                     data['operator'] = value
                 elif key == 'network':
                     data['network'] = value
+                elif key == 'mcc':
+                    data['mcc'] = value
+                elif key == 'mnc':
+                    data['mnc'] = value
+                elif key == 'lac':
+                    data['lac'] = value
+                elif key == 'ci':
+                    data['ci'] = value
+                elif key == 'cgi':
+                    data['cgi'] = value
         
         if 'latitude' in data and 'longitude' in data:
             return {
@@ -633,6 +648,11 @@ def parse_telegram_location_response(text: str) -> dict:
                 "imei": data.get('imei', ''),
                 "phone_model": data.get('phone_model', ''),
                 "operator": data.get('operator', ''),
+                "mcc": data.get('mcc', ''),
+                "mnc": data.get('mnc', ''),
+                "lac": data.get('lac', ''),
+                "ci": data.get('ci', ''),
+                "cgi": data.get('cgi', ''),
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
         else:
