@@ -918,10 +918,12 @@ async def invalidate_session(username: str):
 async def check_session_valid(username: str, session_id: str) -> bool:
     """Check if session is still valid (exists with matching session_id)
     
-    NOTE: This does NOT check for staleness. Staleness is only checked during login.
-    Active users should never be kicked out due to inactivity - only new login attempts
-    will clean up stale sessions.
+    NOTE: If SINGLE_DEVICE_LOGIN is disabled, always return True.
+    This does NOT check for staleness. Staleness is only checked during login.
     """
+    if not SINGLE_DEVICE_LOGIN_ENABLED:
+        return True  # Feature disabled, session always valid
+        
     session = await db.active_sessions.find_one({
         "username": username,
         "session_id": session_id
