@@ -2442,6 +2442,46 @@ async def query_family(target_id: str, family_data_input: dict, username: str = 
     if not family_id:
         raise HTTPException(status_code=400, detail="Family ID required")
     
+    # Check Simple Query Cache for this NKK
+    cache_key = f"nkk:{family_id}"
+    cached_nkk = await db.simple_query_cache.find_one({"cache_key": cache_key})
+    
+    if cached_nkk and cached_nkk.get("raw_response"):
+        logging.info(f"Reusing NKK {family_id} data from Simple Query Cache")
+        
+        # Build family_data from cache
+        family_data = {
+            "raw_response": cached_nkk.get("raw_response"),
+            "parsed_data": {},
+            "from_cache": True
+        }
+        
+        # Update family query status in nik_queries for the specific NIK
+        if source_nik and target.get('nik_queries', {}).get(source_nik):
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    f"nik_queries.{source_nik}.family_status": "completed",
+                    f"nik_queries.{source_nik}.family_data": family_data
+                }}
+            )
+        else:
+            # Fallback to target-level for backward compatibility
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {
+                    "family_status": "completed",
+                    "family_data": family_data
+                }}
+            )
+        
+        return {
+            "message": "Reusing NKK data from Simple Query Cache",
+            "target_id": target_id,
+            "source_nik": source_nik,
+            "reused": True
+        }
+    
     # Update family query status in nik_queries for the specific NIK
     if source_nik and target.get('nik_queries', {}).get(source_nik):
         await db.targets.update_one(
@@ -2458,7 +2498,7 @@ async def query_family(target_id: str, family_data_input: dict, username: str = 
     # Start background task with source_nik
     asyncio.create_task(query_telegram_family(target_id, family_id, source_nik))
     
-    return {"message": "Family query started", "target_id": target_id, "source_nik": source_nik}
+    return {"message": "Family query started", "target_id": target_id, "source_nik": source_nik, "reused": False}
 
 # Reset stuck processes
 @api_router.post("/targets/{target_id}/reset-stuck")
