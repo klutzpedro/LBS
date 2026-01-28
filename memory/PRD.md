@@ -903,6 +903,20 @@ pm2 restart waskita-backend
 - **Debug Added:** Console logs di TargetMarkers.jsx dan MainApp.jsx untuk melacak event handler
 - **Next Steps:** Verifikasi dengan user apakah issue masih terjadi setelah fix polling
 
+### P0 CRITICAL: "Sesi Berakhir" Bug - ROOT CAUSE FOUND & FIXED
+- **Issue:** Dialog "Sesi Berakhir" muncul di tengah aktivitas webapp meskipun user sedang aktif menggunakan aplikasi
+- **Root Cause:** `JWT_SECRET` tidak di-set di `.env`, sehingga setiap kali server restart, secret JWT baru di-generate secara random. Ini menyebabkan SEMUA token lama menjadi invalid!
+- **Solution:** 
+  1. Ditambahkan `JWT_SECRET` yang fixed di `/app/backend/.env`
+  2. `JWT_SECRET=netra_jwt_secret_key_2026_do_not_change_a8f3b2c1d4e5`
+- **IMPORTANT FOR VPS DEPLOYMENT:**
+  User HARUS menambahkan baris berikut ke `/var/www/waskita-lbs/backend/.env`:
+  ```
+  JWT_SECRET=netra_jwt_secret_key_2026_do_not_change_a8f3b2c1d4e5
+  ```
+  Kemudian restart backend: `pm2 restart waskita-backend`
+- **Files Modified:** `/app/backend/.env`
+
 ### Files Modified Summary
 - `/app/frontend/src/pages/MainApp.jsx`:
   - Added `targetsRef` useRef to track latest targets (line 161)
@@ -913,3 +927,5 @@ pm2 restart waskita-backend
 - `/app/frontend/src/components/main/TargetMarkers.jsx`:
   - Added debug logging for Pendalaman button click
   - Added data-testid for testing
+- `/app/backend/.env`:
+  - Added JWT_SECRET for consistent token validation across server restarts
