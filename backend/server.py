@@ -834,11 +834,39 @@ async def clear_failed_logins(ip: str, username: str):
 # SINGLE DEVICE SESSION MANAGEMENT
 # ============================================
 TRANSFER_REQUEST_TIMEOUT = 60  # seconds to wait for approval
+SESSION_INACTIVITY_TIMEOUT = 1800  # 30 minutes - session considered stale if no activity
 
 async def get_active_session(username: str):
-    """Get active session for a user"""
+    """Get active session for a user, returns None if session is stale"""
     session = await db.active_sessions.find_one({"username": username})
+    
+    if session:
+        # Check if session is stale (no activity for SESSION_INACTIVITY_TIMEOUT)
+        last_activity = session.get("last_activity")
+        if last_activity:
+            try:
+                last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+                time_since_activity = (datetime.now(timezone.utc) - last_activity_dt).total_seconds()
+                
+                if time_since_activity > SESSION_INACTIVITY_TIMEOUT:
+                    # Session is stale, delete it and return None
+                    logger.info(f"[SESSION] Stale session detected for {username}, inactive for {time_since_activity:.0f}s. Cleaning up.")
+                    await db.active_sessions.delete_one({"username": username})
+                    return None
+            except Exception as e:
+                logger.error(f"[SESSION] Error checking session activity: {e}")
+    
     return session
+
+async def cleanup_stale_sessions():
+    """Cleanup all stale sessions (utility function)"""
+    cutoff_time = datetime.now(timezone.utc) - timedelta(seconds=SESSION_INACTIVITY_TIMEOUT)
+    result = await db.active_sessions.delete_many({
+        "last_activity": {"$lt": cutoff_time.isoformat()}
+    })
+    if result.deleted_count > 0:
+        logger.info(f"[SESSION] Cleaned up {result.deleted_count} stale sessions")
+    return result.deleted_count
 
 async def create_session(username: str, session_id: str, device_info: str):
     """Create or update session for user"""
@@ -861,12 +889,31 @@ async def invalidate_session(username: str):
     await db.active_sessions.delete_one({"username": username})
 
 async def check_session_valid(username: str, session_id: str) -> bool:
-    """Check if session is still valid"""
+    """Check if session is still valid and not stale"""
     session = await db.active_sessions.find_one({
         "username": username,
         "session_id": session_id
     })
-    return session is not None
+    
+    if not session:
+        return False
+    
+    # Check if session is stale
+    last_activity = session.get("last_activity")
+    if last_activity:
+        try:
+            last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+            time_since_activity = (datetime.now(timezone.utc) - last_activity_dt).total_seconds()
+            
+            if time_since_activity > SESSION_INACTIVITY_TIMEOUT:
+                # Session is stale
+                logger.info(f"[SESSION] Session stale during validation for {username}")
+                await db.active_sessions.delete_one({"username": username})
+                return False
+        except Exception as e:
+            logger.error(f"[SESSION] Error checking session validity: {e}")
+    
+    return True
 
 # Device Transfer Request Management
 async def create_transfer_request(username: str, new_device_info: str, request_id: str):
