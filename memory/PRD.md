@@ -1,9 +1,9 @@
-# WASKITA LBS - Product Requirements Document
+# NETRA - Product Requirements Document
 
 ## Project Overview
-**Application Name:** WASKITA LBS  
+**Application Name:** NETRA  
 **Type:** Geospatial Information System (GIS) Web Application  
-**Purpose:** Location-based system to find mobile phone positions and retrieve owner details via Telegram bot integration
+**Purpose:** Location-based system to find mobile phone positions and retrieve owner details via Telegram bot integration and CP API
 
 ## Core Workflow
 1. User creates a "case" in the web app
@@ -809,3 +809,36 @@ pm2 restart waskita-backend
 - `/app/frontend/src/components/main/SimpleQuery.jsx` - Changed title to "SIMPLE QUERY"
 - `/app/frontend/src/pages/MainApp.jsx` - Replaced individual buttons with ToolsPanel
 
+
+## January 28, 2026 Updates
+
+### NETRA Logo Implementation (COMPLETED)
+- **Request:** Application rebranded from "Waskita LBS" to "NETRA", logo implementation was pending
+- **Implementation:**
+  1. Generated NETRA logo using image generation tool (eye + location pin + radar elements in cyan/teal)
+  2. Downloaded logo to `/app/frontend/src/assets/logo.png`
+  3. Updated Login page to display logo instead of Shield icon
+  4. Updated Sidebar header to display logo next to "NETRA" text
+  
+- **Files Modified:**
+  - `/app/frontend/src/assets/logo.png` - NEW logo file
+  - `/app/frontend/src/pages/Login.jsx` - Logo import and display
+  - `/app/frontend/src/components/main/Sidebar.jsx` - Logo import and display in header
+
+- **Testing:** Screenshot verification confirmed logo displays correctly on:
+  - Login page: Large logo (128x128) above NETRA title
+  - Sidebar: Small logo (40x40) next to NETRA text
+
+### Pending User Verification
+1. **Bug "waiting_selection" di FULL QUERY** - Code fix implemented, needs VPS testing
+2. **Race condition "plat_mobil"** - Server-side retry logic implemented, needs VPS testing with concurrent users
+3. **NKK Parser** - Improved parser needs verification with real bot data
+
+### Upcoming Tasks
+1. **UI for Security Logs** - Create admin view for `/api/admin/security-logs` endpoint
+2. **Family Tree Graph Fix** - Debug `FamilyTreeViz.jsx` rendering issues
+
+### Backlog
+- Export to Excel/CSV functionality
+- Enhanced Family Tree visualization
+- Backend parser refactoring for robustness
