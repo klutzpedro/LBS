@@ -150,7 +150,7 @@ export const SimpleQueryButton = ({ onClick }) => {
 };
 
 // Simple Query Dialog
-export const SimpleQueryDialog = ({ open, onOpenChange }) => {
+export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [searchValue, setSearchValue] = useState('');
@@ -159,17 +159,31 @@ export const SimpleQueryDialog = ({ open, onOpenChange }) => {
   const [copied, setCopied] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
 
-  // Reset state when dialog opens (always show fresh form)
+  // Reset state when dialog opens
   useEffect(() => {
     if (open) {
-      console.log('[SimpleQuery] Dialog opened - resetting to fresh state');
-      setSelectedType(null);
-      setSearchValue('');
-      setResult(null);
-      setStatusMessage('');
+      if (initialResult) {
+        // If we have initial result from history, show it
+        console.log('[SimpleQuery] Dialog opened with history result:', initialResult);
+        setSelectedType(initialResult.query_type);
+        setSearchValue(initialResult.query_value || '');
+        setResult({
+          response: initialResult.raw_response,
+          cached: true,
+          cacheTime: initialResult.created_at
+        });
+        setStatusMessage('');
+      } else {
+        // Fresh form
+        console.log('[SimpleQuery] Dialog opened - fresh state');
+        setSelectedType(null);
+        setSearchValue('');
+        setResult(null);
+        setStatusMessage('');
+      }
       setCopied(false);
     }
-  }, [open]);
+  }, [open, initialResult]);
 
   const handleSearch = async () => {
     if (!selectedType) {
