@@ -8332,6 +8332,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     "query_type": query_type,
                     "query_value": query_value,
                     "raw_response": raw_response,
+                    "photo": photo_base64,
                     "verified": is_related,
                     "cached": False
                 }
