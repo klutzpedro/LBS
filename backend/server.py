@@ -8050,29 +8050,22 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 "Content-Type": "application/json"
             }
             
-            # Force IPv4 connection by binding to 0.0.0.0
+            # Use aiohttp with forced IPv4 instead of httpx
+            import aiohttp
             import socket
             
-            # Resolve hostname to IPv4 only
-            hostname = "gate-amg.blackopium.xyz"
-            try:
-                ipv4_addr = socket.gethostbyname(hostname)
-                logger.info(f"[BREACH] Resolved {hostname} to IPv4: {ipv4_addr}")
-                # Replace hostname with IPv4 in endpoint
-                endpoint_ipv4 = endpoint.replace(hostname, ipv4_addr)
-                headers["Host"] = hostname  # Keep original host header
-            except Exception as dns_err:
-                logger.warning(f"[BREACH] DNS resolution failed, using original endpoint: {dns_err}")
-                endpoint_ipv4 = endpoint
+            # Create connector that forces IPv4
+            connector = aiohttp.TCPConnector(family=socket.AF_INET)
             
-            transport = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
-            
-            async with httpx.AsyncClient(timeout=60.0, transport=transport, verify=False) as client:
-                response = await client.get(
-                    endpoint_ipv4,
+            async with aiohttp.ClientSession(connector=connector) as session:
+                async with session.get(
+                    endpoint,
                     params={"query": query_value},
-                    headers=headers
-                )
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=60)
+                ) as response:
+                    status_code = response.status
+                    logger.info(f"[BREACH] Response status: {status_code}")
                 
                 logger.info(f"[BREACH] Response status: {response.status_code}")
                 
