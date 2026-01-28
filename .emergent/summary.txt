@@ -1,191 +1,205 @@
 <analysis>**original_problem_statement:**
-The user is building a Geospatial Information System (GIS) web application, WASKITA LBS, deployed on a private VPS. The application's core purpose is to query location and personal data.
+The user is building a Geospatial Information System (GIS) web application, now named NETRA, deployed on a private VPS. The application's core purpose is to query location and personal data from external sources (a CP API and a private Telegram bot).
 
 PRODUCT REQUIREMENTS:
-1.  **Core Functionality:** Create cases, add target phone numbers, and query for location (via CP API) and personal data (via a private Telegram bot).
-2.  **Query Nama (formerly NON GEOINT):** A UI to search for individuals by name, triggering queries to a Telegram bot and CP API, followed by a deep dive investigation (NIK, NKK, RegHP, Passport, Immigration).
-3.  **Face Recognition (FR) Feature:** A new feature to identify a person by photo. The flow involves uploading a photo, sending it to a Telegram bot, parsing match results (NIKs with percentages), automatically selecting the top NIK, querying the bot again for full details, and displaying a comparison of the input photo vs. the database photo alongside the person's data. This feature must have its own history and PDF export functionality.
-4.  **UI/Bug Fixes:**
-    *   Fix bugs in the Query Nama photo loading and state management.
-    *   Fix the blocked Immigration/Passport API calls.
-    *   Fix data parsing and display for Passport and Immigration (Perlintasan) results.
-    *   Improve UI layout by adjusting button positions, sizes, and colors.
-    *   Ensure all investigation data (Passport, Perlintasan) is included in downloaded PDFs.
-    *   Sort Perlintasan data by oldest date and departure-first.
+1.  **Core Functionality:** Create cases, add target phone numbers, and query for location (CP API) and personal data (Telegram bot).
+2.  **FULL QUERY:** A UI to search for individuals by name, triggering queries to external systems, followed by a deep dive investigation (NIK, NKK, RegHP, Passport, etc.).
+3.  **Face Recognition (FR) Feature:** A feature to identify a person by photo.
+4.  **SIMPLE QUERY:** A feature for single, targeted searches (e.g., NIK only, Plate Number only).
+5.  **User Management System:** Admin must approve all new user registrations.
+6.  **Data Isolation (Multi-Tenancy):** Each user's data (cases, searches, history) must be isolated.
+7.  **Database Caching:** All queries to external systems should be cached. A shared cache for all users for the SIMPLE QUERY feature has been specifically requested and implemented.
+8.  **API Fallback System:** Allow users to switch between the CP API and Telegram bot for location queries.
+9.  **Security Hardening:** Implement security measures to protect the app from common web vulnerabilities.
+10. **UI/UX Improvements:** Refactor the main UI into a floating, draggable Tools Panel. The application name should be NETRA and feature a logo.
+11. **Bug Fixes:**
+    *   Fix race conditions causing data mix-ups between concurrent users.
+    *   Fix a bug wasting CP API quota due to excessive polling.
+    *   Fix a bug where loading a waiting_selection search from history didn't show the photo choices.
+    *   Fix incorrect data parsing for NKK results.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-A full-stack FastAPI and React application. In this session, the agent successfully implemented a comprehensive new Face Recognition (FR) feature from scratch, including the frontend UI, backend API endpoints, and complex multi-step interaction logic with a Telegram bot. A major blocker from the previous session, the non-functional Immigration/Passport API, was diagnosed as an IPv4/IPv6 issue and fixed by forcing all external API calls to use IPv4. The agent also fixed numerous bugs related to data parsing for the now-working immigration APIs, UI layout adjustments, and PDF generation.
+A full-stack FastAPI and React application named NETRA. The application has a multi-user system with admin approval and data tenancy. The UI has been refactored into a central, floating Tools Panel that is draggable and minimizable.
+
+Key features and fixes from this session include:
+- **CP API Quota Fix:** A critical bug causing massive quota waste via constant polling has been eliminated. The system now uses a cached status and only makes live API calls on direct user command.
+- **Race Condition V2 Fix:** The mechanism to prevent data mix-ups between users has been significantly hardened with stricter server-side validation, longer wait times, and a retry loop.
+- **Shared Cache & History:** A shared database cache for all SIMPLE QUERY results has been implemented to improve speed and reduce external calls. A corresponding history dialog allows all users to view and reuse these cached results.
+- **Security Hardening:** Basic security features like rate limiting, brute-force protection on login, and security headers (CSP) have been added. The headers are configurable to allow the app to run over HTTP.
+- **Rebranding:** The application has been renamed to NETRA across all files. A logo has been generated but not yet implemented.
+- **Bug Fixes:** The waiting_selection history bug in FULL QUERY is fixed. The NKK parser has been improved. The plat_mobil query flow now correctly performs a multi-step interaction with the Telegram bot.
 
 **Last working item**:
-The agent was implementing a user request to sort the Perlintasan (Immigration Crossings) data in the Query Nama investigation results.
-
--   Last item agent was working: Sorting the Perlintasan data view. The user wants the list of travel movements to be sorted first by date (oldest to newest) and then by direction (Departures 'D' before Arrivals 'A'). The agent applied a  method with custom logic to the  array within the  component before it's rendered.
+-   Last item agent was working: Rebranding the application to NETRA and adding a logo. The agent successfully replaced all text instances with NETRA and generated a logo image. However, the agent **did not** download the generated logo or integrate it into the application's UI.
 -   Status: IN PROGRESS
 -   Agent Testing Done: N
--   Which testing method agent to use? Frontend testing agent. The agent should test the Query Nama flow for a user with immigration data and verify that the Perlintasan table is sorted correctly. A screenshot of the sorted table would be sufficient.
+-   Which testing method agent to use? screenshot tool. The agent needs to download the logo, add it to the  directory, and modify the  and  components to display it. A screenshot of the login page will verify the change.
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Sorting Perlintasan Data (P0)**
--   **Issue 2: NKK Table only shows one family member (Recurring) (P1)**
--   **Issue 3: Family Tree Graph Not Rendering Correctly (P2)**
+-   **Issue 1: Implement the generated NETRA logo (P0)**
+-   **Issue 2: Verify the fix for the waiting_selection history bug in FULL QUERY (P1)**
+-   **Issue 3: Verify the robust race condition fix for plat_mobil queries (P2)**
 
 **Issues Detail:**
--   **Issue 1: Sorting Perlintasan Data (P0)**
-    -   **Attempted fixes:** The agent added the following  logic in  to the perlintasan data array:
-        
+-   **Issue 1: Implement the generated NETRA logo (P0)**
+    -   **Attempted fixes:** A logo was generated with the slug  but was not downloaded or added to the frontend code.
     -   **Next debug checklist:**
-        1.  Verify the fix works as intended by testing the Query Nama -> Pendalaman flow on a target with perlintasan data.
-        2.  Take a screenshot to confirm the UI table is sorted correctly (oldest date first, departures first for same-day travel).
-    -   **Why fix this issue and what will be achieved with the fix?** Improves data readability and meets a direct user request for data presentation.
+        1.  Download the generated logo image and save it to .
+        2.  Edit  to import and display the logo instead of the NETRA text header.
+        3.  Edit  to also display the logo.
+        4.  Use the screenshot tool to verify the logo appears on the login page.
+    -   **Why fix this issue and what will be achieved with the fix?** Fulfills a direct user request to complete the application's rebranding.
     -   **Status:** IN PROGRESS
     -   **Is recurring issue?** N
     -   **Should Test frontend/backend/both after fix?** Frontend
     -   **Blocked on other issue:** None
 
--   **Issue 2: NKK Table only shows one family member (Recurring) (P1)**
-    -   **Attempted fixes:** None in this session. The previous handoff identified this as a likely backend parser issue.
-    -   **Next debug checklist:**
-        1.  Examine the backend parser  in .
-        2.  Ask the user for a sample of the raw text from the Telegram bot for an NKK query to create a test case.
-        3.  Refactor the parser to be more robust.
-    -   **Why fix this issue and what will be achieved with the fix?** Fixes a critical data integrity bug in the NKK investigation feature.
-    -   **Status:** NOT STARTED
+-   **Issue 2: Verify the fix for the waiting_selection history bug in FULL QUERY (P1)**
+    -   **Attempted fixes:** The agent refactored logic in  to ensure the photo selection UI appears when loading a search from history with a  status. The agent could not test this due to a lack of test data.
+    -   **Next debug checklist:** This requires user verification on their production server. The user needs to open a FULL QUERY history item with the waiting selection status and confirm the photo choices now appear.
+    -   **Why fix this issue and what will be achieved with the fix?** Fixes a critical workflow bug, allowing users to complete multi-step investigations from the history page.
+    -   **Status:** USER VERIFICATION PENDING
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Frontend
+    -   **Blocked on other issue:** None
+
+-   **Issue 3: Verify the robust race condition fix for plat_mobil queries (P2)**
+    -   **Attempted fixes:** The agent implemented a multi-layered fix in  for the Simple Query endpoint, including stricter response validation, longer wait times, and a server-side retry loop to prevent data mix-ups.
+    -   **Next debug checklist:** This requires live user testing on their production server, ideally with two users performing plat_mobil queries simultaneously to confirm they receive the correct data.
+    -   **Why fix this issue and what will be achieved with the fix?** Solves a critical data integrity issue where concurrent users were receiving each other's search results.
+    -   **Status:** USER VERIFICATION PENDING
     -   **Is recurring issue?** Y
     -   **Should Test frontend/backend/both after fix?** Both
     -   **Blocked on other issue:** None
 
--   **Issue 3: Family Tree Graph Not Rendering Correctly (P2)**
-    -   **Attempted fixes:** None in this session.
-    -   **Next debug checklist:**
-        1.  Examine .
-        2.  Check how data is passed from .
-        3.  The issue may be in the visualization logic itself or the data structure it expects.
-    -   **Why fix this issue and what will be achieved with the fix?** Improves the data visualization capabilities of the application.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on other issue:** None
-
 **In progress Task List**:
--   **Task 1: Finalize Face Recognition (FR) Feature (P0)**
-    -   **Where to resume:** The feature's backend logic for interacting with the Telegram bot has been repeatedly patched. It needs comprehensive testing by the user on their live environment to confirm the multi-step flow (send photo -> get matches -> select top NIK -> get details) works reliably.
-    -   **What will be achieved with this?** A fully functional, user-verified Face Recognition feature.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Should Test frontend/backend/both after fix?** Backend (on user's VPS)
-    -   **Blocked on something:** User testing and feedback.
+-   None.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks:**
-    -   (P2) Add Export to Excel/CSV functionality.
+    -   (P1) Create UI for Security Logs: Build a view in the frontend for the admin to see the logs from the  endpoint.
+    -   (P2) Verify NKK Parser Fix: The improved NKK parser in  needs to be verified by the user with real-world data to confirm it correctly handles all cases of multiple family members.
+    -   (P3) Fix Family Tree Graph: The  component is still not rendering correctly and needs to be debugged.
 -   **Future Tasks:**
+    -   Add Export to Excel/CSV functionality.
     -   Enhance the Family Tree visualization.
-    -   Build a more robust database migration tool.
+    -   Conduct a full refactor of all backend parsers in  to make them more robust and less brittle.
 
 **Completed work in this session**
--   **Feature: Face Recognition (FR) Implemented:**
-    -   Created UI () for photo upload, results display, and history.
-    -   Added backend endpoints () for matching photos and fetching NIK details via a complex, multi-step Telegram bot interaction.
-    -   Integrated separate History dialog and PDF export (including images).
--   **Bug Fix: Immigration/Passport API Unblocked:**
-    -   Diagnosed API failure as an IPv6 vs. IPv4 issue on the user's VPS.
-    -   Forced all  and  calls to the CP API to use IPv4 in , successfully unblocking the feature.
--   **Bug Fix: Passport & Perlintasan Data Handling:**
-    -   Corrected backend parsers in  to handle the actual JSON response format from the now-working CP API.
-    -   Ensured the logic correctly extracts passport numbers to be used in subsequent perlintasan queries.
-    -   Updated frontend UI in  and PDF generation to correctly display all new passport and perlintasan data.
--   **Bug Fix: Gagal memulai pendalaman Error:**
-    -   Fixed a JavaScript error in  by correcting a call to a non-existent function ( -> ).
--   **Bug Fix: Muat Foto Button Logic:**
-    -   Corrected logic in  to hide the Load More Photos button when all photos are loaded.
--   **Bug Fix: Investigation History Display:**
-    -   Improved logic in  to correctly show 'completed' status for sub-queries when viewing results from history.
--   **UI Enhancements:**
-    -   Renamed NON GEOINT feature to Query Nama.
-    -   Relocated main action buttons (Query Nama, FR) to the top-center of the map.
-    -   Standardized button sizes and aligned history button styles.
--   **DevOps:**
-    -   Provided the user with simplified one-line commands for updating the application on their VPS.
+-   **Critical Fix: CP API Quota Waste:** Removed the frontend polling mechanism that was making constant, unnecessary API calls, replacing it with a database-cached status check.
+-   **Critical Fix: Race Condition Hardening:** Implemented a robust fix for data mix-ups by adding strict server-side response validation and a retry mechanism for Telegram bot interactions.
+-   **Feature: Shared Cache & History for Simple Query:** Implemented a shared cache for all users and a new history dialog in the UI.
+-   **Feature: Floating Tools Panel UI:** Refactored the main UI buttons into a single, draggable, and minimizable floating panel.
+-   **Feature: App Rebranding to NETRA**: Changed all application text from Waskita LBS to NETRA.
+-   **Feature: Security Hardening:** Added rate limiting, brute-force protection, and configurable security headers (CSP).
+-   **Bug Fix: Waiting Selection History:** Fixed a bug where loading a search from history would not show the photo selection UI.
+-   **Improvement: Query Logic:** Updated plat_mobil query to handle multi-step bot interactions and moved all passport queries to use the CP API.
+-   **Improvement: NKK Parser:** Improved the NKK parser to handle multiple family members based on user-provided data.
+-   **Improvement: UX Flow:** The Tools Panel now automatically hides when a dialog is opened and reappears when it is closed.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Brittle Backend Parsers**: The backend data parsers in  for features like NKK (identified in the initial handoff) have not been refactored for robustness, which may lead to future data display issues.
+-   **Issue 1: Family Tree Graph Not Rendering Correctly**
+    -   **Debug checklist:** Examine  and the data structure being passed to it. The d3.js logic or expected data format is likely incorrect.
+    -   **Why to solve this issue and what will be achieved with this?** Restores a data visualization feature, improving the application's analytical capabilities.
+    -   **Should Test frontend/backend/both after fix:** Frontend
+    -   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** **User's deployment environment.** This remains a major source of friction. The user frequently reports issues that are resolved only after being guided to correctly pull the latest code and perform a hard browser refresh. The user ran into a  conflict due to a new file () created by the agent, highlighting the fragility of their workflow.
--   **Recurrence count:** High (5+ in this session)
--   **Status:** BLOCKED (by user's workflow)
+-   **Issue recurrence in previous fork:** **NKK Table only shows one family member**.
+-   **Recurrence count:** 2
+-   **Status:** IN PROGRESS (A fix was implemented in  in , but it requires user verification with real data).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Forcing IPv4 for API Calls:** A critical fix was implemented using  and a custom  transport to force IPv4 communication from a dual-stack (IPv4/IPv6) server to an IPv4-whitelisted API.
--   **Complex Asynchronous Bot Interaction (Telethon):** The FR feature required a stateful, multi-step conversation with a Telegram bot: (1) send photo, (2) parse response for match buttons, (3) click the correct button remotely, (4) wait for a final response with data and a photo, (5) parse and download the final results. This was implemented in .
--   **Client-Side Data Sorting:** Using  in React () to sort data based on multiple criteria (date and string codes) before rendering in the UI.
--   **Dynamic PDF Generation with Images (jsPDF):** The PDF export logic was enhanced to fetch and embed images (from user upload and from bot response URLs) into the generated document by converting them to base64 data URLs.
+-   **Advanced Race Condition Mitigation:** The system now uses a server-side retry loop with strict content validation () to ensure the correct data is fetched from the external bot, making it resilient to timing issues.
+-   **API Quota Management:** A costly  polling mechanism was removed and replaced with a database-cached status. The API status is now only updated on explicit user actions, saving thousands of API calls.
+-   **Configurable Security Headers:** Security features like HSTS and CSP are now conditional on a  variable (), allowing the app to function in an HTTP-only environment without being blocked by browser security policies.
+-   **Dynamic Floating Panel UI:** The primary UI controls have been centralized into a  component using , with global state management in  to control its visibility.
+-   **Shared Data Cache:** A non-user-specific cache () was implemented, allowing all users to benefit from previously fetched data for Simple Queries.
 
 **key DB schema**
--   ****: Unchanged.
--   ****: Unchanged.
--   **** (NEW): Caches FR results for history. Stores , , ,  (array of ),  (full data for top NIK), and .
+-   **** (NEW): 
+-   ****: Modified to include a document for .
+-   ****: The lookup logic was modified to ignore the  field, effectively making it a global cache for all users.
+
+**changes in tech stack**
+-   **Backend:** Added  and  for rate limiting.
 
 **All files of reference**
--   : The core backend file, heavily modified for the new FR feature and the critical CP API IPv4 fix.
--   : Main page component, modified to integrate the FR feature and adjust UI layout.
--   : A new, large component containing the entire UI for the Face Recognition feature.
--   : Modified for numerous bug fixes, UI tweaks, and data display improvements (Passport, Perlintasan).
+-   
+-   
+-   
+-   
+-   
+-   
+-   
+
+**Areas that need refactoring**:
+-   The  function in  is overly complex and could be broken down into smaller helper functions.
+-    manages a large amount of state for all dialogs, which could be refactored into more focused custom hooks or contexts.
+
+**key api endpoints**
+-   : Heavily modified with new race condition logic and query routing.
+-   : New endpoint to retrieve the shared cache history.
+-   : Now reads from a database cache instead of a live API call.
+-   : New endpoint for manual, real-time status checks.
+-   : Now includes brute-force protection.
+-   : New endpoint for viewing security events (UI not yet built).
 
 **Critical Info for New Agent**
 -   **You MUST communicate in Bahasa Indonesia.**
--   **User Deployment is Fragile:** Always assume the user is running old code. Before debugging any issue reported by the user, you **MUST** instruct them to run the full, correct update command: . Then, they must perform a hard browser refresh ().
--   **Immigration/Passport API is working:** The API is unblocked. The backend code in  forces IPv4 for all calls to . Do not change this logic.
--   **Face Recognition Logic is Complex:** The FR feature's interaction with the Telegram bot () is multi-step and timing-dependent. If the user reports issues with FR data not appearing, the first step is to ask for logs from their VPS to trace the bot interaction: .
+-   **The app name is NETRA.** The immediate next step is to implement the generated logo.
+-   **The CP API quota issue is considered solved.** Do not re-introduce any frequent, automated polling. All status checks now use a database cache.
+-   **The race condition fix is critical.** Maintain the server-side logic that validates the response content against the query input.
+-   **Security headers are configurable.** The app works over HTTP. To enable HSTS and other HTTPS-only headers,  must be set in .
+-   **The UI is centered around .** This component is the hub for all primary user actions.
 
 **documents and test reports created in this job**
 -   
--   ==========================================
-   WASKITA LBS - UPDATE SCRIPT
-==========================================
-
-[0;31mERROR: Folder /var/www/waskita-lbs tidak ditemukan![0m
+-    (updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User:** Sort the perlintasan data by oldest date and departure-first.
-2.  **Agent:** I will update the sorting logic.
-3.  **User:** Make sure passport and perlintasan info also appears in the view popup for Query Nama.
-4.  **Agent:** Acknowledged. I will check and fix the view dialog.
-5.  **User:** For the target with NIK , passport is working but perlintasan is not. Ensure data is also in the PDF download.
-6.  **Agent:** I will test the perlintasan API and check the PDF generation.
-7.  **User:** (Shares successful curl output for both passport and perlintasan APIs).
-8.  **Agent:** Thank you. The API response format is different than expected. I will fix the backend parser.
-9.  **User:** The perlintasan query should use the passport number from the imigrasi result, not the NIK.
-10. **Agent:** Yes, the flow is already correct. I will verify the implementation.
+1.  **User**: The app is inaccessible via HTTP after security hardening. (COMPLETED - Agent fixed CSP/HSTS to be configurable).
+2.  **User**: The tools panel should reappear when a dialog is closed. (COMPLETED - Agent implemented this).
+3.  **User**: Change Waskita LBS to Location Based System. (COMPLETED).
+4.  **User**: Change Location Based System to Netra. (COMPLETED).
+5.  **User**: Change Netra to NETRA and add a logo. (IN PROGRESS - Text changed, but the logo was generated and NOT implemented).
+6.  **User**: Asked to turn off polling completely. (COMPLETED).
+7.  **User**: Asked for security hardening. (COMPLETED).
+8.  **User**: Reported the CP API quota waste issue. (COMPLETED - Agent fixed it).
+9.  **User**: Requested shared cache and history for Simple Query. (COMPLETED).
+10. **User**: Reported that the  history item was still not working. (COMPLETED - Agent implemented a more robust fix, which now needs user verification).
 
 **Project Health Check:**
--   **Broken:** The NKK table data display and the Family Tree visualization remain broken from the previous fork.
+-   **Broken:**
+    -   The Family Tree visualization () is still not rendering correctly.
 -   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Telethon:** Live integration for querying a private Telegram bot. The interaction logic was made significantly more complex to support the new Face Recognition feature.
--   **CP API ():** External JSON API. The previously blocked Immigration endpoints were fixed by forcing IPv4 connections. The data parsers for its responses have been updated.
--   **Leaflet.js & OpenStreetMap:** For map rendering.
--   **jsPDF & html2canvas:** For client-side PDF generation.
+-   **Telethon (Telegram Bot):** Live integration.
+-   **CP API ():** External JSON API.
+-   **Leaflet.js & OpenStreetMap:** Map rendering.
+-   **jsPDF & html2canvas:** Client-side PDF generation.
+-   No new integrations were added.
 
 **Testing status**
 -   Testing agent used after significant changes: NO
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: None identified in this session.
+-   Known regressions: None.
 
 **Credentials to test flow:**
 -   **Web App Login:**
-    -   Username: 
-    -   Password: 
--   **VPS Access:**
-    -   The agent does not have direct access. All instructions must be provided to the user as bash commands.
+    -   Admin Username: 
+    -   Admin Password: 
+    -   (New users can be registered via the UI and approved by the admin)
 
 **What agent forgot to execute**
--   The agent did not fully refactor the brittle backend data parsers () mentioned in the initial handoff, which are the likely root cause of recurring data display issues like the NKK table bug.
--   The core rendering logic of the Family Tree graph () was not debugged.</analysis>
+-   The agent generated a logo but **forgot to download it and implement it in the frontend**. This is the highest priority next step.
+-   The agent created a backend endpoint  but **forgot to create a UI for the admin to view these logs**.
+-   The agent did not address the broken Family Tree Graph issue mentioned in the previous handoff.</analysis>
