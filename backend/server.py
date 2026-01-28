@@ -889,7 +889,12 @@ async def invalidate_session(username: str):
     await db.active_sessions.delete_one({"username": username})
 
 async def check_session_valid(username: str, session_id: str) -> bool:
-    """Check if session is still valid and not stale"""
+    """Check if session is still valid (exists with matching session_id)
+    
+    NOTE: This does NOT check for staleness. Staleness is only checked during login.
+    Active users should never be kicked out due to inactivity - only new login attempts
+    will clean up stale sessions.
+    """
     session = await db.active_sessions.find_one({
         "username": username,
         "session_id": session_id
@@ -898,21 +903,7 @@ async def check_session_valid(username: str, session_id: str) -> bool:
     if not session:
         return False
     
-    # Check if session is stale
-    last_activity = session.get("last_activity")
-    if last_activity:
-        try:
-            last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
-            time_since_activity = (datetime.now(timezone.utc) - last_activity_dt).total_seconds()
-            
-            if time_since_activity > SESSION_INACTIVITY_TIMEOUT:
-                # Session is stale
-                logger.info(f"[SESSION] Session stale during validation for {username}")
-                await db.active_sessions.delete_one({"username": username})
-                return False
-        except Exception as e:
-            logger.error(f"[SESSION] Error checking session validity: {e}")
-    
+    # Session exists and session_id matches - it's valid
     return True
 
 # Device Transfer Request Management
