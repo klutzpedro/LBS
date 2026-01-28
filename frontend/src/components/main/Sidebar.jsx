@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  Shield, 
   LogOut, 
   Settings as SettingsIcon, 
   Plus, 
@@ -17,6 +16,7 @@ import {
   Printer
 } from 'lucide-react';
 import { CountdownTimer } from './CountdownTimer';
+import netraLogo from '@/assets/logo.png';
 
 /**
  * Main sidebar component containing header, cases, and targets sections
@@ -191,12 +191,12 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
     <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div 
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' }}
-          >
-            <Shield className="w-6 h-6" style={{ color: 'var(--background-primary)' }} />
-          </div>
+          <img 
+            src={netraLogo} 
+            alt="NETRA Logo" 
+            className="w-10 h-10 object-contain"
+            data-testid="sidebar-netra-logo"
+          />
           <div>
             <h1 
               className="text-xl font-bold"
