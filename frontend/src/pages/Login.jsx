@@ -490,62 +490,6 @@ const Login = () => {
           )}
         </div>
       </div>
-
-      {/* Device Confirmation Dialog */}
-      <AlertDialog open={showDeviceConfirm} onOpenChange={setShowDeviceConfirm}>
-        <AlertDialogContent 
-          style={{ 
-            backgroundColor: 'var(--background-secondary)', 
-            borderColor: 'var(--borders-default)',
-            color: 'var(--foreground-primary)'
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <AlertTriangle className="w-5 h-5 text-yellow-500" />
-              Akun Sedang Digunakan
-            </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3" style={{ color: 'var(--foreground-secondary)' }}>
-              <p>
-                Akun <strong style={{ color: 'var(--accent-primary)' }}>{username}</strong> sedang aktif di device lain:
-              </p>
-              <div 
-                className="flex items-center gap-2 p-3 rounded-lg"
-                style={{ backgroundColor: 'var(--background-tertiary)' }}
-              >
-                <Smartphone className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
-                <span className="font-medium">{existingDeviceInfo}</span>
-              </div>
-              <p>
-                Apakah Anda ingin logout dari device tersebut dan login di device ini?
-              </p>
-              <p className="text-sm italic" style={{ color: 'var(--foreground-muted)' }}>
-                Device lain akan otomatis logout jika Anda melanjutkan.
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              style={{ 
-                backgroundColor: 'var(--background-tertiary)', 
-                color: 'var(--foreground-primary)',
-                borderColor: 'var(--borders-default)'
-              }}
-            >
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleForceLogin}
-              style={{ 
-                backgroundColor: 'var(--accent-primary)', 
-                color: 'var(--background-primary)' 
-              }}
-            >
-              Ya, Lanjutkan Login
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
