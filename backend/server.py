@@ -853,11 +853,18 @@ async def clear_failed_logins(ip: str, username: str):
 # ============================================
 # SINGLE DEVICE SESSION MANAGEMENT
 # ============================================
+# Set SINGLE_DEVICE_LOGIN=false in .env to disable this feature
+SINGLE_DEVICE_LOGIN_ENABLED = os.getenv('SINGLE_DEVICE_LOGIN', 'false').lower() == 'true'
 TRANSFER_REQUEST_TIMEOUT = 60  # seconds to wait for approval
 SESSION_INACTIVITY_TIMEOUT = 1800  # 30 minutes - session considered stale if no activity
 
+logger.info(f"[CONFIG] Single Device Login: {'ENABLED' if SINGLE_DEVICE_LOGIN_ENABLED else 'DISABLED'}")
+
 async def get_active_session(username: str):
-    """Get active session for a user, returns None if session is stale"""
+    """Get active session for a user, returns None if session is stale or feature disabled"""
+    if not SINGLE_DEVICE_LOGIN_ENABLED:
+        return None  # Feature disabled, always allow login
+        
     session = await db.active_sessions.find_one({"username": username})
     
     if session:
