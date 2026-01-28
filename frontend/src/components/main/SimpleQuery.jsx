@@ -26,7 +26,9 @@ import {
   Clock,
   Trash2,
   X,
-  Download
+  Download,
+  ShieldAlert,
+  Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
