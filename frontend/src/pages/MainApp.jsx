@@ -101,45 +101,7 @@ const MainApp = () => {
   // Tools Panel
   const [toolsPanelOpen, setToolsPanelOpen] = useState(true); // Open by default
   const [toolsPanelWasOpen, setToolsPanelWasOpen] = useState(false); // Track if panel was open before dialog
-  
-  // Helper function to check if any tool dialog is open
-  const isAnyToolDialogOpen = (excludeDialog = null) => {
-    const dialogs = {
-      nonGeointDialogOpen,
-      nonGeointHistoryOpen,
-      frDialogOpen,
-      frHistoryOpen,
-      simpleQueryOpen,
-      simpleQueryHistoryOpen,
-      userManagementOpen
-    };
-    
-    return Object.entries(dialogs).some(([key, value]) => {
-      if (excludeDialog && key === excludeDialog) return false;
-      return value;
-    });
-  };
-  
-  // Helper to restore Tools Panel only if no other dialogs are open
-  const restoreToolsPanelIfNoDialogs = (closingDialogKey) => {
-    // Use setTimeout to check after state updates
-    setTimeout(() => {
-      // Check current dialog states (after the closing dialog is closed)
-      const anyOpen = 
-        (closingDialogKey !== 'nonGeointDialogOpen' && nonGeointDialogOpen) ||
-        (closingDialogKey !== 'nonGeointHistoryOpen' && nonGeointHistoryOpen) ||
-        (closingDialogKey !== 'frDialogOpen' && frDialogOpen) ||
-        (closingDialogKey !== 'frHistoryOpen' && frHistoryOpen) ||
-        (closingDialogKey !== 'simpleQueryOpen' && simpleQueryOpen) ||
-        (closingDialogKey !== 'simpleQueryHistoryOpen' && simpleQueryHistoryOpen) ||
-        (closingDialogKey !== 'userManagementOpen' && userManagementOpen);
-      
-      if (!anyOpen && toolsPanelWasOpen) {
-        setToolsPanelOpen(true);
-        setToolsPanelWasOpen(false);
-      }
-    }, 50);
-  };
+  const dialogTransitionRef = useRef(false); // Track if we're transitioning between dialogs
 
   // Search and duplicate
   const [searchQuery, setSearchQuery] = useState('');
