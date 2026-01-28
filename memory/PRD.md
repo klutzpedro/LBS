@@ -834,32 +834,41 @@ pm2 restart waskita-backend
 2. **Race condition "plat_mobil"** - Server-side retry logic implemented, needs VPS testing with concurrent users
 3. **NKK Parser** - Improved parser needs verification with real bot data
 
-### Single Device Login (January 28, 2026) - COMPLETED
-- **Request:** Satu user hanya bisa login di satu device pada satu waktu
-- **Implementation:**
+### Single Device Login (January 28, 2026) - SIMPLIFIED & COMPLETED
+- **Request:** Satu user hanya bisa login di satu device pada satu waktu. Versi awal menggunakan sistem approval yang kompleks, kemudian user meminta penyederhanaan.
+- **Implementation (Simplified - January 28, 2026):**
   1. Backend tracks active sessions in MongoDB collection `active_sessions`
-  2. Login endpoint checks for existing sessions before allowing login
-  3. If session exists, returns `has_existing_session: true` with device info
-  4. User can choose to force login, which invalidates the old session
-  5. Frontend polls `/auth/check-session` every 10 seconds to detect invalidation
-  6. When session is invalidated, user sees alert and is redirected to login
+  2. Login endpoint checks for existing sessions - if exists, BLOCKS login with HTTP 409 error
+  3. Returns error `{error: "session_active", message: "Akun ini sudah dibuka di tempat lain...", device_info: "..."}`
+  4. Frontend shows simple AlertDialog with "OK" button - no approval flow needed
+  5. User must logout from other device first before logging in from new device
+  6. Stale sessions (inactive > 30 minutes) are automatically cleaned up during login attempt
+
+- **Removed (Old Complex System):**
+  - Device transfer request system (collection `device_transfer_requests`)
+  - Endpoints: `/auth/transfer-request/{id}`, `/auth/pending-transfer`, `/auth/transfer-response/{id}`
+  - Polling for approval from other device
+  - Approve/Reject dialog on existing device
 
 - **Files Modified:**
-  - `/app/backend/server.py` - Added session management functions and endpoints
-  - `/app/frontend/src/context/AuthContext.jsx` - Added session check polling and force login
-  - `/app/frontend/src/pages/Login.jsx` - Added device confirmation dialog
-  - `/app/frontend/src/pages/MainApp.jsx` - Added session invalidation alert
+  - `/app/backend/server.py` - Simplified login logic, removed transfer endpoints
+  - `/app/frontend/src/context/AuthContext.jsx` - Simplified to only handle session_active error
+  - `/app/frontend/src/pages/Login.jsx` - Simple dialog instead of waiting state
+  - `/app/frontend/src/pages/MainApp.jsx` - Removed pending transfer dialog
 
-- **New Endpoints:**
-  - `POST /api/auth/check-session` - Validates current session
-  - `POST /api/auth/logout` - Invalidates session on logout
+- **Active Endpoints:**
+  - `POST /api/auth/login` - Returns 409 if session active
+  - `POST /api/auth/check-session` - Validates and updates last_activity
+  - `POST /api/auth/logout` - Invalidates session
 
 - **Database:**
-  - New collection `active_sessions`: `{username, session_id, device_info, created_at, last_activity}`
+  - Collection `active_sessions`: `{username, session_id, device_info, created_at, last_activity}`
+  - Stale session cleanup: sessions with last_activity > 30 minutes are automatically removed
 
 ### Upcoming Tasks
 1. **UI for Security Logs** - Create admin view for `/api/admin/security-logs` endpoint
 2. **Family Tree Graph Fix** - Debug `FamilyTreeViz.jsx` rendering issues
+3. **Verify Extended Location Info** - Test map popup with real Telegram bot data (IMEI, IMSI, MCC, LAC, CI, CGI)
 
 ### Backlog
 - Export to Excel/CSV functionality
