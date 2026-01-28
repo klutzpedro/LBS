@@ -613,17 +613,32 @@ const MainApp = () => {
   }, [targets, globalProcessing]);
 
   // ============== Target/Case Fetching ==============
+  
+  // Keep targetsRef in sync with targets state
+  useEffect(() => {
+    targetsRef.current = targets;
+  }, [targets]);
+  
+  // Track previous targets for status change detection
+  const prevTargetsRef = useRef([]);
+  
   useEffect(() => {
     if (selectedCase) {
       fetchTargets(selectedCase.id);
-      // Poll less frequently (10 seconds) to reduce UI updates
-      // Only poll when there's a processing target
+      // Poll every 5 seconds when there's a processing target
+      // Use ref to get current targets instead of closure
       const interval = setInterval(() => {
-        const hasProcessing = targets.some(t => t.status === 'processing');
+        const currentTargets = targetsRef.current;
+        const hasProcessing = currentTargets.some(t => 
+          t.status === 'processing' || 
+          t.reghp_status === 'processing' ||
+          Object.values(t.nik_queries || {}).some(nq => nq.status === 'processing')
+        );
         if (hasProcessing) {
+          console.log('[Polling] Has processing targets, fetching...');
           fetchTargets(selectedCase.id);
         }
-      }, 10000);
+      }, 5000); // Reduced from 10s to 5s for better responsiveness
       return () => clearInterval(interval);
     }
   }, [selectedCase]);
