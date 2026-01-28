@@ -130,7 +130,7 @@ const Login = () => {
                 color: 'var(--foreground-primary)'
               }}
             >
-              Netra
+              NETRA
             </h1>
             <p 
               className="text-sm"
@@ -139,7 +139,7 @@ const Login = () => {
                 color: 'var(--foreground-secondary)'
               }}
             >
-              {mode === 'login' ? 'Netra Login' : 'Pendaftaran Akun Baru'}
+              {mode === 'login' ? 'NETRA Login' : 'Pendaftaran Akun Baru'}
             </p>
           </div>
 

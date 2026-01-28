@@ -1,4 +1,4 @@
-# Netra - Restricted Access Application
+# NETRA - Restricted Access Application
 # This application is not intended for public indexing
 
 User-agent: *

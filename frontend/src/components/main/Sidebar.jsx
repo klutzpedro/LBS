@@ -202,7 +202,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateS
               className="text-xl font-bold"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
             >
-              Netra
+              NETRA
             </h1>
           </div>
         </div>

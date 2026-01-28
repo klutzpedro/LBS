@@ -8,7 +8,7 @@ const addHeader = (doc, title) => {
   doc.setTextColor(0, 217, 255);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('Netra', 14, 15);
+  doc.text('NETRA', 14, 15);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.text(title, 196, 15, { align: 'right' });
@@ -562,7 +562,7 @@ export const generateTargetPDF = async (target, mapScreenshot = null) => {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | Netra | Target: ${target.phone_number} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | NETRA | Target: ${target.phone_number} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
       // Save PDF
@@ -793,7 +793,7 @@ export const generateCasePDF = async (caseName, targets, mapScreenshots = {}) =>
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
-        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | Netra | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`Generated: ${new Date().toLocaleString('id-ID')} | NETRA | Case: ${caseName} | Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
       }
       
       // Save PDF

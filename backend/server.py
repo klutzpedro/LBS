@@ -665,7 +665,7 @@ async def query_position(phone_number: str) -> dict:
         return result
 
 app = FastAPI(
-    title="Netra API",
+    title="NETRA API",
     docs_url=None,  # Disable Swagger docs in production
     redoc_url=None,  # Disable ReDoc in production
     openapi_url=None  # Disable OpenAPI schema
