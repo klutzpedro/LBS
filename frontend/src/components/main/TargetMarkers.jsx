@@ -372,8 +372,12 @@ const TargetPopup = ({
             </div>
           ) : (
             <button
-              onClick={() => onPendalaman(target)}
+              onClick={() => {
+                console.log('[TargetMarkers] Pendalaman button clicked for target:', target.id);
+                onPendalaman(target);
+              }}
               disabled={loadingPendalaman === target.id}
+              data-testid="pendalaman-button"
               className="w-full py-2 px-3 rounded text-xs font-semibold uppercase disabled:opacity-50"
               style={{
                 backgroundColor: 'var(--status-warning)',
