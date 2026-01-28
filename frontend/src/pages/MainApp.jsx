@@ -1897,13 +1897,11 @@ const MainApp = () => {
           // Reset selected search when dialog closes so next open will fetch fresh data
           if (!open) {
             setSelectedNonGeointSearch(null);
-            // Restore Tools Panel only if no other dialog is open
-            setTimeout(() => {
-              if (!nonGeointHistoryOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            // Restore Tools Panel only if not in transition and no other dialog is open
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
         onNikPendalaman={handleNonGeointNikPendalaman}
@@ -1918,14 +1916,11 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setNonGeointHistoryOpen(open);
           if (!open) {
-            // Only restore Tools Panel if no other dialog will be opened
-            // Use timeout to check after potential new dialog opens
-            setTimeout(() => {
-              if (!nonGeointDialogOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            // Only restore Tools Panel if not in transition
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
         onSelectSearch={(search) => {
@@ -1934,10 +1929,16 @@ const MainApp = () => {
             toast.error('Tidak dapat membuka pencarian baru. Proses pendalaman sedang berjalan.');
             return;
           }
-          // Close history and open main dialog - don't restore Tools Panel
+          // Mark that we're transitioning to another dialog
+          dialogTransitionRef.current = true;
+          // Close history and open main dialog
           setNonGeointHistoryOpen(false);
           setSelectedNonGeointSearch(search);
           setNonGeointDialogOpen(true);
+          // Reset transition flag after a short delay
+          setTimeout(() => {
+            dialogTransitionRef.current = false;
+          }, 200);
         }}
       />
 
@@ -1947,12 +1948,10 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setFrDialogOpen(open);
           if (!open) {
-            setTimeout(() => {
-              if (!frHistoryOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
       />
@@ -1963,12 +1962,10 @@ const MainApp = () => {
         onOpenChange={(open) => {
           setFrHistoryOpen(open);
           if (!open) {
-            setTimeout(() => {
-              if (!frDialogOpen && toolsPanelWasOpen) {
-                setToolsPanelOpen(true);
-                setToolsPanelWasOpen(false);
-              }
-            }, 100);
+            if (!dialogTransitionRef.current && toolsPanelWasOpen) {
+              setToolsPanelOpen(true);
+              setToolsPanelWasOpen(false);
+            }
           }
         }}
       />
