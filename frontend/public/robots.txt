@@ -1,4 +1,4 @@
-# WASKITA LBS - Restricted Access Application
+# Location Based System - Restricted Access Application
 # This application is not intended for public indexing
 
 User-agent: *
