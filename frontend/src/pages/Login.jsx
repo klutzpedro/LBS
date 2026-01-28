@@ -354,6 +354,8 @@ const Login = () => {
                 </button>
               </div>
             </form>
+              )}
+            </>
           ) : (
             <form onSubmit={handleRegister} className="space-y-5">
               <div>
