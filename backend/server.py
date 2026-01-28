@@ -927,10 +927,6 @@ class LoginResponse(BaseModel):
     username: str
     is_admin: bool = False
     session_id: str = ""
-    has_existing_session: bool = False
-    existing_device_info: Optional[str] = None
-    transfer_request_id: Optional[str] = None  # ID for polling transfer status
-    waiting_approval: bool = False  # True if waiting for approval from other device
 
 class RegisterRequest(BaseModel):
     username: str
