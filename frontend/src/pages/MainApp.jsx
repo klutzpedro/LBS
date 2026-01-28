@@ -1099,7 +1099,10 @@ const MainApp = () => {
 
   // ============== Pendalaman Handlers ==============
   const handlePendalaman = async (target) => {
+    console.log('[MainApp] handlePendalaman called with target:', target?.id, target?.phone_number);
+    
     if (isProcessRunning()) {
+      console.log('[MainApp] Blocked - process is already running');
       showBusyNotification();
       return;
     }
