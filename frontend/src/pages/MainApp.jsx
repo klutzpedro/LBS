@@ -1953,9 +1953,15 @@ const MainApp = () => {
         open={nonGeointHistoryOpen}
         onOpenChange={(open) => {
           setNonGeointHistoryOpen(open);
-          if (!open && toolsPanelWasOpen) {
-            setToolsPanelOpen(true);
-            setToolsPanelWasOpen(false);
+          if (!open) {
+            // Only restore Tools Panel if no other dialog will be opened
+            // Use timeout to check after potential new dialog opens
+            setTimeout(() => {
+              if (!nonGeointDialogOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
         onSelectSearch={(search) => {
@@ -1964,6 +1970,8 @@ const MainApp = () => {
             toast.error('Tidak dapat membuka pencarian baru. Proses pendalaman sedang berjalan.');
             return;
           }
+          // Close history and open main dialog - don't restore Tools Panel
+          setNonGeointHistoryOpen(false);
           setSelectedNonGeointSearch(search);
           setNonGeointDialogOpen(true);
         }}
