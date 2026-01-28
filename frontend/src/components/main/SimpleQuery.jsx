@@ -282,8 +282,9 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
         style={{ 
           width: isMinimized ? '300px' : '650px',
           maxWidth: '95vw',
-          height: isMinimized ? 'auto' : '85vh',
-          maxHeight: '90vh',
+          height: isMinimized ? 'auto' : 'auto',
+          minHeight: isMinimized ? 'auto' : '700px',
+          maxHeight: '95vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
