@@ -8,7 +8,7 @@ const addHeader = (doc, title) => {
   doc.setTextColor(0, 217, 255);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('WASKITA LBS', 14, 15);
+  doc.text('Location Based System', 14, 15);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.text(title, 196, 15, { align: 'right' });
