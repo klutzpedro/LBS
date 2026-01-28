@@ -214,80 +214,139 @@ const Login = () => {
           </div>
 
           {mode === 'login' ? (
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div>
-                <Label 
-                  htmlFor="username" 
-                  className="text-xs uppercase tracking-wide mb-2 block"
-                  style={{ color: 'var(--foreground-secondary)' }}
-                >
-                  Username
-                </Label>
-                <div className="relative">
-                  <User 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-                    style={{ color: 'var(--foreground-muted)' }}
-                  />
-                  <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    data-testid="username-input"
-                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
-                    style={{ color: '#000000' }}
-                    placeholder="Enter username"
-                    required
-                  />
+            <>
+              {/* Waiting for Approval State */}
+              {waitingApproval ? (
+                <div className="space-y-6">
+                  <div 
+                    className="p-6 rounded-lg text-center"
+                    style={{ backgroundColor: 'var(--background-tertiary)' }}
+                  >
+                    <Loader2 
+                      className="w-12 h-12 mx-auto mb-4 animate-spin"
+                      style={{ color: 'var(--accent-primary)' }}
+                    />
+                    <h3 
+                      className="text-lg font-semibold mb-2"
+                      style={{ color: 'var(--foreground-primary)' }}
+                    >
+                      Menunggu Persetujuan
+                    </h3>
+                    <p 
+                      className="text-sm mb-4"
+                      style={{ color: 'var(--foreground-secondary)' }}
+                    >
+                      Akun ini sedang terbuka di device lain.
+                      <br />
+                      Mohon menunggu persetujuan pindah device.
+                    </p>
+                    <div 
+                      className="flex items-center justify-center gap-2 p-3 rounded-lg mb-4"
+                      style={{ backgroundColor: 'var(--background-primary)' }}
+                    >
+                      <Smartphone className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+                      <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                        {existingDeviceInfo}
+                      </span>
+                    </div>
+                    <p 
+                      className="text-xs italic"
+                      style={{ color: 'var(--foreground-muted)' }}
+                    >
+                      Request akan kedaluwarsa dalam 60 detik
+                    </p>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    onClick={cancelWaiting}
+                    variant="outline"
+                    className="w-full py-4"
+                    style={{
+                      borderColor: 'var(--borders-default)',
+                      color: 'var(--foreground-secondary)'
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Batalkan
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                /* Normal Login Form */
+                <form onSubmit={handleLogin} className="space-y-6">
+                  <div>
+                    <Label 
+                      htmlFor="username" 
+                      className="text-xs uppercase tracking-wide mb-2 block"
+                      style={{ color: 'var(--foreground-secondary)' }}
+                    >
+                      Username
+                    </Label>
+                    <div className="relative">
+                      <User 
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                        style={{ color: 'var(--foreground-muted)' }}
+                      />
+                      <Input
+                        id="username"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        data-testid="username-input"
+                        className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                        style={{ color: '#000000' }}
+                        placeholder="Enter username"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <div>
-                <Label 
-                  htmlFor="password" 
-                  className="text-xs uppercase tracking-wide mb-2 block"
-                  style={{ color: 'var(--foreground-secondary)' }}
-                >
-                  Password
-                </Label>
-                <div className="relative">
-                  <Lock 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-                    style={{ color: 'var(--foreground-muted)' }}
-                  />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    data-testid="password-input"
-                    className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
-                    style={{ color: '#000000' }}
-                    placeholder="Enter password"
-                    required
-                  />
-                </div>
-              </div>
+                  <div>
+                    <Label 
+                      htmlFor="password" 
+                      className="text-xs uppercase tracking-wide mb-2 block"
+                      style={{ color: 'var(--foreground-secondary)' }}
+                    >
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock 
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                        style={{ color: 'var(--foreground-muted)' }}
+                      />
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        data-testid="password-input"
+                        className="pl-10 bg-background-tertiary border-borders-default focus:border-accent-primary focus:ring-2 focus:ring-accent-primary/20"
+                        style={{ color: '#000000' }}
+                        placeholder="Enter password"
+                        required
+                      />
+                    </div>
+                  </div>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                data-testid="login-submit-button"
-                className="w-full py-6 font-semibold text-base uppercase tracking-wide transition-all duration-300"
-                style={{
-                  backgroundColor: 'var(--accent-primary)',
-                  color: 'var(--background-primary)',
-                  fontFamily: 'Rajdhani, sans-serif'
-                }}
-              >
-                {loading ? 'LOGGING IN...' : 'LOGIN'}
-              </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    data-testid="login-submit-button"
+                    className="w-full py-6 font-semibold text-base uppercase tracking-wide transition-all duration-300"
+                    style={{
+                      backgroundColor: 'var(--accent-primary)',
+                      color: 'var(--background-primary)',
+                      fontFamily: 'Rajdhani, sans-serif'
+                    }}
+                  >
+                    {loading ? 'LOGGING IN...' : 'LOGIN'}
+                  </Button>
 
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => { setMode('register'); resetForm(); }}
-                  className="text-sm hover:underline flex items-center justify-center gap-2 mx-auto"
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setMode('register'); resetForm(); }}
+                      className="text-sm hover:underline flex items-center justify-center gap-2 mx-auto"
                   style={{ color: 'var(--accent-primary)' }}
                 >
                   <UserPlus className="w-4 h-4" />
