@@ -834,6 +834,29 @@ pm2 restart waskita-backend
 2. **Race condition "plat_mobil"** - Server-side retry logic implemented, needs VPS testing with concurrent users
 3. **NKK Parser** - Improved parser needs verification with real bot data
 
+### Single Device Login (January 28, 2026) - COMPLETED
+- **Request:** Satu user hanya bisa login di satu device pada satu waktu
+- **Implementation:**
+  1. Backend tracks active sessions in MongoDB collection `active_sessions`
+  2. Login endpoint checks for existing sessions before allowing login
+  3. If session exists, returns `has_existing_session: true` with device info
+  4. User can choose to force login, which invalidates the old session
+  5. Frontend polls `/auth/check-session` every 10 seconds to detect invalidation
+  6. When session is invalidated, user sees alert and is redirected to login
+
+- **Files Modified:**
+  - `/app/backend/server.py` - Added session management functions and endpoints
+  - `/app/frontend/src/context/AuthContext.jsx` - Added session check polling and force login
+  - `/app/frontend/src/pages/Login.jsx` - Added device confirmation dialog
+  - `/app/frontend/src/pages/MainApp.jsx` - Added session invalidation alert
+
+- **New Endpoints:**
+  - `POST /api/auth/check-session` - Validates current session
+  - `POST /api/auth/logout` - Invalidates session on logout
+
+- **Database:**
+  - New collection `active_sessions`: `{username, session_id, device_info, created_at, last_activity}`
+
 ### Upcoming Tasks
 1. **UI for Security Logs** - Create admin view for `/api/admin/security-logs` endpoint
 2. **Family Tree Graph Fix** - Debug `FamilyTreeViz.jsx` rendering issues
