@@ -4,9 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, User, UserPlus, ArrowLeft } from 'lucide-react';
+import { Lock, User, UserPlus, ArrowLeft, AlertTriangle, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 import netraLogo from '@/assets/logo.png';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,23 +27,34 @@ const Login = () => {
   const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showDeviceConfirm, setShowDeviceConfirm] = useState(false);
+  const [existingDeviceInfo, setExistingDeviceInfo] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (e, forceLogin = false) => {
+    if (e) e.preventDefault();
     setLoading(true);
 
-    const result = await login(username, password);
+    const result = await login(username, password, forceLogin);
 
     if (result.success) {
       toast.success('Login berhasil!');
       navigate('/');
+    } else if (result.hasExistingSession) {
+      // Show confirmation dialog
+      setExistingDeviceInfo(result.existingDeviceInfo || 'Unknown Device');
+      setShowDeviceConfirm(true);
     } else {
       toast.error(result.error);
     }
 
     setLoading(false);
+  };
+
+  const handleForceLogin = async () => {
+    setShowDeviceConfirm(false);
+    await handleLogin(null, true);
   };
 
   const handleRegister = async (e) => {
