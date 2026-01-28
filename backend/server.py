@@ -1129,21 +1129,17 @@ async def login(request: LoginRequest, req: Request):
     # Check for existing session (single device enforcement)
     existing_session = await get_active_session(request.username)
     if existing_session:
-        # Create transfer request and wait for approval
-        request_id = secrets.token_hex(16)
-        await create_transfer_request(request.username, device_info, request_id)
+        # Block login - session active elsewhere
+        device_info_existing = existing_session.get("device_info", "Unknown Device")
+        logger.info(f"[SESSION] Login blocked for {request.username}, session active on: {device_info_existing}")
         
-        logger.info(f"[SESSION] Transfer request created for {request.username}, request_id: {request_id}")
-        
-        return LoginResponse(
-            token="",
-            username=request.username,
-            is_admin=is_admin,
-            session_id="",
-            has_existing_session=True,
-            existing_device_info=existing_session.get("device_info", "Unknown Device"),
-            transfer_request_id=request_id,
-            waiting_approval=True
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "session_active",
+                "message": "Akun ini sudah dibuka di tempat lain, mohon logout terlebih dahulu baru login di tempat baru",
+                "device_info": device_info_existing
+            }
         )
     
     # No existing session - create new session directly
