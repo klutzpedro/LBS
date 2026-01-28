@@ -1982,9 +1982,13 @@ const MainApp = () => {
         open={frDialogOpen}
         onOpenChange={(open) => {
           setFrDialogOpen(open);
-          if (!open && toolsPanelWasOpen) {
-            setToolsPanelOpen(true);
-            setToolsPanelWasOpen(false);
+          if (!open) {
+            setTimeout(() => {
+              if (!frHistoryOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
       />
@@ -1994,9 +1998,13 @@ const MainApp = () => {
         open={frHistoryOpen}
         onOpenChange={(open) => {
           setFrHistoryOpen(open);
-          if (!open && toolsPanelWasOpen) {
-            setToolsPanelOpen(true);
-            setToolsPanelWasOpen(false);
+          if (!open) {
+            setTimeout(() => {
+              if (!frDialogOpen && toolsPanelWasOpen) {
+                setToolsPanelOpen(true);
+                setToolsPanelWasOpen(false);
+              }
+            }, 100);
           }
         }}
       />
