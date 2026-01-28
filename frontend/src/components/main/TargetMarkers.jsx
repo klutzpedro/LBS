@@ -194,168 +194,47 @@ const TargetPopup = ({
   
   return (
     <Popup>
-      <div className="p-1.5" style={{ color: 'var(--foreground-primary)', minWidth: '220px', maxWidth: '260px' }}>
-        {/* Group indicator */}
-        {isGrouped && (
-          <div className="mb-1 px-1.5 py-0.5 rounded text-xs font-semibold text-center"
-            style={{ 
-              backgroundColor: 'var(--accent-primary)', 
-              color: 'var(--background-primary)' 
-            }}>
-            📍 Target {selectedIndex + 1} dari {groupCount}
-          </div>
-        )}
+      <div style={{ color: '#e0e0e0', fontSize: '11px', fontFamily: 'monospace', minWidth: '180px', maxWidth: '200px', lineHeight: '1.3' }}>
+        <div style={{ color: '#00d4aa', fontWeight: 'bold', marginBottom: '4px' }}>{target.phone_number}</div>
         
-        {/* Header: Phone Number */}
-        <p className="text-xs font-mono font-semibold mb-1" style={{ color: 'var(--accent-primary)' }}>
-          {target.phone_number}
-        </p>
+        {target.data.phone_model && <div>📱 {target.data.phone_model}</div>}
+        {target.data.imei && <div>IMEI: {target.data.imei}</div>}
+        {target.data.imsi && <div>IMSI: {target.data.imsi}</div>}
+        {target.data.network && <div>Network: <span style={{ color: '#4ade80' }}>{target.data.network}</span></div>}
+        {target.data.mcc && <div>MCC: {target.data.mcc}</div>}
+        {target.data.lac && <div>LAC: {target.data.lac}</div>}
+        {target.data.ci && <div>CI: {target.data.ci}</div>}
         
-        {/* Device Info Section - Compact */}
-        {(target.data.phone_model || target.data.imei || target.data.imsi) && (
-          <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-            <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
-              DEVICE
-            </p>
-            {target.data.phone_model && (
-              <div className="text-[10px] flex justify-between leading-tight">
-                <span style={{ color: 'var(--foreground-muted)' }}>Phone:</span>
-                <span className="font-mono truncate ml-1" style={{ color: 'var(--foreground-primary)', maxWidth: '140px' }}>{target.data.phone_model}</span>
-              </div>
-            )}
-            {target.data.imei && (
-              <div className="text-[10px] flex justify-between leading-tight">
-                <span style={{ color: 'var(--foreground-muted)' }}>IMEI:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imei}</span>
-              </div>
-            )}
-            {target.data.imsi && (
-              <div className="text-[10px] flex justify-between leading-tight">
-                <span style={{ color: 'var(--foreground-muted)' }}>IMSI:</span>
-                <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.imsi}</span>
-              </div>
-            )}
-          </div>
-        )}
-        
-        {/* Network Info Section - Compact */}
-        {(target.data.operator || target.data.network || target.data.mcc || target.data.lac || target.data.cgi || target.data.ci) && (
-          <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-            <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
-              NETWORK
-            </p>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0">
-              {target.data.network && (
-                <div className="text-[10px] flex justify-between leading-tight col-span-2">
-                  <span style={{ color: 'var(--foreground-muted)' }}>Type:</span>
-                  <span className="font-mono" style={{ color: 'var(--accent-secondary)' }}>{target.data.network}</span>
-                </div>
-              )}
-              {target.data.mcc && (
-                <div className="text-[10px] flex justify-between leading-tight">
-                  <span style={{ color: 'var(--foreground-muted)' }}>MCC:</span>
-                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.mcc}</span>
-                </div>
-              )}
-              {target.data.lac && (
-                <div className="text-[10px] flex justify-between leading-tight">
-                  <span style={{ color: 'var(--foreground-muted)' }}>LAC:</span>
-                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.lac}</span>
-                </div>
-              )}
-              {target.data.ci && (
-                <div className="text-[10px] flex justify-between leading-tight">
-                  <span style={{ color: 'var(--foreground-muted)' }}>CI:</span>
-                  <span className="font-mono" style={{ color: 'var(--foreground-primary)' }}>{target.data.ci}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {/* Location Info Section - Compact */}
-        <div className="mb-1.5 p-1.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-          <p className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--foreground-secondary)' }}>
-            LOCATION
-          </p>
-          <div className="text-[10px] flex justify-between leading-tight">
-            <span style={{ color: 'var(--foreground-muted)' }}>Lat:</span>
-            <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
-              {target.data.latitude?.toFixed(6)}
-            </span>
-          </div>
-          <div className="text-[10px] flex justify-between leading-tight">
-            <span style={{ color: 'var(--foreground-muted)' }}>Long:</span>
-            <span className="font-mono font-semibold" style={{ color: 'var(--accent-primary)' }}>
-              {target.data.longitude?.toFixed(6)}
-            </span>
-          </div>
-          {target.data.address && (
-            <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'var(--foreground-primary)' }}>
-              {target.data.address}
-            </p>
-          )}
+        <div style={{ marginTop: '4px', borderTop: '1px solid #333', paddingTop: '4px' }}>
+          <div>Lat: <span style={{ color: '#00d4aa' }}>{target.data.latitude?.toFixed(6)}</span></div>
+          <div>Long: <span style={{ color: '#00d4aa' }}>{target.data.longitude?.toFixed(6)}</span></div>
+          {target.data.address && <div style={{ fontSize: '10px', color: '#888', marginTop: '2px' }}>{target.data.address}</div>}
         </div>
         
-        {/* Action Buttons - Compact */}
-        <div className="flex gap-1 mb-1">
+        <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
           <button
             onClick={handleShare}
-            className="flex-1 py-1 px-1.5 rounded text-[10px] font-semibold"
             style={{ 
-              backgroundColor: copied ? '#22c55e' : 'var(--accent-secondary)', 
-              color: 'var(--background-primary)'
+              flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px',
+              backgroundColor: copied ? '#22c55e' : '#0891b2', color: '#fff', cursor: 'pointer'
             }}
           >
-            {copied ? '✓ Copied' : '📤 Share'}
+            {copied ? '✓' : '📤 Share'}
           </button>
-        </div>
-        
-        {/* Pendalaman / Info Button - Compact */}
-        <div className="pt-1 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
           {target.reghp_status === 'completed' ? (
             <button
               onClick={() => onShowReghpInfo(target)}
-              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase"
-              style={{
-                backgroundColor: 'var(--accent-secondary)',
-                color: 'var(--background-primary)'
-              }}
+              style={{ flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px', backgroundColor: '#0891b2', color: '#fff', cursor: 'pointer' }}
             >
-              📋 Info Pendalaman
+              📋 Info
             </button>
-          ) : target.reghp_status === 'not_found' ? (
+          ) : target.reghp_status !== 'processing' && loadingPendalaman !== target.id && (
             <button
-              onClick={() => onShowReghpInfo(target)}
-              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase"
-              style={{
-                backgroundColor: 'var(--status-warning)',
-                color: 'var(--background-primary)'
-              }}
-            >
-              ⚠️ Not Found
-            </button>
-          ) : target.reghp_status === 'processing' || loadingPendalaman === target.id ? (
-            <div className="text-center py-1">
-              <p className="text-[10px]" style={{ color: 'var(--status-processing)' }}>
-                ⏳ Processing...
-              </p>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                console.log('[TargetMarkers] Pendalaman button clicked for target:', target.id);
-                onPendalaman(target);
-              }}
-              disabled={loadingPendalaman === target.id}
+              onClick={() => onPendalaman(target)}
               data-testid="pendalaman-button"
-              className="w-full py-1 px-2 rounded text-[10px] font-semibold uppercase disabled:opacity-50"
-              style={{
-                backgroundColor: 'var(--status-warning)',
-                color: 'var(--background-primary)'
-              }}
+              style={{ flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px', backgroundColor: '#f59e0b', color: '#000', cursor: 'pointer' }}
             >
-              🔍 Pendalaman
+              🔍 Reghp
             </button>
           )}
         </div>
