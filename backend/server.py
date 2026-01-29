@@ -7906,6 +7906,22 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
                 if matches:
                     break  # Found matches, stop looking
         
+        # Check for quota error
+        if quota_error:
+            # Cleanup temp file
+            try:
+                os.remove(temp_path)
+            except:
+                pass
+            
+            return {
+                "session_id": session_id,
+                "matches": [],
+                "raw_response": raw_response,
+                "error": "FR_QUOTA_EXHAUSTED",
+                "error_message": "Kuota Face Recognition habis. Silakan hubungi admin untuk menambah kuota."
+            }
+        
         # Sort by percentage descending
         matches.sort(key=lambda x: x['percentage'], reverse=True)
         
@@ -7939,6 +7955,11 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         import traceback
         logger.error(f"[FR] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logger.info(f"[FR] Global Telegram lock released for user: {username}")
 
 
 @api_router.post("/face-recognition/get-nik-details")
@@ -7949,11 +7970,19 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     """
     global telegram_client
     
-    logger.info(f"[FR] Getting NIK details for TOP NIK: {request.nik}")
+    logger.info(f"[FR] Getting NIK details for TOP NIK: {request.nik}, user: {username}")
+    
+    # ============================================
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
+    # ============================================
+    logger.info(f"[FR NIK] Waiting for global Telegram lock...")
+    await telegram_query_lock.acquire()
+    logger.info(f"[FR NIK] Global lock acquired for NIK details by user: {username}")
+    set_active_query(username, "fr_nik_details", request.nik)
     
     try:
         if not telegram_client or not telegram_client.is_connected():
-            raise HTTPException(status_code=503, detail="Telegram not connected")
+            raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
         
         bot_entity = await telegram_client.get_entity("@northarch_bot")
         
