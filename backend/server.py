@@ -7891,12 +7891,15 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     logger.info(f"[FR] Starting face recognition match for user: {username}")
     
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
-    # Prevents race condition with other users' queries
+    operation_name = f"FR_match_{username}"
     logger.info(f"[FR] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logger.info(f"[FR] Global lock acquired for FR match by user: {username}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        raise HTTPException(status_code=503, detail="Server sibuk, coba lagi nanti")
+    
     set_active_query(username, "fr_match", "face_recognition")
     
     try:
