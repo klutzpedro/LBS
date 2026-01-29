@@ -1945,7 +1945,7 @@ export const NonGeointSearchDialog = ({
         
         // ============ 3. DATA NKK (Kartu Keluarga) ============
         if (nikResult?.nkk_data) {
-          addSubsectionHeader('👨‍👩‍👧‍👦 Data Kartu Keluarga (NKK)');
+          addSubsectionHeader('[3] Data Kartu Keluarga (NKK)');
           
           const nkkData = nikResult.nkk_data;
           
