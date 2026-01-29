@@ -1995,7 +1995,143 @@ export const NonGeointSearchDialog = ({
         }
         
         // ============ 4. DATA FAMILY TREE (Visualisasi) ============
-        // Note: Family tree visualization is complex for PDF, showing member list instead
+        if (nikResult?.nkk_data?.family_data?.members?.length > 0) {
+          addSubsectionHeader('[4] Family Tree (Struktur Keluarga)');
+          
+          const members = nikResult.nkk_data.family_data.members;
+          
+          // Find head of family
+          const kepala = members.find(m => 
+            m.relationship?.toLowerCase().includes('kepala') || 
+            m.relationship?.toLowerCase().includes('head')
+          );
+          
+          // Find spouse
+          const istri = members.find(m => 
+            m.relationship?.toLowerCase().includes('istri') || 
+            m.relationship?.toLowerCase().includes('suami') ||
+            m.relationship?.toLowerCase().includes('spouse')
+          );
+          
+          // Find children
+          const anak = members.filter(m => 
+            m.relationship?.toLowerCase().includes('anak') ||
+            m.relationship?.toLowerCase().includes('child')
+          );
+          
+          // Find others
+          const lainnya = members.filter(m => 
+            !m.relationship?.toLowerCase().includes('kepala') &&
+            !m.relationship?.toLowerCase().includes('head') &&
+            !m.relationship?.toLowerCase().includes('istri') &&
+            !m.relationship?.toLowerCase().includes('suami') &&
+            !m.relationship?.toLowerCase().includes('spouse') &&
+            !m.relationship?.toLowerCase().includes('anak') &&
+            !m.relationship?.toLowerCase().includes('child')
+          );
+          
+          checkPageBreak(80);
+          
+          // Draw family tree structure
+          const treeX = margin + 10;
+          let treeY = yPos;
+          
+          // Kepala Keluarga (top)
+          if (kepala) {
+            pdf.setFillColor(41, 128, 185);
+            pdf.roundedRect(treeX + 50, treeY, 80, 12, 2, 2, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('KEPALA KELUARGA', treeX + 90, treeY + 5, { align: 'center' });
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text((kepala.name || '-').substring(0, 25), treeX + 90, treeY + 10, { align: 'center' });
+            treeY += 15;
+            
+            // Line down
+            pdf.setDrawColor(100, 100, 100);
+            pdf.line(treeX + 90, treeY, treeX + 90, treeY + 5);
+            treeY += 5;
+          }
+          
+          // Istri/Suami (same level as kepala or below)
+          if (istri) {
+            pdf.setFillColor(155, 89, 182);
+            pdf.roundedRect(treeX + 50, treeY, 80, 12, 2, 2, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('ISTRI/SUAMI', treeX + 90, treeY + 5, { align: 'center' });
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text((istri.name || '-').substring(0, 25), treeX + 90, treeY + 10, { align: 'center' });
+            treeY += 15;
+            
+            // Line down
+            pdf.setDrawColor(100, 100, 100);
+            pdf.line(treeX + 90, treeY, treeX + 90, treeY + 5);
+            treeY += 5;
+          }
+          
+          // Anak-anak (below)
+          if (anak.length > 0) {
+            // Horizontal line
+            const anakStartX = treeX + 20;
+            const anakWidth = Math.min(anak.length * 45, 150);
+            pdf.line(treeX + 90 - anakWidth/2, treeY, treeX + 90 + anakWidth/2, treeY);
+            treeY += 3;
+            
+            // Children boxes
+            const childBoxWidth = 40;
+            const startX = treeX + 90 - (anak.length * (childBoxWidth + 5)) / 2;
+            
+            anak.slice(0, 4).forEach((child, cIdx) => {
+              const childX = startX + cIdx * (childBoxWidth + 5);
+              
+              // Vertical line
+              pdf.line(childX + childBoxWidth/2, treeY - 3, childX + childBoxWidth/2, treeY);
+              
+              // Child box
+              pdf.setFillColor(46, 204, 113);
+              pdf.roundedRect(childX, treeY, childBoxWidth, 12, 2, 2, 'F');
+              pdf.setTextColor(255, 255, 255);
+              pdf.setFontSize(6);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(`ANAK ${cIdx + 1}`, childX + childBoxWidth/2, treeY + 4, { align: 'center' });
+              pdf.setFont('helvetica', 'normal');
+              pdf.text((child.name || '-').substring(0, 12), childX + childBoxWidth/2, treeY + 9, { align: 'center' });
+            });
+            
+            if (anak.length > 4) {
+              pdf.setTextColor(100, 100, 100);
+              pdf.setFontSize(7);
+              pdf.text(`+${anak.length - 4} anak lainnya`, treeX + 140, treeY + 6);
+            }
+            
+            treeY += 15;
+          }
+          
+          // Anggota lainnya
+          if (lainnya.length > 0) {
+            treeY += 5;
+            pdf.setTextColor(...colors.text);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Anggota Lainnya:', treeX, treeY);
+            treeY += 5;
+            
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7);
+            lainnya.forEach((member, mIdx) => {
+              pdf.text(`- ${member.name || '-'} (${member.relationship || '-'})`, treeX + 5, treeY);
+              treeY += 4;
+            });
+          }
+          
+          yPos = treeY + 5;
+          pdf.setTextColor(...colors.text);
+        }
         
         // ============ 5. DATA REG HP ============
         if (nikResult?.regnik_data) {
