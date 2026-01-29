@@ -3791,17 +3791,26 @@ async def query_telegram_bot(target_id: str, phone_number: str):
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
-        logging.info(f"[TARGET {target_id}] Global Telegram lock released")
+        release_telegram_lock(f"CP_{target_id[:8]}")
 
 async def query_telegram_reghp(target_id: str, phone_number: str):
     """Query Reghp data for deeper information with GLOBAL LOCK"""
+    operation_name = f"REGHP_{target_id[:8]}_{phone_number}"
+    
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
     logging.info(f"[REGHP {target_id}] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logging.info(f"[REGHP {target_id}] Global lock acquired for REGHP query: {phone_number}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        logging.error(f"[REGHP {target_id}] Failed to acquire lock - timeout")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"reghp_status": "error", "reghp_error": "Server sibuk, coba lagi nanti"}}
+        )
+        return
+    
     set_active_query(f"reghp_{target_id[:8]}", "reghp", phone_number)
     
     try:
