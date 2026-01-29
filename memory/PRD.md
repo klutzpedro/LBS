@@ -1088,6 +1088,52 @@ User B completes → releases lock
   - Updated 4 query functions with lock acquire/release in try/finally
   - Updated simple_query to use global lock instead of simple_query_lock
 
+## Fix: Telegram API ID Configuration (January 2026)
+
+### Issue
+User melaporkan koneksi Telegram tidak stabil - klik pertama/kedua gagal, baru klik ketiga berhasil.
+Juga chat window terbuka otomatis saat NIK pendalaman (tidak diinginkan).
+
+### Root Causes
+1. **API ID Hardcoded:** Kode memaksa API ID `31836139` dan mengabaikan `.env`. User menggunakan API ID berbeda `37983970`.
+2. **Frontend Terlalu Strict:** Frontend menolak request jika Telegram tidak "authorized", padahal backend bisa handle auto-reconnect.
+3. **Chat Auto-Open:** `setShowChatPanel(true)` dipanggil saat NIK pendalaman.
+
+### Solutions
+1. **Removed Hardcoded API ID:** 
+   - Sekarang menggunakan `TELEGRAM_API_ID` dan `TELEGRAM_API_HASH` dari `.env` file
+   - Tidak ada lagi CORRECT_TELEGRAM_API_ID yang dipaksa
+   
+2. **Frontend Tolerant Connection Check:**
+   - Tidak block request jika Telegram connected tapi not authorized
+   - Backend akan handle auto-reconnect dan return proper 503 jika truly disconnected
+   
+3. **Removed Chat Auto-Open:**
+   - `setShowChatPanel(true)` dihapus dari `handleNikPendalaman()`
+
+### VPS Deployment Note
+**PENTING:** User HARUS memastikan `.env` di VPS memiliki API ID yang benar:
+```bash
+# Edit file
+nano /var/www/waskita-lbs/backend/.env
+
+# Pastikan ada:
+TELEGRAM_API_ID=37983970
+TELEGRAM_API_HASH=<your_api_hash>
+
+# Restart backend
+pm2 restart waskita-backend
+```
+
+### Files Modified
+- `/app/backend/server.py`:
+  - Removed `CORRECT_TELEGRAM_API_ID` hardcoding
+  - Now reads API credentials from `.env` only
+  - Updated diagnostic endpoints to not reference "correct" ID
+- `/app/frontend/src/pages/MainApp.jsx`:
+  - `handleNikPendalaman()`: Removed strict Telegram auth check
+  - Removed `setShowChatPanel(true)` for NIK pendalaman
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
