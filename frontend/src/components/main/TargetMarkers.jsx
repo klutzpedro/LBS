@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { createMarkerWithLabel, createBlinkingMarker, createMarkerWithSelector, createBlinkingMarkerWithSelector, groupTargetsByPosition } from './MapUtils';
 
@@ -14,12 +14,16 @@ export const TargetMarkers = ({
   onShowReghpInfo,
   onPendalaman,
   loadingPendalaman = null,
-  aoiAlerts = []
+  aoiAlerts = [],
+  selectedTargetId = null
 }) => {
   const map = useMap();
   const [selectedAtPosition, setSelectedAtPosition] = useState({});
   const [zoomLevel, setZoomLevel] = useState(map.getZoom());
   const containerRef = useRef(null);
+  
+  // Store refs for all markers by target ID
+  const markerRefs = useRef({});
   
   // Listen for zoom changes
   useMapEvents({
