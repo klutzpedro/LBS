@@ -2373,6 +2373,17 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
         }
     
     # No existing data, proceed with new query
+    # PRE-CHECK: Verify Telegram connection before starting background task
+    try:
+        connected = await ensure_telegram_connected()
+        if not connected:
+            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan coba lagi atau cek koneksi di Settings.")
+    except HTTPException:
+        raise
+    except Exception as conn_err:
+        logger.error(f"[REGHP] Pre-check connection failed: {conn_err}")
+        raise HTTPException(status_code=503, detail=f"Gagal terkoneksi ke Telegram: {str(conn_err)}")
+    
     # Update reghp_status to processing
     await db.targets.update_one(
         {"id": target_id},
