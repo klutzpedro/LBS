@@ -2021,7 +2021,7 @@ export const NonGeointSearchDialog = ({
         
         // ============ 6. DATA PASSPORT ============
         if (nikResult?.passport_data) {
-          addSubsectionHeader('🛂 Data Passport');
+          addSubsectionHeader('[6] Data Passport');
           
           const passportData = nikResult.passport_data;
           
