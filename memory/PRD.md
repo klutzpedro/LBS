@@ -917,15 +917,60 @@ pm2 restart waskita-backend
   Kemudian restart backend: `pm2 restart waskita-backend`
 - **Files Modified:** `/app/backend/.env`
 
-### Files Modified Summary
-- `/app/frontend/src/pages/MainApp.jsx`:
-  - Added `targetsRef` useRef to track latest targets (line 161)
-  - Added `prevTargetsRef` for status change detection
-  - Improved polling logic with ref-based target checking
-  - Reduced polling interval from 10s to 5s
-  - Added debug logging for handlePendalaman
+## Stability Fixes (January 2026)
+
+### P0: Telegram Connection Race Condition Fix
+- **Issue:** User melaporkan error "Bot belum terkoneksi" secara random, UI disappearing, dan crash memerlukan refresh berkali-kali
+- **Root Causes Found:**
+  1. **Race Condition:** `telegram_status` endpoint membuat TelegramClient baru di luar lock global
+  2. **Inconsistent Client Creation:** Beberapa tempat tidak menggunakan `create_telegram_client()` helper
+  3. **Keepalive Task:** Mengakses `telegram_client` tanpa lock, menyebabkan race condition
+- **Solutions:**
+  1. Modified `/telegram/status` endpoint untuk menggunakan `telegram_connection_lock`
+  2. Replaced manual `TelegramClient()` calls dengan `create_telegram_client()` helper
+  3. Added lock di `telegram_keepalive_task()` untuk semua akses telegram_client
+  4. Updated `safe_telegram_operation()` untuk use lock saat reconnect
+- **Files Modified:** `/app/backend/server.py`
+
+### P1: Leaflet Popup Button Fix (Pendalaman REGHP)
+- **Issue:** Tombol "🔍 Reghp" dan "📋 Info" di popup marker tidak berfungsi saat diklik
+- **Root Cause:** React onClick events tidak propagate dengan benar dari content yang di-render di Leaflet popup DOM
+- **Solution:** 
+  1. Replaced React onClick dengan native DOM event listeners
+  2. Used `useEffect` untuk attach event listeners setelah popup rendered
+  3. Added `data-action` attributes untuk button identification
+  4. Proper cleanup dengan ref variable
+- **Files Modified:** `/app/frontend/src/components/main/TargetMarkers.jsx`
+
+### Global Error Handling Improvement
+- **Issue:** Server errors (500) bisa menyebabkan UI collapse
+- **Solution:** Added global axios response interceptor di App.js untuk menangkap dan log errors dengan graceful
+- **Files Modified:** `/app/frontend/src/App.js`
+
+### Files Modified Summary (January 2026 Stability)
+- `/app/backend/server.py`:
+  - `telegram_status()`: Now uses `telegram_connection_lock` and `create_telegram_client()`
+  - `safe_telegram_operation()`: Uses lock during reconnect to prevent race conditions  
+  - `telegram_keepalive_task()`: Added `async with telegram_connection_lock` for all client access
+  - Force restore session: Uses `create_telegram_client()` instead of manual creation
 - `/app/frontend/src/components/main/TargetMarkers.jsx`:
-  - Added debug logging for Pendalaman button click
-  - Added data-testid for testing
-- `/app/backend/.env`:
-  - Added JWT_SECRET for consistent token validation across server restarts
+  - `TargetPopup`: Implemented native DOM event listeners for Leaflet popup buttons
+  - `generateShareLink`: Wrapped in `useCallback` for proper dependency management
+  - Added proper cleanup for event listeners
+- `/app/frontend/src/App.js`:
+  - Added global axios response interceptor for error handling
+
+## Pending Issues
+
+### P2: Family Tree Graph UI Not Rendering
+- **Issue:** FamilyTreeViz component exists but graph may not render correctly with certain data formats
+- **Status:** Code looks correct but needs user verification with actual data
+- **Debug checklist:**
+  1. Check browser console for errors when opening Family Tree dialog
+  2. Verify data format passed to FamilyTreeViz matches expected structure
+  3. Inspect if `members` array is populated correctly
+
+## Future Tasks
+- Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
+- NKK Parser fix verification with real data
+- Export to Excel/CSV functionality
