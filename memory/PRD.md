@@ -970,6 +970,29 @@ pm2 restart waskita-backend
   2. Verify data format passed to FamilyTreeViz matches expected structure
   3. Inspect if `members` array is populated correctly
 
+## Bug Fix: Duplicate Phone Prevention (January 2026)
+
+### Issue
+User melaporkan ada nomor yang sama muncul duplikat di target list dan peta (2x nomor yang sama dalam satu case).
+
+### Root Causes
+1. Frontend `handleRefreshLocation()` memanggil `createNewTarget()` yang membuat target BARU alih-alih memperbarui yang sudah ada
+2. Backend tidak memvalidasi duplikat nomor dalam case yang sama
+
+### Solutions
+1. **Backend validation:** Added duplicate check in `POST /targets` endpoint
+   - Returns HTTP 409 with `error: "duplicate_phone"` if phone exists in case
+   - Provides `existing_target_id` for frontend to handle
+   
+2. **Frontend fix:**
+   - `handleRefreshLocation()` now calls `handlePerbaharui(existingTarget)` instead of `createNewTarget()`
+   - `createNewTarget()` handles 409 error and shows duplicate dialog
+   - `handleUseExisting()` also zooms to existing target on map
+
+### Files Modified
+- `/app/backend/server.py`: Added duplicate validation in `create_target()` endpoint
+- `/app/frontend/src/pages/MainApp.jsx`: Fixed `handleRefreshLocation()` and `createNewTarget()` error handling
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
