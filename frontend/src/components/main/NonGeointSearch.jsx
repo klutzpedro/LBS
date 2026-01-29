@@ -1931,7 +1931,7 @@ export const NonGeointSearchDialog = ({
         
         // ============ 2. DATA NIK (CAPIL) ============
         if (nikResult?.nik_data) {
-          addSubsectionHeader('📋 Data Kependudukan (NIK)');
+          addSubsectionHeader('[2] Data Kependudukan (NIK)');
           
           const nikData = nikResult.nik_data;
           if (nikData.data && Object.keys(nikData.data).length > 0) {
