@@ -194,26 +194,28 @@ async def safe_telegram_operation(operation, operation_name="operation", max_ret
             
         except ConnectionError as e:
             logger.warning(f"[Telegram] Connection error in {operation_name} (attempt {attempt + 1}/{max_retries}): {e}")
-            # Force reconnect
-            if telegram_client:
-                try:
-                    await telegram_client.disconnect()
-                except:
-                    pass
-                telegram_client = None
+            # Force reconnect using lock to prevent race conditions
+            async with telegram_connection_lock:
+                if telegram_client:
+                    try:
+                        await telegram_client.disconnect()
+                    except Exception as disc_err:
+                        logger.debug(f"[Telegram] Disconnect during recovery: {disc_err}")
+                    telegram_client = None
             await asyncio.sleep(2)
             
         except Exception as e:
             error_str = str(e).lower()
             if 'connection' in error_str or 'disconnect' in error_str or 'timeout' in error_str:
                 logger.warning(f"[Telegram] Network error in {operation_name} (attempt {attempt + 1}/{max_retries}): {e}")
-                # Force reconnect
-                if telegram_client:
-                    try:
-                        await telegram_client.disconnect()
-                    except:
-                        pass
-                    telegram_client = None
+                # Force reconnect using lock to prevent race conditions
+                async with telegram_connection_lock:
+                    if telegram_client:
+                        try:
+                            await telegram_client.disconnect()
+                        except Exception as disc_err:
+                            logger.debug(f"[Telegram] Disconnect during recovery: {disc_err}")
+                        telegram_client = None
                 await asyncio.sleep(2)
             else:
                 # Non-connection error, don't retry
