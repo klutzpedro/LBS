@@ -162,6 +162,7 @@ const TargetPopup = ({
   selectedIndex
 }) => {
   const [copied, setCopied] = useState(false);
+  const popupRef = useRef(null);
   
   // Generate shareable link
   const generateShareLink = () => {
@@ -192,9 +193,87 @@ const TargetPopup = ({
     }
   };
   
+  // Handle button clicks using native DOM events (Leaflet popup workaround)
+  useEffect(() => {
+    // Get the popup container after it's mounted
+    const setupEventListeners = () => {
+      if (!popupRef.current) return;
+      
+      const container = popupRef.current;
+      
+      // Handle Pendalaman button click
+      const pendalamanBtn = container.querySelector('[data-action="pendalaman"]');
+      if (pendalamanBtn) {
+        const handlePendalamanClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[TargetPopup] Pendalaman button clicked for target:', target.id);
+          if (onPendalaman && typeof onPendalaman === 'function') {
+            onPendalaman(target);
+          }
+        };
+        pendalamanBtn.addEventListener('click', handlePendalamanClick);
+        // Cleanup function
+        pendalamanBtn._cleanup = () => {
+          pendalamanBtn.removeEventListener('click', handlePendalamanClick);
+        };
+      }
+      
+      // Handle Info button click
+      const infoBtn = container.querySelector('[data-action="show-info"]');
+      if (infoBtn) {
+        const handleInfoClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[TargetPopup] Info button clicked for target:', target.id);
+          if (onShowReghpInfo && typeof onShowReghpInfo === 'function') {
+            onShowReghpInfo(target);
+          }
+        };
+        infoBtn.addEventListener('click', handleInfoClick);
+        infoBtn._cleanup = () => {
+          infoBtn.removeEventListener('click', handleInfoClick);
+        };
+      }
+      
+      // Handle Share button click
+      const shareBtn = container.querySelector('[data-action="share"]');
+      if (shareBtn) {
+        const handleShareClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleShare();
+        };
+        shareBtn.addEventListener('click', handleShareClick);
+        shareBtn._cleanup = () => {
+          shareBtn.removeEventListener('click', handleShareClick);
+        };
+      }
+    };
+    
+    // Use a small delay to ensure popup is fully rendered
+    const timerId = setTimeout(setupEventListeners, 100);
+    
+    return () => {
+      clearTimeout(timerId);
+      // Cleanup event listeners
+      if (popupRef.current) {
+        const btns = popupRef.current.querySelectorAll('[data-action]');
+        btns.forEach(btn => {
+          if (btn._cleanup) {
+            btn._cleanup();
+          }
+        });
+      }
+    };
+  }, [target, onPendalaman, onShowReghpInfo]);
+  
   return (
     <Popup>
-      <div style={{ color: '#e0e0e0', fontSize: '11px', fontFamily: 'monospace', minWidth: '180px', maxWidth: '200px', lineHeight: '1.3' }}>
+      <div 
+        ref={popupRef}
+        style={{ color: '#e0e0e0', fontSize: '11px', fontFamily: 'monospace', minWidth: '180px', maxWidth: '200px', lineHeight: '1.3' }}
+      >
         <div style={{ color: '#00d4aa', fontWeight: 'bold', marginBottom: '4px' }}>{target.phone_number}</div>
         
         {target.data.phone_model && <div>📱 {target.data.phone_model}</div>}
@@ -213,7 +292,7 @@ const TargetPopup = ({
         
         <div style={{ marginTop: '6px', display: 'flex', gap: '4px' }}>
           <button
-            onClick={handleShare}
+            data-action="share"
             style={{ 
               flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px',
               backgroundColor: copied ? '#22c55e' : '#0891b2', color: '#fff', cursor: 'pointer'
@@ -223,14 +302,15 @@ const TargetPopup = ({
           </button>
           {target.reghp_status === 'completed' ? (
             <button
-              onClick={() => onShowReghpInfo(target)}
+              data-action="show-info"
+              data-testid="show-info-button"
               style={{ flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px', backgroundColor: '#0891b2', color: '#fff', cursor: 'pointer' }}
             >
               📋 Info
             </button>
           ) : target.reghp_status !== 'processing' && loadingPendalaman !== target.id && (
             <button
-              onClick={() => onPendalaman(target)}
+              data-action="pendalaman"
               data-testid="pendalaman-button"
               style={{ flex: 1, padding: '4px', fontSize: '10px', border: 'none', borderRadius: '3px', backgroundColor: '#f59e0b', color: '#000', cursor: 'pointer' }}
             >
