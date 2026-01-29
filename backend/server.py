@@ -1631,6 +1631,23 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
     if not case:
         raise HTTPException(status_code=404, detail="Case not found or access denied")
     
+    # PREVENT DUPLICATE: Check if phone number already exists in this case
+    existing_target = await db.targets.find_one({
+        "case_id": target_data.case_id,
+        "phone_number": target_data.phone_number
+    })
+    
+    if existing_target:
+        logger.warning(f"[DUPLICATE BLOCKED] Phone {target_data.phone_number} already exists in case {target_data.case_id}")
+        raise HTTPException(
+            status_code=409, 
+            detail={
+                "error": "duplicate_phone",
+                "message": f"Nomor {target_data.phone_number} sudah ada dalam case ini. Gunakan tombol 'Perbaharui' untuk memperbarui posisi.",
+                "existing_target_id": existing_target['id']
+            }
+        )
+    
     target = Target(**target_data.model_dump(exclude={'manual_mode', 'manual_data'}))
     doc = target.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
