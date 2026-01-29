@@ -8065,8 +8065,7 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        release_telegram_lock("operation")
-        logger.info(f"[FR] Global Telegram lock released for user: {username}")
+        release_telegram_lock(operation_name)
 
 
 @api_router.post("/face-recognition/get-nik-details")
