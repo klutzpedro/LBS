@@ -2680,16 +2680,25 @@ async def query_family(target_id: str, family_data_input: dict, username: str = 
             {"$set": {"family_status": "processing"}}
         )
     
-    # PRE-CHECK: Verify Telegram connection before starting background task
+    # PRE-CHECK: Verify Telegram connection
+    global telegram_client
+    
+    if telegram_client is None:
+        raise HTTPException(status_code=503, detail="Telegram belum diinisialisasi. Silakan login Telegram di halaman Settings.")
+    
     try:
-        connected = await ensure_telegram_connected()
-        if not connected:
-            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan coba lagi atau cek koneksi di Settings.")
+        if not telegram_client.is_connected():
+            await telegram_client.connect()
+        
+        is_authorized = await telegram_client.is_user_authorized()
+        if not is_authorized:
+            raise HTTPException(status_code=503, detail="Telegram belum login. Silakan login di halaman Settings terlebih dahulu.")
+            
     except HTTPException:
         raise
     except Exception as conn_err:
-        logger.error(f"[FAMILY] Pre-check connection failed: {conn_err}")
-        raise HTTPException(status_code=503, detail=f"Gagal terkoneksi ke Telegram: {str(conn_err)}")
+        logger.error(f"[FAMILY] Connection check failed: {conn_err}")
+        raise HTTPException(status_code=503, detail=f"Koneksi Telegram error: {str(conn_err)}. Coba refresh halaman Settings.")
     
     # Start background task with source_nik
     asyncio.create_task(query_telegram_family(target_id, family_id, source_nik))
