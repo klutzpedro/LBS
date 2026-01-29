@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 class NortharchAPITester:
-    def __init__(self, base_url="https://geonetra.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://netra-location.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.token = None
         self.tests_run = 0
