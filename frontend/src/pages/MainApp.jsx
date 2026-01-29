@@ -1835,6 +1835,7 @@ const MainApp = () => {
                 onPendalaman={handlePendalaman}
                 loadingPendalaman={loadingPendalaman}
                 aoiAlerts={aoiAlerts}
+                selectedTargetId={selectedTargetForChat}
               />
 
               {/* AOI Renderer */}
