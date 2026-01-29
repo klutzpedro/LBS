@@ -8198,6 +8198,11 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
         import traceback
         logger.error(f"[FR] Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logger.info(f"[FR NIK] Global Telegram lock released for user: {username}")
 
 
 @api_router.get("/face-recognition/history")
