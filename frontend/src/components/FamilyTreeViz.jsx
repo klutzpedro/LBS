@@ -75,9 +75,28 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
 
   // Normalize member data - handle different field names
   const normalizedMembers = useMemo(() => {
-    if (!members || members.length === 0) return [];
+    // Handle case where members might be the full object with 'members' property
+    let membersList = members;
     
-    return members.map(m => ({
+    // If members is an object with 'members' property, extract it
+    if (members && typeof members === 'object' && !Array.isArray(members)) {
+      if (members.members && Array.isArray(members.members)) {
+        console.log('[FamilyTreeViz] Extracting members array from object');
+        membersList = members.members;
+      } else {
+        console.warn('[FamilyTreeViz] Invalid members format:', members);
+        return [];
+      }
+    }
+    
+    if (!membersList || !Array.isArray(membersList) || membersList.length === 0) {
+      console.warn('[FamilyTreeViz] No valid members array');
+      return [];
+    }
+    
+    console.log('[FamilyTreeViz] Processing', membersList.length, 'members');
+    
+    return membersList.map(m => ({
       ...m,
       name: m.name || m.full_name || m.nama || m.Full_Name || m['Full Name'] || 'Unknown',
       relationship: (m.relationship || m.hubungan || m.shdk || m.Relationship || m.SHDK || '').toString().toUpperCase(),
