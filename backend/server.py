@@ -3332,6 +3332,16 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
 
 async def query_telegram_bot(target_id: str, phone_number: str):
     """Query Telegram bot with robust connection handling and GLOBAL LOCK"""
+    # ============================================
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ============================================
+    # This ensures only ONE Telegram query runs at a time across ALL users
+    # Prevents data mixing when multiple users query simultaneously
+    logging.info(f"[TARGET {target_id}] Waiting for global Telegram lock...")
+    await telegram_query_lock.acquire()
+    logging.info(f"[TARGET {target_id}] Global lock acquired for CP query: {phone_number}")
+    set_active_query(f"target_{target_id[:8]}", "cp", phone_number)
+    
     try:
         # Update status: connecting
         await db.targets.update_one(
@@ -3358,28 +3368,19 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         # Create unique token for this query
         query_token = f"CP_{phone_number}_{target_id[:8]}"
         
-        # ============================================
-        # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
-        # ============================================
-        # This ensures only ONE Telegram query runs at a time
-        logging.info(f"[TARGET {target_id}] Waiting for global Telegram lock...")
-        async with telegram_query_lock:
-            logging.info(f"[TARGET {target_id}] Global lock acquired for CP query: {phone_number}")
-            set_active_query(f"target_{target_id[:8]}", "cp", phone_number)
-            
-            try:
-                await asyncio.sleep(1)
-                
-                # Update status: querying
-                await db.targets.update_one(
-                    {"id": target_id},
-                    {"$set": {"status": "querying"}}
-                )
-                
-                # Send phone number with safe wrapper
-                async def send_phone():
-                    await telegram_client.send_message(BOT_USERNAME, phone_number)
-                    return True
+        await asyncio.sleep(1)
+        
+        # Update status: querying
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"status": "querying"}}
+        )
+        
+        try:
+            # Send phone number with safe wrapper
+            async def send_phone():
+                await telegram_client.send_message(BOT_USERNAME, phone_number)
+                return True
                 
                 sent = await safe_telegram_operation(send_phone, f"send_phone_{phone_number}", max_retries=3)
                 
