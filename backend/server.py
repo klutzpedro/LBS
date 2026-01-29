@@ -7786,18 +7786,26 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     """
     global telegram_client
     
-    logger.info(f"[FR] Starting face recognition match")
+    logger.info(f"[FR] Starting face recognition match for user: {username}")
+    
+    # ============================================
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
+    # ============================================
+    # Prevents race condition with other users' queries
+    logger.info(f"[FR] Waiting for global Telegram lock...")
+    await telegram_query_lock.acquire()
+    logger.info(f"[FR] Global lock acquired for FR match by user: {username}")
+    set_active_query(username, "fr_match", "face_recognition")
     
     try:
         # Check Telegram connection
         if not telegram_client or not telegram_client.is_connected():
-            raise HTTPException(status_code=503, detail="Telegram not connected")
+            raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
         
         # Create session ID for this FR request
         session_id = str(uuid.uuid4())[:8]
         
         # Decode base64 image and save temporarily
-        import base64
         import tempfile
         
         # Remove data URL prefix if present
@@ -7813,8 +7821,11 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         
         logger.info(f"[FR {session_id}] Image saved to {temp_path}")
         
-        # Send image to Telegram bot
+        # Get last message ID BEFORE sending our query - CRITICAL for isolation
         bot_entity = await telegram_client.get_entity("@northarch_bot")
+        old_messages = await telegram_client.get_messages(bot_entity, limit=1)
+        last_msg_id_before = old_messages[0].id if old_messages else 0
+        logger.info(f"[FR {session_id}] Last message ID before send: {last_msg_id_before}")
         
         # Send the photo
         await telegram_client.send_file(bot_entity, temp_path, caption="FR")
@@ -7823,16 +7834,31 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         # Wait for bot response with face match results
         await asyncio.sleep(8)  # Give bot more time to process
         
-        # Get recent messages from bot
+        # Get recent messages from bot - ONLY messages AFTER our query
         messages = await telegram_client.get_messages(bot_entity, limit=15)
         
         matches = []
         raw_response = ""
         buttons_message_id = None
+        quota_error = False
         
         for msg in messages:
+            # Skip messages from BEFORE our query
+            if msg.id <= last_msg_id_before:
+                continue
+                
             if msg.out:  # Skip our own messages
                 continue
+            
+            # Check for quota error messages
+            if msg.text:
+                text_lower = msg.text.lower()
+                if 'quota' in text_lower or 'don\'t have' in text_lower or 'tidak ada' in text_lower or 'habis' in text_lower:
+                    if 'fr' in text_lower or 'face' in text_lower:
+                        logger.warning(f"[FR {session_id}] Quota error detected: {msg.text}")
+                        quota_error = True
+                        raw_response = msg.text
+                        break
                 
             # Check if this message has buttons (NIK selection buttons)
             if msg.buttons and not buttons_message_id:
