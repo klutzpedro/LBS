@@ -66,8 +66,12 @@ export const FamilyTreeViz = ({ members, targetNik }) => {
 
   // Debug: Log members data
   useEffect(() => {
-    console.log('FamilyTreeViz members:', members);
-  }, [members]);
+    console.log('[FamilyTreeViz] Received members:', members);
+    console.log('[FamilyTreeViz] members type:', typeof members);
+    console.log('[FamilyTreeViz] members is array:', Array.isArray(members));
+    console.log('[FamilyTreeViz] members length:', members?.length);
+    console.log('[FamilyTreeViz] targetNik:', targetNik);
+  }, [members, targetNik]);
 
   // Normalize member data - handle different field names
   const normalizedMembers = useMemo(() => {
