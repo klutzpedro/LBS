@@ -891,27 +891,39 @@ export const FamilyTreeDialog = ({
   onOpenChange,
   selectedFamilyData,
   targetNikForTree
-}) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent 
-      className="z-[9999] max-w-2xl max-h-[70vh] overflow-y-auto p-4"
-      style={{
-        backgroundColor: 'var(--background-elevated)',
-        borderColor: 'var(--borders-strong)'
-      }}
-    >
-      <DialogHeader className="pb-2">
-        <DialogTitle 
-          className="text-lg font-bold"
-          style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
-        >
-          🌳 FAMILY TREE (NKK)
-        </DialogTitle>
-      </DialogHeader>
-      {selectedFamilyData && (
-        <div className="space-y-3">
-          {/* Family Tree Visualization */}
-          <FamilyTreeViz members={selectedFamilyData.members} targetNik={targetNikForTree} />
+}) => {
+  // Debug logging
+  React.useEffect(() => {
+    if (selectedFamilyData) {
+      console.log('[FamilyTreeDialog] selectedFamilyData:', selectedFamilyData);
+      console.log('[FamilyTreeDialog] members:', selectedFamilyData.members);
+    }
+  }, [selectedFamilyData]);
+
+  // Extract members - handle both direct array and object with members property
+  const membersData = selectedFamilyData?.members || (Array.isArray(selectedFamilyData) ? selectedFamilyData : null);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent 
+        className="z-[9999] max-w-2xl max-h-[70vh] overflow-y-auto p-4"
+        style={{
+          backgroundColor: 'var(--background-elevated)',
+          borderColor: 'var(--borders-strong)'
+        }}
+      >
+        <DialogHeader className="pb-2">
+          <DialogTitle 
+            className="text-lg font-bold"
+            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+          >
+            🌳 FAMILY TREE (NKK)
+          </DialogTitle>
+        </DialogHeader>
+        {selectedFamilyData && membersData ? (
+          <div className="space-y-3">
+            {/* Family Tree Visualization */}
+            <FamilyTreeViz members={membersData} targetNik={targetNikForTree} />
           
           {/* Raw NKK Data Table */}
           <div>
