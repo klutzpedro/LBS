@@ -4054,9 +4054,22 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "query_type": "reghp"
         })
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logging.info(f"[REGHP {target_id}] Global Telegram lock released")
 
 async def query_telegram_nik(target_id: str, nik: str):
-    """Query NIK detail dengan foto dari bot - with robust connection handling"""
+    """Query NIK detail dengan foto dari bot - with GLOBAL LOCK"""
+    # ============================================
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ============================================
+    logging.info(f"[NIK {target_id}] Waiting for global Telegram lock...")
+    await telegram_query_lock.acquire()
+    logging.info(f"[NIK {target_id}] Global lock acquired for NIK query: {nik}")
+    set_active_query(f"nik_{target_id[:8]}", "nik", nik)
+    
     try:
         global telegram_client
         
