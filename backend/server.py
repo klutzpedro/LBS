@@ -8604,7 +8604,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     # ============================================
     # NON-PASSPORT QUERIES USE TELEGRAM BOT
     # ============================================
-    logger.info(f"[SIMPLE QUERY] Querying via Telegram bot...")
+    logger.info(f"[SIMPLE QUERY] Querying via Telegram bot for user: {username}...")
     
     # Use robust connection check with auto-reconnect
     try:
@@ -8615,26 +8615,35 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         logger.error(f"[SIMPLE QUERY] Connection check failed: {conn_err}")
         raise HTTPException(status_code=503, detail=f"Gagal terkoneksi ke Telegram: {str(conn_err)}")
     
-    # Acquire lock to prevent race conditions
-    # Only one query can be processed at a time
-    async with simple_query_lock:
-        logger.info(f"[SIMPLE QUERY] Lock acquired for user: {username}")
-        
-        # Double-check connection inside lock (could have disconnected while waiting)
-        if not telegram_client or not telegram_client.is_connected():
-            logger.warning("[SIMPLE QUERY] Connection lost while waiting for lock, reconnecting...")
-            try:
-                await ensure_telegram_connected()
-            except Exception as reconn_err:
-                raise HTTPException(status_code=503, detail="Koneksi Telegram terputus. Silakan coba lagi.")
+    # ============================================
+    # GLOBAL TELEGRAM QUERY LOCK - CRITICAL FOR DATA INTEGRITY
+    # ============================================
+    # This ensures only ONE Telegram query runs at a time across ALL users
+    # Prevents data mixing when multiple users query simultaneously
+    async with telegram_query_lock:
+        logger.info(f"[SIMPLE QUERY] Global lock acquired for user: {username}, query: {query_type}={query_value[:20]}...")
+        set_active_query(username, query_type, query_value)
         
         try:
-            bot_entity = await telegram_client.get_entity(BOT_USERNAME)
+            # Double-check connection inside lock
+            if not telegram_client or not telegram_client.is_connected():
+                logger.warning("[SIMPLE QUERY] Connection lost while waiting for lock, reconnecting...")
+                try:
+                    await ensure_telegram_connected()
+                except Exception as reconn_err:
+                    clear_active_query()
+                    raise HTTPException(status_code=503, detail="Koneksi Telegram terputus. Silakan coba lagi.")
             
-            # Get last message ID before sending our query
-            last_messages = await telegram_client.get_messages(bot_entity, limit=1)
-            last_msg_id_before = last_messages[0].id if last_messages else 0
-            logger.info(f"[SIMPLE QUERY] Last message ID before query: {last_msg_id_before}")
+            try:
+                bot_entity = await telegram_client.get_entity(BOT_USERNAME)
+                
+                # Get last message ID before sending our query - CRITICAL for isolation
+                last_messages = await telegram_client.get_messages(bot_entity, limit=1)
+                last_msg_id_before = last_messages[0].id if last_messages else 0
+                logger.info(f"[SIMPLE QUERY] Last message ID before query: {last_msg_id_before}")
+                
+                # Update active query with message ID
+                set_active_query(username, query_type, query_value, last_msg_id_before)
             
             # Send query based on type
             sent_message = None
