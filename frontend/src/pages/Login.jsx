@@ -131,20 +131,46 @@ const Login = () => {
               Akun Sedang Aktif
             </AlertDialogTitle>
             <AlertDialogDescription style={{ color: 'var(--foreground-secondary)' }}>
-              Akun ini sudah dibuka di tempat lain, mohon logout terlebih dahulu baru login di tempat baru.
+              <div className="space-y-2">
+                <p>Akun ini sedang aktif di perangkat lain:</p>
+                <p className="font-semibold" style={{ color: 'var(--foreground-primary)' }}>{activeDeviceInfo}</p>
+                <p className="text-sm mt-3">Pilih tindakan:</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction
+          <AlertDialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
               onClick={() => setShowSessionDialog(false)}
-              data-testid="session-active-ok-btn"
+              style={{
+                borderColor: 'var(--borders-default)',
+                color: 'var(--foreground-secondary)'
+              }}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowSessionDialog(false);
+                setLoading(true);
+                // Force login - will logout other session
+                const result = await login(username, password, true); // true = force
+                if (result.success) {
+                  toast.success('Login berhasil! Session lain telah dilogout.');
+                  navigate('/');
+                } else {
+                  toast.error(result.error || 'Gagal login');
+                }
+                setLoading(false);
+              }}
+              data-testid="force-login-btn"
               style={{
                 backgroundColor: 'var(--accent-primary)',
                 color: 'var(--background-primary)'
               }}
             >
-              OK
-            </AlertDialogAction>
+              Paksa Login
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
