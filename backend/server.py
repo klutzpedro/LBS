@@ -4332,9 +4332,22 @@ async def query_telegram_nik(target_id: str, nik: str):
                 }
             }
         )
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logging.info(f"[NIK {target_id}] Global Telegram lock released")
 
 async def query_telegram_family(target_id: str, family_id: str, source_nik: str = None):
-    """Query Family (NKK) data dengan Family ID - with robust connection handling"""
+    """Query Family (NKK) data dengan Family ID - with GLOBAL LOCK"""
+    # ============================================
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ============================================
+    logging.info(f"[FAMILY {target_id}] Waiting for global Telegram lock...")
+    await telegram_query_lock.acquire()
+    logging.info(f"[FAMILY {target_id}] Global lock acquired for Family query: {family_id}")
+    set_active_query(f"family_{target_id[:8]}", "family", family_id)
+    
     try:
         global telegram_client
         
