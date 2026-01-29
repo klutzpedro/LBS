@@ -3388,14 +3388,22 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
 
 async def query_telegram_bot(target_id: str, phone_number: str):
     """Query Telegram bot with robust connection handling and GLOBAL LOCK"""
+    operation_name = f"CP_{target_id[:8]}_{phone_number}"
+    
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
-    # This ensures only ONE Telegram query runs at a time across ALL users
-    # Prevents data mixing when multiple users query simultaneously
     logging.info(f"[TARGET {target_id}] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logging.info(f"[TARGET {target_id}] Global lock acquired for CP query: {phone_number}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        logging.error(f"[TARGET {target_id}] Failed to acquire lock - timeout")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {"status": "error", "error": "Server sibuk, coba lagi nanti"}}
+        )
+        return
+    
     set_active_query(f"target_{target_id[:8]}", "cp", phone_number)
     
     try:
