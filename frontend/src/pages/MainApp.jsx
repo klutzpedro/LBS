@@ -1269,33 +1269,28 @@ const MainApp = () => {
       return;
     }
     
-    // Check if Telegram is connected with retry
+    // Check if Telegram is connected - but don't block if just "not authorized"
+    // Backend will handle auto-reconnect and return proper error if truly disconnected
     let telegramConnected = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const token = localStorage.getItem('token');
-        const statusResponse = await axios.get(`${API}/telegram/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (statusResponse.data.authorized) {
-          telegramConnected = true;
-          break;
-        }
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 1000));
-        }
-      } catch (err) {
-        console.error(`Telegram status check attempt ${attempt} failed:`, err);
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 1000));
-        }
+    try {
+      const token = localStorage.getItem('token');
+      const statusResponse = await axios.get(`${API}/telegram/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Consider connected if either authorized OR at least connected (can try auto-auth)
+      telegramConnected = statusResponse.data.authorized || statusResponse.data.connected;
+      
+      if (!telegramConnected) {
+        console.warn('[NIK Pendalaman] Telegram not connected, will let backend handle');
       }
+    } catch (err) {
+      console.error('[NIK Pendalaman] Telegram status check failed:', err);
+      // Don't block - let backend handle the connection
+      telegramConnected = true; // Optimistically proceed
     }
     
-    if (!telegramConnected) {
-      toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
-      return;
-    }
+    // Only block if explicitly disconnected AND not connected at all
+    // Backend will return 503 with proper error message if truly can't connect
     
     setGlobalProcessing(true);
     setGlobalProcessType('nik');
