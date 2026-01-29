@@ -4135,12 +4135,22 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
 
 async def query_telegram_nik(target_id: str, nik: str):
     """Query NIK detail dengan foto dari bot - with GLOBAL LOCK"""
+    operation_name = f"NIK_{target_id[:8]}_{nik}"
+    
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
     logging.info(f"[NIK {target_id}] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logging.info(f"[NIK {target_id}] Global lock acquired for NIK query: {nik}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        logging.error(f"[NIK {target_id}] Failed to acquire lock - timeout")
+        await db.targets.update_one(
+            {"id": target_id},
+            {"$set": {f"nik_queries.{nik}.status": "error", f"nik_queries.{nik}.data": {"error": "Server sibuk, coba lagi nanti"}}}
+        )
+        return
+    
     set_active_query(f"nik_{target_id[:8]}", "nik", nik)
     
     try:
