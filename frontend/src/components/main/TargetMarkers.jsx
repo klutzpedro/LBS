@@ -72,6 +72,50 @@ export const TargetMarkers = ({
   // Group targets by position
   const positionGroups = useMemo(() => groupTargetsByPosition(filteredTargets), [filteredTargets]);
   
+  // Create mapping from target ID to position key and index
+  const targetIdToPosInfo = useMemo(() => {
+    const mapping = {};
+    Object.entries(positionGroups).forEach(([posKey, groupTargets]) => {
+      groupTargets.forEach((target, idx) => {
+        mapping[target.id] = { posKey, idx };
+      });
+    });
+    return mapping;
+  }, [positionGroups]);
+  
+  // Open popup when selectedTargetId changes
+  useEffect(() => {
+    if (!selectedTargetId) return;
+    
+    const posInfo = targetIdToPosInfo[selectedTargetId];
+    if (!posInfo) return;
+    
+    const { posKey, idx } = posInfo;
+    
+    // If this target is in a group with multiple targets at same position,
+    // we need to switch the selector to show this target
+    const groupTargets = positionGroups[posKey];
+    if (groupTargets && groupTargets.length > 1) {
+      // Update the selected index for this position
+      setSelectedAtPosition(prev => ({ ...prev, [posKey]: idx }));
+    }
+    
+    // Wait for React to re-render with the correct target selected, then open popup
+    setTimeout(() => {
+      const markerRef = markerRefs.current[posKey];
+      if (markerRef) {
+        markerRef.openPopup();
+      }
+    }, 100);
+  }, [selectedTargetId, targetIdToPosInfo, positionGroups]);
+  
+  // Callback to store marker ref
+  const setMarkerRef = useCallback((posKey, ref) => {
+    if (ref) {
+      markerRefs.current[posKey] = ref;
+    }
+  }, []);
+  
   // Render markers - recreate when zoom changes
   const markers = useMemo(() => {
     const result = [];
