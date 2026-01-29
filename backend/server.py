@@ -90,25 +90,21 @@ logger.info(f"CP API URL: {CP_API_URL}")
 logger.info(f"CP API Key: {CP_API_KEY[:8]}...{CP_API_KEY[-4:]}")
 
 # Telegram Client Setup - PERMANENT VALUES
-# These are the correct API credentials for this application
-# IMPORTANT: Always use these values, ignore any incorrect env variables
-CORRECT_TELEGRAM_API_ID = 31836139
-CORRECT_TELEGRAM_API_HASH = '8a71ab940136be9274ac6f92d9fb7d45'
-
-# Check if env has correct value, otherwise use hardcoded correct value
+# Telegram API credentials - USE FROM ENVIRONMENT VARIABLES
+# Each deployment can have different API credentials
 env_api_id = os.getenv('TELEGRAM_API_ID', '')
 env_api_hash = os.getenv('TELEGRAM_API_HASH', '')
 
-# FORCE correct values - ignore incorrect environment variables
-if env_api_id and env_api_id != str(CORRECT_TELEGRAM_API_ID):
-    logger.warning(f"Incorrect TELEGRAM_API_ID in env ({env_api_id}), using correct value: {CORRECT_TELEGRAM_API_ID}")
-    
-TELEGRAM_API_ID = CORRECT_TELEGRAM_API_ID
-TELEGRAM_API_HASH = CORRECT_TELEGRAM_API_HASH
-BOT_USERNAME = '@northarch_bot'
+if not env_api_id or not env_api_hash:
+    logger.error("TELEGRAM_API_ID and TELEGRAM_API_HASH must be set in .env file!")
+    TELEGRAM_API_ID = 0
+    TELEGRAM_API_HASH = ''
+else:
+    TELEGRAM_API_ID = int(env_api_id)
+    TELEGRAM_API_HASH = env_api_hash
+    logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (from .env)")
 
-# Log Telegram credentials status
-logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
+BOT_USERNAME = '@northarch_bot'
 
 telegram_client = None
 telegram_connection_lock = asyncio.Lock()
