@@ -1999,7 +1999,7 @@ export const NonGeointSearchDialog = ({
         
         // ============ 5. DATA REG HP ============
         if (nikResult?.regnik_data) {
-          addSubsectionHeader('📱 Data Registrasi HP (RegNIK)');
+          addSubsectionHeader('[5] Data Registrasi HP (RegNIK)');
           
           const regnikData = nikResult.regnik_data;
           if (regnikData.phones && regnikData.phones.length > 0) {
