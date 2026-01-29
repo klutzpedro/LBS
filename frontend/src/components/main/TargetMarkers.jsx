@@ -164,16 +164,16 @@ const TargetPopup = ({
   const [copied, setCopied] = useState(false);
   const popupRef = useRef(null);
   
-  // Generate shareable link
-  const generateShareLink = () => {
+  // Generate shareable link - wrapped in useCallback for dependency array
+  const generateShareLink = React.useCallback(() => {
     const lat = target.data.latitude;
     const lng = target.data.longitude;
     const name = encodeURIComponent(target.data.name || target.phone_number);
     // Google Maps link
     return `https://www.google.com/maps?q=${lat},${lng}&z=17&marker=${lat},${lng}(${name})`;
-  };
+  }, [target.data.latitude, target.data.longitude, target.data.name, target.phone_number]);
   
-  // Copy share link to clipboard
+  // Copy share link to clipboard (kept for direct use if needed)
   const handleShare = async () => {
     const link = generateShareLink();
     try {
