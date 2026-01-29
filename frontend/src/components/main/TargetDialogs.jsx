@@ -961,7 +961,7 @@ export const FamilyTreeDialog = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedFamilyData.members.map((member, idx) => (
+                  {membersData.map((member, idx) => (
                     <tr 
                       key={idx}
                       className="border-b"
@@ -1000,10 +1000,17 @@ export const FamilyTreeDialog = ({
             CLOSE
           </Button>
         </div>
+      ) : (
+        <div className="py-8 text-center">
+          <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+            Tidak ada data family tree
+          </p>
+        </div>
       )}
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 export default {
   NewCaseDialog,
