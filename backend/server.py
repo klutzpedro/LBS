@@ -8179,9 +8179,9 @@ async def telegram_keepalive_task():
                                         }},
                                         upsert=True
                                     )
-                                logger.info("[Keepalive] ✓ Session backed up to MongoDB")
-                    except Exception as backup_err:
-                        logger.warning(f"[Keepalive] Backup failed: {backup_err}")
+                                    logger.info("[Keepalive] ✓ Session backed up to MongoDB")
+                        except Exception as backup_err:
+                            logger.warning(f"[Keepalive] Backup failed: {backup_err}")
                     
         except asyncio.CancelledError:
             logger.info("[Keepalive] Task cancelled, shutting down")
