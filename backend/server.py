@@ -3724,6 +3724,11 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 }
             }
         )
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logging.info(f"[TARGET {target_id}] Global Telegram lock released")
 
 async def query_telegram_reghp(target_id: str, phone_number: str):
     """Query Reghp data for deeper information with robust connection handling"""
