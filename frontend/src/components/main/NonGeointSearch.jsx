@@ -1634,308 +1634,519 @@ export const NonGeointSearchDialog = ({
   // Generate PDF with all results
   const generatePDF = () => {
     const pdf = new jsPDF();
-    let yPos = 20;
-    const lineHeight = 7;
+    let yPos = 15;
+    const lineHeight = 6;
     const pageHeight = 280;
-    const margin = 14;
+    const pageWidth = 210;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
     
-    const addText = (text, x = margin, fontSize = 10, isBold = false) => {
-      if (yPos > pageHeight) {
+    // Color palette
+    const colors = {
+      primary: [0, 82, 147],      // Dark blue
+      secondary: [41, 128, 185],   // Light blue
+      accent: [46, 204, 113],      // Green
+      warning: [241, 196, 15],     // Yellow
+      text: [44, 62, 80],          // Dark gray
+      lightGray: [236, 240, 241],  // Light gray bg
+      border: [189, 195, 199]      // Border gray
+    };
+    
+    // Helper: Check page break
+    const checkPageBreak = (neededHeight = 20) => {
+      if (yPos + neededHeight > pageHeight) {
         pdf.addPage();
         yPos = 20;
+        addHeader(false); // Add header to new page
+        return true;
       }
-      pdf.setFontSize(fontSize);
-      pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-      
-      // Handle long text wrapping
-      const maxWidth = 180;
-      const lines = pdf.splitTextToSize(String(text), maxWidth);
-      lines.forEach(line => {
-        if (yPos > pageHeight) {
-          pdf.addPage();
-          yPos = 20;
-        }
-        pdf.text(line, x, yPos);
-        yPos += lineHeight;
-      });
-    };
-
-    const addSection = (title) => {
-      yPos += 5;
-      addText(title, margin, 12, true);
-      yPos += 2;
+      return false;
     };
     
-    // Helper function to add image from base64
+    // Helper: Draw horizontal line
+    const drawLine = (y, color = colors.border) => {
+      pdf.setDrawColor(...color);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageWidth - margin, y);
+    };
+    
+    // Helper: Draw section header with background
+    const addSectionHeader = (title, icon = '') => {
+      checkPageBreak(15);
+      yPos += 5;
+      
+      // Background rectangle
+      pdf.setFillColor(...colors.primary);
+      pdf.roundedRect(margin, yPos - 4, contentWidth, 10, 2, 2, 'F');
+      
+      // Section title
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${icon} ${title}`, margin + 5, yPos + 3);
+      
+      yPos += 12;
+      pdf.setTextColor(...colors.text);
+    };
+    
+    // Helper: Add subsection header
+    const addSubsectionHeader = (title) => {
+      checkPageBreak(12);
+      yPos += 3;
+      
+      pdf.setFillColor(...colors.lightGray);
+      pdf.rect(margin, yPos - 3, contentWidth, 8, 'F');
+      
+      pdf.setTextColor(...colors.secondary);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title, margin + 3, yPos + 2);
+      
+      yPos += 8;
+      pdf.setTextColor(...colors.text);
+    };
+    
+    // Helper: Add key-value pair
+    const addKeyValue = (key, value, indent = 0) => {
+      if (!value || value === '-' || value === 'null' || value === 'undefined') return;
+      checkPageBreak(8);
+      
+      const x = margin + indent;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(...colors.text);
+      pdf.text(`${key}:`, x, yPos);
+      
+      pdf.setFont('helvetica', 'normal');
+      const valueX = x + pdf.getTextWidth(`${key}: `) + 2;
+      const maxValueWidth = contentWidth - indent - pdf.getTextWidth(`${key}: `) - 5;
+      const lines = pdf.splitTextToSize(String(value), maxValueWidth);
+      
+      lines.forEach((line, idx) => {
+        if (idx > 0) {
+          yPos += lineHeight - 1;
+          checkPageBreak(8);
+        }
+        pdf.text(line, idx === 0 ? valueX : x + 5, yPos);
+      });
+      
+      yPos += lineHeight;
+    };
+    
+    // Helper: Add raw text block
+    const addRawText = (text, maxLines = 20) => {
+      if (!text) return;
+      checkPageBreak(15);
+      
+      pdf.setFillColor(250, 250, 250);
+      pdf.setDrawColor(...colors.border);
+      
+      const lines = pdf.splitTextToSize(String(text), contentWidth - 10);
+      const displayLines = lines.slice(0, maxLines);
+      const blockHeight = Math.min(displayLines.length * 5 + 6, 100);
+      
+      pdf.roundedRect(margin, yPos - 2, contentWidth, blockHeight, 1, 1, 'FD');
+      
+      pdf.setFontSize(8);
+      pdf.setFont('courier', 'normal');
+      pdf.setTextColor(80, 80, 80);
+      
+      displayLines.forEach((line, idx) => {
+        pdf.text(line, margin + 3, yPos + 3 + (idx * 5));
+      });
+      
+      if (lines.length > maxLines) {
+        pdf.setFont('helvetica', 'italic');
+        pdf.text(`... (${lines.length - maxLines} baris lagi)`, margin + 3, yPos + blockHeight - 3);
+      }
+      
+      yPos += blockHeight + 3;
+      pdf.setTextColor(...colors.text);
+    };
+    
+    // Helper: Add photo with frame
     const addPhoto = (base64Data, width = 35, height = 45) => {
-      if (!base64Data) return;
+      if (!base64Data || !base64Data.startsWith('data:')) return false;
       
       try {
-        // Check if we need new page for photo
-        if (yPos + height > pageHeight) {
-          pdf.addPage();
-          yPos = 20;
-        }
+        checkPageBreak(height + 10);
         
-        // Extract the actual base64 data if it has data URI prefix
-        let imageData = base64Data;
-        if (base64Data.startsWith('data:image')) {
-          imageData = base64Data;
-        }
+        // Photo frame
+        pdf.setDrawColor(...colors.border);
+        pdf.setLineWidth(0.5);
+        pdf.roundedRect(margin, yPos, width + 4, height + 4, 2, 2, 'S');
         
-        pdf.addImage(imageData, 'JPEG', margin, yPos, width, height);
-        yPos += height + 5;
+        pdf.addImage(base64Data, 'JPEG', margin + 2, yPos + 2, width, height);
+        return { x: margin + width + 10, y: yPos, endY: yPos + height + 6 };
       } catch (err) {
-        console.error('Error adding photo to PDF:', err);
-        addText('[Foto tidak dapat ditampilkan]');
+        console.error('Error adding photo:', err);
+        return false;
       }
     };
-
-    // Title
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('LAPORAN FULL QUERY', 105, yPos, { align: 'center' });
-    yPos += 10;
-
-    // Search Info
-    addText(`Nama Pencarian: ${searchResults?.name || '-'}`, margin, 11, true);
-    addText(`Tanggal: ${new Date().toLocaleDateString('id-ID', { 
-      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' 
-    })}`);
-    yPos += 5;
     
-    // ============ FOTO TARGET ============
-    // Add photos from nik_photos if available
+    // Helper: Add header
+    const addHeader = (isFirst = true) => {
+      if (isFirst) {
+        // Logo area (placeholder - blue rectangle)
+        pdf.setFillColor(...colors.primary);
+        pdf.roundedRect(margin, 10, 25, 25, 3, 3, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('N', margin + 9, 26);
+        
+        // Title
+        pdf.setTextColor(...colors.primary);
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('LAPORAN INVESTIGASI', margin + 32, 20);
+        
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(...colors.secondary);
+        pdf.text('Full Query Report - NETRA System', margin + 32, 28);
+        
+        // Date and info box
+        pdf.setFillColor(...colors.lightGray);
+        pdf.roundedRect(pageWidth - margin - 60, 10, 60, 25, 2, 2, 'F');
+        
+        pdf.setFontSize(8);
+        pdf.setTextColor(...colors.text);
+        pdf.text('Tanggal Cetak:', pageWidth - margin - 55, 18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(new Date().toLocaleDateString('id-ID', { 
+          day: 'numeric', month: 'short', year: 'numeric'
+        }), pageWidth - margin - 55, 24);
+        pdf.text(new Date().toLocaleTimeString('id-ID', { 
+          hour: '2-digit', minute: '2-digit'
+        }), pageWidth - margin - 55, 30);
+        
+        drawLine(40, colors.primary);
+        yPos = 48;
+      } else {
+        // Simple header for subsequent pages
+        pdf.setFontSize(8);
+        pdf.setTextColor(...colors.secondary);
+        pdf.text('NETRA - Laporan Investigasi', margin, 12);
+        pdf.text(`Hal. ${pdf.internal.getNumberOfPages()}`, pageWidth - margin - 10, 12);
+        drawLine(15, colors.lightGray);
+      }
+    };
+    
+    // ==================== START PDF GENERATION ====================
+    
+    // Header
+    addHeader(true);
+    
+    // Search Info Box
+    pdf.setFillColor(240, 248, 255);
+    pdf.setDrawColor(...colors.secondary);
+    pdf.roundedRect(margin, yPos, contentWidth, 20, 3, 3, 'FD');
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...colors.primary);
+    pdf.text('Target Pencarian:', margin + 5, yPos + 8);
+    
+    pdf.setFontSize(14);
+    pdf.text(searchResults?.name || '-', margin + 5, yPos + 16);
+    
+    yPos += 28;
+    
+    // ============ 1. FOTO TARGET ============
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      addSection('FOTO TARGET');
+      addSectionHeader('FOTO TARGET', '📷');
       
       const nikPhotos = searchResults.nik_photos;
       const selectedNikPhotos = selectedNiks.length > 0 
         ? selectedNiks.filter(nik => nikPhotos[nik])
         : Object.keys(nikPhotos);
       
+      // Display photos in a grid (2 per row)
+      let photoX = margin;
+      let maxRowY = yPos;
+      
       selectedNikPhotos.forEach((nik, idx) => {
         const photoData = nikPhotos[nik];
-        if (photoData) {
-          addText(`${idx + 1}. NIK: ${nik}`, margin, 10, true);
-          if (photoData.name) {
-            addText(`   Nama: ${photoData.name}`);
+        if (photoData?.photo && photoData.photo.startsWith('data:')) {
+          if (idx % 2 === 0 && idx > 0) {
+            yPos = maxRowY + 5;
+            photoX = margin;
           }
           
-          // Add photo if available
-          if (photoData.photo && photoData.photo.startsWith('data:')) {
-            addPhoto(photoData.photo);
-          } else {
-            addText('   [Foto tidak tersedia]');
-          }
-          yPos += 3;
-        }
-      });
-    }
-
-    // CAPIL Results
-    if (searchResults?.results?.capil) {
-      addSection('1. HASIL CAPIL (Dukcapil)');
-      const capil = searchResults.results.capil;
-      addText(`Status: ${capil.status}`);
-      if (capil.data) {
-        Object.entries(capil.data).forEach(([key, value]) => {
-          addText(`${key}: ${value}`);
-        });
-      }
-      if (capil.niks_found?.length > 0) {
-        addText(`NIK Ditemukan: ${capil.niks_found.join(', ')}`);
-      }
-      if (capil.raw_text && !capil.data) {
-        addText('Raw Data:');
-        addText(capil.raw_text.substring(0, 500));
-      }
-    }
-
-    // NIK Investigation Results
-    if (investigation?.results && Object.keys(investigation.results).length > 0) {
-      addSection('2. HASIL PENDALAMAN NIK');
-      
-      Object.entries(investigation.results).forEach(([nik, nikResult], idx) => {
-        yPos += 3;
-        addText(`${idx + 1}. NIK: ${nik}`, margin, 11, true);
-        
-        // Add photo for this NIK if available from nik_photos
-        const nikPhotoData = searchResults?.nik_photos?.[nik];
-        if (nikPhotoData?.photo && nikPhotoData.photo.startsWith('data:')) {
-          addPhoto(nikPhotoData.photo, 30, 40);
-        }
-        
-        // NIK Data
-        if (nikResult?.nik_data) {
-          addText('   [Data NIK]', margin, 10, true);
-          addText(`   Status: ${nikResult.nik_data.status}`);
-          if (nikResult.nik_data.data) {
-            Object.entries(nikResult.nik_data.data).forEach(([key, value]) => {
-              addText(`   ${key}: ${value}`);
-            });
-          }
-          if (nikResult.nik_data.raw_text && !nikResult.nik_data.data) {
-            addText(`   Raw: ${nikResult.nik_data.raw_text.substring(0, 300)}`);
-          }
-        }
-        
-        // NKK Data - with family members table
-        if (nikResult?.nkk_data) {
-          addText('   [Data NKK - Kartu Keluarga]', margin, 10, true);
-          addText(`   Status: ${nikResult.nkk_data.status}`);
+          checkPageBreak(60);
           
-          // Display family members if available
-          if (nikResult.nkk_data.family_data?.members?.length > 0) {
-            const members = nikResult.nkk_data.family_data.members;
-            addText(`   Jumlah Anggota Keluarga: ${members.length}`, margin, 10);
-            addText('');
-            addText('   No.  NIK                   Nama                    Hubungan         L/P', margin, 9);
-            addText('   ' + '-'.repeat(85), margin, 9);
+          try {
+            // Photo frame
+            pdf.setDrawColor(...colors.border);
+            pdf.roundedRect(photoX, yPos, 40, 58, 2, 2, 'S');
+            pdf.addImage(photoData.photo, 'JPEG', photoX + 2, yPos + 2, 36, 46);
             
-            members.forEach((member, idx) => {
-              const no = String(idx + 1).padEnd(4);
-              const nikStr = (member.nik || '-').padEnd(18);
-              const name = (member.name || '-').substring(0, 22).padEnd(24);
-              const rel = (member.relationship || '-').substring(0, 15).padEnd(17);
-              const gender = member.gender || '-';
-              addText(`   ${no} ${nikStr} ${name} ${rel} ${gender}`, margin, 9);
-            });
-            addText('   ' + '-'.repeat(85), margin, 9);
-          } else if (nikResult.nkk_data.data) {
-            Object.entries(nikResult.nkk_data.data).forEach(([key, value]) => {
-              addText(`   ${key}: ${value}`);
-            });
+            // Name under photo
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(...colors.text);
+            const name = (photoData.name || 'N/A').substring(0, 20);
+            pdf.text(name, photoX + 20, yPos + 52, { align: 'center' });
+            
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(nik, photoX + 20, yPos + 56, { align: 'center' });
+            
+            maxRowY = Math.max(maxRowY, yPos + 60);
+            photoX += 48;
+          } catch (e) {
+            console.error('Photo error:', e);
           }
-          if (nikResult.nkk_data.raw_text && !nikResult.nkk_data.family_data?.members?.length && !nikResult.nkk_data.data) {
-            addText(`   Raw: ${nikResult.nkk_data.raw_text.substring(0, 300)}`);
+        }
+      });
+      
+      yPos = maxRowY + 5;
+    }
+    
+    // ============ PROCESS EACH NIK ============
+    if (investigation?.results && Object.keys(investigation.results).length > 0) {
+      Object.entries(investigation.results).forEach(([nik, nikResult], idx) => {
+        // NIK Header
+        checkPageBreak(30);
+        yPos += 5;
+        
+        pdf.setFillColor(...colors.secondary);
+        pdf.roundedRect(margin, yPos - 4, contentWidth, 12, 2, 2, 'F');
+        
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`NIK ${idx + 1}: ${nik}`, margin + 5, yPos + 4);
+        
+        // Get name from nik_photos if available
+        const nikPhotoData = searchResults?.nik_photos?.[nik];
+        if (nikPhotoData?.name) {
+          pdf.setFontSize(9);
+          pdf.text(`(${nikPhotoData.name})`, margin + 80, yPos + 4);
+        }
+        
+        yPos += 15;
+        pdf.setTextColor(...colors.text);
+        
+        // ============ 2. DATA NIK (CAPIL) ============
+        if (nikResult?.nik_data) {
+          addSubsectionHeader('📋 Data Kependudukan (NIK)');
+          
+          const nikData = nikResult.nik_data;
+          if (nikData.data && Object.keys(nikData.data).length > 0) {
+            Object.entries(nikData.data).forEach(([key, value]) => {
+              addKeyValue(key, value, 3);
+            });
+          } else if (nikData.raw_text) {
+            addRawText(nikData.raw_text, 15);
           }
         }
         
-        // RegNIK Data - with numbered list for phones
-        if (nikResult?.regnik_data) {
-          addText('   [Data RegNIK - Nomor Telepon]', margin, 10, true);
-          addText(`   Status: ${nikResult.regnik_data.status}`);
+        // ============ 3. DATA NKK (Kartu Keluarga) ============
+        if (nikResult?.nkk_data) {
+          addSubsectionHeader('👨‍👩‍👧‍👦 Data Kartu Keluarga (NKK)');
           
-          // If phones array exists, display with numbered list
-          if (nikResult.regnik_data.phones && nikResult.regnik_data.phones.length > 0) {
-            addText(`   Jumlah Nomor: ${nikResult.regnik_data.phones.length}`, margin, 10);
-            nikResult.regnik_data.phones.forEach((phone, phoneIdx) => {
-              addText(`      ${phoneIdx + 1}. ${phone}`, margin, 10);
-            });
-          } else if (nikResult.regnik_data.data) {
-            Object.entries(nikResult.regnik_data.data).forEach(([key, value]) => {
-              if (key === 'phones' && Array.isArray(value)) {
-                addText(`   Jumlah Nomor: ${value.length}`, margin, 10);
-                value.forEach((phone, phoneIdx) => {
-                  addText(`      ${phoneIdx + 1}. ${phone}`, margin, 10);
-                });
-              } else {
-                addText(`   ${key}: ${Array.isArray(value) ? value.join(', ') : value}`);
+          const nkkData = nikResult.nkk_data;
+          
+          // Family members table
+          if (nkkData.family_data?.members?.length > 0) {
+            const members = nkkData.family_data.members;
+            checkPageBreak(20 + members.length * 6);
+            
+            // Table header
+            pdf.setFillColor(...colors.lightGray);
+            pdf.rect(margin, yPos, contentWidth, 7, 'F');
+            
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(...colors.text);
+            pdf.text('No', margin + 2, yPos + 5);
+            pdf.text('NIK', margin + 12, yPos + 5);
+            pdf.text('Nama', margin + 55, yPos + 5);
+            pdf.text('Hubungan', margin + 110, yPos + 5);
+            pdf.text('L/P', margin + 150, yPos + 5);
+            
+            yPos += 8;
+            
+            // Table rows
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7);
+            members.forEach((member, mIdx) => {
+              if (mIdx % 2 === 0) {
+                pdf.setFillColor(250, 250, 250);
+                pdf.rect(margin, yPos - 3, contentWidth, 6, 'F');
               }
-            });
-          }
-          if (nikResult.regnik_data.raw_text && !nikResult.regnik_data.phones?.length) {
-            addText(`   Raw: ${nikResult.regnik_data.raw_text.substring(0, 300)}`);
-          }
-        }
-        
-        // Passport Data
-        if (nikResult?.passport_data) {
-          addText('');
-          addText('4. DATA PASSPORT (via CP API)');
-          addText(`   Status: ${nikResult.passport_data.status}`);
-          
-          // Show passport numbers
-          if (nikResult.passport_data.passports && nikResult.passport_data.passports.length > 0) {
-            addText(`   Jumlah Passport: ${nikResult.passport_data.passports.length}`, margin, 10);
-            nikResult.passport_data.passports.forEach((passport, pIdx) => {
-              addText(`      ${pIdx + 1}. No. Paspor: ${passport}`, margin, 10);
-            });
-          }
-          
-          // Show detailed WNI passport data - handle both 'result' and 'data' arrays
-          const wniDataArray = nikResult.passport_data.wni_data?.result || nikResult.passport_data.wni_data?.data || [];
-          if (Array.isArray(wniDataArray) && wniDataArray.length > 0) {
-            wniDataArray.forEach((passportInfo, idx) => {
-              addText(`   --- Detail Passport ${idx + 1} ---`, margin, 10);
-              if (passportInfo.no_paspor || passportInfo.TRAVELDOCUMENTNO) 
-                addText(`      No. Paspor: ${passportInfo.no_paspor || passportInfo.TRAVELDOCUMENTNO}`, margin, 10);
-              if (passportInfo.nama_lengkap || passportInfo.nama_di_paspor || passportInfo.GIVENNAME) 
-                addText(`      Nama: ${passportInfo.nama_lengkap || passportInfo.nama_di_paspor || passportInfo.GIVENNAME}`, margin, 10);
-              if (passportInfo.tempat_lahir || passportInfo.PLACEOFBIRTH) 
-                addText(`      Tempat Lahir: ${passportInfo.tempat_lahir || passportInfo.PLACEOFBIRTH}`, margin, 10);
-              if (passportInfo.tanggal_lahir || passportInfo.DATEOFBIRTH) 
-                addText(`      Tgl Lahir: ${passportInfo.tanggal_lahir || passportInfo.DATEOFBIRTH}`, margin, 10);
-              if (passportInfo.jenis_kelamin || passportInfo.GENDERCODE) 
-                addText(`      Jenis Kelamin: ${(passportInfo.jenis_kelamin || passportInfo.GENDERCODE) === 'L' || (passportInfo.jenis_kelamin || passportInfo.GENDERCODE) === 'M' ? 'Laki-laki' : 'Perempuan'}`, margin, 10);
-              if (passportInfo.alamat) 
-                addText(`      Alamat: ${passportInfo.alamat}`, margin, 10);
-              if (passportInfo.pekerjaan) 
-                addText(`      Pekerjaan: ${passportInfo.pekerjaan}`, margin, 10);
-              if (passportInfo.status_sipil) 
-                addText(`      Status: ${passportInfo.status_sipil}`, margin, 10);
-              if (passportInfo.jenis_paspor) 
-                addText(`      Jenis Paspor: ${passportInfo.jenis_paspor}`, margin, 10);
-              if (passportInfo.kantor_penerbit || passportInfo.ISSUINGSTATEDESCRIPTION) 
-                addText(`      Kantor Penerbit: ${passportInfo.kantor_penerbit || passportInfo.ISSUINGSTATEDESCRIPTION}`, margin, 10);
-              if (passportInfo.tanggal_diterbitkan_paspor) 
-                addText(`      Tgl Terbit: ${passportInfo.tanggal_diterbitkan_paspor}`, margin, 10);
-              if (passportInfo.tanggal_habis_berlaku_paspor || passportInfo.EXPIRATIONDATE) 
-                addText(`      Berlaku s/d: ${passportInfo.tanggal_habis_berlaku_paspor || passportInfo.EXPIRATIONDATE}`, margin, 10);
-              if (passportInfo.status_paspor) 
-                addText(`      Status Paspor: ${passportInfo.status_paspor}`, margin, 10);
-              if (passportInfo.no_paspor_lama) 
-                addText(`      No. Paspor Lama: ${passportInfo.no_paspor_lama}`, margin, 10);
-              if (passportInfo.email) 
-                addText(`      Email: ${passportInfo.email}`, margin, 10);
-              if (passportInfo.no_hp) 
-                addText(`      No. HP: ${passportInfo.no_hp}`, margin, 10);
-            });
-          }
-        }
-        
-        // Perlintasan (Immigration Crossing) Data
-        if (nikResult?.perlintasan_data) {
-          addText('');
-          addText('5. DATA PERLINTASAN IMIGRASI');
-          addText(`   Status: ${nikResult.perlintasan_data.status}`);
-          
-          if (nikResult.perlintasan_data.results && nikResult.perlintasan_data.results.length > 0) {
-            nikResult.perlintasan_data.results.forEach((passportResult) => {
-              addText(`   Passport: ${passportResult.passport_no}`, margin, 10);
               
+              pdf.text(String(mIdx + 1), margin + 2, yPos);
+              pdf.text(member.nik || '-', margin + 12, yPos);
+              pdf.text((member.name || '-').substring(0, 28), margin + 55, yPos);
+              pdf.text((member.relationship || '-').substring(0, 18), margin + 110, yPos);
+              pdf.text(member.gender || '-', margin + 150, yPos);
+              
+              yPos += 6;
+              checkPageBreak(10);
+            });
+            
+            yPos += 3;
+          } else if (nkkData.raw_text) {
+            addRawText(nkkData.raw_text, 15);
+          }
+        }
+        
+        // ============ 4. DATA FAMILY TREE (Visualisasi) ============
+        // Note: Family tree visualization is complex for PDF, showing member list instead
+        
+        // ============ 5. DATA REG HP ============
+        if (nikResult?.regnik_data) {
+          addSubsectionHeader('📱 Data Registrasi HP (RegNIK)');
+          
+          const regnikData = nikResult.regnik_data;
+          if (regnikData.phones && regnikData.phones.length > 0) {
+            addKeyValue('Jumlah Nomor Terdaftar', regnikData.phones.length, 3);
+            
+            checkPageBreak(regnikData.phones.length * 6 + 5);
+            
+            regnikData.phones.forEach((phone, pIdx) => {
+              pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'normal');
+              pdf.text(`${pIdx + 1}. ${phone}`, margin + 8, yPos);
+              yPos += 5;
+            });
+            yPos += 3;
+          } else if (regnikData.raw_text) {
+            addRawText(regnikData.raw_text, 10);
+          }
+        }
+        
+        // ============ 6. DATA PASSPORT ============
+        if (nikResult?.passport_data) {
+          addSubsectionHeader('🛂 Data Passport');
+          
+          const passportData = nikResult.passport_data;
+          
+          if (passportData.passports && passportData.passports.length > 0) {
+            addKeyValue('Jumlah Passport', passportData.passports.length, 3);
+            
+            // Detail each passport
+            const wniData = passportData.wni_data?.result || passportData.wni_data?.data || [];
+            if (Array.isArray(wniData) && wniData.length > 0) {
+              wniData.forEach((passport, pIdx) => {
+                checkPageBreak(40);
+                
+                pdf.setFillColor(255, 250, 240);
+                pdf.roundedRect(margin + 3, yPos, contentWidth - 6, 35, 2, 2, 'F');
+                
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setTextColor(...colors.primary);
+                pdf.text(`Passport ${pIdx + 1}`, margin + 8, yPos + 6);
+                
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...colors.text);
+                pdf.setFontSize(8);
+                
+                const pY = yPos + 11;
+                pdf.text(`No. Paspor: ${passport.no_paspor || passport.TRAVELDOCUMENTNO || '-'}`, margin + 8, pY);
+                pdf.text(`Nama: ${passport.nama_lengkap || passport.nama_di_paspor || passport.GIVENNAME || '-'}`, margin + 8, pY + 5);
+                pdf.text(`TTL: ${passport.tempat_lahir || '-'}, ${passport.tanggal_lahir || passport.DATEOFBIRTH || '-'}`, margin + 8, pY + 10);
+                pdf.text(`Berlaku s/d: ${passport.tanggal_habis_berlaku_paspor || passport.EXPIRATIONDATE || '-'}`, margin + 8, pY + 15);
+                pdf.text(`Kantor: ${passport.kantor_penerbit || passport.ISSUINGSTATEDESCRIPTION || '-'}`, margin + 8, pY + 20);
+                
+                yPos += 38;
+              });
+            }
+          } else if (passportData.status === 'no_data') {
+            pdf.setFontSize(9);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text('Tidak ada data passport', margin + 5, yPos);
+            yPos += 8;
+          }
+        }
+        
+        // ============ 7. DATA PERLINTASAN ============
+        if (nikResult?.perlintasan_data) {
+          addSubsectionHeader('✈️ Data Perlintasan Imigrasi');
+          
+          const perlintasanData = nikResult.perlintasan_data;
+          
+          if (perlintasanData.results && perlintasanData.results.length > 0) {
+            perlintasanData.results.forEach((passportResult) => {
               if (passportResult.crossings && passportResult.crossings.length > 0) {
-                addText(`   Total Perjalanan: ${passportResult.crossings.length}`, margin, 10);
-                passportResult.crossings.forEach((crossing, cIdx) => {
-                  const direction = crossing.direction_code === 'A' ? 'MASUK' : crossing.direction_code === 'D' ? 'KELUAR' : crossing.direction;
-                  addText(`      ${cIdx + 1}. ${crossing.movement_date} - ${direction}`, margin, 10);
-                  addText(`         Nama: ${crossing.name} ${crossing.family_name || ''}`, margin, 10);
-                  addText(`         TPI: ${crossing.tpi_name}`, margin, 10);
-                  addText(`         Port: ${crossing.port_description}`, margin, 10);
+                checkPageBreak(15);
+                
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(`Passport: ${passportResult.passport_no} (${passportResult.crossings.length} perjalanan)`, margin + 5, yPos);
+                yPos += 6;
+                
+                // Crossing table
+                pdf.setFillColor(...colors.lightGray);
+                pdf.rect(margin, yPos, contentWidth, 6, 'F');
+                
+                pdf.setFontSize(7);
+                pdf.text('No', margin + 2, yPos + 4);
+                pdf.text('Tanggal', margin + 12, yPos + 4);
+                pdf.text('Arah', margin + 42, yPos + 4);
+                pdf.text('TPI', margin + 60, yPos + 4);
+                pdf.text('Port', margin + 110, yPos + 4);
+                
+                yPos += 7;
+                
+                pdf.setFont('helvetica', 'normal');
+                passportResult.crossings.slice(0, 10).forEach((crossing, cIdx) => {
+                  checkPageBreak(8);
+                  
+                  const dir = crossing.direction_code === 'A' ? '🟢 MASUK' : crossing.direction_code === 'D' ? '🔴 KELUAR' : crossing.direction;
+                  
+                  pdf.text(String(cIdx + 1), margin + 2, yPos);
+                  pdf.text(crossing.movement_date || '-', margin + 12, yPos);
+                  pdf.text(dir.substring(0, 12), margin + 42, yPos);
+                  pdf.text((crossing.tpi_name || '-').substring(0, 25), margin + 60, yPos);
+                  pdf.text((crossing.port_description || '-').substring(0, 25), margin + 110, yPos);
+                  
+                  yPos += 5;
                 });
-              } else if (passportResult.status === 'no_data') {
-                addText(`   Tidak ada data perlintasan`, margin, 10);
+                
+                if (passportResult.crossings.length > 10) {
+                  pdf.setFont('helvetica', 'italic');
+                  pdf.text(`... dan ${passportResult.crossings.length - 10} perjalanan lainnya`, margin + 5, yPos);
+                  yPos += 5;
+                }
+                
+                yPos += 5;
               }
             });
           } else {
-            addText(`   Tidak ada data perlintasan (tidak ada nomor paspor)`, margin, 10);
+            pdf.setFontSize(9);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text('Tidak ada data perlintasan', margin + 5, yPos);
+            yPos += 8;
           }
         }
         
-        yPos += 3;
+        yPos += 10;
       });
     }
-
-    // Footer
-    pdf.addPage();
-    yPos = pageHeight - 10;
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'italic');
-    pdf.text('Generated by NETRA - Full Query Module', 105, yPos, { align: 'center' });
-
+    
+    // ============ FOOTER ============
+    const totalPages = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i);
+      
+      // Footer line
+      pdf.setDrawColor(...colors.lightGray);
+      pdf.line(margin, pageHeight + 5, pageWidth - margin, pageHeight + 5);
+      
+      // Footer text
+      pdf.setFontSize(7);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text('Dokumen ini digenerate oleh NETRA System', margin, pageHeight + 10);
+      pdf.text(`Halaman ${i} dari ${totalPages}`, pageWidth - margin - 20, pageHeight + 10);
+    }
+    
     // Save PDF
-    const fileName = `Query_Nama_${searchResults?.name?.replace(/\s+/g, '_') || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `Investigasi_${searchResults?.name?.replace(/\s+/g, '_') || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
     toast.success('PDF berhasil dibuat!');
   };
