@@ -1855,7 +1855,7 @@ export const NonGeointSearchDialog = ({
     
     // ============ 1. FOTO TARGET ============
     if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      addSectionHeader('FOTO TARGET', '📷');
+      addSectionHeader('FOTO TARGET', '[1]');
       
       const nikPhotos = searchResults.nik_photos;
       const selectedNikPhotos = selectedNiks.length > 0 
