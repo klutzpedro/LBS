@@ -8076,14 +8076,18 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     """
     global telegram_client
     
+    operation_name = f"FR_NIK_{username}_{request.nik[:8]}"
     logger.info(f"[FR] Getting NIK details for TOP NIK: {request.nik}, user: {username}")
     
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
     logger.info(f"[FR NIK] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logger.info(f"[FR NIK] Global lock acquired for NIK details by user: {username}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        raise HTTPException(status_code=503, detail="Server sibuk, coba lagi nanti")
+    
     set_active_query(username, "fr_nik_details", request.nik)
     
     try:
