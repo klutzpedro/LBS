@@ -1042,6 +1042,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
     device_info: Optional[str] = "Unknown Device"
+    force_login: Optional[bool] = False  # Force logout other sessions
 
 class LoginResponse(BaseModel):
     token: str
