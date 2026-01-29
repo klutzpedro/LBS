@@ -8482,13 +8482,27 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     # ============================================
     logger.info(f"[SIMPLE QUERY] Querying via Telegram bot...")
     
-    if not telegram_client or not telegram_client.is_connected():
-        raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
+    # Use robust connection check with auto-reconnect
+    try:
+        connected = await ensure_telegram_connected()
+        if not connected:
+            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan coba lagi atau cek koneksi di Settings.")
+    except Exception as conn_err:
+        logger.error(f"[SIMPLE QUERY] Connection check failed: {conn_err}")
+        raise HTTPException(status_code=503, detail=f"Gagal terkoneksi ke Telegram: {str(conn_err)}")
     
     # Acquire lock to prevent race conditions
     # Only one query can be processed at a time
     async with simple_query_lock:
         logger.info(f"[SIMPLE QUERY] Lock acquired for user: {username}")
+        
+        # Double-check connection inside lock (could have disconnected while waiting)
+        if not telegram_client or not telegram_client.is_connected():
+            logger.warning("[SIMPLE QUERY] Connection lost while waiting for lock, reconnecting...")
+            try:
+                await ensure_telegram_connected()
+            except Exception as reconn_err:
+                raise HTTPException(status_code=503, detail="Koneksi Telegram terputus. Silakan coba lagi.")
         
         try:
             bot_entity = await telegram_client.get_entity(BOT_USERNAME)
