@@ -3381,8 +3381,8 @@ async def query_telegram_bot(target_id: str, phone_number: str):
             async def send_phone():
                 await telegram_client.send_message(BOT_USERNAME, phone_number)
                 return True
-                
-                sent = await safe_telegram_operation(send_phone, f"send_phone_{phone_number}", max_retries=3)
+            
+            sent = await safe_telegram_operation(send_phone, f"send_phone_{phone_number}", max_retries=3)
                 
                 if not sent:
                     logging.error(f"[TARGET {target_id}] Failed to send phone number")
