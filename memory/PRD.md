@@ -1170,7 +1170,38 @@ User melaporkan data tertukar di Face Recognition:
 - `/app/frontend/src/components/main/FaceRecognition.jsx`:
   - `startFaceRecognition()`: Handle `FR_QUOTA_EXHAUSTED` error
 
+## January 29, 2026 Updates
+
+### P0: Map Popup Overlap Fix - COMPLETED
+- **Issue:** When clicking a target in sidebar, wrong popup opened if multiple targets had same coordinates
+- **Root Cause:** `handleTargetClick` only changed map center without opening specific target's popup
+- **Solution:**
+  1. Added `markerRefs` to store references to each marker by position key
+  2. Added `targetIdToPosInfo` mapping to find position key and index for any target ID
+  3. Added `useEffect` on `selectedTargetId` to:
+     - Update `selectedAtPosition` to show correct target in grouped markers
+     - Open popup on the correct marker via `markerRef.openPopup()`
+  4. Added `selectedTargetId` prop to `TargetMarkers` component (passes `selectedTargetForChat`)
+- **Files Modified:**
+  - `/app/frontend/src/components/main/TargetMarkers.jsx`
+  - `/app/frontend/src/pages/MainApp.jsx`
+- **Testing:** Verified by testing agent - FIXED
+
+### P1: Family Tree Graph Rendering Fix - COMPLETED
+- **Issue:** FamilyTreeViz component not rendering graph in UI
+- **Root Cause:** Component only handled array format, but data could be object with `members` property
+- **Solution:**
+  1. Added handling for both array format and object-with-members format
+  2. Added debug logging to track data received
+  3. Added fallback UI when no data available
+  4. Fixed `FamilyTreeDialog` to extract `membersData` properly
+- **Files Modified:**
+  - `/app/frontend/src/components/FamilyTreeViz.jsx`
+  - `/app/frontend/src/components/main/TargetDialogs.jsx`
+- **Testing:** Verified by testing agent - tree structure, AI Analysis, RAW DATA table all render correctly
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
 - Export to Excel/CSV functionality
+
