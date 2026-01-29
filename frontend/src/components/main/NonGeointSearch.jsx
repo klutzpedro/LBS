@@ -2097,7 +2097,7 @@ export const NonGeointSearchDialog = ({
                 passportResult.crossings.slice(0, 10).forEach((crossing, cIdx) => {
                   checkPageBreak(8);
                   
-                  const dir = crossing.direction_code === 'A' ? '🟢 MASUK' : crossing.direction_code === 'D' ? '🔴 KELUAR' : crossing.direction;
+                  const dir = crossing.direction_code === 'A' ? '[IN] MASUK' : crossing.direction_code === 'D' ? '[OUT] KELUAR' : crossing.direction;
                   
                   pdf.text(String(cIdx + 1), margin + 2, yPos);
                   pdf.text(crossing.movement_date || '-', margin + 12, yPos);
