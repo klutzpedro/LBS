@@ -993,6 +993,42 @@ User melaporkan ada nomor yang sama muncul duplikat di target list dan peta (2x 
 - `/app/backend/server.py`: Added duplicate validation in `create_target()` endpoint
 - `/app/frontend/src/pages/MainApp.jsx`: Fixed `handleRefreshLocation()` and `createNewTarget()` error handling
 
+## Stability Fix: Telegram Connection Pre-Check (January 2026)
+
+### Issue
+User melaporkan error "Bot tidak terhubung silakan lakukan setting ulang" saat mencoba pendalaman NIK meskipun status Telegram menunjukkan "live/hijau". Error ini intermittent - kadang berhasil, kadang gagal.
+
+### Root Causes
+1. **Lazy Connection Check:** Endpoint NIK, REGHP, Family langsung memulai background task tanpa validasi koneksi Telegram terlebih dahulu
+2. **Simple Query Check Tidak Robust:** Hanya mengecek `is_connected()` tanpa auto-reconnect
+3. **Race Condition:** Koneksi bisa terputus saat menunggu lock untuk query
+
+### Solutions
+1. **Pre-Check di Semua Endpoint Query:**
+   - `POST /targets/{id}/nik` - Added pre-check with `ensure_telegram_connected()`
+   - `POST /targets/{id}/reghp` - Added pre-check
+   - `POST /targets/{id}/family` - Added pre-check
+   - Returns HTTP 503 dengan pesan jelas jika koneksi gagal
+   
+2. **Improved Simple Query:**
+   - Replaced simple `is_connected()` check dengan `ensure_telegram_connected()`
+   - Added double-check koneksi setelah mendapat lock
+   - Auto-reconnect jika koneksi terputus saat menunggu lock
+
+3. **Better Error Messages:**
+   - Frontend sekarang menampilkan pesan spesifik untuk error 503
+   - "Telegram tidak terhubung. Silakan cek koneksi di Settings atau coba lagi."
+
+### Files Modified
+- `/app/backend/server.py`:
+  - Added `import base64` di top level (fixing F821 error)
+  - `query_nik()`: Added Telegram pre-check
+  - `query_reghp()`: Added Telegram pre-check  
+  - `query_family()`: Added Telegram pre-check
+  - `simple_query()`: Improved connection handling with auto-reconnect
+- `/app/frontend/src/pages/MainApp.jsx`:
+  - `handleNikPendalaman()`: Better error handling for 503
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
