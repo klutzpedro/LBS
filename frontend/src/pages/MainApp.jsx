@@ -1301,9 +1301,9 @@ const MainApp = () => {
     setGlobalProcessType('nik');
     setLoadingNikPendalaman(nik);
     
-    // Auto-open chat panel and set target for chat
+    // Set target for chat but DON'T auto-open chat panel for NIK pendalaman
     setSelectedTargetForChat(targetId);
-    setShowChatPanel(true);
+    // setShowChatPanel(true);  // Removed - user doesn't want chat to auto-open
     
     console.log('[NIK Pendalaman] State set, calling API...');
     
