@@ -74,12 +74,13 @@ export const AuthProvider = ({ children }) => {
     };
   }, [token, checkSession]);
 
-  const login = async (usernameInput, password) => {
+  const login = async (usernameInput, password, forceLogin = false) => {
     try {
       const response = await axios.post(`${API}/auth/login`, {
         username: usernameInput,
         password,
-        device_info: getDeviceInfo()
+        device_info: getDeviceInfo(),
+        force_login: forceLogin
       });
 
       const { token: newToken, username: user, is_admin, session_id } = response.data;
@@ -102,13 +103,17 @@ export const AuthProvider = ({ children }) => {
           success: false,
           sessionActive: true,
           deviceInfo: error.response.data.detail.device_info,
+          canForce: error.response.data.detail.can_force || true,
           error: error.response.data.detail.message
         };
       }
       
+      const errorDetail = error.response?.data?.detail;
+      const errorMsg = typeof errorDetail === 'string' ? errorDetail : errorDetail?.message || 'Login failed';
+      
       return {
         success: false,
-        error: error.response?.data?.detail || 'Login failed'
+        error: errorMsg
       };
     }
   };
