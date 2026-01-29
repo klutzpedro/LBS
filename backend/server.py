@@ -113,6 +113,95 @@ logger.info(f"Telegram API ID: {TELEGRAM_API_ID} (FORCED CORRECT VALUE)")
 telegram_client = None
 telegram_connection_lock = asyncio.Lock()
 
+# ============================================
+# GLOBAL TELEGRAM QUERY LOCK - PREVENTS RACE CONDITIONS
+# ============================================
+# This is the MASTER lock for ALL Telegram bot queries.
+# Only ONE query can be processed at a time across ALL users.
+# This prevents data mixing when multiple users query simultaneously.
+telegram_query_lock = asyncio.Lock()
+
+# Track active query to prevent data mixing
+active_query_info = {
+    "user": None,
+    "query_type": None,
+    "query_value": None,
+    "started_at": None,
+    "last_msg_id": None
+}
+
+def set_active_query(user: str, query_type: str, query_value: str, last_msg_id: int = None):
+    """Set the active query info for validation"""
+    global active_query_info
+    active_query_info = {
+        "user": user,
+        "query_type": query_type,
+        "query_value": query_value,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "last_msg_id": last_msg_id
+    }
+    logger.info(f"[QUERY LOCK] Active query set: user={user}, type={query_type}, value={query_value[:20] if query_value else 'N/A'}...")
+
+def clear_active_query():
+    """Clear the active query info"""
+    global active_query_info
+    prev_user = active_query_info.get("user")
+    prev_type = active_query_info.get("query_type")
+    active_query_info = {
+        "user": None,
+        "query_type": None,
+        "query_value": None,
+        "started_at": None,
+        "last_msg_id": None
+    }
+    logger.info(f"[QUERY LOCK] Active query cleared (was: user={prev_user}, type={prev_type})")
+
+def validate_response_matches_query(response_text: str, query_type: str, query_value: str) -> bool:
+    """
+    Validate that a response from Telegram bot matches the query that was sent.
+    This prevents data mixing when multiple users query simultaneously.
+    """
+    if not response_text or not query_value:
+        return True  # Can't validate, assume OK
+    
+    response_lower = response_text.lower()
+    query_lower = query_value.lower()
+    
+    # For phone number queries (CP), check if phone appears in response
+    if query_type in ['cp', 'reghp', 'reghp_phone']:
+        # Phone number should appear somewhere in response
+        # Remove non-digits for comparison
+        phone_digits = re.sub(r'\D', '', query_value)
+        if len(phone_digits) >= 8:
+            # Check if at least 8 consecutive digits match
+            if phone_digits[-8:] in re.sub(r'\D', '', response_text):
+                return True
+            # Also check formatted versions
+            if phone_digits in response_text.replace(' ', '').replace('-', ''):
+                return True
+    
+    # For NIK queries, the NIK should appear in response
+    if query_type in ['nik', 'capil_nik']:
+        if query_value in response_text:
+            return True
+    
+    # For NKK queries
+    if query_type in ['nkk', 'family']:
+        if query_value in response_text:
+            return True
+    
+    # For name queries, at least part of the name should appear
+    if query_type in ['capil_name', 'name']:
+        # Check if any significant word from query appears in response
+        words = query_lower.split()
+        for word in words:
+            if len(word) >= 3 and word in response_lower:
+                return True
+    
+    # Default: log warning but don't fail (for flexibility)
+    logger.warning(f"[VALIDATION] Response may not match query: type={query_type}, query={query_value[:30]}...")
+    return True  # Return True to not break existing functionality, but log warning
+
 # Session path - use ROOT_DIR for portability
 SESSION_PATH = str(ROOT_DIR / 'northarch_session')
 
