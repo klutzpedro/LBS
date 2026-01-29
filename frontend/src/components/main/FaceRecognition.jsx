@@ -208,6 +208,14 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
       const data = await response.json();
       console.log('[FR] Match results:', data);
       
+      // Check for quota error
+      if (data.error === 'FR_QUOTA_EXHAUSTED') {
+        toast.error(data.error_message || 'Kuota Face Recognition habis!');
+        setCurrentStep('upload');
+        setStatusMessage('');
+        return;
+      }
+      
       setMatchResults(data.matches);
       setCurrentSessionId(data.session_id);
       setStatusMessage('Hasil pencocokan diterima. Mengambil data NIK terbaik...');
