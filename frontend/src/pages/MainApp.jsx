@@ -1388,7 +1388,12 @@ const MainApp = () => {
       
     } catch (error) {
       console.error('[NIK Pendalaman] API Error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to start NIK query');
+      // Handle specific error codes
+      if (error.response?.status === 503) {
+        toast.error('Telegram tidak terhubung. Silakan cek koneksi di Settings atau coba lagi.');
+      } else {
+        toast.error(error.response?.data?.detail || 'Gagal memulai NIK query');
+      }
       fetchTargets(selectedCase.id);
       setGlobalProcessing(false);
       setGlobalProcessType(null);
