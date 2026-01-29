@@ -2919,11 +2919,9 @@ async def get_telegram_credentials(username: str = Depends(verify_token)):
     
     return {
         "runtime_api_id": str(TELEGRAM_API_ID),
-        "correct_api_id": str(CORRECT_TELEGRAM_API_ID),
         "env_api_id": env_api_id,
-        "is_correct": TELEGRAM_API_ID == CORRECT_TELEGRAM_API_ID,
         "has_api_hash": bool(TELEGRAM_API_HASH),
-        "status": "OK - Using correct API credentials"
+        "status": "OK - Using API credentials from .env"
     }
 
 @api_router.post("/settings/telegram-credentials")
