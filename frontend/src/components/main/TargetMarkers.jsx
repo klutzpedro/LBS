@@ -179,6 +179,7 @@ export const TargetMarkers = ({
           key={`marker-${posKey}-${zoomLevel}`}
           position={[selectedTarget.data.latitude, selectedTarget.data.longitude]}
           icon={icon}
+          ref={(ref) => setMarkerRef(posKey, ref)}
         >
           <TargetPopup 
             target={selectedTarget}
@@ -194,7 +195,7 @@ export const TargetMarkers = ({
     });
     
     return result;
-  }, [positionGroups, selectedAtPosition, alertedTargetIds, showMarkerNames, onShowReghpInfo, onPendalaman, loadingPendalaman, zoomLevel]);
+  }, [positionGroups, selectedAtPosition, alertedTargetIds, showMarkerNames, onShowReghpInfo, onPendalaman, loadingPendalaman, zoomLevel, setMarkerRef]);
 
   return <>{markers}</>;
 };
