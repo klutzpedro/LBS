@@ -3059,6 +3059,7 @@ async def verify_telegram_code(verify_data: dict, username: str = Depends(verify
 
 @api_router.get("/telegram/status")
 async def telegram_status(username: str = Depends(verify_token)):
+    """Check Telegram status using the global connection lock to prevent race conditions"""
     global telegram_client
     
     session_exists = os.path.exists(str(ROOT_DIR / 'northarch_session.session'))
@@ -3071,46 +3072,46 @@ async def telegram_status(username: str = Depends(verify_token)):
         }
     
     try:
-        # Check current connection state
-        is_connected = telegram_client is not None and telegram_client.is_connected()
-        
-        # Recreate client if needed
-        if telegram_client is None or not is_connected:
-            if telegram_client is not None:
-                try:
-                    await telegram_client.disconnect()
-                except:
-                    pass
+        # Use the global lock to prevent race conditions with other operations
+        async with telegram_connection_lock:
+            # Check current connection state
+            is_connected = telegram_client is not None and telegram_client.is_connected()
             
-            telegram_client = TelegramClient(
-                SESSION_PATH,
-                TELEGRAM_API_ID,
-                TELEGRAM_API_HASH
-            )
-            await telegram_client.connect()
-            is_connected = telegram_client.is_connected()
-        
-        if await telegram_client.is_user_authorized():
-            me = await telegram_client.get_me()
-            return {
-                "authorized": True,
-                "connected": is_connected,
-                "user": {
-                    "username": me.username,
-                    "first_name": me.first_name,
-                    "phone": me.phone,
-                    "user_id": me.id
+            # Recreate client if needed - use the helper function for consistency
+            if telegram_client is None or not is_connected:
+                if telegram_client is not None:
+                    try:
+                        await telegram_client.disconnect()
+                    except Exception as disc_err:
+                        logger.warning(f"[Telegram Status] Disconnect error: {disc_err}")
+                
+                # Use the helper function instead of direct TelegramClient creation
+                telegram_client = create_telegram_client()
+                await telegram_client.connect()
+                is_connected = telegram_client.is_connected()
+                logger.info(f"[Telegram Status] Reconnected client, is_connected={is_connected}")
+            
+            if await telegram_client.is_user_authorized():
+                me = await telegram_client.get_me()
+                return {
+                    "authorized": True,
+                    "connected": is_connected,
+                    "user": {
+                        "username": me.username,
+                        "first_name": me.first_name,
+                        "phone": me.phone,
+                        "user_id": me.id
+                    }
                 }
-            }
-        else:
-            return {
-                "authorized": False,
-                "connected": is_connected,
-                "message": "Session expired atau belum login"
-            }
+            else:
+                return {
+                    "authorized": False,
+                    "connected": is_connected,
+                    "message": "Session expired atau belum login"
+                }
     except Exception as e:
         error_msg = str(e)
-        logging.error(f"Error checking Telegram status: {e}")
+        logger.error(f"[Telegram Status] Error: {e}")
         
         # If duplicate session error, suggest reset
         if "authorization key" in error_msg.lower() or "duplicate" in error_msg.lower():
@@ -8931,12 +8932,8 @@ async def force_restore_session(username: str = Depends(verify_token)):
         
         logging.info(f"Restored session from MongoDB (user: {session_backup.get('username')})")
         
-        # Try to connect with restored session
-        telegram_client = TelegramClient(
-            SESSION_PATH,
-            TELEGRAM_API_ID,
-            TELEGRAM_API_HASH
-        )
+        # Try to connect with restored session - use helper function for consistency
+        telegram_client = create_telegram_client()
         await telegram_client.connect()
         
         if await telegram_client.is_user_authorized():
