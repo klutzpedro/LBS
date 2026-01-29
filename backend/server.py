@@ -8951,6 +8951,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     logger.info(f"[SIMPLE QUERY] Saved to cache: {cache_key}")
                 
                 logger.info(f"[SIMPLE QUERY] Success for user {username}")
+                clear_active_query()  # Clear before returning
                 return {
                     "success": True,
                     "query_type": query_type,
@@ -8962,6 +8963,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 }
             else:
                 logger.warning(f"[SIMPLE QUERY] No response from bot for user {username}")
+                clear_active_query()  # Clear before returning
                 return {
                     "success": False,
                     "query_type": query_type,
@@ -8973,9 +8975,10 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             logger.error(f"[SIMPLE QUERY] Error for user {username}: {e}")
             import traceback
             logger.error(f"[SIMPLE QUERY] Traceback: {traceback.format_exc()}")
+            clear_active_query()  # Clear on error too
             raise HTTPException(status_code=500, detail=str(e))
         finally:
-            logger.info(f"[SIMPLE QUERY] Lock released for user: {username}")
+            logger.info(f"[SIMPLE QUERY] Global lock released for user: {username}")
 
 # ============================================
 # SIMPLE QUERY HISTORY ENDPOINT
