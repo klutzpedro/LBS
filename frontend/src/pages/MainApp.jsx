@@ -1137,33 +1137,22 @@ const MainApp = () => {
       return;
     }
     
-    // Check if Telegram is connected with retry
-    let telegramConnected = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const token = localStorage.getItem('token');
-        const statusResponse = await axios.get(`${API}/telegram/status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (statusResponse.data.authorized) {
-          telegramConnected = true;
-          break;
-        }
-        // Wait before retry
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 1000));
-        }
-      } catch (err) {
-        console.error(`Telegram status check attempt ${attempt} failed:`, err);
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, 1000));
-        }
+    // Simplified Telegram check - let backend handle connection
+    // Only block if we know for sure Telegram is not available
+    try {
+      const token = localStorage.getItem('token');
+      const statusResponse = await axios.get(`${API}/telegram/status`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000
+      });
+      // Allow if connected (even if not authorized - backend will handle)
+      if (!statusResponse.data.connected && !statusResponse.data.authorized) {
+        toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
+        return;
       }
-    }
-    
-    if (!telegramConnected) {
-      toast.error('Telegram belum terkoneksi! Silakan login di halaman Settings terlebih dahulu.');
-      return;
+    } catch (err) {
+      console.warn('[MainApp] Telegram status check failed, proceeding anyway:', err.message);
+      // Don't block - let backend handle the actual connection
     }
     
     setGlobalProcessing(true);
@@ -1185,10 +1174,21 @@ const MainApp = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/targets/${target.id}/reghp`, {}, {
+      const response = await axios.post(`${API}/targets/${target.id}/reghp`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Pendalaman query dimulai! Lihat chat untuk progress.');
+      
+      // Check if data was reused from cache
+      if (response.data.reused) {
+        toast.success(`Data REGHP ditemukan dari ${response.data.source === 'target_history' ? 'history' : 'cache'}!`);
+        fetchTargets(selectedCase.id);
+        setGlobalProcessing(false);
+        setGlobalProcessType(null);
+        setLoadingPendalaman(null);
+        return;
+      }
+      
+      toast.success('Pendalaman query dimulai!');
       
       let attempts = 0;
       const maxAttempts = 30;
