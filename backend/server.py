@@ -7882,12 +7882,14 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
             # Check for quota error messages
             if msg.text:
                 text_lower = msg.text.lower()
-                if 'quota' in text_lower or 'don\'t have' in text_lower or 'tidak ada' in text_lower or 'habis' in text_lower:
-                    if 'fr' in text_lower or 'face' in text_lower:
-                        logger.warning(f"[FR {session_id}] Quota error detected: {msg.text}")
-                        quota_error = True
-                        raw_response = msg.text
-                        break
+                # Detect various quota error patterns
+                quota_keywords = ['quota', 'don\'t have', 'tidak ada', 'habis', 'limit', 'exceeded']
+                if any(kw in text_lower for kw in quota_keywords):
+                    # This is likely a quota error message
+                    logger.warning(f"[FR {session_id}] Quota error detected: {msg.text}")
+                    quota_error = True
+                    raw_response = msg.text
+                    break
                 
             # Check if this message has buttons (NIK selection buttons)
             if msg.buttons and not buttons_message_id:
