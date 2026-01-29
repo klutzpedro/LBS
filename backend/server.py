@@ -1250,6 +1250,33 @@ async def login(request: LoginRequest, req: Request):
     
     # Check for existing session (single device enforcement)
     existing_session = await get_active_session(request.username)
+    
+    # Auto-cleanup: Remove sessions older than 24 hours (expired)
+    await db.active_sessions.delete_many({
+        "last_activity": {"$lt": (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()}
+    })
+    
+    if existing_session:
+        # Check if force_login is requested
+        if request.force_login:
+            # Force logout the other session
+            logger.info(f"[SESSION] Force login for {request.username}, removing existing session")
+            await db.active_sessions.delete_many({"username": request.username})
+            existing_session = None  # Clear so we can proceed
+        else:
+            # Check if existing session is stale (no activity for 2 hours)
+            last_activity = existing_session.get("last_activity")
+            if last_activity:
+                try:
+                    last_activity_dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+                    if datetime.now(timezone.utc) - last_activity_dt > timedelta(hours=2):
+                        # Session is stale, auto-remove it
+                        logger.info(f"[SESSION] Auto-removing stale session for {request.username}")
+                        await db.active_sessions.delete_many({"username": request.username})
+                        existing_session = None
+                except:
+                    pass
+    
     if existing_session:
         # Block login - session active elsewhere
         device_info_existing = existing_session.get("device_info", "Unknown Device")
@@ -1259,8 +1286,9 @@ async def login(request: LoginRequest, req: Request):
             status_code=409,
             detail={
                 "error": "session_active",
-                "message": "Akun ini sudah dibuka di tempat lain, mohon logout terlebih dahulu baru login di tempat baru",
-                "device_info": device_info_existing
+                "message": "Akun ini sedang aktif di perangkat lain. Gunakan tombol 'Paksa Login' untuk logout dari perangkat lain.",
+                "device_info": device_info_existing,
+                "can_force": True  # Tell frontend that force login is available
             }
         )
     
