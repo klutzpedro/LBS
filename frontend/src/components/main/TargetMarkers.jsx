@@ -195,11 +195,33 @@ const TargetPopup = ({
   
   // Handle button clicks using native DOM events (Leaflet popup workaround)
   useEffect(() => {
+    // Copy ref value for use in cleanup
+    const currentPopupRef = popupRef.current;
+    
+    // Copy share link handler for use in effect
+    const performShare = async () => {
+      const link = generateShareLink();
+      try {
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+    
     // Get the popup container after it's mounted
     const setupEventListeners = () => {
-      if (!popupRef.current) return;
+      if (!currentPopupRef) return;
       
-      const container = popupRef.current;
+      const container = currentPopupRef;
       
       // Handle Pendalaman button click
       const pendalamanBtn = container.querySelector('[data-action="pendalaman"]');
@@ -242,7 +264,7 @@ const TargetPopup = ({
         const handleShareClick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          handleShare();
+          performShare();
         };
         shareBtn.addEventListener('click', handleShareClick);
         shareBtn._cleanup = () => {
@@ -256,9 +278,9 @@ const TargetPopup = ({
     
     return () => {
       clearTimeout(timerId);
-      // Cleanup event listeners
-      if (popupRef.current) {
-        const btns = popupRef.current.querySelectorAll('[data-action]');
+      // Cleanup event listeners using copied ref
+      if (currentPopupRef) {
+        const btns = currentPopupRef.querySelectorAll('[data-action]');
         btns.forEach(btn => {
           if (btn._cleanup) {
             btn._cleanup();
@@ -266,7 +288,7 @@ const TargetPopup = ({
         });
       }
     };
-  }, [target, onPendalaman, onShowReghpInfo]);
+  }, [target, onPendalaman, onShowReghpInfo, generateShareLink]);
   
   return (
     <Popup>
