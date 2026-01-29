@@ -1134,6 +1134,42 @@ pm2 restart waskita-backend
   - `handleNikPendalaman()`: Removed strict Telegram auth check
   - Removed `setShowChatPanel(true)` for NIK pendalaman
 
+## Fix: Face Recognition Race Condition (January 2026)
+
+### Issue
+User melaporkan data tertukar di Face Recognition:
+- User X menjalankan FR tapi kuota habis (bot reply "you don't have FR quota")
+- Webapp malah menampilkan foto dari hasil NIK query User Y
+- Screenshot menunjukkan dua foto berbeda dibandingkan (kontras berbeda)
+
+### Root Cause
+1. **FR endpoints tidak menggunakan Global Lock** - menyebabkan race condition dengan query lain
+2. **Tidak ada deteksi quota error** - error dari bot tidak ditangkap dengan benar
+3. **Tidak filter messages by ID** - bisa membaca messages dari query user lain
+
+### Solutions
+1. **Added Global Lock to FR Endpoints:**
+   - `POST /face-recognition/match` - Now acquires `telegram_query_lock`
+   - `POST /face-recognition/get-nik-details` - Now acquires `telegram_query_lock`
+   - Both have proper `try/finally` with `clear_active_query()` and lock release
+
+2. **Message ID Isolation:**
+   - Save `last_msg_id_before` before sending FR photo
+   - Only process messages with ID > `last_msg_id_before`
+   - Prevents reading other users' responses
+
+3. **Quota Error Detection:**
+   - Detect bot messages containing "quota", "don't have", "habis", "tidak ada"
+   - Return specific error: `{"error": "FR_QUOTA_EXHAUSTED", "error_message": "..."}`
+   - Frontend shows toast with quota error message
+
+### Files Modified
+- `/app/backend/server.py`:
+  - `fr_match_face()`: Added global lock, message ID filtering, quota detection
+  - `fr_get_nik_details()`: Added global lock
+- `/app/frontend/src/components/main/FaceRecognition.jsx`:
+  - `startFaceRecognition()`: Handle `FR_QUOTA_EXHAUSTED` error
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
