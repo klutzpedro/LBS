@@ -2571,17 +2571,28 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
             {"$set": {"nik_queries": {}}}
         )
     
-    # PRE-CHECK: Verify Telegram connection before starting background task
-    # This provides immediate feedback to user instead of waiting for background task to fail
+    # PRE-CHECK: Verify Telegram connection
+    # Be more tolerant - only fail if client doesn't exist at all
+    global telegram_client
+    
+    if telegram_client is None:
+        raise HTTPException(status_code=503, detail="Telegram belum diinisialisasi. Silakan login Telegram di halaman Settings.")
+    
+    # Try to ensure connection (don't fail if just not authorized yet)
     try:
-        connected = await ensure_telegram_connected()
-        if not connected:
-            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan coba lagi atau cek koneksi di Settings.")
+        if not telegram_client.is_connected():
+            await telegram_client.connect()
+        
+        # Check if authorized
+        is_authorized = await telegram_client.is_user_authorized()
+        if not is_authorized:
+            raise HTTPException(status_code=503, detail="Telegram belum login. Silakan login di halaman Settings terlebih dahulu.")
+            
     except HTTPException:
         raise
     except Exception as conn_err:
-        logger.error(f"[NIK] Pre-check connection failed: {conn_err}")
-        raise HTTPException(status_code=503, detail=f"Gagal terkoneksi ke Telegram: {str(conn_err)}")
+        logger.error(f"[NIK] Connection check failed: {conn_err}")
+        raise HTTPException(status_code=503, detail=f"Koneksi Telegram error: {str(conn_err)}. Coba refresh halaman Settings.")
     
     # Update NIK status to processing
     await db.targets.update_one(
