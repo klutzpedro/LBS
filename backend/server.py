@@ -4605,6 +4605,11 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
                     }
                 }
             )
+    finally:
+        # ALWAYS release the global lock
+        clear_active_query()
+        telegram_query_lock.release()
+        logging.info(f"[FAMILY {target_id}] Global Telegram lock released")
 
 # NON GEOINT Search - Queue-based search for CAPIL, Pass WNI, Pass WNA
 class NonGeointSearchRequest(BaseModel):
