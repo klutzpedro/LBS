@@ -2066,7 +2066,7 @@ export const NonGeointSearchDialog = ({
         
         // ============ 7. DATA PERLINTASAN ============
         if (nikResult?.perlintasan_data) {
-          addSubsectionHeader('✈️ Data Perlintasan Imigrasi');
+          addSubsectionHeader('[7] Data Perlintasan Imigrasi');
           
           const perlintasanData = nikResult.perlintasan_data;
           
