@@ -4418,17 +4418,32 @@ async def query_telegram_nik(target_id: str, nik: str):
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        release_telegram_lock("operation")
-        logging.info(f"[NIK {target_id}] Global Telegram lock released")
+        release_telegram_lock(operation_name)
 
 async def query_telegram_family(target_id: str, family_id: str, source_nik: str = None):
     """Query Family (NKK) data dengan Family ID - with GLOBAL LOCK"""
+    operation_name = f"FAMILY_{target_id[:8]}_{family_id}"
+    
     # ============================================
-    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK FIRST
+    # ACQUIRE GLOBAL TELEGRAM QUERY LOCK WITH TIMEOUT
     # ============================================
     logging.info(f"[FAMILY {target_id}] Waiting for global Telegram lock...")
-    await telegram_query_lock.acquire()
-    logging.info(f"[FAMILY {target_id}] Global lock acquired for Family query: {family_id}")
+    lock_acquired = await acquire_telegram_lock(operation_name)
+    
+    if not lock_acquired:
+        logging.error(f"[FAMILY {target_id}] Failed to acquire lock - timeout")
+        if source_nik:
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {f"nik_queries.{source_nik}.family_status": "error"}}
+            )
+        else:
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"family_status": "error"}}
+            )
+        return
+    
     set_active_query(f"family_{target_id[:8]}", "family", family_id)
     
     try:
