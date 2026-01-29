@@ -955,8 +955,17 @@ const MainApp = () => {
 
   const handleRefreshLocation = async () => {
     setDuplicateDialogOpen(false);
-    await createNewTarget(pendingPhoneNumber);
+    
+    // Use existing target and refresh its position instead of creating duplicate
+    if (existingTarget) {
+      await handlePerbaharui(existingTarget, true); // true = skip confirmation dialog
+    } else {
+      // Fallback: should not happen, but just in case
+      toast.error('Target tidak ditemukan');
+    }
+    
     setPendingPhoneNumber('');
+    setNewPhoneNumber('');
   };
 
   const handleUseExisting = () => {
@@ -967,11 +976,15 @@ const MainApp = () => {
     
     if (existingTarget) {
       setSelectedTargetForChat(existingTarget.id);
+      // Also ensure the existing target is visible on map
+      if (existingTarget.data?.latitude && existingTarget.data?.longitude) {
+        handleTargetClick(existingTarget);
+      }
     }
   };
 
-  const handlePerbaharui = async (target) => {
-    if (!window.confirm(`Perbaharui lokasi untuk ${target.phone_number}?\n\nData RegHP, NIK, dan NKK akan tetap tersimpan.`)) return;
+  const handlePerbaharui = async (target, skipConfirmation = false) => {
+    if (!skipConfirmation && !window.confirm(`Perbaharui lokasi untuk ${target.phone_number}?\n\nData RegHP, NIK, dan NKK akan tetap tersimpan.`)) return;
     
     if (isProcessRunning()) {
       showBusyNotification();
