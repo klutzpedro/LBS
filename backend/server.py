@@ -8093,86 +8093,92 @@ async def telegram_keepalive_task():
             # Check more frequently - every 20 seconds
             await asyncio.sleep(20)
             
+            # Skip if client doesn't exist
             if telegram_client is None:
                 continue
             
-            # Check connection status
-            is_connected = telegram_client.is_connected()
-            
-            if not is_connected:
-                failure_count += 1
-                logger.warning(f"[Keepalive] Connection lost (failure {failure_count}/{max_failures})")
+            # Use lock to safely access telegram_client
+            async with telegram_connection_lock:
+                if telegram_client is None:
+                    continue
+                    
+                # Check connection status
+                is_connected = telegram_client.is_connected()
                 
-                if failure_count <= max_failures:
-                    try:
-                        # Reconnect
+                if not is_connected:
+                    failure_count += 1
+                    logger.warning(f"[Keepalive] Connection lost (failure {failure_count}/{max_failures})")
+                    
+                    if failure_count <= max_failures:
+                        try:
+                            # Reconnect
+                            await telegram_client.connect()
+                            
+                            # Verify connection
+                            if telegram_client.is_connected():
+                                logger.info("[Keepalive] ✓ Reconnected successfully")
+                                failure_count = 0  # Reset counter
+                            else:
+                                logger.error("[Keepalive] Reconnect returned but not connected")
+                        except Exception as reconnect_err:
+                            logger.error(f"[Keepalive] Reconnect error: {reconnect_err}")
+                    else:
+                        # Too many failures, try to recreate client
+                        logger.warning("[Keepalive] Too many failures, recreating client...")
+                        try:
+                            if telegram_client:
+                                await telegram_client.disconnect()
+                        except Exception as disc_err:
+                            logger.debug(f"[Keepalive] Disconnect during recreate: {disc_err}")
+                        
+                        telegram_client = create_telegram_client()
                         await telegram_client.connect()
                         
-                        # Verify connection
                         if telegram_client.is_connected():
-                            logger.info("[Keepalive] ✓ Reconnected successfully")
-                            failure_count = 0  # Reset counter
-                        else:
-                            logger.error("[Keepalive] Reconnect returned but not connected")
-                    except Exception as reconnect_err:
-                        logger.error(f"[Keepalive] Reconnect error: {reconnect_err}")
+                            logger.info("[Keepalive] ✓ Client recreated and connected")
+                            failure_count = 0
                 else:
-                    # Too many failures, try to recreate client
-                    logger.warning("[Keepalive] Too many failures, recreating client...")
-                    try:
-                        if telegram_client:
-                            await telegram_client.disconnect()
-                    except:
-                        pass
+                    # Connection is alive, reset failure count
+                    failure_count = 0
                     
-                    telegram_client = create_telegram_client()
-                    await telegram_client.connect()
-                    
-                    if telegram_client.is_connected():
-                        logger.info("[Keepalive] ✓ Client recreated and connected")
-                        failure_count = 0
-            else:
-                # Connection is alive, reset failure count
-                failure_count = 0
-                
-                # Active ping every minute (3 * 20 seconds) to keep connection truly alive
-                ping_counter += 1
-                if ping_counter >= 3:
-                    ping_counter = 0
-                    try:
-                        if await telegram_client.is_user_authorized():
-                            # Send a lightweight request to keep connection active
-                            # get_me() is a simple operation that verifies the connection
-                            me = await telegram_client.get_me()
-                            logger.debug(f"[Keepalive] ✓ Active ping OK - connected as {me.username}")
-                    except Exception as ping_err:
-                        logger.warning(f"[Keepalive] Active ping failed: {ping_err}")
-                        # Force reconnect on next cycle
-                        failure_count = 1
-                
-                # Periodic session backup to MongoDB (every 2 minutes = 6 * 20 seconds)
-                backup_counter += 1
-                if backup_counter >= 6:
-                    backup_counter = 0
-                    try:
-                        if await telegram_client.is_user_authorized():
-                            session_path = str(ROOT_DIR / 'northarch_session.session')
-                            if os.path.exists(session_path):
-                                import base64
-                                with open(session_path, 'rb') as f:
-                                    session_data = f.read()
-                                session_base64 = base64.b64encode(session_data).decode('utf-8')
+                    # Active ping every minute (3 * 20 seconds) to keep connection truly alive
+                    ping_counter += 1
+                    if ping_counter >= 3:
+                        ping_counter = 0
+                        try:
+                            if await telegram_client.is_user_authorized():
+                                # Send a lightweight request to keep connection active
+                                # get_me() is a simple operation that verifies the connection
                                 me = await telegram_client.get_me()
-                                await db.telegram_sessions.update_one(
-                                    {"type": "main_session"},
-                                    {"$set": {
-                                        "session_data": session_base64,
-                                        "username": me.username,
-                                        "phone": me.phone,
-                                        "updated_at": datetime.now(timezone.utc).isoformat()
-                                    }},
-                                    upsert=True
-                                )
+                                logger.debug(f"[Keepalive] ✓ Active ping OK - connected as {me.username}")
+                        except Exception as ping_err:
+                            logger.warning(f"[Keepalive] Active ping failed: {ping_err}")
+                            # Force reconnect on next cycle
+                            failure_count = 1
+                    
+                    # Periodic session backup to MongoDB (every 2 minutes = 6 * 20 seconds)
+                    backup_counter += 1
+                    if backup_counter >= 6:
+                        backup_counter = 0
+                        try:
+                            if await telegram_client.is_user_authorized():
+                                session_path = str(ROOT_DIR / 'northarch_session.session')
+                                if os.path.exists(session_path):
+                                    import base64
+                                    with open(session_path, 'rb') as f:
+                                        session_data = f.read()
+                                    session_base64 = base64.b64encode(session_data).decode('utf-8')
+                                    me = await telegram_client.get_me()
+                                    await db.telegram_sessions.update_one(
+                                        {"type": "main_session"},
+                                        {"$set": {
+                                            "session_data": session_base64,
+                                            "username": me.username,
+                                            "phone": me.phone,
+                                            "updated_at": datetime.now(timezone.utc).isoformat()
+                                        }},
+                                        upsert=True
+                                    )
                                 logger.info("[Keepalive] ✓ Session backed up to MongoDB")
                     except Exception as backup_err:
                         logger.warning(f"[Keepalive] Backup failed: {backup_err}")
