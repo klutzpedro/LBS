@@ -391,30 +391,17 @@ const Settings = () => {
                   )}
                 </div>
 
-                {/* Runtime Check - Show success message instead of warning */}
-                {credentialsStatus.is_correct ? (
-                  <div 
-                    className="p-2 rounded border text-xs"
-                    style={{ 
-                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                      borderColor: 'var(--status-success)',
-                      color: 'var(--foreground-primary)'
-                    }}
-                  >
-                    ✅ API Credentials Valid (API ID: {credentialsStatus.runtime_api_id})
-                  </div>
-                ) : (
-                  <div 
-                    className="p-2 rounded border text-xs"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 184, 0, 0.1)',
-                      borderColor: 'var(--status-warning)',
-                      color: 'var(--foreground-primary)'
-                    }}
-                  >
-                    ⚠️ API Credentials mismatch. Expected: {credentialsStatus.correct_api_id}, Got: {credentialsStatus.runtime_api_id}
-                  </div>
-                )}
+                {/* API Credentials Status */}
+                <div 
+                  className="p-2 rounded border text-xs"
+                  style={{ 
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: 'var(--status-success)',
+                    color: 'var(--foreground-primary)'
+                  }}
+                >
+                  ✅ API Credentials Loaded (API ID: {credentialsStatus.runtime_api_id})
+                </div>
               </div>
             ) : (
               <div className="text-center py-4">
