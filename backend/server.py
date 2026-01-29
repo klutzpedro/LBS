@@ -3331,7 +3331,7 @@ async def reset_telegram_connection(username: str = Depends(verify_token)):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def query_telegram_bot(target_id: str, phone_number: str):
-    """Query Telegram bot with robust connection handling"""
+    """Query Telegram bot with robust connection handling and GLOBAL LOCK"""
     try:
         # Update status: connecting
         await db.targets.update_one(
@@ -3358,6 +3358,14 @@ async def query_telegram_bot(target_id: str, phone_number: str):
         # Create unique token for this query
         query_token = f"CP_{phone_number}_{target_id[:8]}"
         
+        # ============================================
+        # ACQUIRE GLOBAL TELEGRAM QUERY LOCK
+        # ============================================
+        # This ensures only ONE Telegram query runs at a time
+        logging.info(f"[TARGET {target_id}] Waiting for global Telegram lock...")
+        async with telegram_query_lock:
+            logging.info(f"[TARGET {target_id}] Global lock acquired for CP query: {phone_number}")
+            set_active_query(f"target_{target_id[:8]}", "cp", phone_number)
         await asyncio.sleep(1)
         
         # Update status: querying
