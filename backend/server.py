@@ -8688,16 +8688,15 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     clear_active_query()
                     raise HTTPException(status_code=503, detail="Koneksi Telegram terputus. Silakan coba lagi.")
             
-            try:
-                bot_entity = await telegram_client.get_entity(BOT_USERNAME)
-                
-                # Get last message ID before sending our query - CRITICAL for isolation
-                last_messages = await telegram_client.get_messages(bot_entity, limit=1)
-                last_msg_id_before = last_messages[0].id if last_messages else 0
-                logger.info(f"[SIMPLE QUERY] Last message ID before query: {last_msg_id_before}")
-                
-                # Update active query with message ID
-                set_active_query(username, query_type, query_value, last_msg_id_before)
+            bot_entity = await telegram_client.get_entity(BOT_USERNAME)
+            
+            # Get last message ID before sending our query - CRITICAL for isolation
+            last_messages = await telegram_client.get_messages(bot_entity, limit=1)
+            last_msg_id_before = last_messages[0].id if last_messages else 0
+            logger.info(f"[SIMPLE QUERY] Last message ID before query: {last_msg_id_before}")
+            
+            # Update active query with message ID
+            set_active_query(username, query_type, query_value, last_msg_id_before)
             
             # Send query based on type
             sent_message = None
