@@ -4130,8 +4130,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        release_telegram_lock("operation")
-        logging.info(f"[REGHP {target_id}] Global Telegram lock released")
+        release_telegram_lock(operation_name)
 
 async def query_telegram_nik(target_id: str, nik: str):
     """Query NIK detail dengan foto dari bot - with GLOBAL LOCK"""
