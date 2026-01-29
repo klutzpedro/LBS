@@ -145,7 +145,7 @@ def release_telegram_lock(operation_name: str):
     """Safely release the global Telegram lock"""
     try:
         if telegram_query_lock.locked():
-            telegram_query_lock.release()
+            release_telegram_lock("operation")
             logger.info(f"[LOCK] Released for: {operation_name}")
     except Exception as e:
         logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
@@ -4130,7 +4130,7 @@ async def query_telegram_reghp(target_id: str, phone_number: str):
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
+        release_telegram_lock("operation")
         logging.info(f"[REGHP {target_id}] Global Telegram lock released")
 
 async def query_telegram_nik(target_id: str, nik: str):
@@ -4408,7 +4408,7 @@ async def query_telegram_nik(target_id: str, nik: str):
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
+        release_telegram_lock("operation")
         logging.info(f"[NIK {target_id}] Global Telegram lock released")
 
 async def query_telegram_family(target_id: str, family_id: str, source_nik: str = None):
@@ -4681,7 +4681,7 @@ async def query_telegram_family(target_id: str, family_id: str, source_nik: str 
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
+        release_telegram_lock("operation")
         logging.info(f"[FAMILY {target_id}] Global Telegram lock released")
 
 # NON GEOINT Search - Queue-based search for CAPIL, Pass WNI, Pass WNA
@@ -8039,7 +8039,7 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
+        release_telegram_lock("operation")
         logger.info(f"[FR] Global Telegram lock released for user: {username}")
 
 
@@ -8282,7 +8282,7 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        telegram_query_lock.release()
+        release_telegram_lock("operation")
         logger.info(f"[FR NIK] Global Telegram lock released for user: {username}")
 
 
