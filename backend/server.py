@@ -3383,42 +3383,42 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 return True
             
             sent = await safe_telegram_operation(send_phone, f"send_phone_{phone_number}", max_retries=3)
-                
-                if not sent:
-                    logging.error(f"[TARGET {target_id}] Failed to send phone number")
-                    await db.targets.update_one(
-                        {"id": target_id},
-                        {"$set": {"status": "error", "error": "Gagal mengirim nomor ke bot"}}
-                    )
-                    return
-                
-                logging.info(f"[TARGET {target_id}] [{query_token}] Sent phone number {phone_number} to {BOT_USERNAME}")
-                
-                # Save sent message to chat history
-                await db.chat_messages.insert_one({
-                    "id": str(uuid.uuid4()),
-                    "target_id": target_id,
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "direction": "sent",
-                    "message": f"📤 Mengirim nomor: {phone_number}",
-                    "has_buttons": False
-                })
-                
-                await asyncio.sleep(2)
-                
-                # Update status: processing
+            
+            if not sent:
+                logging.error(f"[TARGET {target_id}] Failed to send phone number")
                 await db.targets.update_one(
                     {"id": target_id},
-                    {"$set": {"status": "processing"}}
+                    {"$set": {"status": "error", "error": "Gagal mengirim nomor ke bot"}}
                 )
-                
-                # Wait for bot response and look for "CP" button
-                logging.info(f"[TARGET {target_id}] Waiting for bot response...")
-                await asyncio.sleep(5)
-                
-                # Get latest messages from bot with safe wrapper
-                async def get_messages():
-                    return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+                return
+            
+            logging.info(f"[TARGET {target_id}] [{query_token}] Sent phone number {phone_number} to {BOT_USERNAME}")
+            
+            # Save sent message to chat history
+            await db.chat_messages.insert_one({
+                "id": str(uuid.uuid4()),
+                "target_id": target_id,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "direction": "sent",
+                "message": f"📤 Mengirim nomor: {phone_number}",
+                "has_buttons": False
+            })
+            
+            await asyncio.sleep(2)
+            
+            # Update status: processing
+            await db.targets.update_one(
+                {"id": target_id},
+                {"$set": {"status": "processing"}}
+            )
+            
+            # Wait for bot response and look for "CP" button
+            logging.info(f"[TARGET {target_id}] Waiting for bot response...")
+            await asyncio.sleep(5)
+            
+            # Get latest messages from bot with safe wrapper
+            async def get_messages():
+                return await telegram_client.get_messages(BOT_USERNAME, limit=5)
             
             messages = await safe_telegram_operation(get_messages, "get_messages_for_buttons", max_retries=3)
             
