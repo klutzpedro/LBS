@@ -1029,6 +1029,65 @@ User melaporkan error "Bot tidak terhubung silakan lakukan setting ulang" saat m
 - `/app/frontend/src/pages/MainApp.jsx`:
   - `handleNikPendalaman()`: Better error handling for 503
 
+## CRITICAL FIX: Global Telegram Query Lock (January 2026)
+
+### Issue
+User melaporkan data tertukar antar user saat query bersamaan:
+- User A CP nomor X
+- User B CP nomor Y (bersamaan)
+- Data posisi Y ditetapkan sebagai posisi X
+
+### Root Cause
+Tidak ada global serialization untuk request ke Telegram bot. Multiple background tasks bisa mengirim query dan membaca response secara bersamaan, menyebabkan response yang salah ditangkap oleh user yang berbeda.
+
+### Solution: Global Telegram Query Lock
+Implementasi **Global Lock System** yang memastikan **HANYA SATU query Telegram berjalan pada satu waktu** di seluruh aplikasi:
+
+1. **New Global Lock:** `telegram_query_lock = asyncio.Lock()`
+2. **Active Query Tracking:** `active_query_info` untuk melacak query yang sedang berjalan
+3. **Lock Helper Functions:**
+   - `set_active_query(user, type, value, msg_id)` - Set active query info
+   - `clear_active_query()` - Clear active query
+   - `validate_response_matches_query()` - Validasi response cocok dengan query
+
+4. **Functions Updated with Global Lock:**
+   - `query_telegram_bot()` - CP position query
+   - `query_telegram_reghp()` - REGHP query
+   - `query_telegram_nik()` - NIK detail query
+   - `query_telegram_family()` - Family/NKK query
+   - Simple Query endpoint - All non-passport queries
+
+### How it Works
+```
+User A starts CP query for 6281111111111
+  ↓
+Acquires global lock → set_active_query("userA", "cp", "6281111111111")
+  ↓
+User B starts CP query for 6282222222222
+  ↓
+Waits for global lock... (BLOCKED)
+  ↓
+User A completes → clear_active_query() → releases lock
+  ↓
+User B acquires lock → set_active_query("userB", "cp", "6282222222222")
+  ↓
+User B completes → releases lock
+```
+
+### Benefits
+1. **No Data Mixing:** Only one query runs at a time
+2. **Predictable Results:** Each query gets its own response
+3. **Easy Debugging:** Active query info logged for troubleshooting
+4. **Thread-Safe:** Uses asyncio.Lock() for proper async handling
+
+### Files Modified
+- `/app/backend/server.py`:
+  - Added `telegram_query_lock` global lock
+  - Added `active_query_info` tracking dict
+  - Added helper functions for lock management
+  - Updated 4 query functions with lock acquire/release in try/finally
+  - Updated simple_query to use global lock instead of simple_query_lock
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
