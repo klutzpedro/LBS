@@ -117,6 +117,39 @@ telegram_connection_lock = asyncio.Lock()
 # This prevents data mixing when multiple users query simultaneously.
 telegram_query_lock = asyncio.Lock()
 
+# Lock timeout to prevent deadlocks (in seconds)
+LOCK_TIMEOUT = 120  # 2 minutes max wait
+
+async def acquire_telegram_lock(operation_name: str, timeout: float = LOCK_TIMEOUT) -> bool:
+    """
+    Acquire the global Telegram lock with timeout.
+    Returns True if lock acquired, False if timeout.
+    """
+    try:
+        # Try to acquire lock with timeout
+        acquired = await asyncio.wait_for(
+            telegram_query_lock.acquire(),
+            timeout=timeout
+        )
+        if acquired:
+            logger.info(f"[LOCK] Acquired for: {operation_name}")
+        return acquired
+    except asyncio.TimeoutError:
+        logger.error(f"[LOCK] Timeout waiting for lock: {operation_name} (waited {timeout}s)")
+        return False
+    except Exception as e:
+        logger.error(f"[LOCK] Error acquiring lock for {operation_name}: {e}")
+        return False
+
+def release_telegram_lock(operation_name: str):
+    """Safely release the global Telegram lock"""
+    try:
+        if telegram_query_lock.locked():
+            telegram_query_lock.release()
+            logger.info(f"[LOCK] Released for: {operation_name}")
+    except Exception as e:
+        logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
+
 # Track active query to prevent data mixing
 active_query_info = {
     "user": None,
