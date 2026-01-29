@@ -8311,8 +8311,7 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     finally:
         # ALWAYS release the global lock
         clear_active_query()
-        release_telegram_lock("operation")
-        logger.info(f"[FR NIK] Global Telegram lock released for user: {username}")
+        release_telegram_lock(operation_name)
 
 
 @api_router.get("/face-recognition/history")
