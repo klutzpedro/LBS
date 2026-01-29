@@ -947,7 +947,24 @@ const MainApp = () => {
       fetchTargets(selectedCase.id);
       setSelectedTargetForChat(response.data.id);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to add target');
+      // Handle duplicate phone error (409)
+      if (error.response?.status === 409 && error.response?.data?.detail?.error === 'duplicate_phone') {
+        const existingId = error.response.data.detail.existing_target_id;
+        const existingTgt = targets.find(t => t.id === existingId);
+        if (existingTgt) {
+          setExistingTarget(existingTgt);
+          setPendingPhoneNumber(phoneNumber);
+          setDuplicateDialogOpen(true);
+          setAddTargetDialog(false);
+        } else {
+          toast.error(error.response.data.detail.message);
+        }
+      } else {
+        const errorMsg = typeof error.response?.data?.detail === 'string' 
+          ? error.response?.data?.detail 
+          : error.response?.data?.detail?.message || 'Failed to add target';
+        toast.error(errorMsg);
+      }
     } finally {
       setSubmitting(false);
     }
