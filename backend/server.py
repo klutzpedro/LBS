@@ -3409,15 +3409,15 @@ async def query_telegram_bot(target_id: str, phone_number: str):
                 await db.targets.update_one(
                     {"id": target_id},
                     {"$set": {"status": "processing"}}
-            )
-            
-            # Wait for bot response and look for "CP" button
-            logging.info(f"[TARGET {target_id}] Waiting for bot response...")
-            await asyncio.sleep(5)
-            
-            # Get latest messages from bot with safe wrapper
-            async def get_messages():
-                return await telegram_client.get_messages(BOT_USERNAME, limit=5)
+                )
+                
+                # Wait for bot response and look for "CP" button
+                logging.info(f"[TARGET {target_id}] Waiting for bot response...")
+                await asyncio.sleep(5)
+                
+                # Get latest messages from bot with safe wrapper
+                async def get_messages():
+                    return await telegram_client.get_messages(BOT_USERNAME, limit=5)
             
             messages = await safe_telegram_operation(get_messages, "get_messages_for_buttons", max_retries=3)
             
