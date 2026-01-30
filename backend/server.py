@@ -1393,8 +1393,11 @@ async def register(request: RegisterRequest):
 async def get_users(username: str = Depends(verify_token)):
     """Get all users - admin only"""
     
-    # Check if admin
-    if username != ADMIN_USERNAME:
+    # Check if admin (hardcoded or from DB)
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Hanya admin yang dapat melihat daftar pengguna")
     
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
