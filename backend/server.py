@@ -2864,6 +2864,15 @@ async def query_nik(target_id: str, nik_data: dict, username: str = Depends(veri
         {"$set": {f"nik_queries.{nik}.status": "processing"}}
     )
     
+    # Update request status for queue indicator
+    global current_request_status
+    current_request_status = {
+        "is_busy": True,
+        "username": username,
+        "operation": f"NIK Query - {nik[:6]}***",
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
     # Start background task
     asyncio.create_task(query_telegram_nik(target_id, nik))
     
