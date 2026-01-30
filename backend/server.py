@@ -9542,7 +9542,10 @@ async def get_simple_query_history(
         
         # Admin sees all, regular users see only their own
         if not is_admin:
-            query_filter["queried_by"] = username
+            query_filter["$or"] = [
+                {"queried_by": username},
+                {"created_by": username}
+            ]
         
         if query_type:
             query_filter["query_type"] = query_type
