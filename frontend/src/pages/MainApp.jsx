@@ -1576,6 +1576,7 @@ const MainApp = () => {
       {!isMaximized && !sidebarCollapsed && (
         <Sidebar
           username={username}
+          isAdmin={isAdmin}
           telegramAuthorized={telegramAuthorized}
           telegramUser={telegramUser}
           onLogout={handleLogout}
