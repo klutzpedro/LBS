@@ -1227,6 +1227,46 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "Paparoni290483#"
 
+# ============================================
+# REQUEST STATUS ENDPOINT (for queue indicator)
+# ============================================
+@api_router.get("/request-status")
+async def get_request_status():
+    """
+    Get current request status - shows which user is currently making a request.
+    Used by frontend to display queue/busy indicator.
+    This is a lightweight endpoint with no database access.
+    """
+    global current_request_status
+    
+    # Check if lock is actually held
+    is_locked = telegram_query_lock.locked()
+    
+    if is_locked and current_request_status.get("is_busy"):
+        return {
+            "is_busy": True,
+            "username": current_request_status.get("username"),
+            "operation": current_request_status.get("operation"),
+            "started_at": current_request_status.get("started_at"),
+            "message": f"User '{current_request_status.get('username')}' sedang melakukan request"
+        }
+    else:
+        # Make sure status is cleared if lock is not held
+        if not is_locked:
+            current_request_status = {
+                "is_busy": False,
+                "username": None,
+                "operation": None,
+                "started_at": None
+            }
+        return {
+            "is_busy": False,
+            "username": None,
+            "operation": None,
+            "started_at": None,
+            "message": "Semua Akun Idle (No Request)"
+        }
+
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, req: Request):
     """Login endpoint - supports admin and registered users with single-device enforcement"""
