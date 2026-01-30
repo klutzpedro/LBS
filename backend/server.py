@@ -9482,6 +9482,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         "query_value": query_value,
                         "raw_response": raw_response,
                         "photo": photo_base64,
+                        "queried_by": username,
                         "created_by": username,
                         "created_at": datetime.now(timezone.utc).isoformat()
                     }
