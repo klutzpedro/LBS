@@ -100,11 +100,37 @@ export const TargetMarkers = ({
   
   // Track last handled selectedTargetId to prevent re-triggering
   const lastHandledTargetIdRef = useRef(null);
+  // Track if user just closed popup manually (to prevent auto-reopen)
+  const userClosedPopupRef = useRef(false);
+  
+  // Listen for popup close events
+  useEffect(() => {
+    const handlePopupClose = () => {
+      console.log('[TargetMarkers] Popup closed by user');
+      userClosedPopupRef.current = true;
+      // Reset after a short delay to allow future openings
+      setTimeout(() => {
+        userClosedPopupRef.current = false;
+      }, 500);
+    };
+    
+    map.on('popupclose', handlePopupClose);
+    
+    return () => {
+      map.off('popupclose', handlePopupClose);
+    };
+  }, [map]);
   
   // Open popup when selectedTargetId changes (only when it actually changes)
   useEffect(() => {
     // Skip if no target selected or same target already handled
     if (!selectedTargetId || selectedTargetId === lastHandledTargetIdRef.current) {
+      return;
+    }
+    
+    // Skip if user just closed popup manually
+    if (userClosedPopupRef.current) {
+      console.log('[TargetMarkers] Skipping popup open - user just closed it');
       return;
     }
     
@@ -126,6 +152,11 @@ export const TargetMarkers = ({
     
     // Wait for React to re-render with the correct target selected, then open popup
     setTimeout(() => {
+      // Double check user hasn't closed popup in the meantime
+      if (userClosedPopupRef.current) {
+        console.log('[TargetMarkers] Skipping popup open in timeout - user closed it');
+        return;
+      }
       const markerRef = markerRefs.current[posKey];
       if (markerRef) {
         markerRef.openPopup();
