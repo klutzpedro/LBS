@@ -2568,23 +2568,41 @@ export const NonGeointSearchDialog = ({
             {/* Search Input */}
             <div className="space-y-4">
               <div className="flex gap-2">
-                <Input
-                  placeholder="Masukkan nama lengkap..."
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !isSearching && startSearch()}
-                  disabled={isSearching || isInvestigating}
-                style={{
-                  backgroundColor: 'var(--background-tertiary)',
-                  borderColor: 'var(--borders-default)',
-                  color: 'var(--foreground-primary)'
-                }}
-              />
+                <div className="flex-1">
+                  <Input
+                    placeholder="Masukkan nama lengkap (hanya huruf a-z)..."
+                    value={searchName}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSearchName(value);
+                      
+                      // Real-time validation
+                      if (value.trim() && !/^[a-zA-Z\s]*$/.test(value)) {
+                        setNameValidationError('Full Query hanya untuk nama berbasis alphabet (a-z)');
+                      } else {
+                        setNameValidationError('');
+                      }
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && !isSearching && !nameValidationError && startSearch()}
+                    disabled={isSearching || isInvestigating}
+                    style={{
+                      backgroundColor: 'var(--background-tertiary)',
+                      borderColor: nameValidationError ? 'var(--status-error)' : 'var(--borders-default)',
+                      color: 'var(--foreground-primary)'
+                    }}
+                  />
+                  {nameValidationError && (
+                    <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--status-error)' }}>
+                      <AlertTriangle className="w-3 h-3" />
+                      {nameValidationError}
+                    </p>
+                  )}
+                </div>
               <Button
                 onClick={startSearch}
-                disabled={isSearching || isInvestigating || !searchName.trim()}
+                disabled={isSearching || isInvestigating || !searchName.trim() || !!nameValidationError}
                 style={{
-                  backgroundColor: 'var(--accent-primary)',
+                  backgroundColor: nameValidationError ? 'var(--foreground-muted)' : 'var(--accent-primary)',
                   color: 'var(--background-primary)'
                 }}
               >
