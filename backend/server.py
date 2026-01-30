@@ -9530,11 +9530,19 @@ async def get_simple_query_history(
 ):
     """
     Get Simple Query history from cache.
-    This data is shared across all users.
+    Admin sees all history, regular users see only their own.
     """
     try:
+        # Check if user is admin
+        requester = await db.users.find_one({"username": username})
+        is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+        
         # Build query filter
         query_filter = {"raw_response": {"$exists": True, "$ne": None}}
+        
+        # Admin sees all, regular users see only their own
+        if not is_admin:
+            query_filter["queried_by"] = username
         
         if query_type:
             query_filter["query_type"] = query_type
@@ -9555,6 +9563,7 @@ async def get_simple_query_history(
             "reghp": "RegHP (NIK)",
             "passport_wna": "Passport WNA (Nama)",
             "passport_wni": "Passport WNI (Nama)",
+            "passport_nik": "Passport WNI (NIK)",
             "passport_number": "Passport (Nomor)",
             "plat_mobil": "Plat Nomor Kendaraan",
             "perlintasan": "Perlintasan (No Passport)"
@@ -9563,7 +9572,7 @@ async def get_simple_query_history(
         for item in history:
             item["type_label"] = type_labels.get(item.get("query_type"), item.get("query_type"))
         
-        logger.info(f"[SIMPLE QUERY HISTORY] Returning {len(history)} items for user {username}")
+        logger.info(f"[SIMPLE QUERY HISTORY] Returning {len(history)} items for user {username} (is_admin: {is_admin})")
         
         return {
             "success": True,
