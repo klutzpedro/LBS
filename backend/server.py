@@ -8642,7 +8642,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     # ============================================
     # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
     # ============================================
-    if query_type in ['passport_wna', 'passport_wni', 'passport_number']:
+    if query_type in ['passport_wna', 'passport_wni', 'passport_number', 'passport_nik']:
         logger.info(f"[SIMPLE QUERY] Passport query via CP API: {query_type} = {query_value}")
         
         cp_result = await query_passport_simple_cp_api(query_type, query_value)
