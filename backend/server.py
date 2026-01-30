@@ -2731,6 +2731,15 @@ async def query_reghp(target_id: str, username: str = Depends(verify_token)):
         {"$set": {"reghp_status": "processing"}}
     )
     
+    # Update request status for queue indicator (will be updated again when lock is acquired)
+    global current_request_status
+    current_request_status = {
+        "is_busy": True,
+        "username": username,
+        "operation": f"REGHP - {target['phone_number']}",
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
     # Start background task
     asyncio.create_task(query_telegram_reghp(target_id, target['phone_number']))
     
