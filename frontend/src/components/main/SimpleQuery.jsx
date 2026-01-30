@@ -256,6 +256,13 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
       // Show queue message
       setStatusMessage('Menunggu antrian (query diproses satu per satu untuk menghindari tabrakan data)...');
       
+      // Clean query value based on type
+      let cleanedValue = searchValue.toUpperCase();
+      if (selectedType === 'passport_nik') {
+        // For passport NIK, only send digits (16 digits)
+        cleanedValue = searchValue.replace(/\D/g, '');
+      }
+      
       const response = await fetch(`${API_URL}/api/simple-query`, {
         method: 'POST',
         headers: {
@@ -264,7 +271,7 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
         },
         body: JSON.stringify({
           query_type: selectedType,
-          query_value: searchValue.toUpperCase()
+          query_value: cleanedValue
         })
       });
 
