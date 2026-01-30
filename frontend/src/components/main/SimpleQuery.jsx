@@ -40,6 +40,16 @@ import {
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Validation patterns
+const PATTERNS = {
+  numbersOnly: /^\d+$/,                    // Only numbers
+  alphabetOnly: /^[a-zA-Z\s]+$/,           // Only letters and spaces
+  alphanumeric: /^[a-zA-Z0-9\s]+$/,        // Letters, numbers, and spaces
+  email: /^[a-zA-Z0-9@._+-]+$/,            // Email characters
+  nik: /^\d{16}$/,                         // Exactly 16 digits
+  phone62: /^62\d{8,13}$/,                 // Phone starting with 62
+};
+
 // Query types configuration
 const QUERY_TYPES = [
   { 
@@ -47,9 +57,10 @@ const QUERY_TYPES = [
     label: 'CAPIL (Nama)', 
     description: 'Cari data kependudukan berdasarkan nama',
     icon: User,
-    placeholder: 'Masukkan nama lengkap...',
-    validation: (v) => v.length >= 3,
-    errorMsg: 'Nama minimal 3 karakter'
+    placeholder: 'Masukkan nama lengkap (hanya huruf a-z)...',
+    validation: (v) => v.length >= 3 && PATTERNS.alphabetOnly.test(v),
+    inputValidation: PATTERNS.alphabetOnly,
+    errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
   },
   { 
     id: 'capil_nik', 
@@ -57,8 +68,9 @@ const QUERY_TYPES = [
     description: 'Cari data kependudukan berdasarkan NIK',
     icon: CreditCard,
     placeholder: 'Masukkan NIK (16 angka)...',
-    validation: (v) => /^\d{16}$/.test(v),
-    errorMsg: 'NIK harus 16 angka'
+    validation: (v) => PATTERNS.nik.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'NIK harus 16 angka (hanya angka 0-9)'
   },
   { 
     id: 'nkk', 
@@ -66,8 +78,9 @@ const QUERY_TYPES = [
     description: 'Cari data kartu keluarga berdasarkan NKK',
     icon: Users,
     placeholder: 'Masukkan NKK (16 angka)...',
-    validation: (v) => /^\d{16}$/.test(v),
-    errorMsg: 'NKK harus 16 angka'
+    validation: (v) => PATTERNS.nik.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'NKK harus 16 angka (hanya angka 0-9)'
   },
   { 
     id: 'reghp', 
@@ -75,8 +88,9 @@ const QUERY_TYPES = [
     description: 'Cari nomor HP terdaftar berdasarkan NIK',
     icon: Phone,
     placeholder: 'Masukkan NIK (16 angka)...',
-    validation: (v) => /^\d{16}$/.test(v),
-    errorMsg: 'NIK harus 16 angka'
+    validation: (v) => PATTERNS.nik.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'NIK harus 16 angka (hanya angka 0-9)'
   },
   { 
     id: 'reghp_phone', 
@@ -84,35 +98,39 @@ const QUERY_TYPES = [
     description: 'Cari NIK berdasarkan nomor HP',
     icon: Phone,
     placeholder: 'Masukkan nomor HP (62xxxxxxxxx)...',
-    validation: (v) => /^62\d{8,13}$/.test(v.replace(/\s/g, '')),
-    errorMsg: 'Format: 62xxxxxxxxx (10-15 digit)'
+    validation: (v) => PATTERNS.phone62.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'Nomor HP hanya angka, format: 62xxxxxxxxx (10-15 digit)'
   },
   { 
     id: 'passport_wna', 
     label: 'Passport WNA (Nama)', 
     description: 'Cari data passport WNA berdasarkan nama',
     icon: Plane,
-    placeholder: 'Masukkan nama lengkap...',
-    validation: (v) => v.length >= 3,
-    errorMsg: 'Nama minimal 3 karakter'
+    placeholder: 'Masukkan nama lengkap (hanya huruf a-z)...',
+    validation: (v) => v.length >= 3 && PATTERNS.alphabetOnly.test(v),
+    inputValidation: PATTERNS.alphabetOnly,
+    errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
   },
   { 
     id: 'passport_wni', 
     label: 'Passport WNI (Nama)', 
     description: 'Cari data passport WNI berdasarkan nama',
     icon: Plane,
-    placeholder: 'Masukkan nama lengkap...',
-    validation: (v) => v.length >= 3,
-    errorMsg: 'Nama minimal 3 karakter'
+    placeholder: 'Masukkan nama lengkap (hanya huruf a-z)...',
+    validation: (v) => v.length >= 3 && PATTERNS.alphabetOnly.test(v),
+    inputValidation: PATTERNS.alphabetOnly,
+    errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
   },
   { 
     id: 'passport_nik', 
     label: 'Passport WNI (NIK)', 
     description: 'Cari data passport WNI berdasarkan NIK',
     icon: FileText,
-    placeholder: 'Masukkan NIK (16 digit)...',
-    validation: (v) => /^\d{16}$/.test(v.replace(/\s/g, '')),
-    errorMsg: 'NIK harus 16 digit angka'
+    placeholder: 'Masukkan NIK (16 angka)...',
+    validation: (v) => PATTERNS.nik.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'NIK harus 16 angka (hanya angka 0-9)'
   },
   { 
     id: 'passport_number', 
@@ -120,8 +138,9 @@ const QUERY_TYPES = [
     description: 'Cari data passport berdasarkan nomor passport',
     icon: FileText,
     placeholder: 'Masukkan nomor passport (ex: X1122553)...',
-    validation: (v) => v.length >= 6,
-    errorMsg: 'Nomor passport minimal 6 karakter'
+    validation: (v) => v.length >= 6 && PATTERNS.alphanumeric.test(v),
+    inputValidation: PATTERNS.alphanumeric,
+    errorMsg: 'Nomor passport hanya huruf dan angka, minimal 6 karakter'
   },
   { 
     id: 'plat_mobil', 
@@ -129,8 +148,9 @@ const QUERY_TYPES = [
     description: 'Cari data kendaraan berdasarkan plat nomor',
     icon: Car,
     placeholder: 'Masukkan plat nomor (ex: B1171BAM)...',
-    validation: (v) => v.length >= 4,
-    errorMsg: 'Plat nomor minimal 4 karakter'
+    validation: (v) => v.length >= 4 && PATTERNS.alphanumeric.test(v),
+    inputValidation: PATTERNS.alphanumeric,
+    errorMsg: 'Plat nomor hanya huruf dan angka, minimal 4 karakter'
   },
   { 
     id: 'perlintasan', 
@@ -138,8 +158,9 @@ const QUERY_TYPES = [
     description: 'Cari data perlintasan/keluar masuk berdasarkan nomor passport',
     icon: Plane,
     placeholder: 'Masukkan nomor passport (ex: X1122553)...',
-    validation: (v) => v.length >= 6,
-    errorMsg: 'Nomor passport minimal 6 karakter'
+    validation: (v) => v.length >= 6 && PATTERNS.alphanumeric.test(v),
+    inputValidation: PATTERNS.alphanumeric,
+    errorMsg: 'Nomor passport hanya huruf dan angka, minimal 6 karakter'
   },
   // Data Breach Section
   { 
