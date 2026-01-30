@@ -97,7 +97,8 @@ export const Sidebar = ({
       className="w-80 flex flex-col border-r"
       style={{ 
         backgroundColor: 'var(--background-secondary)',
-        borderColor: 'var(--borders-default)'
+        borderColor: 'var(--borders-default)',
+        overflow: 'hidden'
       }}
     >
       {/* Header */}
