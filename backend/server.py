@@ -6531,9 +6531,13 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
             logger.info(f"[PASSPORT SIMPLE CP] Querying WNI by name: {query_value}")
             
         elif query_type == 'passport_nik':
-            # WNI search by NIK
-            url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={encoded_value}"
-            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI passport by NIK: {query_value}")
+            # WNI search by NIK - clean to ensure only 16 digits
+            clean_nik = ''.join(filter(str.isdigit, query_value))
+            if len(clean_nik) != 16:
+                result["error"] = f"NIK harus 16 digit angka, ditemukan {len(clean_nik)} digit"
+                return result
+            url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={clean_nik}"
+            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI passport by NIK: {clean_nik}")
             
         elif query_type == 'passport_number':
             # Search by passport number - try both WNI and WNA, also get perlintasan
