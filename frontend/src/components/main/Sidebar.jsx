@@ -157,13 +157,67 @@ export const Sidebar = ({
 };
 
 // Header sub-component with real-time status indicator
-const SidebarHeader = ({ telegramAuthorized, telegramUser, onLogout, onNavigateSettings }) => {
+const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, onLogout, onNavigateSettings }) => {
   // Import useTelegram for enhanced status info
   const { telegramConnected, lastChecked, status, refreshStatus, loading } = require('@/context/TelegramContext').useTelegram();
   
   // Import useCpApi for CP API status
   const cpApiStatus = require('@/context/CpApiContext').useCpApi();
   const { connected: cpApiConnected, quotaRemaining, quotaInitial, loading: cpLoading, refreshStatus: refreshCpStatus } = cpApiStatus;
+  
+  // Change Password Dialog State
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error('Semua field harus diisi');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Password baru tidak cocok');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password minimal 6 karakter');
+      return;
+    }
+    
+    setChangingPassword(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/auth/change-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success('Password berhasil diubah');
+        setChangePasswordOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        toast.error(data.detail || 'Gagal mengubah password');
+      }
+    } catch (error) {
+      toast.error('Error: ' + error.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
   
   const getStatusInfo = () => {
     switch (status) {
