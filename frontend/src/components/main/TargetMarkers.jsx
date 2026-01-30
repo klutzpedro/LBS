@@ -83,14 +83,23 @@ export const TargetMarkers = ({
     return mapping;
   }, [positionGroups]);
   
-  // Open popup when selectedTargetId changes
+  // Track last handled selectedTargetId to prevent re-triggering
+  const lastHandledTargetIdRef = useRef(null);
+  
+  // Open popup when selectedTargetId changes (only when it actually changes)
   useEffect(() => {
-    if (!selectedTargetId) return;
+    // Skip if no target selected or same target already handled
+    if (!selectedTargetId || selectedTargetId === lastHandledTargetIdRef.current) {
+      return;
+    }
     
     const posInfo = targetIdToPosInfo[selectedTargetId];
     if (!posInfo) return;
     
     const { posKey, idx } = posInfo;
+    
+    // Mark this target as handled
+    lastHandledTargetIdRef.current = selectedTargetId;
     
     // If this target is in a group with multiple targets at same position,
     // we need to switch the selector to show this target
@@ -106,8 +115,15 @@ export const TargetMarkers = ({
       if (markerRef) {
         markerRef.openPopup();
       }
-    }, 100);
+    }, 150);
   }, [selectedTargetId, targetIdToPosInfo, positionGroups]);
+  
+  // Reset lastHandledTargetIdRef when selectedTargetId becomes null
+  useEffect(() => {
+    if (!selectedTargetId) {
+      lastHandledTargetIdRef.current = null;
+    }
+  }, [selectedTargetId]);
   
   // Callback to store marker ref
   const setMarkerRef = useCallback((posKey, ref) => {
