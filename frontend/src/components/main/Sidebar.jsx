@@ -403,6 +403,74 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
         </DialogContent>
       </Dialog>
 
+      {/* About NETRA Dialog */}
+      <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
+        <DialogContent 
+          className="max-w-md"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)', 
+            borderColor: 'var(--borders-default)',
+            textAlign: 'center'
+          }}
+        >
+          <div className="py-6 px-4">
+            {/* Logo Besar di Tengah */}
+            <div className="flex justify-center mb-4">
+              <img 
+                src={netraLogo} 
+                alt="NETRA Logo" 
+                className="w-24 h-24 object-contain"
+              />
+            </div>
+            
+            {/* Copyright */}
+            <p 
+              className="text-sm font-semibold mb-6"
+              style={{ color: 'var(--foreground-muted)' }}
+            >
+              COPYRIGHT 2026
+            </p>
+            
+            {/* Info Text */}
+            <div 
+              className="p-4 rounded-lg mb-6"
+              style={{ 
+                backgroundColor: 'var(--background-tertiary)',
+                border: '1px solid var(--borders-default)'
+              }}
+            >
+              <p 
+                className="text-sm leading-relaxed"
+                style={{ color: 'var(--foreground-primary)' }}
+              >
+                APLIKASI INI DIBUAT OLEH <strong style={{ color: 'var(--accent-primary)' }}>KLUTZPEDRO 17186/P</strong>
+              </p>
+              <p 
+                className="text-sm mt-3"
+                style={{ color: 'var(--foreground-secondary)' }}
+              >
+                UNTUK BERLANGGANAN ATAU PEMESANAN APLIKASI DAPAT MENGHUBUNGI:
+              </p>
+              <p 
+                className="text-lg font-bold mt-2"
+                style={{ color: 'var(--accent-primary)' }}
+              >
+                081181453618
+              </p>
+            </div>
+            
+            {/* Tombol Tutup */}
+            <Button 
+              onClick={() => setAboutOpen(false)}
+              className="w-full"
+              style={{ backgroundColor: 'var(--accent-primary)' }}
+            >
+              TUTUP
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Request Queue Status Indicator */}
       <div 
         className="p-3 rounded-lg border text-sm mb-2"
