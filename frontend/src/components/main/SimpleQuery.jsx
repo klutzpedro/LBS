@@ -169,8 +169,9 @@ const QUERY_TYPES = [
     description: 'Cari data breach berdasarkan nomor HP',
     icon: ShieldAlert,
     placeholder: 'Masukkan nomor HP (62xxxxxxxxx)...',
-    validation: (v) => /^62\d{8,13}$/.test(v.replace(/\s/g, '')),
-    errorMsg: 'Format: 62xxxxxxxxx (10-15 digit)'
+    validation: (v) => PATTERNS.phone62.test(v.replace(/\s/g, '')),
+    inputValidation: PATTERNS.numbersOnly,
+    errorMsg: 'Nomor HP hanya angka, format: 62xxxxxxxxx (10-15 digit)'
   },
   { 
     id: 'breach_email', 
@@ -179,16 +180,18 @@ const QUERY_TYPES = [
     icon: Mail,
     placeholder: 'Masukkan email (xxx@xxx.xxx)...',
     validation: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-    errorMsg: 'Format email tidak valid'
+    inputValidation: PATTERNS.email,
+    errorMsg: 'Format email tidak valid (hanya huruf, angka, @, ., -, _)'
   },
   { 
     id: 'breach_name', 
     label: 'Data Breach (Nama)', 
     description: 'Cari data breach berdasarkan nama',
     icon: ShieldAlert,
-    placeholder: 'Masukkan nama lengkap...',
-    validation: (v) => v.length >= 3,
-    errorMsg: 'Nama minimal 3 karakter'
+    placeholder: 'Masukkan nama lengkap (hanya huruf a-z)...',
+    validation: (v) => v.length >= 3 && PATTERNS.alphabetOnly.test(v),
+    inputValidation: PATTERNS.alphabetOnly,
+    errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
   }
 ];
 
