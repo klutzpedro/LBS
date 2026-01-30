@@ -781,6 +781,7 @@ export const NonGeointSearchDialog = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [showBackgroundWarning, setShowBackgroundWarning] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'minimize' or 'close'
+  const [nameValidationError, setNameValidationError] = useState(''); // Validation error for name input
   
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
