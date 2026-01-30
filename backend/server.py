@@ -6503,6 +6503,7 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
     - passport_wna: Search WNA passport by name
     - passport_wni: Search WNI passport by name  
     - passport_number: Search passport by passport number
+    - passport_nik: Search WNI passport by NIK
     
     Returns formatted raw_response string similar to Telegram bot output.
     """
@@ -6521,13 +6522,18 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
         
         if query_type == 'passport_wna':
             # WNA search by name
-            url = f"{CP_API_URL}/api/v3/imigrasi/wna?type=name&query={encoded_value}"
+            url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=name&query={encoded_value}"
             logger.info(f"[PASSPORT SIMPLE CP] Querying WNA by name: {query_value}")
             
         elif query_type == 'passport_wni':
             # WNI search by name
             url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=name&query={encoded_value}"
             logger.info(f"[PASSPORT SIMPLE CP] Querying WNI by name: {query_value}")
+            
+        elif query_type == 'passport_nik':
+            # WNI search by NIK
+            url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={encoded_value}"
+            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI passport by NIK: {query_value}")
             
         elif query_type == 'passport_number':
             # Search by passport number - try both WNI and WNA, also get perlintasan
