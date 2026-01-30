@@ -8858,6 +8858,15 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     
     logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}")
     
+    # Update request status for queue indicator (non-cached queries)
+    global current_request_status
+    current_request_status = {
+        "is_busy": True,
+        "username": username,
+        "operation": f"Simple Query - {query_type}",
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
     # ============================================
     # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
     # ============================================
