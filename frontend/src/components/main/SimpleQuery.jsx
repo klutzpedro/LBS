@@ -702,6 +702,7 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
       reghp: Phone,
       passport_wna: Plane,
       passport_wni: Plane,
+      passport_nik: FileText,
       passport_number: FileText,
       plat_mobil: Car,
       perlintasan: Plane
