@@ -415,6 +415,11 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
                               {user.full_name}
                             </p>
                             {getStatusBadge(user.status)}
+                            {user.is_admin && (
+                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-500/20 text-purple-400 flex items-center gap-1">
+                                <Shield className="w-3 h-3" /> Admin
+                              </span>
+                            )}
                           </div>
                           <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
                             @{user.username}
@@ -425,12 +430,36 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
                             })}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {/* Toggle Admin Role */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggleRole(user.id, user.full_name, user.is_admin)}
+                            title={user.is_admin ? "Jadikan User Biasa" : "Jadikan Admin"}
+                            className="h-8 w-8 p-0"
+                          >
+                            {user.is_admin ? (
+                              <ShieldOff className="w-4 h-4 text-orange-400" />
+                            ) : (
+                              <Shield className="w-4 h-4 text-purple-400" />
+                            )}
+                          </Button>
+                          {/* Change Password */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenChangePassword(user)}
+                            title="Ganti Password"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Key className="w-4 h-4 text-blue-400" />
+                          </Button>
                           {user.status === 'rejected' && (
                             <Button
                               size="sm"
                               onClick={() => handleApprove(user.id, user.full_name)}
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 p-0"
                             >
                               <UserCheck className="w-4 h-4" />
                             </Button>
@@ -441,6 +470,7 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
                               variant="outline"
                               onClick={() => handleReject(user.id, user.full_name)}
                               title="Nonaktifkan"
+                              className="h-8 w-8 p-0"
                             >
                               <UserX className="w-4 h-4" />
                             </Button>
@@ -450,6 +480,7 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
                             variant="destructive"
                             onClick={() => handleDelete(user.id, user.full_name)}
                             title="Hapus"
+                            className="h-8 w-8 p-0"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
