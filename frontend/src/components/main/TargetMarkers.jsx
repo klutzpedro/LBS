@@ -42,7 +42,22 @@ export const TargetMarkers = ({
         const posKey = btn.dataset.pos;
         const idx = parseInt(btn.dataset.idx, 10);
         if (posKey && !isNaN(idx)) {
+          console.log('[TargetMarkers] Selector clicked, posKey:', posKey, 'idx:', idx);
+          
+          // Reset the lastHandledTargetIdRef so popup can be opened for this new selection
+          lastHandledTargetIdRef.current = null;
+          
           setSelectedAtPosition(prev => ({ ...prev, [posKey]: idx }));
+          
+          // Close any open popup first, then open the new one after state updates
+          map.closePopup();
+          
+          setTimeout(() => {
+            const markerRef = markerRefs.current[posKey];
+            if (markerRef) {
+              markerRef.openPopup();
+            }
+          }, 100);
         }
       }
     };
