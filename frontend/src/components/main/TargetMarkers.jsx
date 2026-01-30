@@ -15,7 +15,8 @@ export const TargetMarkers = ({
   onPendalaman,
   loadingPendalaman = null,
   aoiAlerts = [],
-  selectedTargetId = null
+  selectedTargetId = null,
+  onSelectTarget = null  // Callback to notify parent when target is selected via map selector
 }) => {
   const map = useMap();
   const [selectedAtPosition, setSelectedAtPosition] = useState({});
