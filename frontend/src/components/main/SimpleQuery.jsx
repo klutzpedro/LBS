@@ -484,7 +484,37 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                         <Input
                           placeholder={currentType?.placeholder}
                           value={searchValue}
-                          onChange={(e) => setSearchValue(e.target.value)}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            // Apply input validation pattern if exists
+                            if (currentType?.inputValidation && newValue) {
+                              // For alphanumeric, allow A-Z, a-z, 0-9, and spaces only
+                              if (currentType.inputValidation === PATTERNS.alphanumeric) {
+                                const filtered = newValue.replace(/[^a-zA-Z0-9\s]/g, '');
+                                setSearchValue(filtered.toUpperCase());
+                                return;
+                              }
+                              // For numbers only
+                              if (currentType.inputValidation === PATTERNS.numbersOnly) {
+                                const filtered = newValue.replace(/[^0-9]/g, '');
+                                setSearchValue(filtered);
+                                return;
+                              }
+                              // For alphabet only
+                              if (currentType.inputValidation === PATTERNS.alphabetOnly) {
+                                const filtered = newValue.replace(/[^a-zA-Z\s]/g, '');
+                                setSearchValue(filtered.toUpperCase());
+                                return;
+                              }
+                              // For email
+                              if (currentType.inputValidation === PATTERNS.email) {
+                                const filtered = newValue.replace(/[^a-zA-Z0-9@._+-]/g, '');
+                                setSearchValue(filtered.toLowerCase());
+                                return;
+                              }
+                            }
+                            setSearchValue(newValue);
+                          }}
                           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                           disabled={isLoading}
                           className="flex-1"
