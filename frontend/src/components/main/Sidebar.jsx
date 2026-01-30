@@ -831,8 +831,9 @@ const TargetsSection = ({
       className="space-y-2 overflow-y-auto pr-1"
       style={{ 
         maxHeight: '360px',
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+        scrollbarWidth: 'none',  /* Firefox */
+        msOverflowStyle: 'none',  /* IE and Edge */
+        WebkitScrollbar: 'none'  /* Chrome, Safari, Opera */
       }}
     >
       {filteredTargets.map((target) => (
