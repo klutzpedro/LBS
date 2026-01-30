@@ -396,6 +396,40 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
         </DialogContent>
       </Dialog>
 
+      {/* Request Queue Status Indicator */}
+      <div 
+        className="p-3 rounded-lg border text-sm mb-2"
+        style={{
+          backgroundColor: requestStatus.is_busy ? 'rgba(255, 59, 92, 0.15)' : 'rgba(0, 255, 136, 0.1)',
+          borderColor: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)'
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div 
+            className={`w-2.5 h-2.5 rounded-full ${requestStatus.is_busy ? 'animate-pulse' : ''}`}
+            style={{ 
+              backgroundColor: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)'
+            }}
+          />
+          <div className="flex-1 min-w-0">
+            <span 
+              className="font-semibold text-xs block"
+              style={{ color: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)' }}
+            >
+              {requestStatus.is_busy ? '⚠️ ANTRIAN AKTIF' : '✓ IDLE (Ready)'}
+            </span>
+            <span 
+              className="text-xs block truncate"
+              style={{ color: 'var(--foreground-muted)' }}
+            >
+              {requestStatus.is_busy 
+                ? `${requestStatus.username} - ${requestStatus.operation || 'Processing...'}` 
+                : 'Semua Akun Idle (No Request)'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* CP API Status (Position Query) */}
       <div 
         className="p-3 rounded-lg border text-sm mb-2"
