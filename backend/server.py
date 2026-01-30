@@ -8609,9 +8609,11 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     - capil_nik: CAPIL search by NIK (16 digits)
     - nkk: Kartu Keluarga by NKK (16 digits)
     - reghp: RegHP by NIK (16 digits)
-    - passport_wna: Passport WNA by name
-    - passport_wni: Passport WNI by name
-    - passport_number: Passport by number
+    - passport_wna: Passport WNA by name (via CP API)
+    - passport_wni: Passport WNI by name (via CP API)
+    - passport_nik: Passport WNI by NIK (via CP API)
+    - passport_number: Passport by number (via CP API)
+    - perlintasan: Border crossing by passport number (via CP API)
     - plat_mobil: Vehicle by plate number
     """
     global telegram_client
