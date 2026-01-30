@@ -6618,14 +6618,16 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
             result["error"] = f"Unknown query type: {query_type}"
             return result
         
-        # Execute curl for WNA/WNI name queries
+        # Execute curl for WNA/WNI name/NIK queries using IPv4
+        # -4 forces IPv4, ensuring connection from whitelisted IP (76.13.21.246)
         cmd = [
             "curl", "-4", "-s",
+            "--connect-timeout", "30",
             "-H", f"api-key: {CP_API_KEY}",
             url
         ]
         
-        logger.info(f"[PASSPORT SIMPLE CP] Executing: curl -4 -s -H 'api-key: ***' {url}")
+        logger.info(f"[PASSPORT SIMPLE CP] Executing IPv4 request: curl -4 -s -H 'api-key: ***' {url}")
         
         process = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         
