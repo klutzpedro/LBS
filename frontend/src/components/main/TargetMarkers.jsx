@@ -117,11 +117,6 @@ export const TargetMarkers = ({
     return mapping;
   }, [positionGroups]);
   
-  // Track last handled selectedTargetId to prevent re-triggering
-  const lastHandledTargetIdRef = useRef(null);
-  // Track if user just closed popup manually (to prevent auto-reopen)
-  const userClosedPopupRef = useRef(false);
-  
   // Listen for popup close events
   useEffect(() => {
     const handlePopupClose = () => {
