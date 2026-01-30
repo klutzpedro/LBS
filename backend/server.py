@@ -2964,6 +2964,15 @@ async def query_family(target_id: str, family_data_input: dict, username: str = 
         logger.error(f"[FAMILY] Connection check failed: {conn_err}")
         raise HTTPException(status_code=503, detail=f"Koneksi Telegram error: {str(conn_err)}. Coba refresh halaman Settings.")
     
+    # Update request status for queue indicator
+    global current_request_status
+    current_request_status = {
+        "is_busy": True,
+        "username": username,
+        "operation": f"Family Query - NKK",
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
     # Start background task with source_nik
     asyncio.create_task(query_telegram_family(target_id, family_id, source_nik))
     
