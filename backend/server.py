@@ -173,8 +173,6 @@ def release_telegram_lock(operation_name: str):
             }
     except Exception as e:
         logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
-    except Exception as e:
-        logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
 
 # Track active query to prevent data mixing
 active_query_info = {
