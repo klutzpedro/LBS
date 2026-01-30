@@ -8917,11 +8917,12 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         "started_at": datetime.now(timezone.utc).isoformat()
     }
     
-    # ============================================
-    # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
-    # ============================================
-    passport_types = ['passport_wna', 'passport_wni', 'passport_number', 'passport_nik']
-    logger.info(f"[SIMPLE QUERY] Checking if '{query_type}' is in passport types: {passport_types}")
+    try:
+        # ============================================
+        # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
+        # ============================================
+        passport_types = ['passport_wna', 'passport_wni', 'passport_number', 'passport_nik']
+        logger.info(f"[SIMPLE QUERY] Checking if '{query_type}' is in passport types: {passport_types}")
     
     if query_type in passport_types:
         logger.info(f"[SIMPLE QUERY] ✓ Matched passport type! Using CP API for: {query_type} = {query_value}")
