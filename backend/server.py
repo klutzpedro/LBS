@@ -2138,11 +2138,15 @@ async def process_manual_target(target_id: str, manual_data: dict):
 
 @api_router.get("/targets", response_model=List[Target])
 async def get_targets(case_id: Optional[str] = None, username: str = Depends(verify_token)):
-    # Filter by user ownership
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    # Filter by user ownership (admin sees all)
     query = {}
     if case_id:
         query["case_id"] = case_id
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     targets = await db.targets.find(query, {"_id": 0}).to_list(1000)
@@ -2155,14 +2159,18 @@ async def get_targets(case_id: Optional[str] = None, username: str = Depends(ver
 
 @api_router.get("/targets/{target_id}", response_model=Target)
 async def get_target(target_id: str, username: str = Depends(verify_token)):
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
     # Filter by user ownership
     query = {"id": target_id}
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     target = await db.targets.find_one(query, {"_id": 0})
     if not target:
-        raise HTTPException(status_code=404, detail="Target not found or access denied")
+        raise HTTPException(status_code=404, detail="Target tidak ditemukan atau Anda tidak memiliki akses")
     
     if isinstance(target.get('created_at'), str):
         target['created_at'] = datetime.fromisoformat(target['created_at'])
@@ -2172,9 +2180,13 @@ async def get_target(target_id: str, username: str = Depends(verify_token)):
 @api_router.delete("/targets/{target_id}")
 async def delete_target(target_id: str, username: str = Depends(verify_token)):
     """Delete target and all associated data"""
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
     # Filter by user ownership
     query = {"id": target_id}
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     target = await db.targets.find_one(query, {"_id": 0})
