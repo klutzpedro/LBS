@@ -1883,9 +1883,13 @@ async def create_case(case_data: CaseCreate, username: str = Depends(verify_toke
 
 @api_router.get("/cases", response_model=List[Case])
 async def get_cases(username: str = Depends(verify_token)):
+    # Check if user is admin (hardcoded or from DB)
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
     # Filter by user - each user only sees their own cases
     # Admin sees all cases
-    query = {} if username == "admin" else {"created_by": username}
+    query = {} if is_admin else {"created_by": username}
     cases = await db.cases.find(query, {"_id": 0}).to_list(1000)
     
     for case in cases:
@@ -1898,14 +1902,18 @@ async def get_cases(username: str = Depends(verify_token)):
 
 @api_router.get("/cases/{case_id}", response_model=Case)
 async def get_case(case_id: str, username: str = Depends(verify_token)):
-    # Filter by user ownership
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    # Filter by user ownership (admin can see all)
     query = {"id": case_id}
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     case = await db.cases.find_one(query, {"_id": 0})
     if not case:
-        raise HTTPException(status_code=404, detail="Case not found")
+        raise HTTPException(status_code=404, detail="Case not found atau Anda tidak memiliki akses")
     
     if isinstance(case.get('created_at'), str):
         case['created_at'] = datetime.fromisoformat(case['created_at'])
@@ -1917,7 +1925,11 @@ async def get_case(case_id: str, username: str = Depends(verify_token)):
 @api_router.delete("/cases/{case_id}")
 async def delete_case(case_id: str, username: str = Depends(verify_token)):
     """Delete case and all its targets"""
-    # Verify ownership first
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    # Verify ownership first (admin can delete any)
     query = {"id": case_id}
     if username != "admin":
         query["created_by"] = username
