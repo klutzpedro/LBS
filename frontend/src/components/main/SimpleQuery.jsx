@@ -106,6 +106,15 @@ const QUERY_TYPES = [
     errorMsg: 'Nama minimal 3 karakter'
   },
   { 
+    id: 'passport_nik', 
+    label: 'Passport WNI (NIK)', 
+    description: 'Cari data passport WNI berdasarkan NIK',
+    icon: FileText,
+    placeholder: 'Masukkan NIK (16 digit)...',
+    validation: (v) => /^\d{16}$/.test(v.replace(/\s/g, '')),
+    errorMsg: 'NIK harus 16 digit angka'
+  },
+  { 
     id: 'passport_number', 
     label: 'Passport (Nomor)', 
     description: 'Cari data passport berdasarkan nomor passport',
