@@ -829,9 +829,10 @@ const TargetsSection = ({
     </div>
     
     <div 
-      className="space-y-2 overflow-y-auto pr-1 scrollbar-hide"
+      className="space-y-2 overflow-y-auto pr-1 flex-1"
       style={{ 
-        maxHeight: '360px'
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
       }}
     >
       {filteredTargets.map((target) => (
