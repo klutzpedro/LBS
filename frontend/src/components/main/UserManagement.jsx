@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   DraggableDialog, 
   DraggableDialogContent, 
   DraggableDialogHeader, 
   DraggableDialogTitle 
 } from '@/components/ui/draggable-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   Users, 
   UserCheck, 
@@ -17,7 +19,10 @@ import {
   Loader2,
   RefreshCw,
   Minus,
-  Maximize2
+  Maximize2,
+  Key,
+  Shield,
+  ShieldOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
