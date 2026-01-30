@@ -163,6 +163,82 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
     }
   };
 
+  const handleOpenChangePassword = (user) => {
+    setSelectedUser(user);
+    setNewPassword('');
+    setConfirmPassword('');
+    setChangePasswordOpen(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Semua field harus diisi');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('Password tidak cocok');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Password minimal 6 karakter');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/auth/users/${selectedUser.id}/change-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ new_password: newPassword })
+      });
+
+      if (response.ok) {
+        toast.success(`Password ${selectedUser.username} berhasil diubah`);
+        setChangePasswordOpen(false);
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || 'Gagal mengubah password');
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleToggleRole = async (userId, userName, currentIsAdmin) => {
+    const newRole = !currentIsAdmin;
+    const roleLabel = newRole ? 'Admin' : 'User biasa';
+    
+    if (!window.confirm(`Ubah role ${userName} menjadi ${roleLabel}?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/auth/users/${userId}/role`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_admin: newRole })
+      });
+
+      if (response.ok) {
+        toast.success(`Role ${userName} diubah menjadi ${roleLabel}`);
+        fetchUsers();
+      } else {
+        const data = await response.json();
+        toast.error(data.detail || 'Gagal mengubah role');
+      }
+    } catch (error) {
+      toast.error('Terjadi kesalahan');
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'approved':
