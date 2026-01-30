@@ -6537,7 +6537,7 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
                 result["error"] = f"NIK harus 16 digit angka, ditemukan {len(clean_nik)} digit"
                 return result
             url = f"{CP_API_URL}/api/v3/imigrasi/wni?type=nik&query={clean_nik}"
-            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI passport by NIK: {clean_nik}")
+            logger.info(f"[PASSPORT SIMPLE CP] Querying WNI passport by NIK (IPv4): {clean_nik}")
             
         elif query_type == 'passport_number':
             # Search by passport number - try both WNI and WNA, also get perlintasan
