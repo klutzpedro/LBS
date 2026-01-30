@@ -1407,7 +1407,10 @@ async def get_users(username: str = Depends(verify_token)):
 async def get_pending_users(username: str = Depends(verify_token)):
     """Get pending users - admin only"""
     
-    if username != ADMIN_USERNAME:
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Hanya admin yang dapat melihat pendaftaran")
     
     users = await db.users.find({"status": "pending"}, {"_id": 0, "password_hash": 0}).to_list(100)
