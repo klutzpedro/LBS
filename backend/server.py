@@ -1973,14 +1973,18 @@ async def create_target(target_data: TargetCreate, username: str = Depends(verif
     if not re.match(r'^62\d{9,12}$', target_data.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number format")
     
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
     # Verify case ownership
     case_query = {"id": target_data.case_id}
-    if username != "admin":
+    if not is_admin:
         case_query["created_by"] = username
     
     case = await db.cases.find_one(case_query)
     if not case:
-        raise HTTPException(status_code=404, detail="Case not found or access denied")
+        raise HTTPException(status_code=404, detail="Case tidak ditemukan atau Anda tidak memiliki akses")
     
     # PREVENT DUPLICATE: Check if phone number already exists in this case
     existing_target = await db.targets.find_one({
