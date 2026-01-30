@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   LogOut, 
   Settings as SettingsIcon, 
@@ -13,10 +14,15 @@ import {
   Search,
   Trash2,
   History,
-  Printer
+  Printer,
+  Key,
+  User
 } from 'lucide-react';
 import { CountdownTimer } from './CountdownTimer';
+import { toast } from 'sonner';
 import netraLogo from '@/assets/logo.png';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 /**
  * Main sidebar component containing header, cases, and targets sections
@@ -24,6 +30,7 @@ import netraLogo from '@/assets/logo.png';
 export const Sidebar = ({
   // Auth & Telegram
   username,
+  isAdmin,
   telegramAuthorized,
   telegramUser,
   onLogout,
