@@ -198,8 +198,8 @@ def set_active_query(user: str, query_type: str, query_value: str, last_msg_id: 
     logger.info(f"[QUERY LOCK] Active query set: user={user}, type={query_type}, value={query_value[:20] if query_value else 'N/A'}...")
 
 def clear_active_query():
-    """Clear the active query info"""
-    global active_query_info
+    """Clear the active query info and request status"""
+    global active_query_info, current_request_status
     prev_user = active_query_info.get("user")
     prev_type = active_query_info.get("query_type")
     active_query_info = {
@@ -208,6 +208,13 @@ def clear_active_query():
         "query_value": None,
         "started_at": None,
         "last_msg_id": None
+    }
+    # Also clear request status for queue indicator
+    current_request_status = {
+        "is_busy": False,
+        "username": None,
+        "operation": None,
+        "started_at": None
     }
     logger.info(f"[QUERY LOCK] Active query cleared (was: user={prev_user}, type={prev_type})")
 
