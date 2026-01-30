@@ -1378,6 +1378,13 @@ export const NonGeointSearchDialog = ({
       toast.error('Masukkan nama untuk dicari');
       return;
     }
+    
+    // Validate: Only alphabet characters allowed (a-z, A-Z, spaces)
+    const alphabetOnly = /^[a-zA-Z\s]+$/;
+    if (!alphabetOnly.test(searchName.trim())) {
+      toast.error('Full Query hanya untuk nama berbasis alphabet (a-z). Tidak boleh mengandung angka atau karakter khusus.');
+      return;
+    }
 
     // Clear any ongoing search from localStorage
     localStorage.removeItem('nongeoint_ongoing_search_id');
