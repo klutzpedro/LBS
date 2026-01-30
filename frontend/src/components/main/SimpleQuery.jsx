@@ -811,9 +811,9 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
                             <Clock className="w-3 h-3" />
                             {formatDate(item.created_at)}
                           </span>
-                          {item.created_by && (
-                            <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                              oleh: {item.created_by}
+                          {(item.queried_by || item.created_by) && (
+                            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--background-tertiary)', color: 'var(--accent-primary)' }}>
+                              👤 {item.queried_by || item.created_by}
                             </span>
                           )}
                         </div>
