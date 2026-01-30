@@ -6653,7 +6653,7 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
             return result
         
         # Format results as readable text
-        type_label = "Passport WNA" if query_type == 'passport_wna' else "Passport WNI"
+        type_label = "Passport WNA" if query_type == 'passport_wna' else "Passport WNI (by NIK)" if query_type == 'passport_nik' else "Passport WNI"
         output_lines = [f"{type_label} Data for: {query_value}\n"]
         output_lines.append("=" * 50)
         
