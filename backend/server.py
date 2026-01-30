@@ -8867,7 +8867,17 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     - perlintasan: Border crossing by passport number (via CP API)
     - plat_mobil: Vehicle by plate number
     """
-    global telegram_client
+    global telegram_client, current_request_status
+    
+    def clear_request_status():
+        """Helper to clear request status when query completes"""
+        global current_request_status
+        current_request_status = {
+            "is_busy": False,
+            "username": None,
+            "operation": None,
+            "started_at": None
+        }
     
     query_type = request.query_type
     query_value = request.query_value.strip().upper()
