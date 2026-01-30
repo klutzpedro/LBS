@@ -1458,6 +1458,109 @@ async def delete_user(user_id: str, username: str = Depends(verify_token)):
     
     return {"success": True, "message": "User berhasil dihapus"}
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.post("/auth/change-password")
+async def change_password(request: ChangePasswordRequest, username: str = Depends(verify_token)):
+    """Change own password"""
+    
+    # Get user from database
+    user = await db.users.find_one({"username": username})
+    
+    if not user:
+        # Check if it's the hardcoded admin
+        if username == ADMIN_USERNAME:
+            raise HTTPException(status_code=400, detail="Password admin tidak dapat diubah melalui fitur ini")
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    # Verify current password
+    if not pwd_context.verify(request.current_password, user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Password lama salah")
+    
+    # Validate new password
+    if len(request.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password baru minimal 6 karakter")
+    
+    # Update password
+    result = await db.users.update_one(
+        {"username": username},
+        {"$set": {
+            "password_hash": pwd_context.hash(request.new_password),
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=500, detail="Gagal mengubah password")
+    
+    logger.info(f"[AUTH] Password changed for user: {username}")
+    return {"success": True, "message": "Password berhasil diubah"}
+
+class AdminChangePasswordRequest(BaseModel):
+    new_password: str
+
+@api_router.post("/auth/users/{user_id}/change-password")
+async def admin_change_password(user_id: str, request: AdminChangePasswordRequest, username: str = Depends(verify_token)):
+    """Change user password - admin only"""
+    
+    # Check if requester is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat mengubah password user lain")
+    
+    # Validate new password
+    if len(request.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password baru minimal 6 karakter")
+    
+    # Update password
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "password_hash": pwd_context.hash(request.new_password),
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    logger.info(f"[AUTH] Admin {username} changed password for user_id: {user_id}")
+    return {"success": True, "message": "Password user berhasil diubah"}
+
+class UpdateUserRoleRequest(BaseModel):
+    is_admin: bool
+
+@api_router.post("/auth/users/{user_id}/role")
+async def update_user_role(user_id: str, request: UpdateUserRoleRequest, username: str = Depends(verify_token)):
+    """Update user role (admin/user) - admin only"""
+    
+    # Check if requester is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Hanya admin yang dapat mengubah role user")
+    
+    # Update role
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {
+            "is_admin": request.is_admin,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    
+    role_label = "Admin" if request.is_admin else "User"
+    logger.info(f"[AUTH] Admin {username} changed role for user_id: {user_id} to {role_label}")
+    return {"success": True, "message": f"Role user berhasil diubah menjadi {role_label}"}
+
 # ============================================
 # SECURITY ENDPOINTS (Admin Only)
 # ============================================
