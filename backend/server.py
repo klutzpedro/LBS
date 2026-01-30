@@ -8948,6 +8948,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             )
             logger.info(f"[SIMPLE QUERY] Saved passport result to cache: {cache_key}")
             
+            clear_request_status()
             return {
                 "success": True,
                 "query_type": query_type,
@@ -8958,6 +8959,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 "source": "CP_API"
             }
         else:
+            clear_request_status()
             return {
                 "success": False,
                 "query_type": query_type,
