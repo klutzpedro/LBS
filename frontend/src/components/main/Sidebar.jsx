@@ -267,18 +267,33 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
             >
               NETRA
             </h1>
+            <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+              <User className="w-3 h-3 inline mr-1" />
+              {username} {isAdmin && <span className="text-green-400">(Admin)</span>}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
-            onClick={onNavigateSettings}
-            data-testid="settings-button"
-            title="Settings"
+            onClick={() => setChangePasswordOpen(true)}
+            data-testid="change-password-button"
+            title="Ganti Password"
           >
-            <SettingsIcon className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
+            <Key className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
           </Button>
+          {isAdmin && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={onNavigateSettings}
+              data-testid="settings-button"
+              title="Settings"
+            >
+              <SettingsIcon className="w-5 h-5" style={{ color: 'var(--foreground-secondary)' }} />
+            </Button>
+          )}
           <Button
             size="icon"
             variant="ghost"
@@ -290,6 +305,64 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
           </Button>
         </div>
       </div>
+      
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent style={{ backgroundColor: 'var(--background-elevated)', borderColor: 'var(--borders-default)' }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'var(--foreground-primary)' }}>
+              <Key className="w-5 h-5 inline mr-2" />
+              Ganti Password
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+                Password Lama
+              </label>
+              <Input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Masukkan password lama"
+                style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+                Password Baru
+              </label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Masukkan password baru (min 6 karakter)"
+                style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+                Konfirmasi Password Baru
+              </label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Ulangi password baru"
+                style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangePasswordOpen(false)} disabled={changingPassword}>
+              Batal
+            </Button>
+            <Button onClick={handleChangePassword} disabled={changingPassword} style={{ backgroundColor: 'var(--accent-primary)' }}>
+              {changingPassword ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* CP API Status (Position Query) */}
       <div 
