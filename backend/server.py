@@ -8995,6 +8995,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             )
             logger.info(f"[SIMPLE QUERY] Saved perlintasan result to cache: {cache_key}")
             
+            clear_request_status()
             return {
                 "success": True,
                 "query_type": query_type,
