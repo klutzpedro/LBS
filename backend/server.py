@@ -120,11 +120,20 @@ telegram_query_lock = asyncio.Lock()
 # Lock timeout to prevent deadlocks (in seconds)
 LOCK_TIMEOUT = 120  # 2 minutes max wait
 
-async def acquire_telegram_lock(operation_name: str, timeout: float = LOCK_TIMEOUT) -> bool:
+# Track current active request across all users
+current_request_status = {
+    "is_busy": False,
+    "username": None,
+    "operation": None,
+    "started_at": None
+}
+
+async def acquire_telegram_lock(operation_name: str, username: str = None, timeout: float = LOCK_TIMEOUT) -> bool:
     """
     Acquire the global Telegram lock with timeout.
     Returns True if lock acquired, False if timeout.
     """
+    global current_request_status
     try:
         # Try to acquire lock with timeout
         acquired = await asyncio.wait_for(
@@ -132,7 +141,14 @@ async def acquire_telegram_lock(operation_name: str, timeout: float = LOCK_TIMEO
             timeout=timeout
         )
         if acquired:
-            logger.info(f"[LOCK] Acquired for: {operation_name}")
+            logger.info(f"[LOCK] Acquired for: {operation_name} by {username}")
+            # Update request status
+            current_request_status = {
+                "is_busy": True,
+                "username": username,
+                "operation": operation_name,
+                "started_at": datetime.now(timezone.utc).isoformat()
+            }
         return acquired
     except asyncio.TimeoutError:
         logger.error(f"[LOCK] Timeout waiting for lock: {operation_name} (waited {timeout}s)")
@@ -143,10 +159,20 @@ async def acquire_telegram_lock(operation_name: str, timeout: float = LOCK_TIMEO
 
 def release_telegram_lock(operation_name: str):
     """Safely release the global Telegram lock"""
+    global current_request_status
     try:
         if telegram_query_lock.locked():
-            release_telegram_lock("operation")
+            telegram_query_lock.release()
             logger.info(f"[LOCK] Released for: {operation_name}")
+            # Clear request status
+            current_request_status = {
+                "is_busy": False,
+                "username": None,
+                "operation": None,
+                "started_at": None
+            }
+    except Exception as e:
+        logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
     except Exception as e:
         logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
 
