@@ -33,6 +33,23 @@ export const TargetMarkers = ({
     }
   });
   
+  // Filter targets first (needed by positionGroups)
+  const filteredTargets = targets.filter(t => {
+    const hasData = t.data && t.data.latitude && t.data.longitude;
+    const isVisible = visibleTargets.has(t.id);
+    return hasData && isVisible;
+  });
+  
+  // Get target IDs that have active alerts
+  const alertedTargetIds = useMemo(() => new Set(
+    aoiAlerts
+      .filter(a => !a.acknowledged)
+      .flatMap(a => a.target_ids || [])
+  ), [aoiAlerts]);
+  
+  // Group targets by position (needed by selector click handler)
+  const positionGroups = useMemo(() => groupTargetsByPosition(filteredTargets), [filteredTargets]);
+  
   // Handle clicks on selector buttons
   useEffect(() => {
     const handleSelectorClick = (e) => {
@@ -83,22 +100,6 @@ export const TargetMarkers = ({
       mapContainer.removeEventListener('click', handleSelectorClick, true);
     };
   }, [map, positionGroups, onSelectTarget]);
-  
-  const filteredTargets = targets.filter(t => {
-    const hasData = t.data && t.data.latitude && t.data.longitude;
-    const isVisible = visibleTargets.has(t.id);
-    return hasData && isVisible;
-  });
-  
-  // Get target IDs that have active alerts
-  const alertedTargetIds = useMemo(() => new Set(
-    aoiAlerts
-      .filter(a => !a.acknowledged)
-      .flatMap(a => a.target_ids || [])
-  ), [aoiAlerts]);
-  
-  // Group targets by position
-  const positionGroups = useMemo(() => groupTargetsByPosition(filteredTargets), [filteredTargets]);
   
   // Create mapping from target ID to position key and index
   const targetIdToPosInfo = useMemo(() => {
