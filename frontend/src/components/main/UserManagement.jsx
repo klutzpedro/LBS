@@ -494,6 +494,52 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
           </>
         )}
       </DraggableDialogContent>
+      
+      {/* Change Password Dialog */}
+      <Dialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen}>
+        <DialogContent style={{ backgroundColor: 'var(--background-elevated)', borderColor: 'var(--borders-default)' }}>
+          <DialogHeader>
+            <DialogTitle style={{ color: 'var(--foreground-primary)' }}>
+              <Key className="w-5 h-5 inline mr-2" />
+              Ganti Password - {selectedUser?.username}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+                Password Baru
+              </label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Masukkan password baru (min 6 karakter)"
+                style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+                Konfirmasi Password
+              </label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Ulangi password baru"
+                style={{ backgroundColor: 'var(--background-primary)', borderColor: 'var(--borders-default)', color: 'var(--foreground-primary)' }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setChangePasswordOpen(false)} disabled={changingPassword}>
+              Batal
+            </Button>
+            <Button onClick={handleChangePassword} disabled={changingPassword} style={{ backgroundColor: 'var(--accent-primary)' }}>
+              {changingPassword ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DraggableDialog>
   );
 };
