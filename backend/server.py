@@ -9099,6 +9099,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         )
                         logger.info(f"[BREACH] Saved result to cache: {cache_key}")
                         
+                        clear_request_status()
                         return {
                             "success": True,
                             "query_type": query_type,
@@ -9110,6 +9111,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         }
                     elif status_code == 403:
                         logger.error(f"[BREACH] API 403 Forbidden - IP not whitelisted")
+                        clear_request_status()
                         return {
                             "success": False,
                             "query_type": query_type,
@@ -9120,6 +9122,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     else:
                         error_text = await response.text()
                         logger.error(f"[BREACH] API error: {status_code} - {error_text}")
+                        clear_request_status()
                         return {
                             "success": False,
                             "query_type": query_type,
@@ -9130,6 +9133,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     
         except Exception as e:
             logger.error(f"[BREACH] Exception: {e}")
+            clear_request_status()
             return {
                 "success": False,
                 "query_type": query_type,
