@@ -26,6 +26,11 @@ export const TargetMarkers = ({
   // Store refs for all markers by target ID
   const markerRefs = useRef({});
   
+  // Track last handled selectedTargetId to prevent re-triggering
+  const lastHandledTargetIdRef = useRef(null);
+  // Track if user just closed popup manually (to prevent auto-reopen)
+  const userClosedPopupRef = useRef(false);
+  
   // Listen for zoom changes
   useMapEvents({
     zoomend: () => {
