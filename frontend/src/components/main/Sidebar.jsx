@@ -248,6 +248,38 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
     }
   };
   
+  // Request Status Polling
+  const [requestStatus, setRequestStatus] = useState({ is_busy: false, username: null, operation: null });
+  const { useEffect: useEffectHook } = require('react');
+  
+  useEffectHook(() => {
+    const fetchRequestStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/api/request-status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setRequestStatus(data);
+        }
+      } catch (error) {
+        // Ignore errors silently - this is just a status indicator
+      }
+    };
+    
+    // Initial fetch
+    fetchRequestStatus();
+    
+    // Poll every 3 seconds
+    const interval = setInterval(fetchRequestStatus, 3000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   const statusInfo = getStatusInfo();
   
   return (
