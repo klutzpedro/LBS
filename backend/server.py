@@ -1931,12 +1931,12 @@ async def delete_case(case_id: str, username: str = Depends(verify_token)):
     
     # Verify ownership first (admin can delete any)
     query = {"id": case_id}
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     case = await db.cases.find_one(query)
     if not case:
-        raise HTTPException(status_code=404, detail="Case not found or access denied")
+        raise HTTPException(status_code=404, detail="Case tidak ditemukan atau Anda tidak memiliki akses")
     
     # Get all targets in this case
     targets = await db.targets.find({"case_id": case_id}, {"_id": 0}).to_list(1000)
