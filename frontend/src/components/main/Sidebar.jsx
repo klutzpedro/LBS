@@ -104,6 +104,8 @@ export const Sidebar = ({
       <SidebarHeader 
         telegramAuthorized={telegramAuthorized}
         telegramUser={telegramUser}
+        username={username}
+        isAdmin={isAdmin}
         onLogout={onLogout}
         onNavigateSettings={() => navigate('/settings')}
       />
