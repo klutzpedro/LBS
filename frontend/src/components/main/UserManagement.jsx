@@ -57,6 +57,13 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
   const [pendingUsers, setPendingUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('pending'); // pending, all
+  
+  // Change Password Dialog
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (open) {
