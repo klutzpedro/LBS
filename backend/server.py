@@ -9005,6 +9005,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 "source": "CP_API"
             }
         else:
+            clear_request_status()
             return {
                 "success": False,
                 "query_type": query_type,
