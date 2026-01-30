@@ -45,8 +45,20 @@ export const TargetMarkers = ({
         if (posKey && !isNaN(idx)) {
           console.log('[TargetMarkers] Selector clicked, posKey:', posKey, 'idx:', idx);
           
-          // Reset the lastHandledTargetIdRef so popup can be opened for this new selection
-          lastHandledTargetIdRef.current = null;
+          // Find the target at this position and index
+          const groupTargets = positionGroups[posKey];
+          const selectedTarget = groupTargets?.[idx];
+          
+          if (selectedTarget) {
+            // Update lastHandledTargetIdRef to this new target BEFORE calling onSelectTarget
+            // This prevents the useEffect from re-opening the popup
+            lastHandledTargetIdRef.current = selectedTarget.id;
+            
+            // Notify parent about the new selection (this updates selectedTargetForChat)
+            if (onSelectTarget) {
+              onSelectTarget(selectedTarget.id);
+            }
+          }
           
           setSelectedAtPosition(prev => ({ ...prev, [posKey]: idx }));
           
@@ -70,7 +82,7 @@ export const TargetMarkers = ({
     return () => {
       mapContainer.removeEventListener('click', handleSelectorClick, true);
     };
-  }, [map]);
+  }, [map, positionGroups, onSelectTarget]);
   
   const filteredTargets = targets.filter(t => {
     const hasData = t.data && t.data.latitude && t.data.longitude;
