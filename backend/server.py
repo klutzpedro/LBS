@@ -186,14 +186,21 @@ active_query_info = {
 }
 
 def set_active_query(user: str, query_type: str, query_value: str, last_msg_id: int = None):
-    """Set the active query info for validation"""
-    global active_query_info
+    """Set the active query info for validation and update request status"""
+    global active_query_info, current_request_status
     active_query_info = {
         "user": user,
         "query_type": query_type,
         "query_value": query_value,
         "started_at": datetime.now(timezone.utc).isoformat(),
         "last_msg_id": last_msg_id
+    }
+    # Also update request status for queue indicator
+    current_request_status = {
+        "is_busy": True,
+        "username": user,
+        "operation": f"{query_type} - {query_value[:15] if query_value else 'N/A'}...",
+        "started_at": datetime.now(timezone.utc).isoformat()
     }
     logger.info(f"[QUERY LOCK] Active query set: user={user}, type={query_type}, value={query_value[:20] if query_value else 'N/A'}...")
 
