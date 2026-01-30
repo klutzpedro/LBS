@@ -6672,7 +6672,7 @@ async def query_passport_simple_cp_api(query_type: str, query_value: str) -> dic
             output_lines.append(f"Jenis Kelamin: {item.get('jenis_kelamin') or item.get('JENIS_KELAMIN') or item.get('jk') or '-'}")
             
             # WNI specific fields
-            if query_type == 'passport_wni':
+            if query_type in ['passport_wni', 'passport_nik']:
                 output_lines.append(f"NIK: {item.get('nik') or item.get('NIK') or '-'}")
                 output_lines.append(f"Alamat: {item.get('alamat') or item.get('ALAMAT') or '-'}")
                 output_lines.append(f"Pekerjaan: {item.get('pekerjaan') or item.get('PEKERJAAN') or '-'}")
