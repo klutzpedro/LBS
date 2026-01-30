@@ -283,6 +283,9 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
   
   const statusInfo = getStatusInfo();
   
+  // About Dialog State
+  const [aboutOpen, setAboutOpen] = useState(false);
+  
   return (
     <div className="p-4 border-b" style={{ borderColor: 'var(--borders-default)' }}>
       <div className="flex items-center justify-between mb-4">
@@ -290,13 +293,16 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
           <img 
             src={netraLogo} 
             alt="NETRA Logo" 
-            className="w-10 h-10 object-contain"
+            className="w-10 h-10 object-contain cursor-pointer hover:opacity-80 transition-opacity"
             data-testid="sidebar-netra-logo"
+            onClick={() => setAboutOpen(true)}
+            title="Tentang NETRA"
           />
           <div>
             <h1 
-              className="text-xl font-bold"
+              className="text-xl font-bold cursor-pointer hover:opacity-80 transition-opacity"
               style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
+              onClick={() => setAboutOpen(true)}
             >
               NETRA
             </h1>
