@@ -9151,43 +9151,33 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         logger.info(f"[SIMPLE QUERY] Medsos-1 (Maigret) search for username: {query_value}")
         
         try:
-            import subprocess
+            import asyncio
             import re
-            import shlex
-            import os as os_module
             
             # Use lowercase for username search
             search_username = query_value.lower().strip()
             
-            # Sanitize username to prevent shell injection
-            safe_username = shlex.quote(search_username)
+            # Run maigret using asyncio subprocess
+            cmd = f'/usr/local/bin/python -m maigret {search_username} -n 100 --timeout 8'
             
-            # Output file for results
-            output_file = f'/tmp/maigret_output_{search_username}.txt'
+            logger.info(f"[MAIGRET] Running: {cmd}")
             
-            # Run maigret and redirect to file
-            cmd = f'python -m maigret {safe_username} -n 100 --timeout 8 2>&1 | strings > {output_file}'
-            
-            logger.info(f"[MAIGRET] Running command: {cmd}")
-            
-            result = subprocess.run(
+            proc = await asyncio.create_subprocess_shell(
                 cmd,
-                shell=True,
-                timeout=150,  # 2.5 minute timeout
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
                 cwd='/tmp'
             )
             
-            # Read output file
-            all_output = ''
             try:
-                with open(output_file, 'r') as f:
-                    all_output = f.read()
-                # Clean up
-                os_module.remove(output_file)
-            except Exception as read_err:
-                logger.warning(f"[MAIGRET] Could not read output file: {read_err}")
+                stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=150)
+                all_output = stdout.decode('utf-8', errors='ignore') if stdout else ''
+            except asyncio.TimeoutError:
+                proc.kill()
+                all_output = ''
+                logger.warning(f"[MAIGRET] Process timed out")
             
-            logger.info(f"[MAIGRET] Output length: {len(all_output)}")
+            logger.info(f"[MAIGRET] Raw output length: {len(all_output)}")
             
             # Parse results
             lines = []
@@ -9199,8 +9189,9 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             found_profiles = []
             
-            # Pattern to match: [+] SiteName: URL
-            pattern = r'\[\+\]\s*([^:]+?):\s*(https?://[^\s]+)'
+            # Pattern to match: [+] SiteName: URL (handles ANSI codes around it)
+            # More permissive pattern
+            pattern = r'\[\+\]\s*([^\n:]+?):\s*(https?://[^\s\x00-\x1f\n]+)'
             matches = re.findall(pattern, all_output)
             
             logger.info(f"[MAIGRET] Found {len(matches)} pattern matches")
