@@ -9297,6 +9297,17 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             loop = asyncio.get_event_loop()
             results = await loop.run_in_executor(None, run_social_analyzer)
             
+            # Helper function to parse rate (handles formats like '%100.0', '100', 100, etc)
+            def parse_rate(rate_val):
+                if rate_val is None:
+                    return 0
+                try:
+                    # Convert to string and clean
+                    rate_str = str(rate_val).replace('%', '').strip()
+                    return float(rate_str)
+                except:
+                    return 0
+            
             # Parse results
             lines = []
             lines.append(f"{'='*50}")
@@ -9318,15 +9329,15 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     
                     for profile in detected:
                         if isinstance(profile, dict):
-                            rate = profile.get('rate', 0)
+                            rate = parse_rate(profile.get('rate', 0))
                             # Only show profiles with high confidence (rate > 50)
-                            if rate and int(rate) > 50:
+                            if rate > 50:
                                 found_count += 1
                                 site_name = profile.get('site', profile.get('name', 'Unknown'))
                                 url = profile.get('link', profile.get('url', 'N/A'))
                                 title = profile.get('title', '')
                                 
-                                lines.append(f"✅ {site_name} (Confidence: {rate}%)")
+                                lines.append(f"✅ {site_name} (Confidence: {rate:.0f}%)")
                                 lines.append(f"   URL: {url}")
                                 if title:
                                     lines.append(f"   Title: {title}")
@@ -9336,25 +9347,25 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     similar = results.get('similar', []) or []
                     for profile in similar:
                         if isinstance(profile, dict):
-                            rate = profile.get('rate', 0)
-                            if rate and int(rate) > 70:  # Higher threshold for similar
+                            rate = parse_rate(profile.get('rate', 0))
+                            if rate > 70:  # Higher threshold for similar
                                 found_count += 1
                                 site_name = profile.get('site', profile.get('name', 'Unknown'))
                                 url = profile.get('link', profile.get('url', 'N/A'))
                                 
-                                lines.append(f"🔶 {site_name} (Similar - {rate}%)")
+                                lines.append(f"🔶 {site_name} (Similar - {rate:.0f}%)")
                                 lines.append(f"   URL: {url}")
                                 lines.append("")
             elif isinstance(results, list):
                 for profile in results:
                     if isinstance(profile, dict):
-                        rate = profile.get('rate', 0)
-                        if rate and int(rate) > 50:
+                        rate = parse_rate(profile.get('rate', 0))
+                        if rate > 50:
                             found_count += 1
                             site_name = profile.get('site', profile.get('name', 'Unknown'))
                             url = profile.get('link', profile.get('url', 'N/A'))
                             
-                            lines.append(f"✅ {site_name} (Confidence: {rate}%)")
+                            lines.append(f"✅ {site_name} (Confidence: {rate:.0f}%)")
                             lines.append(f"   URL: {url}")
                             lines.append("")
             
