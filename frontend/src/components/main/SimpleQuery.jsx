@@ -435,15 +435,15 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
         </DraggableDialogHeader>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto space-y-3" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto space-y-2" style={{ minHeight: 0 }}>
             {/* Status Message */}
             {isLoading && statusMessage && (
               <div 
-                className="p-3 rounded-lg flex items-center gap-3"
+                className="p-2 rounded flex items-center gap-2"
                 style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981' }}
               >
-                <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#10b981' }} />
-                <span className="text-sm" style={{ color: '#10b981' }}>{statusMessage}</span>
+                <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#10b981' }} />
+                <span className="text-xs" style={{ color: '#10b981' }}>{statusMessage}</span>
               </div>
             )}
             
@@ -451,10 +451,10 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
             {!result && (
               <>
                 <div>
-                  <Label className="text-xs mb-1.5 block" style={{ color: 'var(--foreground-secondary)' }}>
+                  <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
                     Pilih Jenis Query:
                   </Label>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-1">
                     {QUERY_TYPES.map((type) => {
                       const IconComponent = type.icon;
                       return (
