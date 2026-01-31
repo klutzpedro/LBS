@@ -452,10 +452,10 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
             {!result && (
               <>
                 <div>
-                  <Label className="text-sm mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                  <Label className="text-xs mb-1.5 block" style={{ color: 'var(--foreground-secondary)' }}>
                     Pilih Jenis Query:
                   </Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {QUERY_TYPES.map((type) => {
                       const IconComponent = type.icon;
                       return (
@@ -465,9 +465,9 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                             setSelectedType(type.id);
                             setSearchValue('');
                           }}
-                          className={`p-3 rounded-lg border text-left transition-all ${
-                            selectedType === type.id ? 'ring-2' : ''
-                          } ${type.fullWidth ? 'col-span-2' : ''}`}
+                          className={`px-2 py-1.5 rounded border text-left transition-all ${
+                            selectedType === type.id ? 'ring-1' : ''
+                          }`}
                           style={{
                             backgroundColor: selectedType === type.id 
                               ? 'rgba(16, 185, 129, 0.15)' 
@@ -477,22 +477,20 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                               : 'var(--borders-default)',
                             ringColor: '#10b981'
                           }}
+                          title={type.description}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <IconComponent 
-                              className="w-4 h-4" 
+                              className="w-3 h-3 flex-shrink-0" 
                               style={{ color: selectedType === type.id ? '#10b981' : 'var(--foreground-muted)' }} 
                             />
                             <span 
-                              className="text-sm font-medium"
+                              className="text-xs font-medium truncate"
                               style={{ color: 'var(--foreground-primary)' }}
                             >
                               {type.label}
                             </span>
                           </div>
-                          <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
-                            {type.description}
-                          </p>
                         </button>
                       );
                     })}
