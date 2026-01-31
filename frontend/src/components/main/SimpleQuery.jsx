@@ -538,6 +538,12 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                                 setSearchValue(filtered.toLowerCase());
                                 return;
                               }
+                              // For username (social media OSINT)
+                              if (currentType.inputValidation === PATTERNS.username) {
+                                const filtered = newValue.replace(/[^a-zA-Z0-9._-]/g, '');
+                                setSearchValue(filtered.toLowerCase());
+                                return;
+                              }
                             }
                             setSearchValue(newValue);
                           }}
