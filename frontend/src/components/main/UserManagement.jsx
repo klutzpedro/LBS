@@ -22,7 +22,8 @@ import {
   Maximize2,
   Key,
   Shield,
-  ShieldOff
+  ShieldOff,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
