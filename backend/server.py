@@ -9278,7 +9278,6 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         
         try:
             from importlib import import_module
-            import asyncio
             
             # Use lowercase for username search
             search_username = query_value.lower().strip()
