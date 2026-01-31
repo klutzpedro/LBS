@@ -793,12 +793,18 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
       capil_nik: CreditCard,
       nkk: Users,
       reghp: Phone,
+      reghp_phone: Phone,
       passport_wna: Plane,
       passport_wni: Plane,
       passport_nik: FileText,
       passport_number: FileText,
       plat_mobil: Car,
-      perlintasan: Plane
+      perlintasan: Plane,
+      breach_phone: ShieldAlert,
+      breach_email: Mail,
+      breach_name: ShieldAlert,
+      medsos_maigret: Globe,
+      medsos_social_analyzer: Share2
     };
     const Icon = icons[type] || Search;
     return <Icon className="w-4 h-4" />;
