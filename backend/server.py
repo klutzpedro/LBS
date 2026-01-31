@@ -9158,8 +9158,10 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             # Use lowercase for username search
             search_username = query_value.lower().strip()
             
+            # Run maigret and pipe through 'strings' to clean output
             result = subprocess.run(
-                ['python', '-m', 'maigret', search_username, '-n', '100', '--timeout', '8'],
+                f'python -m maigret {search_username} -n 100 --timeout 8 2>&1 | strings',
+                shell=True,
                 capture_output=True,
                 text=True,
                 timeout=120,  # 2 minute timeout
@@ -9176,24 +9178,14 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             found_profiles = []
             
-            # Combine stdout and stderr
-            all_output = (result.stdout or '') + '\n' + (result.stderr or '')
+            # Get output
+            all_output = result.stdout or ''
             
-            # Strip ANSI escape codes
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-            clean_output = ansi_escape.sub('', all_output)
+            logger.info(f"[MAIGRET] Output length: {len(all_output)}")
             
-            # Also strip other control characters and progress bar artifacts
-            clean_output = re.sub(r'\[[\d;]*m', '', clean_output)  # color codes
-            clean_output = re.sub(r'\[\?25[hl]', '', clean_output)  # cursor hide/show
-            clean_output = re.sub(r'Searching \|[^|]+\|[^,]+,', '', clean_output)  # progress bar
-            
-            logger.info(f"[MAIGRET] Clean output length: {len(clean_output)}")
-            
-            # Pattern to match: [+] SiteName: URL or on N: [+] SiteName: URL
-            # More flexible pattern
-            pattern = r'\[\+\]\s*([^:]+?):\s*(https?://[^\s\x00-\x1f]+)'
-            matches = re.findall(pattern, clean_output)
+            # Pattern to match: [+] SiteName: URL
+            pattern = r'\[\+\]\s*([^:]+?):\s*(https?://[^\s]+)'
+            matches = re.findall(pattern, all_output)
             
             logger.info(f"[MAIGRET] Found {len(matches)} pattern matches")
             
@@ -9206,7 +9198,6 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                         'site': site_name,
                         'url': url
                     })
-                    logger.debug(f"[MAIGRET] Found: {site_name} -> {url}")
             
             for profile in found_profiles:
                 lines.append(f"✅ {profile['site']}")
