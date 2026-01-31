@@ -9152,14 +9152,14 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         
         try:
             import subprocess
-            import json as json_module
+            import re
             
-            # Run maigret with JSON output - search top 100 sites for speed
+            # Run maigret - search top 100 sites for speed
             # Use lowercase for username search
             search_username = query_value.lower().strip()
             
             result = subprocess.run(
-                ['python', '-m', 'maigret', search_username, '--json', 'simple', '-n', '100', '--timeout', '10'],
+                ['python', '-m', 'maigret', search_username, '-n', '100', '--timeout', '8'],
                 capture_output=True,
                 text=True,
                 timeout=120,  # 2 minute timeout
@@ -9174,42 +9174,34 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             lines.append(f"{'='*50}")
             lines.append("")
             
-            found_count = 0
+            found_profiles = []
             
-            # Try to parse JSON output
-            if result.stdout:
-                try:
-                    # Maigret outputs JSON to stdout with --json simple
-                    for line in result.stdout.strip().split('\n'):
-                        if line.strip():
-                            try:
-                                data = json_module.loads(line)
-                                if isinstance(data, dict) and data.get('username'):
-                                    # This is result data
-                                    for site_name, site_data in data.items():
-                                        if site_name != 'username' and isinstance(site_data, dict):
-                                            status = site_data.get('status', '')
-                                            if status == 'Claimed':
-                                                found_count += 1
-                                                url = site_data.get('url_user', 'N/A')
-                                                lines.append(f"✅ {site_name}")
-                                                lines.append(f"   URL: {url}")
-                                                lines.append("")
-                            except:
-                                pass
-                except Exception as parse_err:
-                    logger.warning(f"[MAIGRET] JSON parse warning: {parse_err}")
+            # Parse stdout and stderr for [+] patterns which indicate found profiles
+            all_output = (result.stdout or '') + '\n' + (result.stderr or '')
             
-            # Also parse stderr for additional info (maigret prints progress there)
-            if result.stderr:
-                for line in result.stderr.split('\n'):
-                    if '[+]' in line or 'Claimed' in line:
-                        # Extract found profiles from stderr
-                        clean_line = line.strip()
-                        if clean_line and 'Claimed' in clean_line:
-                            found_count += 1
-                            lines.append(f"✅ {clean_line}")
-                            lines.append("")
+            # Pattern to match: [+] SiteName: URL
+            pattern = r'\[\+\]\s*([^:]+):\s*(https?://[^\s]+)'
+            matches = re.findall(pattern, all_output)
+            
+            for site_name, url in matches:
+                site_name = site_name.strip()
+                url = url.strip()
+                # Avoid duplicates
+                if url not in [p['url'] for p in found_profiles]:
+                    found_profiles.append({
+                        'site': site_name,
+                        'url': url
+                    })
+            
+            # Also look for detailed info blocks (├─ and └─)
+            detail_pattern = r'[├└]─(\w+):\s*(.+)'
+            
+            for profile in found_profiles:
+                lines.append(f"✅ {profile['site']}")
+                lines.append(f"   URL: {profile['url']}")
+                lines.append("")
+            
+            found_count = len(found_profiles)
             
             lines.append(f"{'='*50}")
             lines.append(f"Total Ditemukan: {found_count} profil")
@@ -9232,7 +9224,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                 {"$set": cache_doc},
                 upsert=True
             )
-            logger.info(f"[MAIGRET] Saved result to cache: {cache_key}")
+            logger.info(f"[MAIGRET] Saved result to cache: {cache_key}, found {found_count} profiles")
             
             clear_request_status()
             return {
