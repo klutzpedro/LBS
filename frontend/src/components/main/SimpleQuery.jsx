@@ -50,6 +50,7 @@ const PATTERNS = {
   email: /^[a-zA-Z0-9@._+-]+$/,            // Email characters
   nik: /^\d{16}$/,                         // Exactly 16 digits
   phone62: /^62\d{8,13}$/,                 // Phone starting with 62
+  username: /^[a-zA-Z0-9._-]+$/,           // Username: letters, numbers, dots, underscores, hyphens
 };
 
 // Query types configuration
