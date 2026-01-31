@@ -9151,15 +9151,14 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         logger.info(f"[SIMPLE QUERY] Medsos-1 (Maigret) search for username: {query_value}")
         
         try:
-            import asyncio
             import re
+            import sys as sys_module
             
             # Use lowercase for username search
             search_username = query_value.lower().strip()
             
             # Run maigret using asyncio subprocess
             # Use sys.executable to get the current Python interpreter path
-            import sys as sys_module
             python_path = sys_module.executable
             cmd = f'{python_path} -m maigret {search_username} -n 100 --timeout 8'
             
