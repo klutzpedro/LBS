@@ -498,12 +498,12 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
 
                 {/* Search Input */}
                 {selectedType && (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div>
-                      <Label className="text-sm mb-2 block" style={{ color: 'var(--foreground-secondary)' }}>
+                      <Label className="text-xs mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
                         {currentType?.label}:
                       </Label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1.5">
                         <Input
                           placeholder={currentType?.placeholder}
                           value={searchValue}
@@ -546,12 +546,13 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                           }}
                           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                           disabled={isLoading}
-                          className="flex-1"
+                          className="flex-1 h-8 text-sm"
                           style={{ color: '#fff', backgroundColor: 'var(--background-tertiary)' }}
                         />
                         <Button
                           onClick={handleSearch}
                           disabled={isLoading || !searchValue}
+                          className="h-8 px-3"
                           style={{
                             background: 'linear-gradient(145deg, #f59e0b, #d97706)',
                             color: '#fff'
