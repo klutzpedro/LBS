@@ -9154,6 +9154,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             import subprocess
             import re
             import shlex
+            import os as os_module
             
             # Use lowercase for username search
             search_username = query_value.lower().strip()
@@ -9161,19 +9162,32 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             # Sanitize username to prevent shell injection
             safe_username = shlex.quote(search_username)
             
-            # Run maigret with shell pipe to strings and grep for clean output
-            cmd = f'python -m maigret {safe_username} -n 100 --timeout 8 2>&1 | strings | grep "\\[+\\]"'
+            # Output file for results
+            output_file = f'/tmp/maigret_output_{search_username}.txt'
+            
+            # Run maigret and redirect to file
+            cmd = f'python -m maigret {safe_username} -n 100 --timeout 8 2>&1 | strings > {output_file}'
             
             logger.info(f"[MAIGRET] Running command: {cmd}")
             
             result = subprocess.run(
                 cmd,
                 shell=True,
-                capture_output=True,
-                text=True,
                 timeout=150,  # 2.5 minute timeout
                 cwd='/tmp'
             )
+            
+            # Read output file
+            all_output = ''
+            try:
+                with open(output_file, 'r') as f:
+                    all_output = f.read()
+                # Clean up
+                os_module.remove(output_file)
+            except Exception as read_err:
+                logger.warning(f"[MAIGRET] Could not read output file: {read_err}")
+            
+            logger.info(f"[MAIGRET] Output length: {len(all_output)}")
             
             # Parse results
             lines = []
@@ -9184,11 +9198,6 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             lines.append("")
             
             found_profiles = []
-            
-            # Get output - already filtered to [+] lines
-            all_output = result.stdout or ''
-            
-            logger.info(f"[MAIGRET] Output length: {len(all_output)}")
             
             # Pattern to match: [+] SiteName: URL
             pattern = r'\[\+\]\s*([^:]+?):\s*(https?://[^\s]+)'
