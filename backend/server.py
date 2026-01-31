@@ -9145,6 +9145,267 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             }
     
     # ============================================
+    # OSINT SOCIAL MEDIA SEARCH - MEDSOS-1 (MAIGRET)
+    # ============================================
+    if query_type == 'medsos_maigret':
+        logger.info(f"[SIMPLE QUERY] Medsos-1 (Maigret) search for username: {query_value}")
+        
+        try:
+            import subprocess
+            import json as json_module
+            
+            # Run maigret with JSON output - search top 100 sites for speed
+            # Use lowercase for username search
+            search_username = query_value.lower().strip()
+            
+            result = subprocess.run(
+                ['python', '-m', 'maigret', search_username, '--json', 'simple', '-n', '100', '--timeout', '10'],
+                capture_output=True,
+                text=True,
+                timeout=120,  # 2 minute timeout
+                cwd='/tmp'
+            )
+            
+            # Parse results
+            lines = []
+            lines.append(f"{'='*50}")
+            lines.append(f"🔍 OSINT MEDSOS-1 (MAIGRET)")
+            lines.append(f"Username: {search_username}")
+            lines.append(f"{'='*50}")
+            lines.append("")
+            
+            found_count = 0
+            
+            # Try to parse JSON output
+            if result.stdout:
+                try:
+                    # Maigret outputs JSON to stdout with --json simple
+                    for line in result.stdout.strip().split('\n'):
+                        if line.strip():
+                            try:
+                                data = json_module.loads(line)
+                                if isinstance(data, dict) and data.get('username'):
+                                    # This is result data
+                                    for site_name, site_data in data.items():
+                                        if site_name != 'username' and isinstance(site_data, dict):
+                                            status = site_data.get('status', '')
+                                            if status == 'Claimed':
+                                                found_count += 1
+                                                url = site_data.get('url_user', 'N/A')
+                                                lines.append(f"✅ {site_name}")
+                                                lines.append(f"   URL: {url}")
+                                                lines.append("")
+                            except:
+                                pass
+                except Exception as parse_err:
+                    logger.warning(f"[MAIGRET] JSON parse warning: {parse_err}")
+            
+            # Also parse stderr for additional info (maigret prints progress there)
+            if result.stderr:
+                for line in result.stderr.split('\n'):
+                    if '[+]' in line or 'Claimed' in line:
+                        # Extract found profiles from stderr
+                        clean_line = line.strip()
+                        if clean_line and 'Claimed' in clean_line:
+                            found_count += 1
+                            lines.append(f"✅ {clean_line}")
+                            lines.append("")
+            
+            lines.append(f"{'='*50}")
+            lines.append(f"Total Ditemukan: {found_count} profil")
+            lines.append(f"{'='*50}")
+            
+            raw_response = '\n'.join(lines)
+            
+            # Save to cache
+            cache_doc = {
+                "cache_key": cache_key,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "queried_by": username,
+                "created_by": username,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.simple_query_cache.update_one(
+                {"cache_key": cache_key},
+                {"$set": cache_doc},
+                upsert=True
+            )
+            logger.info(f"[MAIGRET] Saved result to cache: {cache_key}")
+            
+            clear_request_status()
+            return {
+                "success": True,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "verified": True,
+                "cached": False,
+                "source": "MAIGRET_OSINT"
+            }
+            
+        except subprocess.TimeoutExpired:
+            logger.error(f"[MAIGRET] Timeout after 120 seconds")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": "Pencarian timeout (>2 menit). Coba lagi atau gunakan username yang lebih spesifik.",
+                "source": "MAIGRET_OSINT"
+            }
+        except Exception as e:
+            logger.error(f"[MAIGRET] Exception: {e}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "MAIGRET_OSINT"
+            }
+    
+    # ============================================
+    # OSINT SOCIAL MEDIA SEARCH - MEDSOS-2 (SOCIAL ANALYZER)
+    # ============================================
+    if query_type == 'medsos_social_analyzer':
+        logger.info(f"[SIMPLE QUERY] Medsos-2 (Social Analyzer) search for username: {query_value}")
+        
+        try:
+            from importlib import import_module
+            import asyncio
+            
+            # Use lowercase for username search
+            search_username = query_value.lower().strip()
+            
+            # Run Social Analyzer in thread pool to avoid blocking
+            def run_social_analyzer():
+                try:
+                    SocialAnalyzer = import_module("social-analyzer").SocialAnalyzer(silent=True)
+                    results = SocialAnalyzer.run_as_object(
+                        username=search_username,
+                        websites="facebook twitter instagram linkedin youtube tiktok github pinterest tumblr reddit snapchat telegram whatsapp discord spotify medium twitch vimeo flickr behance dribbble",
+                        mode="fast",
+                        output="json",
+                        timeout=15
+                    )
+                    return results
+                except Exception as e:
+                    return {"error": str(e)}
+            
+            loop = asyncio.get_event_loop()
+            results = await loop.run_in_executor(None, run_social_analyzer)
+            
+            # Parse results
+            lines = []
+            lines.append(f"{'='*50}")
+            lines.append(f"🔍 OSINT MEDSOS-2 (SOCIAL ANALYZER)")
+            lines.append(f"Username: {search_username}")
+            lines.append(f"{'='*50}")
+            lines.append("")
+            
+            found_count = 0
+            
+            if isinstance(results, dict):
+                if "error" in results:
+                    lines.append(f"⚠️ Error: {results['error']}")
+                else:
+                    # Parse detected profiles
+                    detected = results.get('detected', []) or []
+                    if not detected and isinstance(results, list):
+                        detected = results
+                    
+                    for profile in detected:
+                        if isinstance(profile, dict):
+                            rate = profile.get('rate', 0)
+                            # Only show profiles with high confidence (rate > 50)
+                            if rate and int(rate) > 50:
+                                found_count += 1
+                                site_name = profile.get('site', profile.get('name', 'Unknown'))
+                                url = profile.get('link', profile.get('url', 'N/A'))
+                                title = profile.get('title', '')
+                                
+                                lines.append(f"✅ {site_name} (Confidence: {rate}%)")
+                                lines.append(f"   URL: {url}")
+                                if title:
+                                    lines.append(f"   Title: {title}")
+                                lines.append("")
+                    
+                    # Also check 'similar' profiles
+                    similar = results.get('similar', []) or []
+                    for profile in similar:
+                        if isinstance(profile, dict):
+                            rate = profile.get('rate', 0)
+                            if rate and int(rate) > 70:  # Higher threshold for similar
+                                found_count += 1
+                                site_name = profile.get('site', profile.get('name', 'Unknown'))
+                                url = profile.get('link', profile.get('url', 'N/A'))
+                                
+                                lines.append(f"🔶 {site_name} (Similar - {rate}%)")
+                                lines.append(f"   URL: {url}")
+                                lines.append("")
+            elif isinstance(results, list):
+                for profile in results:
+                    if isinstance(profile, dict):
+                        rate = profile.get('rate', 0)
+                        if rate and int(rate) > 50:
+                            found_count += 1
+                            site_name = profile.get('site', profile.get('name', 'Unknown'))
+                            url = profile.get('link', profile.get('url', 'N/A'))
+                            
+                            lines.append(f"✅ {site_name} (Confidence: {rate}%)")
+                            lines.append(f"   URL: {url}")
+                            lines.append("")
+            
+            lines.append(f"{'='*50}")
+            lines.append(f"Total Ditemukan: {found_count} profil")
+            lines.append(f"{'='*50}")
+            
+            raw_response = '\n'.join(lines)
+            
+            # Save to cache
+            cache_doc = {
+                "cache_key": cache_key,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "queried_by": username,
+                "created_by": username,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.simple_query_cache.update_one(
+                {"cache_key": cache_key},
+                {"$set": cache_doc},
+                upsert=True
+            )
+            logger.info(f"[SOCIAL_ANALYZER] Saved result to cache: {cache_key}")
+            
+            clear_request_status()
+            return {
+                "success": True,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "verified": True,
+                "cached": False,
+                "source": "SOCIAL_ANALYZER_OSINT"
+            }
+            
+        except Exception as e:
+            logger.error(f"[SOCIAL_ANALYZER] Exception: {e}")
+            import traceback
+            logger.error(f"[SOCIAL_ANALYZER] Traceback: {traceback.format_exc()}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "SOCIAL_ANALYZER_OSINT"
+            }
+    
+    # ============================================
     # NON-PASSPORT QUERIES USE TELEGRAM BOT
     # ============================================
     logger.info(f"[SIMPLE QUERY] Querying via Telegram bot for user: {username}...")
