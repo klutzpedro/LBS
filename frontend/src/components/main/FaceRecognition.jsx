@@ -512,7 +512,7 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                 <Button
                   onClick={startFaceRecognition}
                   disabled={!uploadedImage || isProcessing}
-                  className="w-full"
+                  className="w-full h-8 text-sm"
                   style={{
                     background: uploadedImage ? 'linear-gradient(145deg, #06b6d4, #0891b2)' : '#4b5563',
                     color: '#fff'
@@ -520,12 +520,12 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                       Memproses...
                     </>
                   ) : (
                     <>
-                      <Camera className="w-4 h-4 mr-2" />
+                      <Camera className="w-3 h-3 mr-1" />
                       Mulai Face Recognition
                     </>
                   )}
@@ -535,15 +535,15 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
 
             {/* Results Section */}
             {(currentStep === 'completed' || currentStep === 'fetching_nik') && (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Photo Comparison */}
                 {(uploadedImagePreview || botPhoto) && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-2">
                     <div 
-                      className="p-3 rounded-lg text-center"
+                      className="p-2 rounded-lg text-center"
                       style={{ backgroundColor: 'var(--background-tertiary)' }}
                     >
-                      <p className="text-xs font-semibold mb-2" style={{ color: '#f59e0b' }}>
+                      <p className="text-xs font-semibold mb-1" style={{ color: '#f59e0b' }}>
                         📷 FOTO INPUT
                       </p>
                       {uploadedImagePreview ? (
