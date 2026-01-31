@@ -509,7 +509,7 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
                 )
               )}
             </div>
-          </>
+          </div>
         )}
       </DraggableDialogContent>
       
