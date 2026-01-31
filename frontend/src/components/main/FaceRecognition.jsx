@@ -878,35 +878,51 @@ export const FaceRecognitionHistoryDialog = ({ open, onOpenChange, onSelectItem 
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className={`${isMinimized ? 'h-auto' : 'max-h-[85vh]'} overflow-hidden flex flex-col`}
+        className={`${isMinimized ? 'h-auto' : 'max-h-[85vh]'} overflow-hidden flex flex-col p-0`}
         style={{ 
           width: isMinimized ? '300px' : '600px',
           maxWidth: '95vw',
           backgroundColor: 'var(--background-elevated)',
-          border: '1px solid var(--borders-default)'
+          border: '1px solid var(--borders-default)',
+          borderRadius: '8px'
         }}
       >
-        <DraggableDialogHeader className="cursor-move flex-shrink-0">
-          <div className="flex items-center justify-between w-full">
-            <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <History className="w-5 h-5" style={{ color: '#06b6d4' }} />
+        {/* Header with drag handle */}
+        <div 
+          className="cursor-move flex items-center justify-between px-3 py-2 flex-shrink-0"
+          style={{ 
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+            borderBottom: '1px solid var(--borders-default)'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4" style={{ color: '#06b6d4' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
               History Face Recognition
-            </DraggableDialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-              </Button>
-            </div>
+            </span>
           </div>
-        </DraggableDialogHeader>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-white/10"
+              onClick={() => setIsMinimized(!isMinimized)}
+            >
+              {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-red-500/20"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-hidden flex flex-col p-4">
+          <div className="flex-1 overflow-hidden flex flex-col p-3">
             {/* Search Filter */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--foreground-muted)' }} />
