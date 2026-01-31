@@ -267,51 +267,68 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className="flex flex-col p-4"
+        className="flex flex-col p-0"
         style={{ 
           width: isMinimized ? '300px' : '600px',
           maxWidth: '95vw',
           height: isMinimized ? 'auto' : '70vh',
           maxHeight: '80vh',
           backgroundColor: 'var(--background-elevated)',
-          border: '1px solid var(--borders-default)'
+          border: '1px solid var(--borders-default)',
+          borderRadius: '8px',
+          overflow: 'hidden'
         }}
       >
-        <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-3">
-          <div className="flex items-center justify-between w-full">
-            <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <Users className="w-5 h-5" style={{ color: '#8b5cf6' }} />
+        {/* Header with drag handle */}
+        <div 
+          className="cursor-move flex items-center justify-between px-3 py-2 flex-shrink-0"
+          style={{ 
+            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            borderBottom: '1px solid var(--borders-default)'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
               Kelola User
-              {pendingUsers.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
-                  {pendingUsers.length}
-                </span>
-              )}
-            </DraggableDialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={fetchUsers}
-                title="Refresh"
-              >
-                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
-              </Button>
-            </div>
+            </span>
+            {pendingUsers.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">
+                {pendingUsers.length}
+              </span>
+            )}
           </div>
-        </DraggableDialogHeader>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-white/10"
+              onClick={fetchUsers}
+              title="Refresh"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-white/10"
+              onClick={() => setIsMinimized(!isMinimized)}
+            >
+              {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-red-500/20"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
 
         {!isMinimized && (
-          <>
+          <div className="p-4">
             {/* Tabs */}
             <div className="flex gap-2 mb-4">
               <Button
