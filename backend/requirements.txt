@@ -126,3 +126,7 @@ yarl==1.22.0
 zipp==3.23.0
 secure==1.0.1
 slowapi==0.1.9
+
+# OSINT Social Media Search
+maigret==0.5.0
+social-analyzer==0.45
