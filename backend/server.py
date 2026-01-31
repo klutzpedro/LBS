@@ -9176,25 +9176,37 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             found_profiles = []
             
-            # Parse stdout and stderr for [+] patterns which indicate found profiles
+            # Combine stdout and stderr
             all_output = (result.stdout or '') + '\n' + (result.stderr or '')
             
-            # Pattern to match: [+] SiteName: URL
-            pattern = r'\[\+\]\s*([^:]+):\s*(https?://[^\s]+)'
-            matches = re.findall(pattern, all_output)
+            # Strip ANSI escape codes
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            clean_output = ansi_escape.sub('', all_output)
+            
+            # Also strip other control characters and progress bar artifacts
+            clean_output = re.sub(r'\[[\d;]*m', '', clean_output)  # color codes
+            clean_output = re.sub(r'\[\?25[hl]', '', clean_output)  # cursor hide/show
+            clean_output = re.sub(r'Searching \|[^|]+\|[^,]+,', '', clean_output)  # progress bar
+            
+            logger.info(f"[MAIGRET] Clean output length: {len(clean_output)}")
+            
+            # Pattern to match: [+] SiteName: URL or on N: [+] SiteName: URL
+            # More flexible pattern
+            pattern = r'\[\+\]\s*([^:]+?):\s*(https?://[^\s\x00-\x1f]+)'
+            matches = re.findall(pattern, clean_output)
+            
+            logger.info(f"[MAIGRET] Found {len(matches)} pattern matches")
             
             for site_name, url in matches:
                 site_name = site_name.strip()
-                url = url.strip()
+                url = url.strip().rstrip(',').rstrip(')')
                 # Avoid duplicates
                 if url not in [p['url'] for p in found_profiles]:
                     found_profiles.append({
                         'site': site_name,
                         'url': url
                     })
-            
-            # Also look for detailed info blocks (├─ and └─)
-            detail_pattern = r'[├└]─(\w+):\s*(.+)'
+                    logger.debug(f"[MAIGRET] Found: {site_name} -> {url}")
             
             for profile in found_profiles:
                 lines.append(f"✅ {profile['site']}")
