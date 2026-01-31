@@ -405,38 +405,37 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className="flex flex-col p-4"
+        className="flex flex-col p-3"
         style={{ 
-          width: isMinimized ? '300px' : '650px',
+          width: isMinimized ? '280px' : '520px',
           maxWidth: '95vw',
-          height: isMinimized ? 'auto' : 'auto',
-          minHeight: isMinimized ? 'auto' : '700px',
-          maxHeight: '95vh',
+          height: 'auto',
+          maxHeight: '85vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
       >
-        <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-3">
+        <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-2">
           <div className="flex items-center justify-between w-full">
-            <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <Search className="w-5 h-5" style={{ color: '#10b981' }} />
+            <DraggableDialogTitle className="flex items-center gap-2 text-sm" style={{ color: 'var(--foreground-primary)' }}>
+              <Search className="w-4 h-4" style={{ color: '#10b981' }} />
               SIMPLE QUERY
             </DraggableDialogTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-5 w-5"
                 onClick={() => setIsMinimized(!isMinimized)}
               >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
               </Button>
             </div>
           </div>
         </DraggableDialogHeader>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto space-y-3" style={{ minHeight: 0 }}>
             {/* Status Message */}
             {isLoading && statusMessage && (
               <div 
