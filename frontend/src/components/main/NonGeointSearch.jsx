@@ -2525,43 +2525,58 @@ export const NonGeointSearchDialog = ({
         }
       }}>
         <DraggableDialogContent 
-          className="flex flex-col"
+          className="flex flex-col p-0"
           style={{ 
             backgroundColor: 'var(--background-elevated)',
             border: '1px solid var(--borders-default)',
+            borderRadius: '8px',
+            overflow: 'hidden',
             width: '700px',
             maxWidth: '95vw',
             height: '85vh',
             maxHeight: '90vh'
           }}
         >
-          <DraggableDialogHeader>
-            <div className="flex items-center justify-between w-full pr-8">
-              <DraggableDialogTitle 
-                className="flex items-center gap-2"
-                style={{ color: 'var(--foreground-primary)' }}
-              >
-                <Search className="w-5 h-5" style={{ color: 'var(--accent-secondary)' }} />
+          {/* Header with drag handle */}
+          <div 
+            className="cursor-move flex items-center justify-between px-3 py-2 flex-shrink-0"
+            style={{ 
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              borderBottom: '1px solid var(--borders-default)'
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4" style={{ color: 'var(--accent-secondary)' }} />
+              <span className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
                 FULL QUERY
-                {isInvestigating && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white animate-pulse">
-                    PROCESSING
-                  </span>
-                )}
-              </DraggableDialogTitle>
-              {/* Minimize Button */}
+              </span>
+              {isInvestigating && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-red-500 text-white animate-pulse">
+                  PROCESSING
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
+                className="h-6 w-6 rounded hover:bg-white/10"
                 onClick={() => handleMinimizeOrClose('minimize')}
-                className="h-7 w-7 p-0"
                 title="Minimize"
-                style={{ color: 'var(--foreground-muted)' }}
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-3.5 h-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded hover:bg-red-500/20"
+                onClick={() => handleMinimizeOrClose('close')}
+                title="Close"
+              >
+                <X className="w-3.5 h-3.5" />
               </Button>
             </div>
-          </DraggableDialogHeader>
+          </div>
 
           {/* Scrollable Content Area */}
           <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
