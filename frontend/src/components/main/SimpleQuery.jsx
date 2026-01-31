@@ -28,7 +28,9 @@ import {
   X,
   Download,
   ShieldAlert,
-  Mail
+  Mail,
+  Globe,
+  Share2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
