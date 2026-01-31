@@ -9158,8 +9158,9 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             search_username = query_value.lower().strip()
             
             # Run maigret using asyncio subprocess
-            # Use the correct python path from venv
-            python_path = '/root/.venv/bin/python'
+            # Use sys.executable to get the current Python interpreter path
+            import sys as sys_module
+            python_path = sys_module.executable
             cmd = f'{python_path} -m maigret {search_username} -n 100 --timeout 8'
             
             logger.info(f"[MAIGRET] Running: {cmd}")
