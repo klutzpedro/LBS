@@ -195,6 +195,29 @@ const QUERY_TYPES = [
     validation: (v) => v.length >= 3 && PATTERNS.alphabetOnly.test(v),
     inputValidation: PATTERNS.alphabetOnly,
     errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
+  },
+  // ============================================
+  // OSINT SOCIAL MEDIA SEARCH
+  // ============================================
+  { 
+    id: 'medsos_maigret', 
+    label: 'Medsos-1 (Maigret)', 
+    description: 'OSINT: Cari profil username di 2500+ situs',
+    icon: Globe,
+    placeholder: 'Masukkan username (ex: john_doe)...',
+    validation: (v) => v.length >= 3 && PATTERNS.username.test(v),
+    inputValidation: PATTERNS.username,
+    errorMsg: 'Username minimal 3 karakter (huruf, angka, ., _, -)'
+  },
+  { 
+    id: 'medsos_social_analyzer', 
+    label: 'Medsos-2 (Social Analyzer)', 
+    description: 'OSINT: Analisis profil di medsos populer',
+    icon: Share2,
+    placeholder: 'Masukkan username (ex: john_doe)...',
+    validation: (v) => v.length >= 3 && PATTERNS.username.test(v),
+    inputValidation: PATTERNS.username,
+    errorMsg: 'Username minimal 3 karakter (huruf, angka, ., _, -)'
   }
 ];
 
