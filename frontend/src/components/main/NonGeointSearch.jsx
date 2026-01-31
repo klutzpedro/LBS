@@ -30,7 +30,8 @@ import {
   GitBranch,
   Minus,
   Maximize2,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
