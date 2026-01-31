@@ -412,47 +412,47 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className="overflow-hidden flex flex-col p-4"
+        className="overflow-hidden flex flex-col p-3"
         style={{ 
-          width: isMinimized ? '300px' : '700px',
+          width: isMinimized ? '280px' : '480px',
           maxWidth: '95vw',
-          height: isMinimized ? 'auto' : '80vh',
-          maxHeight: '85vh',
+          height: 'auto',
+          maxHeight: '80vh',
           backgroundColor: 'var(--background-elevated)',
           border: '1px solid var(--borders-default)'
         }}
       >
         <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-2">
           <div className="flex items-center justify-between w-full">
-            <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
-              <Camera className="w-5 h-5" style={{ color: '#06b6d4' }} />
+            <DraggableDialogTitle className="flex items-center gap-2 text-sm" style={{ color: 'var(--foreground-primary)' }}>
+              <Camera className="w-4 h-4" style={{ color: '#06b6d4' }} />
               Face Recognition
             </DraggableDialogTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
+                className="h-5 w-5"
                 onClick={() => setIsMinimized(!isMinimized)}
               >
-                {isMinimized ? <Maximize2 className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+                {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
               </Button>
             </div>
           </div>
         </DraggableDialogHeader>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto space-y-4" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto space-y-2" style={{ minHeight: 0 }}>
             {/* Status Message */}
             {statusMessage && (
               <div 
-                className="p-3 rounded-md text-center text-sm"
+                className="p-2 rounded text-center text-xs"
                 style={{ 
                   backgroundColor: 'rgba(6, 182, 212, 0.1)',
                   color: '#06b6d4'
                 }}
               >
-                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                <Loader2 className="w-3 h-3 animate-spin inline mr-1" />
                 {statusMessage}
               </div>
             )}
@@ -462,8 +462,8 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
 
             {/* Upload Section */}
             {currentStep === 'upload' && (
-              <div className="space-y-4">
-                <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+              <div className="space-y-2">
+                <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                   Upload foto wajah untuk mencari kecocokan di database Dukcapil
                 </p>
 
@@ -471,28 +471,28 @@ export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
                   onClick={() => fileInputRef.current?.click()}
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-cyan-500 transition-colors"
+                  className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-cyan-500 transition-colors"
                   style={{ 
                     borderColor: uploadedImagePreview ? '#06b6d4' : 'var(--borders-default)',
                     backgroundColor: 'var(--background-tertiary)'
                   }}
                 >
                   {uploadedImagePreview ? (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <img 
                         src={uploadedImagePreview} 
                         alt="Preview" 
-                        className="max-h-48 mx-auto rounded-lg shadow-lg"
+                        className="max-h-32 mx-auto rounded-lg shadow-lg"
                       />
                       <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                         Klik untuk ganti foto
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      <Upload className="w-12 h-12 mx-auto" style={{ color: 'var(--foreground-muted)' }} />
-                      <p style={{ color: 'var(--foreground-primary)' }}>
-                        Klik atau drag & drop foto di sini
+                    <div className="space-y-2">
+                      <Upload className="w-8 h-8 mx-auto" style={{ color: 'var(--foreground-muted)' }} />
+                      <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                        Klik atau drag & drop foto
                       </p>
                       <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                         Format: JPG, PNG (Max 5MB)
