@@ -9153,18 +9153,25 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         try:
             import subprocess
             import re
+            import shlex
             
-            # Run maigret - search top 100 sites for speed
             # Use lowercase for username search
             search_username = query_value.lower().strip()
             
-            # Run maigret and pipe through 'strings' to clean output
+            # Sanitize username to prevent shell injection
+            safe_username = shlex.quote(search_username)
+            
+            # Run maigret with shell pipe to strings and grep for clean output
+            cmd = f'python -m maigret {safe_username} -n 100 --timeout 8 2>&1 | strings | grep "\\[+\\]"'
+            
+            logger.info(f"[MAIGRET] Running command: {cmd}")
+            
             result = subprocess.run(
-                f'python -m maigret {search_username} -n 100 --timeout 8 2>&1 | strings',
+                cmd,
                 shell=True,
                 capture_output=True,
                 text=True,
-                timeout=120,  # 2 minute timeout
+                timeout=150,  # 2.5 minute timeout
                 cwd='/tmp'
             )
             
@@ -9178,7 +9185,7 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             found_profiles = []
             
-            # Get output
+            # Get output - already filtered to [+] lines
             all_output = result.stdout or ''
             
             logger.info(f"[MAIGRET] Output length: {len(all_output)}")
