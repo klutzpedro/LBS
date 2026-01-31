@@ -405,37 +405,54 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
   return (
     <DraggableDialog open={open} onOpenChange={onOpenChange}>
       <DraggableDialogContent 
-        className="flex flex-col p-3"
+        className="flex flex-col p-0"
         style={{ 
           width: isMinimized ? '280px' : '520px',
           maxWidth: '95vw',
           height: 'auto',
           maxHeight: '85vh',
           backgroundColor: 'var(--background-elevated)',
-          border: '1px solid var(--borders-default)'
+          border: '1px solid var(--borders-default)',
+          borderRadius: '8px',
+          overflow: 'hidden'
         }}
       >
-        <DraggableDialogHeader className="cursor-move flex-shrink-0 mb-2">
-          <div className="flex items-center justify-between w-full">
-            <DraggableDialogTitle className="flex items-center gap-2 text-sm" style={{ color: 'var(--foreground-primary)' }}>
-              <Search className="w-4 h-4" style={{ color: '#10b981' }} />
+        {/* Header with drag handle */}
+        <div 
+          className="cursor-move flex items-center justify-between px-3 py-2 flex-shrink-0"
+          style={{ 
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            borderBottom: '1px solid var(--borders-default)'
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <Search className="w-4 h-4" style={{ color: '#10b981' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
               SIMPLE QUERY
-            </DraggableDialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                onClick={() => setIsMinimized(!isMinimized)}
-              >
-                {isMinimized ? <Maximize2 className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-              </Button>
-            </div>
+            </span>
           </div>
-        </DraggableDialogHeader>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-white/10"
+              onClick={() => setIsMinimized(!isMinimized)}
+            >
+              {isMinimized ? <Maximize2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded hover:bg-red-500/20"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </div>
 
         {!isMinimized && (
-          <div className="flex-1 overflow-y-auto space-y-2" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto space-y-2 p-3" style={{ minHeight: 0 }}>
             {/* Status Message */}
             {isLoading && statusMessage && (
               <div 
