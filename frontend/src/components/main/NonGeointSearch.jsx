@@ -3088,12 +3088,24 @@ export const NonGeointSearchDialog = ({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setDetailDialog({ 
-                                  open: true, 
-                                  type: 'nik_combined', 
-                                  result: nikData, 
-                                  nik: nik 
-                                })}
+                                onClick={() => {
+                                  // Merge nik_photos data with investigation results
+                                  const nikPhotoData = searchResults?.nik_photos?.[nik];
+                                  const mergedResult = {
+                                    ...nikData,
+                                    nik_data: {
+                                      ...nikData?.nik_data,
+                                      // Add photo from nik_photos if not already present
+                                      photo: nikData?.nik_data?.photo || nikPhotoData?.photo
+                                    }
+                                  };
+                                  setDetailDialog({ 
+                                    open: true, 
+                                    type: 'nik_combined', 
+                                    result: mergedResult, 
+                                    nik: nik 
+                                  });
+                                }}
                                 className="h-7 px-3"
                                 style={{ 
                                   borderColor: 'var(--accent-primary)',
