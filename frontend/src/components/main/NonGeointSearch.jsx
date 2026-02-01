@@ -1863,13 +1863,38 @@ export const NonGeointSearchDialog = ({
     yPos += 28;
     
     // ============ 1. FOTO TARGET ============
-    if (searchResults?.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+    // Combine photos from nik_photos and investigation results
+    const allPhotos = {};
+    
+    // First, get photos from nik_photos
+    if (searchResults?.nik_photos) {
+      Object.entries(searchResults.nik_photos).forEach(([nik, data]) => {
+        if (data?.photo) {
+          allPhotos[nik] = data;
+        }
+      });
+    }
+    
+    // Then, fallback to investigation results if photo not found
+    if (investigation?.results) {
+      Object.entries(investigation.results).forEach(([nik, nikResult]) => {
+        if (!allPhotos[nik]?.photo && nikResult?.nik_data?.photo) {
+          allPhotos[nik] = {
+            ...allPhotos[nik],
+            photo: nikResult.nik_data.photo,
+            name: nikResult.nik_data.data?.NAMA || nikResult.nik_data.data?.nama || allPhotos[nik]?.name
+          };
+        }
+      });
+    }
+    
+    if (Object.keys(allPhotos).length > 0 && Object.values(allPhotos).some(p => p?.photo)) {
       addSectionHeader('FOTO TARGET', '[1]');
       
-      const nikPhotos = searchResults.nik_photos;
+      const nikPhotos = allPhotos;
       const selectedNikPhotos = selectedNiks.length > 0 
-        ? selectedNiks.filter(nik => nikPhotos[nik])
-        : Object.keys(nikPhotos);
+        ? selectedNiks.filter(nik => nikPhotos[nik]?.photo)
+        : Object.keys(nikPhotos).filter(nik => nikPhotos[nik]?.photo);
       
       // Display photos in a grid (2 per row)
       let photoX = margin;
