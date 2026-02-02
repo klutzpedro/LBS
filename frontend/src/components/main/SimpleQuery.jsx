@@ -225,15 +225,12 @@ const QUERY_TYPES = [
   { 
     id: 'email_finder', 
     label: 'Email Finder', 
-    description: 'Generate & verifikasi email dari nama',
+    description: 'Cari email dari nama di internet',
     icon: Mail,
-    placeholder: 'Nama + Domain (ex: budi santoso gmail.com)...',
-    validation: (v) => {
-      const parts = v.trim().split(/\s+/);
-      return parts.length >= 2 && parts[parts.length - 1].includes('.');
-    },
+    placeholder: 'Masukkan nama lengkap (ex: Budi Santoso)...',
+    validation: (v) => v.trim().length >= 3,
     inputValidation: null, // Allow all characters
-    errorMsg: 'Format: nama domain (ex: budi santoso gmail.com)'
+    errorMsg: 'Nama minimal 3 karakter'
   }
 ];
 
