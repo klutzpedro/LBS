@@ -6022,6 +6022,333 @@ async def get_investigation(investigation_id: str, username: str = Depends(verif
     
     return investigation
 
+# ==================== FAKTA OSINT FEATURE ====================
+
+class FaktaOsintRequest(BaseModel):
+    search_id: str
+    nik: str
+    name: str
+
+@api_router.post("/nongeoint/fakta-osint")
+async def start_fakta_osint(request: FaktaOsintRequest, username: str = Depends(verify_token)):
+    """
+    Start FAKTA OSINT search for a target - searches web and AI summarization
+    """
+    osint_id = str(uuid.uuid4())[:8]
+    logger.info(f"[FAKTA OSINT {osint_id}] Starting for {request.name} (NIK: {request.nik})")
+    
+    # Create osint document
+    osint_doc = {
+        "id": osint_id,
+        "search_id": request.search_id,
+        "nik": request.nik,
+        "name": request.name,
+        "status": "processing",
+        "results": {},
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": username
+    }
+    await db.fakta_osint.insert_one(osint_doc)
+    
+    # Start background processing
+    asyncio.create_task(process_fakta_osint(osint_id, request.search_id, request.nik, request.name))
+    
+    return {"osint_id": osint_id, "status": "processing"}
+
+@api_router.get("/nongeoint/fakta-osint/{osint_id}")
+async def get_fakta_osint(osint_id: str, username: str = Depends(verify_token)):
+    """Get FAKTA OSINT results"""
+    osint = await db.fakta_osint.find_one({"id": osint_id}, {"_id": 0})
+    if not osint:
+        raise HTTPException(status_code=404, detail="OSINT not found")
+    
+    logger.info(f"[GET FAKTA OSINT {osint_id}] Status: {osint.get('status')}")
+    return osint
+
+async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str):
+    """Process FAKTA OSINT - web search and AI summarization"""
+    try:
+        logger.info(f"[FAKTA OSINT {osint_id}] Processing for {name}")
+        
+        results = {
+            "summary": None,
+            "social_media": [],
+            "legal_cases": [],
+            "web_mentions": [],
+            "antecedents": None
+        }
+        
+        # Search name variations
+        name_cleaned = name.strip()
+        search_queries = [
+            f'"{name_cleaned}"',
+            f'{name_cleaned} Indonesia',
+            f'{name_cleaned} sosial media',
+        ]
+        
+        # List of SIPP court URLs to search
+        sipp_courts = [
+            {"name": "PN Jakarta Selatan", "url": "sipp.pn-jakartaselatan.go.id"},
+            {"name": "PN Jakarta Pusat", "url": "sipp.pn-jakartapusat.go.id"},
+            {"name": "PN Jakarta Barat", "url": "sipp.pn-jakartabarat.go.id"},
+            {"name": "PN Jakarta Timur", "url": "sipp.pn-jakartautara.go.id"},
+            {"name": "PN Bandung", "url": "sipp.pn-bandung.go.id"},
+            {"name": "PN Surabaya", "url": "sipp.pn-surabaya.go.id"},
+            {"name": "PN Medan", "url": "sipp.pn-medan.go.id"},
+            {"name": "PN Semarang", "url": "sipp.pn-semarang.go.id"},
+            {"name": "PN Makassar", "url": "sipp.pn-makassar.go.id"},
+            {"name": "PN Palembang", "url": "sipp.pn-palembang.go.id"},
+        ]
+        
+        # ============ 1. Web Search for General Info ============
+        web_data = []
+        try:
+            import aiohttp
+            import socket
+            from bs4 import BeautifulSoup
+            import urllib.parse
+            
+            # DuckDuckGo search
+            connector = aiohttp.TCPConnector(family=socket.AF_INET)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                for query in search_queries[:2]:  # Limit to 2 queries
+                    encoded_query = urllib.parse.quote(query)
+                    ddg_url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+                    
+                    try:
+                        async with session.get(
+                            ddg_url,
+                            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                            timeout=aiohttp.ClientTimeout(total=15)
+                        ) as response:
+                            if response.status == 200:
+                                html = await response.text()
+                                soup = BeautifulSoup(html, 'html.parser')
+                                
+                                # Extract search results
+                                for result in soup.find_all('div', class_='result')[:5]:
+                                    title_elem = result.find('a', class_='result__a')
+                                    snippet_elem = result.find('a', class_='result__snippet')
+                                    
+                                    if title_elem:
+                                        title = title_elem.get_text(strip=True)
+                                        link = title_elem.get('href', '')
+                                        snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
+                                        
+                                        web_data.append({
+                                            "title": title,
+                                            "url": link,
+                                            "snippet": snippet
+                                        })
+                    except Exception as e:
+                        logger.warning(f"[FAKTA OSINT {osint_id}] Search error: {e}")
+                    
+                    await asyncio.sleep(1)
+                    
+        except Exception as e:
+            logger.error(f"[FAKTA OSINT {osint_id}] Web search error: {e}")
+        
+        results["web_mentions"] = web_data[:10]
+        logger.info(f"[FAKTA OSINT {osint_id}] Found {len(web_data)} web mentions")
+        
+        # Update progress
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {"status": "searching_social", "results.web_mentions": results["web_mentions"]}}
+        )
+        
+        # ============ 2. Social Media Detection from web results ============
+        social_media_patterns = {
+            "facebook": {"pattern": r'facebook\.com/([^/?\s"]+)', "icon": "facebook"},
+            "instagram": {"pattern": r'instagram\.com/([^/?\s"]+)', "icon": "instagram"},
+            "twitter": {"pattern": r'(?:twitter|x)\.com/([^/?\s"]+)', "icon": "twitter"},
+            "youtube": {"pattern": r'youtube\.com/(?:user|channel|c|@)/([^/?\s"]+)', "icon": "youtube"},
+            "tiktok": {"pattern": r'tiktok\.com/@([^/?\s"]+)', "icon": "tiktok"},
+            "linkedin": {"pattern": r'linkedin\.com/in/([^/?\s"]+)', "icon": "linkedin"},
+        }
+        
+        social_media_found = []
+        import re
+        
+        # Search web data for social media links
+        for item in web_data:
+            url = item.get("url", "")
+            snippet = item.get("snippet", "")
+            combined = f"{url} {snippet}"
+            
+            for platform, config in social_media_patterns.items():
+                matches = re.findall(config["pattern"], combined, re.IGNORECASE)
+                for match in matches:
+                    if match and match not in ["search", "explore", "hashtag", "login"]:
+                        social_entry = {
+                            "platform": platform,
+                            "username": match,
+                            "url": url if platform in url.lower() else f"https://{platform}.com/{match}",
+                            "icon": config["icon"]
+                        }
+                        # Avoid duplicates
+                        if not any(s["platform"] == platform and s["username"] == match for s in social_media_found):
+                            social_media_found.append(social_entry)
+        
+        results["social_media"] = social_media_found
+        logger.info(f"[FAKTA OSINT {osint_id}] Found {len(social_media_found)} social media profiles")
+        
+        # Update progress
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {"status": "searching_legal", "results.social_media": results["social_media"]}}
+        )
+        
+        # ============ 3. Legal Case Search (SIPP Courts) ============
+        legal_cases = []
+        try:
+            import aiohttp
+            connector = aiohttp.TCPConnector(family=socket.AF_INET)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                # Search Pusiknas DPO (Daftar Pencarian Orang)
+                try:
+                    pusiknas_url = f"https://pusiknas.polri.go.id/dpo?nama={urllib.parse.quote(name_cleaned)}"
+                    logger.info(f"[FAKTA OSINT {osint_id}] Checking Pusiknas DPO")
+                    
+                    async with session.get(
+                        pusiknas_url,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                        timeout=aiohttp.ClientTimeout(total=10),
+                        allow_redirects=True
+                    ) as response:
+                        if response.status == 200:
+                            html = await response.text()
+                            if name_cleaned.lower() in html.lower() or "ditemukan" in html.lower():
+                                legal_cases.append({
+                                    "source": "Pusiknas POLRI - DPO",
+                                    "status": "possible_match",
+                                    "url": pusiknas_url,
+                                    "note": "Nama ditemukan dalam database DPO - perlu verifikasi manual"
+                                })
+                except Exception as e:
+                    logger.warning(f"[FAKTA OSINT {osint_id}] Pusiknas error: {e}")
+                
+                # Search SIPP courts
+                for court in sipp_courts[:5]:  # Limit to 5 courts
+                    try:
+                        sipp_search_url = f"https://{court['url']}/list_perkara/search"
+                        logger.info(f"[FAKTA OSINT {osint_id}] Checking {court['name']}")
+                        
+                        # Try to search the court system
+                        async with session.get(
+                            f"https://{court['url']}/list_perkara",
+                            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                            timeout=aiohttp.ClientTimeout(total=8),
+                            allow_redirects=True
+                        ) as response:
+                            if response.status == 200:
+                                html = await response.text()
+                                # Check if name appears in search or available data
+                                if name_cleaned.lower() in html.lower():
+                                    legal_cases.append({
+                                        "source": f"SIPP {court['name']}",
+                                        "status": "possible_match",
+                                        "url": f"https://{court['url']}/list_perkara",
+                                        "note": f"Kemungkinan ada perkara di {court['name']} - perlu verifikasi manual"
+                                    })
+                    except Exception as e:
+                        pass  # Skip court if error
+                    
+                    await asyncio.sleep(0.5)
+                    
+        except Exception as e:
+            logger.error(f"[FAKTA OSINT {osint_id}] Legal search error: {e}")
+        
+        results["legal_cases"] = legal_cases
+        logger.info(f"[FAKTA OSINT {osint_id}] Found {len(legal_cases)} potential legal cases")
+        
+        # Update progress
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {"status": "generating_summary", "results.legal_cases": results["legal_cases"]}}
+        )
+        
+        # ============ 4. AI Summary Generation ============
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            
+            api_key = os.getenv('EMERGENT_LLM_KEY')
+            if api_key:
+                # Prepare data for AI
+                web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:5]])
+                social_summary = "\n".join([f"- {s['platform']}: @{s['username']}" for s in social_media_found])
+                legal_summary = "\n".join([f"- {l['source']}: {l['note']}" for l in legal_cases])
+                
+                prompt = f"""Analisis data OSINT berikut tentang seseorang bernama "{name_cleaned}" dan berikan ringkasan dalam Bahasa Indonesia:
+
+INFORMASI WEB:
+{web_summary if web_summary else "Tidak ditemukan informasi signifikan"}
+
+MEDIA SOSIAL:
+{social_summary if social_summary else "Tidak ditemukan akun media sosial"}
+
+CATATAN HUKUM:
+{legal_summary if legal_summary else "Tidak ditemukan catatan hukum"}
+
+Berikan:
+1. RINGKASAN PROFIL (2-3 kalimat tentang siapa orang ini berdasarkan data yang ada)
+2. ANTESEDEN (latar belakang, aktivitas, atau catatan penting yang ditemukan)
+3. REKOMENDASI (langkah investigasi lanjutan yang disarankan)
+
+Format respons dalam paragraf singkat dan jelas. Jika data tidak cukup, nyatakan bahwa informasi terbatas."""
+
+                chat = LlmChat(
+                    api_key=api_key,
+                    session_id=f"osint-{osint_id}",
+                    system_message="Kamu adalah analis OSINT profesional. Berikan analisis objektif berdasarkan data yang tersedia."
+                ).with_model("gemini", "gemini-2.5-flash")
+                
+                user_message = UserMessage(text=prompt)
+                ai_summary = await chat.send_message(user_message)
+                
+                results["summary"] = ai_summary
+                results["antecedents"] = ai_summary  # Same for now
+                logger.info(f"[FAKTA OSINT {osint_id}] AI summary generated")
+            else:
+                results["summary"] = "AI tidak tersedia - silakan review data manual"
+                results["antecedents"] = "AI tidak tersedia"
+                
+        except Exception as e:
+            logger.error(f"[FAKTA OSINT {osint_id}] AI summary error: {e}")
+            results["summary"] = f"Error generating summary: {str(e)}"
+            results["antecedents"] = "Error generating antecedents"
+        
+        # ============ 5. Save final results ============
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {
+                "status": "completed",
+                "results": results,
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Also update the investigation document to mark OSINT completed
+        await db.nik_investigations.update_one(
+            {"search_id": search_id},
+            {"$set": {f"osint_results.{nik}": {
+                "osint_id": osint_id,
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }}}
+        )
+        
+        logger.info(f"[FAKTA OSINT {osint_id}] Completed successfully")
+        
+    except Exception as e:
+        logger.error(f"[FAKTA OSINT {osint_id}] Error: {e}")
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
+
+# ==================== END FAKTA OSINT ====================
+
 async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
     """Process NIK deep investigation with queue system"""
     global telegram_client
