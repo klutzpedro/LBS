@@ -4067,6 +4067,171 @@ export const NonGeointSearchDialog = ({
           )}
         </DraggableDialogContent>
       </DraggableDialog>
+
+      {/* FAKTA OSINT Detail Dialog */}
+      <DraggableDialog open={osintDetailDialog.open} onOpenChange={() => setOsintDetailDialog({ open: false, nik: null, data: null })}>
+        <DraggableDialogContent 
+          className="flex flex-col"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)',
+            zIndex: 9999,
+            width: '700px',
+            maxWidth: '95vw',
+            height: '80vh',
+            maxHeight: '85vh'
+          }}
+        >
+          <DraggableDialogHeader className="flex-shrink-0">
+            <DraggableDialogTitle className="flex items-center gap-2" style={{ color: 'var(--foreground-primary)' }}>
+              <Globe className="w-5 h-5" style={{ color: '#3b82f6' }} />
+              FAKTA OSINT - NIK: <span className="font-mono">{osintDetailDialog.nik}</span>
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
+          
+          <div className="flex-1 overflow-y-auto mt-4 space-y-4 pr-2" style={{ minHeight: 0 }}>
+            {osintDetailDialog.data ? (
+              <>
+                {/* AI Summary */}
+                {osintDetailDialog.data.summary && (
+                  <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--accent-primary)' }}>
+                      <Zap className="w-4 h-4" />
+                      Ringkasan AI
+                    </h4>
+                    <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--foreground-primary)' }}>
+                      {osintDetailDialog.data.summary}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Social Media */}
+                {osintDetailDialog.data.social_media?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      📱 Media Sosial ({osintDetailDialog.data.social_media.length})
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {osintDetailDialog.data.social_media.map((sm, idx) => (
+                        <a
+                          key={idx}
+                          href={sm.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-md flex items-center gap-2 hover:opacity-80 transition-opacity"
+                          style={{ backgroundColor: 'var(--background-tertiary)' }}
+                        >
+                          <span className="text-lg">
+                            {sm.platform === 'facebook' && '📘'}
+                            {sm.platform === 'instagram' && '📷'}
+                            {sm.platform === 'twitter' && '🐦'}
+                            {sm.platform === 'youtube' && '▶️'}
+                            {sm.platform === 'tiktok' && '🎵'}
+                            {sm.platform === 'linkedin' && '💼'}
+                          </span>
+                          <div>
+                            <p className="text-xs font-medium capitalize" style={{ color: 'var(--foreground-primary)' }}>
+                              {sm.platform}
+                            </p>
+                            <p className="text-xs" style={{ color: 'var(--accent-primary)' }}>
+                              @{sm.username}
+                            </p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Legal Cases */}
+                {osintDetailDialog.data.legal_cases?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: '#ef4444' }}>
+                      ⚠️ Catatan Hukum ({osintDetailDialog.data.legal_cases.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {osintDetailDialog.data.legal_cases.map((lc, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2 rounded-md border"
+                          style={{ 
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderColor: 'rgba(239, 68, 68, 0.3)'
+                          }}
+                        >
+                          <p className="text-sm font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                            {lc.source}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                            {lc.note}
+                          </p>
+                          {lc.url && (
+                            <a
+                              href={lc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs mt-1 inline-block hover:underline"
+                              style={{ color: 'var(--accent-primary)' }}
+                            >
+                              🔗 Lihat sumber
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Web Mentions */}
+                {osintDetailDialog.data.web_mentions?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      🌐 Temuan Web ({osintDetailDialog.data.web_mentions.length})
+                    </h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {osintDetailDialog.data.web_mentions.map((wm, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2 rounded-md text-sm"
+                          style={{ backgroundColor: 'var(--background-tertiary)' }}
+                        >
+                          <a
+                            href={wm.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium hover:underline line-clamp-1"
+                            style={{ color: 'var(--accent-primary)' }}
+                          >
+                            {wm.title}
+                          </a>
+                          <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--foreground-muted)' }}>
+                            {wm.snippet}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* No results message */}
+                {!osintDetailDialog.data.social_media?.length && 
+                 !osintDetailDialog.data.legal_cases?.length && 
+                 !osintDetailDialog.data.web_mentions?.length && (
+                  <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                    <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Tidak ditemukan informasi OSINT untuk target ini</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+                <p>Memuat data...</p>
+              </div>
+            )}
+          </div>
+        </DraggableDialogContent>
+      </DraggableDialog>
     </>
   );
 };
