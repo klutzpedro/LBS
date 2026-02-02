@@ -1737,6 +1737,20 @@ export const NonGeointSearchDialog = ({
         setIsLoadingOsint(prev => ({ ...prev, [nik]: false }));
         setOsintResults(prev => ({ ...prev, [nik]: data.results }));
         
+        // Also update investigation state to include OSINT (for consistency)
+        if (data.status === 'completed' && investigation) {
+          setInvestigation(prev => ({
+            ...prev,
+            osint_results: {
+              ...(prev?.osint_results || {}),
+              [nik]: {
+                status: 'completed',
+                ...data.results
+              }
+            }
+          }));
+        }
+        
         if (data.status === 'completed') {
           toast.success(`FAKTA OSINT selesai untuk NIK ${nik}`);
         } else {
