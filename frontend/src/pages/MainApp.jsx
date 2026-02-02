@@ -1044,8 +1044,15 @@ const MainApp = () => {
             setGlobalProcessing(false);
             setGlobalProcessType(null);
             
-            // Refresh targets list
-            await fetchTargets(selectedCase.id);
+            // Update targets state directly with the updated target data
+            setTargets(prev => prev.map(t => t.id === target.id ? updatedTarget : t));
+            
+            // Also refresh full targets list to ensure consistency
+            if (selectedCase?.id) {
+              await fetchTargets(selectedCase.id);
+            } else if (target.case_id) {
+              await fetchTargets(target.case_id);
+            }
             
             // Refresh history for this target if it has history displayed
             if (historyPaths[target.id]) {
