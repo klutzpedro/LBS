@@ -6123,10 +6123,108 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
         
         results["internal_data"] = internal_data
         
+        # ============ 0.5. SEARCH FAMILY MEMBERS IN CACHE ============
+        family_cache_data = []
+        try:
+            # Extract family member NIKs from NKK data
+            family_niks = []
+            nkk_data = internal_data.get("nkk_data")
+            
+            if nkk_data:
+                logger.info(f"[FAKTA OSINT {osint_id}] Searching family members in cache...")
+                
+                # NKK data could be dict or list
+                if isinstance(nkk_data, list):
+                    for member in nkk_data:
+                        if isinstance(member, dict):
+                            member_nik = member.get('nik') or member.get('NIK') or member.get('no_ktp')
+                            if member_nik and member_nik != nik:  # Exclude target's own NIK
+                                family_niks.append({
+                                    'nik': str(member_nik),
+                                    'nama': member.get('nama') or member.get('Nama') or member.get('name', 'Unknown'),
+                                    'hubungan': member.get('hubungan') or member.get('Hubungan') or member.get('relation', 'Unknown')
+                                })
+                elif isinstance(nkk_data, dict):
+                    # Check for members array inside dict
+                    members = nkk_data.get('members') or nkk_data.get('anggota') or nkk_data.get('family_members', [])
+                    if isinstance(members, list):
+                        for member in members:
+                            if isinstance(member, dict):
+                                member_nik = member.get('nik') or member.get('NIK') or member.get('no_ktp')
+                                if member_nik and member_nik != nik:
+                                    family_niks.append({
+                                        'nik': str(member_nik),
+                                        'nama': member.get('nama') or member.get('Nama') or member.get('name', 'Unknown'),
+                                        'hubungan': member.get('hubungan') or member.get('Hubungan') or member.get('relation', 'Unknown')
+                                    })
+                
+                logger.info(f"[FAKTA OSINT {osint_id}] Found {len(family_niks)} family member NIKs to search")
+                
+                # Search cache for each family member
+                for family_member in family_niks:
+                    fnik = family_member['nik']
+                    cached_data = {
+                        'nik': fnik,
+                        'nama': family_member['nama'],
+                        'hubungan': family_member['hubungan'],
+                        'has_investigation': False,
+                        'has_osint': False,
+                        'investigation_data': None,
+                        'osint_data': None,
+                        'search_info': None
+                    }
+                    
+                    # Search in nik_investigations (all users)
+                    inv_with_nik = await db.nik_investigations.find_one(
+                        {f"results.{fnik}": {"$exists": True}},
+                        {"_id": 0, f"results.{fnik}": 1, "search_id": 1, "created_at": 1, "osint_results": 1}
+                    )
+                    
+                    if inv_with_nik:
+                        cached_data['has_investigation'] = True
+                        cached_data['investigation_data'] = inv_with_nik.get('results', {}).get(fnik)
+                        
+                        # Check if OSINT exists for this family member
+                        if inv_with_nik.get('osint_results', {}).get(fnik):
+                            cached_data['has_osint'] = True
+                            cached_data['osint_data'] = inv_with_nik['osint_results'][fnik]
+                        
+                        # Get search info
+                        search_info = await db.nongeoint_searches.find_one(
+                            {"id": inv_with_nik.get('search_id')},
+                            {"_id": 0, "name": 1, "created_at": 1, "created_by": 1}
+                        )
+                        if search_info:
+                            cached_data['search_info'] = search_info
+                        
+                        logger.info(f"[FAKTA OSINT {osint_id}] Found cached data for family member {fnik} ({family_member['nama']})")
+                    
+                    # Also search in fakta_osint collection directly
+                    if not cached_data['has_osint']:
+                        osint_record = await db.fakta_osint.find_one(
+                            {"nik": fnik, "status": "completed"},
+                            {"_id": 0}
+                        )
+                        if osint_record:
+                            cached_data['has_osint'] = True
+                            cached_data['osint_data'] = osint_record.get('results', {})
+                            logger.info(f"[FAKTA OSINT {osint_id}] Found OSINT data for family member {fnik}")
+                    
+                    # Only add if we found something
+                    if cached_data['has_investigation'] or cached_data['has_osint']:
+                        family_cache_data.append(cached_data)
+                
+                logger.info(f"[FAKTA OSINT {osint_id}] Found {len(family_cache_data)} family members with cached data")
+        
+        except Exception as e:
+            logger.error(f"[FAKTA OSINT {osint_id}] Error searching family cache: {e}")
+        
+        results["family_cache"] = family_cache_data
+        
         # Update progress
         await db.fakta_osint.update_one(
             {"id": osint_id},
-            {"$set": {"status": "fetched_internal_data", "results.internal_data": internal_data}}
+            {"$set": {"status": "fetched_internal_data", "results.internal_data": internal_data, "results.family_cache": family_cache_data}}
         )
         
         # Search name variations
