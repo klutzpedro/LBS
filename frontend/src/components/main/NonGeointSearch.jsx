@@ -2557,10 +2557,10 @@ export const NonGeointSearchDialog = ({
             border: '1px solid var(--borders-default)',
             borderRadius: '8px',
             overflow: 'hidden',
-            width: '700px',
+            width: '550px',
             maxWidth: '95vw',
-            height: '85vh',
-            maxHeight: '90vh'
+            height: 'auto',
+            maxHeight: '85vh'
           }}
         >
           {/* Header with drag handle */}
