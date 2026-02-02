@@ -835,7 +835,8 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
       breach_email: Mail,
       breach_name: ShieldAlert,
       medsos_maigret: Globe,
-      medsos_social_analyzer: Share2
+      medsos_social_analyzer: Share2,
+      email_finder: Mail
     };
     const Icon = icons[type] || Search;
     return <Icon className="w-4 h-4" />;
