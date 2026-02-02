@@ -6066,25 +6066,88 @@ async def get_fakta_osint(osint_id: str, username: str = Depends(verify_token)):
     return osint
 
 async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str):
-    """Process FAKTA OSINT - web search and AI summarization"""
+    """Process FAKTA OSINT - comprehensive analysis with internal data + web search"""
     try:
-        logger.info(f"[FAKTA OSINT {osint_id}] Processing for {name}")
+        logger.info(f"[FAKTA OSINT {osint_id}] Processing for {name} (NIK: {nik})")
         
         results = {
             "summary": None,
+            "antecedents": None,
+            "internal_data": {},  # Data from NIK, NKK, REGNIK, Passport, Perlintasan
             "social_media": [],
             "legal_cases": [],
             "web_mentions": [],
-            "antecedents": None
+            "risk_assessment": None
         }
+        
+        # ============ 0. FETCH INTERNAL DATA FROM DATABASE ============
+        logger.info(f"[FAKTA OSINT {osint_id}] Fetching internal investigation data...")
+        
+        internal_data = {
+            "nik_data": None,
+            "nkk_data": None,
+            "regnik_data": None,
+            "passport_data": None,
+            "perlintasan_data": None
+        }
+        
+        # Get investigation data from database
+        investigation = await db.nik_investigations.find_one({"search_id": search_id}, {"_id": 0})
+        if investigation and investigation.get("results", {}).get(nik):
+            nik_result = investigation["results"][nik]
+            
+            # Extract NIK data
+            if nik_result.get("nik_data", {}).get("data"):
+                internal_data["nik_data"] = nik_result["nik_data"]["data"]
+                logger.info(f"[FAKTA OSINT {osint_id}] Found NIK data")
+            
+            # Extract NKK data (family members)
+            if nik_result.get("nkk_data", {}).get("data"):
+                internal_data["nkk_data"] = nik_result["nkk_data"]["data"]
+                logger.info(f"[FAKTA OSINT {osint_id}] Found NKK data")
+            
+            # Extract REGNIK data
+            if nik_result.get("regnik_data", {}).get("data"):
+                internal_data["regnik_data"] = nik_result["regnik_data"]["data"]
+                logger.info(f"[FAKTA OSINT {osint_id}] Found REGNIK data")
+            
+            # Extract Passport data
+            if nik_result.get("passport_data"):
+                internal_data["passport_data"] = nik_result["passport_data"]
+                logger.info(f"[FAKTA OSINT {osint_id}] Found Passport data")
+            
+            # Extract Perlintasan data (border crossings)
+            if nik_result.get("perlintasan_data"):
+                internal_data["perlintasan_data"] = nik_result["perlintasan_data"]
+                logger.info(f"[FAKTA OSINT {osint_id}] Found Perlintasan data")
+        
+        results["internal_data"] = internal_data
+        
+        # Update progress
+        await db.fakta_osint.update_one(
+            {"id": osint_id},
+            {"$set": {"status": "fetched_internal_data", "results.internal_data": internal_data}}
+        )
         
         # Search name variations
         name_cleaned = name.strip()
+        
+        # Build more targeted search queries
         search_queries = [
             f'"{name_cleaned}"',
             f'{name_cleaned} Indonesia',
-            f'{name_cleaned} sosial media',
+            f'{name_cleaned} LinkedIn',
+            f'{name_cleaned} Facebook',
+            f'{name_cleaned} Instagram',
         ]
+        
+        # If we have address from NIK data, add location-based search
+        if internal_data.get("nik_data"):
+            nik_info = internal_data["nik_data"]
+            if isinstance(nik_info, dict):
+                address = nik_info.get("Address") or nik_info.get("Alamat") or ""
+                if address:
+                    search_queries.append(f'{name_cleaned} {address[:30]}')
         
         # List of SIPP court URLs to search
         sipp_courts = [
@@ -6100,7 +6163,7 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
             {"name": "PN Palembang", "url": "sipp.pn-palembang.go.id"},
         ]
         
-        # ============ 1. Web Search for General Info ============
+        # ============ 1. Web Search for General Info + Social Media ============
         web_data = []
         try:
             import aiohttp
@@ -6111,7 +6174,7 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
             # DuckDuckGo search
             connector = aiohttp.TCPConnector(family=socket.AF_INET)
             async with aiohttp.ClientSession(connector=connector) as session:
-                for query in search_queries[:2]:  # Limit to 2 queries
+                for query in search_queries[:5]:  # Search up to 5 queries
                     encoded_query = urllib.parse.quote(query)
                     ddg_url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
                     
@@ -6126,7 +6189,7 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
                                 soup = BeautifulSoup(html, 'html.parser')
                                 
                                 # Extract search results
-                                for result in soup.find_all('div', class_='result')[:5]:
+                                for result in soup.find_all('div', class_='result')[:7]:
                                     title_elem = result.find('a', class_='result__a')
                                     snippet_elem = result.find('a', class_='result__snippet')
                                     
@@ -6135,15 +6198,17 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
                                         link = title_elem.get('href', '')
                                         snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
                                         
-                                        web_data.append({
-                                            "title": title,
-                                            "url": link,
-                                            "snippet": snippet
-                                        })
+                                        # Avoid duplicates
+                                        if not any(w['url'] == link for w in web_data):
+                                            web_data.append({
+                                                "title": title,
+                                                "url": link,
+                                                "snippet": snippet
+                                            })
                     except Exception as e:
                         logger.warning(f"[FAKTA OSINT {osint_id}] Search error: {e}")
                     
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(0.8)
                     
         except Exception as e:
             logger.error(f"[FAKTA OSINT {osint_id}] Web search error: {e}")
