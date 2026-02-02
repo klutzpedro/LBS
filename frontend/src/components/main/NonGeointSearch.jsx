@@ -4300,8 +4300,56 @@ export const NonGeointSearchDialog = ({
                         </div>
                       )}
                       
+                      {/* Family Cache Data in View Dialog */}
+                      {osintData.family_cache?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            👨‍👩‍👧‍👦 Data Keluarga dari Cache ({osintData.family_cache.length})
+                          </p>
+                          <div className="space-y-2">
+                            {osintData.family_cache.map((fm, idx) => (
+                              <div
+                                key={idx}
+                                className="p-2 rounded border text-xs"
+                                style={{ 
+                                  backgroundColor: 'var(--background-secondary)',
+                                  borderColor: 'var(--borders-subtle)'
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                                    {fm.nama} <span className="opacity-60">({fm.hubungan})</span>
+                                  </p>
+                                  <div className="flex gap-1">
+                                    {fm.has_investigation && (
+                                      <span className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>NIK</span>
+                                    )}
+                                    {fm.has_osint && (
+                                      <span className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>OSINT</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="opacity-60 mt-1">NIK: {fm.nik}</p>
+                                {fm.osint_data?.social_media?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {fm.osint_data.social_media.slice(0, 3).map((sm, smIdx) => (
+                                      <span key={smIdx} className="text-xs opacity-70">
+                                        {sm.platform === 'facebook' && '📘'}
+                                        {sm.platform === 'instagram' && '📷'}
+                                        {sm.platform === 'linkedin' && '💼'}
+                                        {sm.platform}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* No data message */}
-                      {!osintData.summary && !osintData.social_media?.length && !osintData.legal_cases?.length && !osintData.web_mentions?.length && (
+                      {!osintData.summary && !osintData.social_media?.length && !osintData.legal_cases?.length && !osintData.web_mentions?.length && !osintData.family_cache?.length && (
                         <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
                           Tidak ditemukan data OSINT
                         </p>
