@@ -788,6 +788,9 @@ export const NonGeointSearchDialog = ({
   const [pendingAction, setPendingAction] = useState(null); // 'minimize' or 'close'
   const [nameValidationError, setNameValidationError] = useState(''); // Validation error for name input
   
+  // PENDALAMAN LANJUTAN dropdown state
+  const [showAdvancedDropdown, setShowAdvancedDropdown] = useState(false);
+  
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
   const lastOpenedWithSearchRef = useRef(null); // Track which search was last opened
