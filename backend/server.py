@@ -6277,7 +6277,7 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
                 # Prepare data for AI
                 web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:5]])
                 social_summary = "\n".join([f"- {s['platform']}: @{s['username']}" for s in social_media_found])
-                legal_summary = "\n".join([f"- {l['source']}: {l['note']}" for l in legal_cases])
+                legal_summary = "\n".join([f"- {lc['source']}: {lc['note']}" for lc in legal_cases])
                 
                 prompt = f"""Analisis data OSINT berikut tentang seseorang bernama "{name_cleaned}" dan berikan ringkasan dalam Bahasa Indonesia:
 
