@@ -4066,6 +4066,159 @@ export const NonGeointSearchDialog = ({
                   </div>
                 </div>
               )}
+              
+              {/* FAKTA OSINT Section in View Dialog */}
+              {(() => {
+                const osintData = osintResults[detailDialog.nik] || investigation?.osint_results?.[detailDialog.nik];
+                if (!osintData) return null;
+                
+                return (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="relative">
+                        <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                        <CheckCircle className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
+                      </div>
+                      <span className="font-semibold text-sm uppercase" style={{ color: 'var(--foreground-primary)' }}>
+                        FAKTA OSINT
+                      </span>
+                      <CheckCircle className="w-4 h-4" style={{ color: '#22c55e' }} />
+                    </div>
+                    <div className="p-3 rounded-md space-y-4" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                      {/* AI Summary */}
+                      {osintData.summary && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2 flex items-center gap-1" style={{ color: 'var(--accent-primary)' }}>
+                            <Zap className="w-3 h-3" />
+                            Ringkasan & Anteseden
+                          </p>
+                          <p className="text-xs whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--foreground-primary)' }}>
+                            {osintData.summary}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Social Media */}
+                      {osintData.social_media?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            📱 Media Sosial ({osintData.social_media.length})
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {osintData.social_media.map((sm, idx) => (
+                              <a
+                                key={idx}
+                                href={sm.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                style={{ backgroundColor: 'var(--background-secondary)' }}
+                              >
+                                <span className="text-sm">
+                                  {sm.platform === 'facebook' && '📘'}
+                                  {sm.platform === 'instagram' && '📷'}
+                                  {sm.platform === 'twitter' && '🐦'}
+                                  {sm.platform === 'youtube' && '▶️'}
+                                  {sm.platform === 'tiktok' && '🎵'}
+                                  {sm.platform === 'linkedin' && '💼'}
+                                </span>
+                                <div>
+                                  <p className="text-xs font-medium capitalize" style={{ color: 'var(--foreground-primary)' }}>
+                                    {sm.platform}
+                                  </p>
+                                  <p className="text-xs" style={{ color: 'var(--accent-primary)' }}>
+                                    @{sm.username}
+                                  </p>
+                                </div>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Legal Cases */}
+                      {osintData.legal_cases?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2" style={{ color: '#ef4444' }}>
+                            ⚠️ Catatan Hukum ({osintData.legal_cases.length})
+                          </p>
+                          <div className="space-y-2">
+                            {osintData.legal_cases.map((lc, idx) => (
+                              <div
+                                key={idx}
+                                className="p-2 rounded border"
+                                style={{ 
+                                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  borderColor: 'rgba(239, 68, 68, 0.3)'
+                                }}
+                              >
+                                <p className="text-xs font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                                  {lc.source}
+                                </p>
+                                <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                                  {lc.note}
+                                </p>
+                                {lc.url && (
+                                  <a
+                                    href={lc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs mt-1 inline-block hover:underline"
+                                    style={{ color: 'var(--accent-primary)' }}
+                                  >
+                                    🔗 Lihat sumber
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Web Mentions */}
+                      {osintData.web_mentions?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            🌐 Temuan Web ({osintData.web_mentions.length})
+                          </p>
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {osintData.web_mentions.map((wm, idx) => (
+                              <div
+                                key={idx}
+                                className="p-2 rounded text-xs"
+                                style={{ backgroundColor: 'var(--background-secondary)' }}
+                              >
+                                <a
+                                  href={wm.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-medium hover:underline line-clamp-2"
+                                  style={{ color: 'var(--accent-primary)' }}
+                                >
+                                  {wm.title}
+                                </a>
+                                <p className="mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                                  {wm.snippet}
+                                </p>
+                                <p className="mt-1 text-xs break-all" style={{ color: 'var(--foreground-muted)' }}>
+                                  {wm.url}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* No data message */}
+                      {!osintData.summary && !osintData.social_media?.length && !osintData.legal_cases?.length && !osintData.web_mentions?.length && (
+                        <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
+                          Tidak ditemukan data OSINT
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </DraggableDialogContent>
         </DraggableDialog>
