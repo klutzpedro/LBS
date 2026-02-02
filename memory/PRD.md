@@ -1202,22 +1202,61 @@ User melaporkan data tertukar di Face Recognition:
 
 ## Recent Updates (February 2026)
 
-### PENDALAMAN LANJUTAN Button - UI PLACEHOLDER
+### FAKTA OSINT Feature - FULLY IMPLEMENTED
+- **Feature:** Full OSINT (Open Source Intelligence) search for target based on name
+- **Functionality:**
+  1. **Web Search:** Searches target name via DuckDuckGo for public information
+  2. **Social Media Detection:** Automatically finds social media profiles:
+     - Facebook, Instagram, Twitter/X, YouTube, TikTok, LinkedIn
+  3. **Legal Case Search:** 
+     - Pusiknas POLRI (DPO - Daftar Pencarian Orang)
+     - SIPP courts: Jakarta Selatan, Jakarta Pusat, Jakarta Barat, Jakarta Timur, Bandung, Surabaya, Medan, Semarang, Makassar, Palembang
+  4. **AI Summarization:** Uses Gemini AI to generate:
+     - Profile summary
+     - Antecedents (background information)
+     - Investigation recommendations
+- **UI:**
+  - Globe icon with green checkmark (✓) appears in sub-query indicators when OSINT complete
+  - Click on OSINT indicator to view detailed results dialog
+  - FAKTA OSINT button in PENDALAMAN LANJUTAN dropdown menu
+  - Detailed dialog showing:
+    - AI Summary
+    - Social Media links (clickable)
+    - Legal case warnings
+    - Web mentions
+- **PDF Report:** OSINT results automatically included in PDF export with:
+  - AI Summary section
+  - Social media list
+  - Legal case warnings
+  - Web mentions summary
+- **API Endpoints:**
+  - `POST /api/nongeoint/fakta-osint` - Start OSINT search
+  - `GET /api/nongeoint/fakta-osint/{osint_id}` - Get OSINT results
+- **Database:** New collection `fakta_osint` for storing results
+- **Files Modified:**
+  - `/app/backend/server.py`:
+    - Added `FaktaOsintRequest` model
+    - Added `start_fakta_osint()` endpoint
+    - Added `get_fakta_osint()` endpoint
+    - Added `process_fakta_osint()` background task
+  - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
+    - Added OSINT states (`osintResults`, `isLoadingOsint`, `osintDetailDialog`)
+    - Added `startFaktaOsint()`, `pollOsintResults()`, `getOsintStatus()` functions
+    - Added OSINT indicator in sub-query row
+    - Added OSINT detail dialog
+    - Updated PDF generation to include OSINT
+    - Updated FAKTA OSINT button to trigger actual search
+
+### PENDALAMAN LANJUTAN Button
 - **Feature:** Added "PENDALAMAN LANJUTAN" button to Full Query results
 - **Location:** Appears after investigation (pendalaman) is completed in Full Query dialog
 - **UI Elements:**
   - Purple gradient button with ⚡ icon
   - Dropdown menu with 3 options when clicked:
-    1. **FAKTA OSINT** - Pencarian informasi terbuka (placeholder)
-    2. **CALL DATA RECORDER** - Analisis data panggilan (placeholder)
-    3. **SOCIAL NETWORK ANALYTICS** - Analisis jaringan sosial (placeholder)
-- **Status:** UI ONLY - functionality not yet implemented per user request
+    1. **FAKTA OSINT** - ✅ FULLY IMPLEMENTED (see above)
+    2. **CALL DATA RECORDER** - Placeholder (coming soon)
+    3. **SOCIAL NETWORK ANALYTICS** - Placeholder (coming soon)
 - **Trigger:** `investigation?.status === 'completed'`
-- **Files Modified:**
-  - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
-    - Added `showAdvancedDropdown` state
-    - Added button and dropdown menu UI
-    - Reset state in `resetAllStates()`
 - **Data Test IDs:**
   - `pendalaman-lanjutan-btn`
   - `fakta-osint-btn`
@@ -1228,8 +1267,8 @@ User melaporkan data tertukar di Face Recognition:
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
 - Export to Excel/CSV functionality
-- Implement PENDALAMAN LANJUTAN functionality:
-  - FAKTA OSINT
-  - CALL DATA RECORDER
-  - SOCIAL NETWORK ANALYTICS
+- Implement remaining PENDALAMAN LANJUTAN features:
+  - CALL DATA RECORDER (pending user requirements)
+  - SOCIAL NETWORK ANALYTICS (pending user requirements)
+- P0: Fix map popup interaction bug for overlapping markers
 
