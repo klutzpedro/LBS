@@ -2555,6 +2555,70 @@ export const NonGeointSearchDialog = ({
               yPos += 3;
             });
           }
+          
+          // Family Cache Data
+          if (osintData.family_cache?.length > 0) {
+            addSubsectionHeader(`Data Keluarga dari Cache (${osintData.family_cache.length} ditemukan)`);
+            osintData.family_cache.forEach(fm => {
+              checkPageBreak(30);
+              
+              // Family member name and relation
+              pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'bold');
+              pdf.setTextColor(...colors.text);
+              pdf.text(`• ${fm.nama} (${fm.hubungan})`, margin + 5, yPos);
+              yPos += 5;
+              
+              pdf.setFontSize(8);
+              pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(80, 80, 80);
+              pdf.text(`NIK: ${fm.nik}`, margin + 10, yPos);
+              yPos += 4;
+              
+              // Tags
+              const tags = [];
+              if (fm.has_investigation) tags.push('Data NIK');
+              if (fm.has_osint) tags.push('OSINT');
+              if (tags.length > 0) {
+                pdf.text(`Status: ${tags.join(', ')}`, margin + 10, yPos);
+                yPos += 4;
+              }
+              
+              // Investigation data
+              if (fm.investigation_data?.nik_data?.data) {
+                const nikData = fm.investigation_data.nik_data.data;
+                if (nikData.Address || nikData.Alamat) {
+                  pdf.text(`Alamat: ${nikData.Address || nikData.Alamat}`, margin + 10, yPos);
+                  yPos += 4;
+                }
+                if (nikData.Occupation || nikData.Pekerjaan) {
+                  pdf.text(`Pekerjaan: ${nikData.Occupation || nikData.Pekerjaan}`, margin + 10, yPos);
+                  yPos += 4;
+                }
+              }
+              
+              // OSINT social media
+              if (fm.osint_data?.social_media?.length > 0) {
+                const smList = fm.osint_data.social_media.slice(0, 5).map(s => `${s.platform}: @${s.username}`).join(', ');
+                const smLines = pdf.splitTextToSize(`Media Sosial: ${smList}`, contentWidth - 15);
+                smLines.forEach(line => {
+                  checkPageBreak(5);
+                  pdf.text(line, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
+              
+              // Search info
+              if (fm.search_info) {
+                pdf.setFontSize(7);
+                pdf.setTextColor(120, 120, 120);
+                pdf.text(`Dari pencarian: ${fm.search_info.name} (${fm.search_info.created_by})`, margin + 10, yPos);
+                yPos += 4;
+              }
+              
+              yPos += 3;
+            });
+          }
         }
         
         yPos += 10;
