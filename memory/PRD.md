@@ -1200,8 +1200,36 @@ User melaporkan data tertukar di Face Recognition:
   - `/app/frontend/src/components/main/TargetDialogs.jsx`
 - **Testing:** Verified by testing agent - tree structure, AI Analysis, RAW DATA table all render correctly
 
+## Recent Updates (February 2026)
+
+### PENDALAMAN LANJUTAN Button - UI PLACEHOLDER
+- **Feature:** Added "PENDALAMAN LANJUTAN" button to Full Query results
+- **Location:** Appears after investigation (pendalaman) is completed in Full Query dialog
+- **UI Elements:**
+  - Purple gradient button with ⚡ icon
+  - Dropdown menu with 3 options when clicked:
+    1. **FAKTA OSINT** - Pencarian informasi terbuka (placeholder)
+    2. **CALL DATA RECORDER** - Analisis data panggilan (placeholder)
+    3. **SOCIAL NETWORK ANALYTICS** - Analisis jaringan sosial (placeholder)
+- **Status:** UI ONLY - functionality not yet implemented per user request
+- **Trigger:** `investigation?.status === 'completed'`
+- **Files Modified:**
+  - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
+    - Added `showAdvancedDropdown` state
+    - Added button and dropdown menu UI
+    - Reset state in `resetAllStates()`
+- **Data Test IDs:**
+  - `pendalaman-lanjutan-btn`
+  - `fakta-osint-btn`
+  - `call-data-recorder-btn`
+  - `social-network-analytics-btn`
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
 - Export to Excel/CSV functionality
+- Implement PENDALAMAN LANJUTAN functionality:
+  - FAKTA OSINT
+  - CALL DATA RECORDER
+  - SOCIAL NETWORK ANALYTICS
 
