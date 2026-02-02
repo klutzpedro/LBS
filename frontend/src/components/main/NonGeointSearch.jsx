@@ -3193,6 +3193,128 @@ export const NonGeointSearchDialog = ({
                 </div>
               )}
 
+              {/* PENDALAMAN LANJUTAN Button - Show when investigation completed */}
+              {investigation?.status === 'completed' && (
+                <div className="mt-4 relative">
+                  <Button
+                    onClick={() => setShowAdvancedDropdown(!showAdvancedDropdown)}
+                    className="w-full"
+                    data-testid="pendalaman-lanjutan-btn"
+                    style={{
+                      background: 'linear-gradient(145deg, #8b5cf6, #7c3aed)',
+                      color: '#fff',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
+                    }}
+                  >
+                    <Zap className="w-4 h-4 mr-2" />
+                    PENDALAMAN LANJUTAN
+                    {showAdvancedDropdown ? (
+                      <ChevronUp className="w-4 h-4 ml-2" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    )}
+                  </Button>
+                  
+                  {/* Dropdown Menu */}
+                  {showAdvancedDropdown && (
+                    <div 
+                      className="absolute top-full left-0 right-0 mt-2 rounded-md border shadow-lg z-50 overflow-hidden"
+                      style={{
+                        backgroundColor: 'var(--background-elevated)',
+                        borderColor: 'var(--borders-default)'
+                      }}
+                    >
+                      {/* FAKTA OSINT */}
+                      <button
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
+                        style={{ 
+                          backgroundColor: 'transparent',
+                          borderBottom: '1px solid var(--borders-subtle)'
+                        }}
+                        onClick={() => {
+                          toast.info('Fitur FAKTA OSINT akan segera hadir');
+                          setShowAdvancedDropdown(false);
+                        }}
+                        data-testid="fakta-osint-btn"
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+                        >
+                          <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                            FAKTA OSINT
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                            Pencarian informasi terbuka
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
+                      </button>
+                      
+                      {/* CALL DATA RECORDER */}
+                      <button
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
+                        style={{ 
+                          backgroundColor: 'transparent',
+                          borderBottom: '1px solid var(--borders-subtle)'
+                        }}
+                        onClick={() => {
+                          toast.info('Fitur CALL DATA RECORDER akan segera hadir');
+                          setShowAdvancedDropdown(false);
+                        }}
+                        data-testid="call-data-recorder-btn"
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}
+                        >
+                          <Phone className="w-4 h-4" style={{ color: '#10b981' }} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                            CALL DATA RECORDER
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                            Analisis data panggilan
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
+                      </button>
+                      
+                      {/* SOCIAL NETWORK ANALYTICS */}
+                      <button
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
+                        style={{ backgroundColor: 'transparent' }}
+                        onClick={() => {
+                          toast.info('Fitur SOCIAL NETWORK ANALYTICS akan segera hadir');
+                          setShowAdvancedDropdown(false);
+                        }}
+                        data-testid="social-network-analytics-btn"
+                      >
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
+                        >
+                          <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                            SOCIAL NETWORK ANALYTICS
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                            Analisis jaringan sosial
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* FINAL PRINT BUTTON - Always at bottom when results available */}
               {showFinalPrintButton && (
                 <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
