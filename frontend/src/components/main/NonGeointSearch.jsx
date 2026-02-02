@@ -3266,6 +3266,39 @@ export const NonGeointSearchDialog = ({
                               {getStatusIcon(getSubQueryStatus(nikData, 'perlintasan_data'))}
                               ✈️
                             </span>
+                            {/* FAKTA OSINT indicator */}
+                            <span 
+                              className="flex items-center gap-1 cursor-pointer hover:opacity-80"
+                              onClick={() => {
+                                const osintStatus = getOsintStatus(nik);
+                                if (osintStatus === 'completed') {
+                                  // Show OSINT details
+                                  setOsintDetailDialog({
+                                    open: true,
+                                    nik: nik,
+                                    data: osintResults[nik] || investigation?.osint_results?.[nik]
+                                  });
+                                }
+                              }}
+                              title={getOsintStatus(nik) === 'completed' ? 'Lihat hasil FAKTA OSINT' : 'FAKTA OSINT belum dijalankan'}
+                            >
+                              {getOsintStatus(nik) === 'processing' ? (
+                                <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#3b82f6' }} />
+                              ) : getOsintStatus(nik) === 'completed' ? (
+                                <div className="relative">
+                                  <Globe className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                                  <CheckCircle 
+                                    className="w-2 h-2 absolute -bottom-0.5 -right-0.5" 
+                                    style={{ color: '#22c55e' }} 
+                                  />
+                                </div>
+                              ) : (
+                                <Globe className="w-3 h-3 opacity-40" style={{ color: 'var(--foreground-muted)' }} />
+                              )}
+                              <span className={getOsintStatus(nik) === 'completed' ? 'text-blue-400' : ''}>
+                                OSINT
+                              </span>
+                            </span>
                           </div>
                         </div>
                       );
