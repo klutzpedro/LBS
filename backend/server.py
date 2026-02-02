@@ -9591,30 +9591,6 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             
             raw_response = '\n'.join(lines)
             
-            # Show verified emails first
-            if verified_emails:
-                lines.append("✅ EMAIL TERVERIFIKASI (ditemukan di platform):")
-                lines.append("")
-                for ve in verified_emails:
-                    lines.append(f"  📧 {ve['email']}")
-                    if ve['platforms']:
-                        lines.append(f"     Platform: {', '.join(ve['platforms'])}")
-                    lines.append("")
-            
-            # Show generated patterns
-            lines.append("📝 KEMUNGKINAN EMAIL LAINNYA:")
-            lines.append("")
-            for email in email_patterns:
-                if email not in [v['email'] for v in verified_emails]:
-                    lines.append(f"  • {email}")
-            
-            lines.append("")
-            lines.append(f"{'='*50}")
-            lines.append(f"Total: {len(verified_emails)} terverifikasi, {len(email_patterns)} kemungkinan")
-            lines.append(f"{'='*50}")
-            
-            raw_response = '\n'.join(lines)
-            
             # Save to cache
             cache_doc = {
                 "cache_key": cache_key,
