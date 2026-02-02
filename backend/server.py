@@ -9420,6 +9420,181 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             }
     
     # ============================================
+    # EMAIL FINDER - Generate & Verify Email from Name + Domain
+    # ============================================
+    if query_type == 'email_finder':
+        logger.info(f"[SIMPLE QUERY] Email Finder for: {query_value}")
+        
+        try:
+            import asyncio
+            import re
+            
+            # Parse input: "nama domain" or "nama lengkap domain.com"
+            parts = query_value.strip().split()
+            if len(parts) < 2:
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "Format: nama domain (ex: budi santoso gmail.com)",
+                    "source": "EMAIL_FINDER"
+                }
+            
+            # Last part is domain, rest is name
+            domain = parts[-1].lower()
+            name_parts = [p.lower() for p in parts[:-1]]
+            
+            # Generate email patterns
+            def generate_email_patterns(name_parts, domain):
+                patterns = []
+                if len(name_parts) >= 1:
+                    first = name_parts[0]
+                    last = name_parts[-1] if len(name_parts) > 1 else ""
+                    
+                    # Common patterns
+                    patterns.append(f"{first}@{domain}")
+                    if last:
+                        patterns.append(f"{first}.{last}@{domain}")
+                        patterns.append(f"{first}{last}@{domain}")
+                        patterns.append(f"{first}_{last}@{domain}")
+                        patterns.append(f"{first[0]}{last}@{domain}")
+                        patterns.append(f"{first[0]}.{last}@{domain}")
+                        patterns.append(f"{first}{last[0]}@{domain}")
+                        patterns.append(f"{last}.{first}@{domain}")
+                        patterns.append(f"{last}{first}@{domain}")
+                        patterns.append(f"{last}_{first}@{domain}")
+                        patterns.append(f"{last}@{domain}")
+                        
+                        # With numbers
+                        patterns.append(f"{first}{last}123@{domain}")
+                        patterns.append(f"{first}.{last}1@{domain}")
+                    
+                    # Full name joined
+                    full_name = ''.join(name_parts)
+                    patterns.append(f"{full_name}@{domain}")
+                    
+                return list(dict.fromkeys(patterns))  # Remove duplicates
+            
+            email_patterns = generate_email_patterns(name_parts, domain)
+            
+            # Try to verify with Holehe (check if email exists on platforms)
+            verified_emails = []
+            
+            try:
+                import subprocess
+                import sys as sys_module
+                
+                # Verify top 5 patterns with holehe
+                for email in email_patterns[:5]:
+                    try:
+                        result = subprocess.run(
+                            [sys_module.executable, '-m', 'holehe', email, '--only-used'],
+                            capture_output=True,
+                            text=True,
+                            timeout=30,
+                            cwd='/tmp'
+                        )
+                        
+                        output = result.stdout or ''
+                        # Check if any platform found
+                        if '[+]' in output or 'used' in output.lower():
+                            # Parse which platforms
+                            platforms = []
+                            for line in output.split('\n'):
+                                if '[+]' in line:
+                                    platform = line.split('[+]')[-1].strip().split(':')[0].strip()
+                                    if platform:
+                                        platforms.append(platform)
+                            
+                            verified_emails.append({
+                                'email': email,
+                                'platforms': platforms[:5],  # Max 5 platforms
+                                'verified': True
+                            })
+                    except subprocess.TimeoutExpired:
+                        continue
+                    except Exception as e:
+                        logger.warning(f"[EMAIL_FINDER] Holehe error for {email}: {e}")
+                        continue
+            except Exception as holehe_err:
+                logger.warning(f"[EMAIL_FINDER] Holehe not available: {holehe_err}")
+            
+            # Build response
+            lines = []
+            lines.append(f"{'='*50}")
+            lines.append(f"📧 EMAIL FINDER")
+            lines.append(f"Nama: {' '.join(name_parts).title()}")
+            lines.append(f"Domain: {domain}")
+            lines.append(f"{'='*50}")
+            lines.append("")
+            
+            # Show verified emails first
+            if verified_emails:
+                lines.append("✅ EMAIL TERVERIFIKASI (ditemukan di platform):")
+                lines.append("")
+                for ve in verified_emails:
+                    lines.append(f"  📧 {ve['email']}")
+                    if ve['platforms']:
+                        lines.append(f"     Platform: {', '.join(ve['platforms'])}")
+                    lines.append("")
+            
+            # Show generated patterns
+            lines.append("📝 KEMUNGKINAN EMAIL LAINNYA:")
+            lines.append("")
+            for email in email_patterns:
+                if email not in [v['email'] for v in verified_emails]:
+                    lines.append(f"  • {email}")
+            
+            lines.append("")
+            lines.append(f"{'='*50}")
+            lines.append(f"Total: {len(verified_emails)} terverifikasi, {len(email_patterns)} kemungkinan")
+            lines.append(f"{'='*50}")
+            
+            raw_response = '\n'.join(lines)
+            
+            # Save to cache
+            cache_doc = {
+                "cache_key": cache_key,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "queried_by": username,
+                "created_by": username,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.simple_query_cache.update_one(
+                {"cache_key": cache_key},
+                {"$set": cache_doc},
+                upsert=True
+            )
+            logger.info(f"[EMAIL_FINDER] Saved result to cache: {cache_key}")
+            
+            clear_request_status()
+            return {
+                "success": True,
+                "query_type": query_type,
+                "query_value": query_value,
+                "raw_response": raw_response,
+                "verified": True,
+                "cached": False,
+                "source": "EMAIL_FINDER"
+            }
+            
+        except Exception as e:
+            logger.error(f"[EMAIL_FINDER] Exception: {e}")
+            import traceback
+            logger.error(f"[EMAIL_FINDER] Traceback: {traceback.format_exc()}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "EMAIL_FINDER"
+            }
+    
+    # ============================================
     # NON-PASSPORT QUERIES USE TELEGRAM BOT
     # ============================================
     logger.info(f"[SIMPLE QUERY] Querying via Telegram bot for user: {username}...")
