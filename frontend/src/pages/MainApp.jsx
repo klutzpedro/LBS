@@ -944,8 +944,56 @@ const MainApp = () => {
       toast.success('Target query dimulai!');
       setAddTargetDialog(false);
       setNewPhoneNumber('');
-      fetchTargets(selectedCase.id);
       setSelectedTargetForChat(response.data.id);
+      
+      // Start polling for query completion
+      const targetId = response.data.id;
+      const token = localStorage.getItem('token');
+      let attempts = 0;
+      const maxAttempts = 30;
+      
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const pollResponse = await axios.get(`${API}/targets/${targetId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const updatedTarget = pollResponse.data;
+          
+          // Update targets state immediately with any new data
+          setTargets(prev => {
+            const exists = prev.some(t => t.id === targetId);
+            if (exists) {
+              return prev.map(t => t.id === targetId ? updatedTarget : t);
+            } else {
+              return [...prev, updatedTarget];
+            }
+          });
+          
+          if (updatedTarget.status === 'completed' || updatedTarget.status === 'not_found' || updatedTarget.status === 'error') {
+            clearInterval(pollInterval);
+            
+            // Final refresh to ensure consistency
+            await fetchTargets(selectedCase.id);
+            
+            if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
+              setMapCenter([parseFloat(updatedTarget.data.latitude), parseFloat(updatedTarget.data.longitude)]);
+              setMapZoom(15);
+              setMapKey(prev => prev + 1);
+              toast.success(`Lokasi ${phoneNumber} berhasil ditemukan!`);
+            } else if (updatedTarget.status === 'not_found') {
+              toast.warning(`Target ${phoneNumber} tidak ditemukan atau sedang OFF`);
+            }
+          } else if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            await fetchTargets(selectedCase.id);
+            toast.warning('Query timeout, silakan cek status target');
+          }
+        } catch (pollError) {
+          console.error('Poll error:', pollError);
+        }
+      }, 2000);
+      
     } catch (error) {
       // Handle duplicate phone error (409)
       if (error.response?.status === 409 && error.response?.data?.detail?.error === 'duplicate_phone') {
