@@ -218,6 +218,22 @@ const QUERY_TYPES = [
     validation: (v) => v.length >= 3 && PATTERNS.username.test(v),
     inputValidation: PATTERNS.username,
     errorMsg: 'Username minimal 3 karakter (huruf, angka, ., _, -)'
+  },
+  // ============================================
+  // EMAIL FINDER
+  // ============================================
+  { 
+    id: 'email_finder', 
+    label: 'Email Finder', 
+    description: 'Generate & verifikasi email dari nama',
+    icon: Mail,
+    placeholder: 'Nama + Domain (ex: budi santoso gmail.com)...',
+    validation: (v) => {
+      const parts = v.trim().split(/\s+/);
+      return parts.length >= 2 && parts[parts.length - 1].includes('.');
+    },
+    inputValidation: null, // Allow all characters
+    errorMsg: 'Format: nama domain (ex: budi santoso gmail.com)'
   }
 ];
 
