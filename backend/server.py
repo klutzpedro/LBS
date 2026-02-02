@@ -9426,7 +9426,6 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         logger.info(f"[SIMPLE QUERY] Email Finder for: {query_value}")
         
         try:
-            import asyncio
             import re
             
             # Parse input: "nama domain" or "nama lengkap domain.com"
