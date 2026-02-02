@@ -1211,41 +1211,35 @@ User melaporkan data tertukar di Face Recognition:
   3. **Legal Case Search:** 
      - Pusiknas POLRI (DPO - Daftar Pencarian Orang)
      - SIPP courts: Jakarta Selatan, Jakarta Pusat, Jakarta Barat, Jakarta Timur, Bandung, Surabaya, Medan, Semarang, Makassar, Palembang
-  4. **AI Summarization:** Uses Gemini AI to generate:
-     - Profile summary
-     - Antecedents (background information)
-     - Investigation recommendations
-- **UI:**
+  4. **AI Summarization (Comprehensive):** Uses Gemini AI to generate:
+     - Ringkasan Profil Target (3-5 kalimat)
+     - Anteseden & Latar Belakang (minimum 5 kalimat, detail lengkap)
+     - Penilaian Risiko (RENDAH/SEDANG/TINGGI)
+     - Rekomendasi Investigasi lanjutan
+- **UI Updates (February 2026):**
   - Globe icon with green checkmark (✓) appears in sub-query indicators when OSINT complete
   - Click on OSINT indicator to view detailed results dialog
-  - FAKTA OSINT button in PENDALAMAN LANJUTAN dropdown menu
-  - Detailed dialog showing:
-    - AI Summary
-    - Social Media links (clickable)
-    - Legal case warnings
-    - Web mentions
-- **PDF Report:** OSINT results automatically included in PDF export with:
-  - AI Summary section
-  - Social media list
-  - Legal case warnings
-  - Web mentions summary
+  - **View Button** now shows FAKTA OSINT section with full data
+  - OSINT detail dialog showing all results (summary, social media, legal, web)
+- **PDF Report Updates:**
+  - "Ringkasan & Anteseden Target" section with full AI analysis
+  - Social Media with **full URLs** (clickable in PDF)
+  - Legal Cases with full notes and **source URLs**
+  - Web Mentions with **complete title, snippet, and URL** (no truncation)
 - **API Endpoints:**
   - `POST /api/nongeoint/fakta-osint` - Start OSINT search
   - `GET /api/nongeoint/fakta-osint/{osint_id}` - Get OSINT results
-- **Database:** New collection `fakta_osint` for storing results
+- **Database:** Collection `fakta_osint` for storing results
 - **Files Modified:**
   - `/app/backend/server.py`:
     - Added `FaktaOsintRequest` model
-    - Added `start_fakta_osint()` endpoint
-    - Added `get_fakta_osint()` endpoint
-    - Added `process_fakta_osint()` background task
+    - Added comprehensive AI prompt for better analysis
+    - Added endpoints for OSINT
   - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
-    - Added OSINT states (`osintResults`, `isLoadingOsint`, `osintDetailDialog`)
-    - Added `startFaktaOsint()`, `pollOsintResults()`, `getOsintStatus()` functions
-    - Added OSINT indicator in sub-query row
-    - Added OSINT detail dialog
-    - Updated PDF generation to include OSINT
-    - Updated FAKTA OSINT button to trigger actual search
+    - Added OSINT states and functions
+    - Added OSINT section in **View dialog**
+    - Updated **PDF generation** with full OSINT data (no truncation)
+    - Social media URLs, legal case URLs, web URLs all shown in full
 
 ### PENDALAMAN LANJUTAN Button
 - **Feature:** Added "PENDALAMAN LANJUTAN" button to Full Query results
