@@ -9420,113 +9420,176 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             }
     
     # ============================================
-    # EMAIL FINDER - Generate & Verify Email from Name + Domain
+    # EMAIL FINDER - Search Real Emails from Web + Generate Patterns
     # ============================================
     if query_type == 'email_finder':
         logger.info(f"[SIMPLE QUERY] Email Finder for: {query_value}")
         
         try:
             import re
+            import requests
+            from bs4 import BeautifulSoup
+            import urllib.parse
             
-            # Parse input: "nama domain" or "nama lengkap domain.com"
-            parts = query_value.strip().split()
-            if len(parts) < 2:
+            search_name = query_value.strip()
+            
+            if len(search_name) < 3:
                 clear_request_status()
                 return {
                     "success": False,
                     "query_type": query_type,
                     "query_value": query_value,
-                    "error": "Format: nama domain (ex: budi santoso gmail.com)",
+                    "error": "Masukkan nama minimal 3 karakter",
                     "source": "EMAIL_FINDER"
                 }
             
-            # Last part is domain, rest is name
-            domain = parts[-1].lower()
-            name_parts = [p.lower() for p in parts[:-1]]
+            found_emails = []
+            searched_sources = []
             
-            # Generate email patterns
-            def generate_email_patterns(name_parts, domain):
-                patterns = []
-                if len(name_parts) >= 1:
-                    first = name_parts[0]
-                    last = name_parts[-1] if len(name_parts) > 1 else ""
-                    
-                    # Common patterns
-                    patterns.append(f"{first}@{domain}")
-                    if last:
-                        patterns.append(f"{first}.{last}@{domain}")
-                        patterns.append(f"{first}{last}@{domain}")
-                        patterns.append(f"{first}_{last}@{domain}")
-                        patterns.append(f"{first[0]}{last}@{domain}")
-                        patterns.append(f"{first[0]}.{last}@{domain}")
-                        patterns.append(f"{first}{last[0]}@{domain}")
-                        patterns.append(f"{last}.{first}@{domain}")
-                        patterns.append(f"{last}{first}@{domain}")
-                        patterns.append(f"{last}_{first}@{domain}")
-                        patterns.append(f"{last}@{domain}")
-                        
-                        # With numbers
-                        patterns.append(f"{first}{last}123@{domain}")
-                        patterns.append(f"{first}.{last}1@{domain}")
-                    
-                    # Full name joined
-                    full_name = ''.join(name_parts)
-                    patterns.append(f"{full_name}@{domain}")
-                    
-                return list(dict.fromkeys(patterns))  # Remove duplicates
+            # Email regex pattern
+            email_pattern = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
             
-            email_patterns = generate_email_patterns(name_parts, domain)
+            # Headers to mimic browser
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+            }
             
-            # Try to verify with Holehe (check if email exists on platforms)
-            verified_emails = []
+            # Function to search and extract emails
+            def search_emails_from_url(url, source_name):
+                try:
+                    response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+                    if response.status_code == 200:
+                        # Extract emails from response
+                        emails = email_pattern.findall(response.text)
+                        # Filter relevant emails (containing parts of the name)
+                        name_parts = search_name.lower().split()
+                        relevant_emails = []
+                        for email in emails:
+                            email_lower = email.lower()
+                            # Check if any part of name is in email
+                            for part in name_parts:
+                                if len(part) >= 3 and part in email_lower:
+                                    relevant_emails.append(email)
+                                    break
+                        return list(set(relevant_emails)), source_name
+                except Exception as e:
+                    logger.warning(f"[EMAIL_FINDER] Error searching {source_name}: {e}")
+                return [], source_name
             
+            # 1. Search DuckDuckGo (more permissive than Google)
             try:
-                import subprocess
-                import sys as sys_module
-                
-                # Verify top 5 patterns with holehe
-                for email in email_patterns[:5]:
-                    try:
-                        result = subprocess.run(
-                            [sys_module.executable, '-m', 'holehe', email, '--only-used'],
-                            capture_output=True,
-                            text=True,
-                            timeout=30,
-                            cwd='/tmp'
-                        )
-                        
-                        output = result.stdout or ''
-                        # Check if any platform found
-                        if '[+]' in output or 'used' in output.lower():
-                            # Parse which platforms
-                            platforms = []
-                            for line in output.split('\n'):
-                                if '[+]' in line:
-                                    platform = line.split('[+]')[-1].strip().split(':')[0].strip()
-                                    if platform:
-                                        platforms.append(platform)
-                            
-                            verified_emails.append({
-                                'email': email,
-                                'platforms': platforms[:5],  # Max 5 platforms
-                                'verified': True
-                            })
-                    except subprocess.TimeoutExpired:
-                        continue
-                    except Exception as e:
-                        logger.warning(f"[EMAIL_FINDER] Holehe error for {email}: {e}")
-                        continue
-            except Exception as holehe_err:
-                logger.warning(f"[EMAIL_FINDER] Holehe not available: {holehe_err}")
+                query = urllib.parse.quote(f'"{search_name}" email')
+                ddg_url = f"https://html.duckduckgo.com/html/?q={query}"
+                emails, source = search_emails_from_url(ddg_url, "DuckDuckGo")
+                if emails:
+                    found_emails.extend(emails)
+                    searched_sources.append(f"✓ {source}")
+                else:
+                    searched_sources.append(f"○ {source}")
+            except Exception as e:
+                logger.warning(f"[EMAIL_FINDER] DuckDuckGo error: {e}")
+            
+            # 2. Search Bing
+            try:
+                query = urllib.parse.quote(f'"{search_name}" email contact')
+                bing_url = f"https://www.bing.com/search?q={query}"
+                emails, source = search_emails_from_url(bing_url, "Bing")
+                if emails:
+                    found_emails.extend(emails)
+                    searched_sources.append(f"✓ {source}")
+                else:
+                    searched_sources.append(f"○ {source}")
+            except Exception as e:
+                logger.warning(f"[EMAIL_FINDER] Bing error: {e}")
+            
+            # 3. Search with email keyword variations
+            try:
+                query = urllib.parse.quote(f'{search_name} @gmail.com OR @yahoo.com OR @hotmail.com')
+                ddg_url2 = f"https://html.duckduckgo.com/html/?q={query}"
+                emails, source = search_emails_from_url(ddg_url2, "Email Domains")
+                if emails:
+                    found_emails.extend(emails)
+                    searched_sources.append(f"✓ {source}")
+                else:
+                    searched_sources.append(f"○ {source}")
+            except Exception as e:
+                logger.warning(f"[EMAIL_FINDER] Email domains search error: {e}")
+            
+            # Remove duplicates and clean
+            found_emails = list(set([e.lower() for e in found_emails]))
+            
+            # Filter out common false positives
+            filtered_emails = []
+            blacklist = ['example.com', 'email.com', 'domain.com', 'yourname', 'username', 'test@', 'info@example']
+            for email in found_emails:
+                is_valid = True
+                for bl in blacklist:
+                    if bl in email.lower():
+                        is_valid = False
+                        break
+                if is_valid and '@' in email:
+                    filtered_emails.append(email)
             
             # Build response
             lines = []
             lines.append(f"{'='*50}")
-            lines.append(f"📧 EMAIL FINDER")
-            lines.append(f"Nama: {' '.join(name_parts).title()}")
-            lines.append(f"Domain: {domain}")
+            lines.append(f"📧 EMAIL FINDER (Web Search)")
+            lines.append(f"Pencarian: {search_name}")
             lines.append(f"{'='*50}")
             lines.append("")
+            
+            # Show found emails
+            if filtered_emails:
+                lines.append(f"✅ EMAIL DITEMUKAN ({len(filtered_emails)}):")
+                lines.append("")
+                for idx, email in enumerate(filtered_emails[:15], 1):  # Max 15 results
+                    lines.append(f"  {idx}. {email}")
+                lines.append("")
+            else:
+                lines.append("❌ Tidak ditemukan email yang cocok di web")
+                lines.append("")
+                
+                # Generate suggestions if no results
+                name_parts = search_name.lower().split()
+                if len(name_parts) >= 1:
+                    lines.append("💡 KEMUNGKINAN EMAIL (berdasarkan pola umum):")
+                    lines.append("")
+                    first = name_parts[0]
+                    last = name_parts[-1] if len(name_parts) > 1 else ""
+                    
+                    suggestions = []
+                    if last:
+                        suggestions = [
+                            f"{first}.{last}@gmail.com",
+                            f"{first}{last}@gmail.com",
+                            f"{first}.{last}@yahoo.com",
+                            f"{first}_{last}@hotmail.com",
+                            f"{first[0]}{last}@gmail.com",
+                        ]
+                    else:
+                        suggestions = [
+                            f"{first}@gmail.com",
+                            f"{first}@yahoo.com",
+                            f"{first}@hotmail.com",
+                        ]
+                    
+                    for s in suggestions:
+                        lines.append(f"  • {s}")
+                    lines.append("")
+            
+            # Show searched sources
+            lines.append(f"🔍 Sumber yang dicari:")
+            for src in searched_sources:
+                lines.append(f"  {src}")
+            
+            lines.append("")
+            lines.append(f"{'='*50}")
+            lines.append(f"Total: {len(filtered_emails)} email ditemukan")
+            lines.append(f"{'='*50}")
+            
+            raw_response = '\n'.join(lines)
             
             # Show verified emails first
             if verified_emails:
