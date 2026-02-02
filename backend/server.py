@@ -6711,7 +6711,8 @@ CATATAN PENTING:
                 "legal_cases": results.get("legal_cases", []),
                 "web_mentions": results.get("web_mentions", []),
                 "internal_data": results.get("internal_data", {}),
-                "risk_assessment": results.get("risk_assessment")
+                "risk_assessment": results.get("risk_assessment"),
+                "family_cache": results.get("family_cache", [])
             }}}
         )
         
@@ -6728,6 +6729,7 @@ CATATAN PENTING:
                 "legal_cases": results.get("legal_cases", []),
                 "web_mentions": results.get("web_mentions", []),
                 "internal_data": results.get("internal_data", {}),
+                "family_cache": results.get("family_cache", []),
                 "risk_assessment": results.get("risk_assessment")
             }}}
         )
