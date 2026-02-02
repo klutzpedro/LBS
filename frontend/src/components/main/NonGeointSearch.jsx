@@ -4417,13 +4417,16 @@ export const NonGeointSearchDialog = ({
                             {sm.platform === 'youtube' && '▶️'}
                             {sm.platform === 'tiktok' && '🎵'}
                             {sm.platform === 'linkedin' && '💼'}
+                            {sm.platform === 'email' && '📧'}
+                            {sm.platform === 'github' && '💻'}
+                            {sm.platform === 'telegram' && '✈️'}
                           </span>
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium capitalize" style={{ color: 'var(--foreground-primary)' }}>
                               {sm.platform}
                             </p>
-                            <p className="text-xs" style={{ color: 'var(--accent-primary)' }}>
-                              @{sm.username}
+                            <p className="text-xs truncate" style={{ color: 'var(--accent-primary)' }}>
+                              {sm.platform === 'email' ? sm.username : `@${sm.username}`}
                             </p>
                           </div>
                         </a>
