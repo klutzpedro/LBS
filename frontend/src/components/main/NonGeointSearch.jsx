@@ -849,6 +849,8 @@ export const NonGeointSearchDialog = ({
     setPhotosFetched(0);
     setCurrentBatch(0);
     setCachedSearch(false);
+    // Reset advanced dropdown
+    setShowAdvancedDropdown(false);
   };
 
   // Handler to load more photos (next batch)
