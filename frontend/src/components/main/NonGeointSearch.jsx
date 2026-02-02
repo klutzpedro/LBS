@@ -2394,6 +2394,79 @@ export const NonGeointSearchDialog = ({
           }
         }
         
+        // ============ FAKTA OSINT SECTION ============
+        const osintData = osintResults[nik] || investigation?.osint_results?.[nik];
+        if (osintData) {
+          addSectionHeader('🌐 FAKTA OSINT');
+          
+          // AI Summary
+          if (osintData.summary) {
+            addSubsectionHeader('Ringkasan AI');
+            const summaryLines = pdf.splitTextToSize(osintData.summary, contentWidth - 10);
+            pdf.setFontSize(9);
+            pdf.setTextColor(...colors.text);
+            summaryLines.forEach(line => {
+              checkPageBreak(8);
+              pdf.text(line, margin + 5, yPos);
+              yPos += 5;
+            });
+            yPos += 3;
+          }
+          
+          // Social Media
+          if (osintData.social_media?.length > 0) {
+            addSubsectionHeader(`Media Sosial (${osintData.social_media.length} ditemukan)`);
+            osintData.social_media.forEach(sm => {
+              checkPageBreak(8);
+              pdf.setFontSize(9);
+              pdf.setTextColor(...colors.text);
+              pdf.text(`• ${sm.platform.toUpperCase()}: @${sm.username}`, margin + 5, yPos);
+              yPos += 5;
+            });
+            yPos += 3;
+          }
+          
+          // Legal Cases
+          if (osintData.legal_cases?.length > 0) {
+            addSubsectionHeader(`⚠️ Catatan Hukum (${osintData.legal_cases.length} ditemukan)`);
+            pdf.setTextColor(200, 50, 50);
+            osintData.legal_cases.forEach(lc => {
+              checkPageBreak(12);
+              pdf.setFontSize(9);
+              pdf.text(`• ${lc.source}`, margin + 5, yPos);
+              yPos += 4;
+              pdf.setFontSize(8);
+              pdf.setTextColor(120, 120, 120);
+              const noteLines = pdf.splitTextToSize(lc.note || '', contentWidth - 15);
+              noteLines.forEach(line => {
+                checkPageBreak(6);
+                pdf.text(line, margin + 10, yPos);
+                yPos += 4;
+              });
+              pdf.setTextColor(200, 50, 50);
+              yPos += 2;
+            });
+            yPos += 3;
+          }
+          
+          // Web Mentions Summary
+          if (osintData.web_mentions?.length > 0) {
+            addSubsectionHeader(`Temuan Web (${osintData.web_mentions.length} hasil)`);
+            pdf.setFontSize(8);
+            pdf.setTextColor(...colors.text);
+            osintData.web_mentions.slice(0, 5).forEach((wm, idx) => {
+              checkPageBreak(10);
+              pdf.text(`${idx + 1}. ${wm.title?.substring(0, 60)}...`, margin + 5, yPos);
+              yPos += 5;
+            });
+            if (osintData.web_mentions.length > 5) {
+              pdf.setTextColor(120, 120, 120);
+              pdf.text(`... dan ${osintData.web_mentions.length - 5} hasil lainnya`, margin + 5, yPos);
+              yPos += 5;
+            }
+          }
+        }
+        
         yPos += 10;
       });
     }
