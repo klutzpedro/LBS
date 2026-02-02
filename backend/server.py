@@ -6599,17 +6599,42 @@ CATATAN PENTING:
             }}
         )
         
-        # Also update the investigation document to mark OSINT completed
+        # Also update the investigation document with FULL OSINT results
         await db.nik_investigations.update_one(
             {"search_id": search_id},
             {"$set": {f"osint_results.{nik}": {
                 "osint_id": osint_id,
                 "status": "completed",
-                "completed_at": datetime.now(timezone.utc).isoformat()
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                # Store full results for cache access
+                "summary": results.get("summary"),
+                "antecedents": results.get("antecedents"),
+                "social_media": results.get("social_media", []),
+                "legal_cases": results.get("legal_cases", []),
+                "web_mentions": results.get("web_mentions", []),
+                "internal_data": results.get("internal_data", {}),
+                "risk_assessment": results.get("risk_assessment")
             }}}
         )
         
-        logger.info(f"[FAKTA OSINT {osint_id}] Completed successfully")
+        # Also update nongeoint_searches collection for history access
+        await db.nongeoint_searches.update_one(
+            {"id": search_id},
+            {"$set": {f"osint_results.{nik}": {
+                "osint_id": osint_id,
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "summary": results.get("summary"),
+                "antecedents": results.get("antecedents"),
+                "social_media": results.get("social_media", []),
+                "legal_cases": results.get("legal_cases", []),
+                "web_mentions": results.get("web_mentions", []),
+                "internal_data": results.get("internal_data", {}),
+                "risk_assessment": results.get("risk_assessment")
+            }}}
+        )
+        
+        logger.info(f"[FAKTA OSINT {osint_id}] Completed successfully and cached")
         
     except Exception as e:
         logger.error(f"[FAKTA OSINT {osint_id}] Error: {e}")
