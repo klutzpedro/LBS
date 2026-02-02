@@ -2403,71 +2403,130 @@ export const NonGeointSearchDialog = ({
         if (osintData) {
           addSectionHeader('🌐 FAKTA OSINT');
           
-          // AI Summary
-          if (osintData.summary) {
-            addSubsectionHeader('Ringkasan AI');
-            const summaryLines = pdf.splitTextToSize(osintData.summary, contentWidth - 10);
+          // AI Summary / Antecedents - FULL TEXT
+          if (osintData.summary || osintData.antecedents) {
+            addSubsectionHeader('Ringkasan & Anteseden Target');
+            const summaryText = osintData.summary || osintData.antecedents || '';
+            const summaryLines = pdf.splitTextToSize(summaryText, contentWidth - 10);
             pdf.setFontSize(9);
             pdf.setTextColor(...colors.text);
             summaryLines.forEach(line => {
-              checkPageBreak(8);
+              checkPageBreak(6);
               pdf.text(line, margin + 5, yPos);
               yPos += 5;
             });
-            yPos += 3;
+            yPos += 5;
           }
           
-          // Social Media
+          // Social Media with full URLs
           if (osintData.social_media?.length > 0) {
             addSubsectionHeader(`Media Sosial (${osintData.social_media.length} ditemukan)`);
             osintData.social_media.forEach(sm => {
-              checkPageBreak(8);
+              checkPageBreak(12);
               pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'bold');
               pdf.setTextColor(...colors.text);
               pdf.text(`• ${sm.platform.toUpperCase()}: @${sm.username}`, margin + 5, yPos);
               yPos += 5;
-            });
-            yPos += 3;
-          }
-          
-          // Legal Cases
-          if (osintData.legal_cases?.length > 0) {
-            addSubsectionHeader(`⚠️ Catatan Hukum (${osintData.legal_cases.length} ditemukan)`);
-            pdf.setTextColor(200, 50, 50);
-            osintData.legal_cases.forEach(lc => {
-              checkPageBreak(12);
-              pdf.setFontSize(9);
-              pdf.text(`• ${lc.source}`, margin + 5, yPos);
-              yPos += 4;
-              pdf.setFontSize(8);
-              pdf.setTextColor(120, 120, 120);
-              const noteLines = pdf.splitTextToSize(lc.note || '', contentWidth - 15);
-              noteLines.forEach(line => {
-                checkPageBreak(6);
-                pdf.text(line, margin + 10, yPos);
-                yPos += 4;
-              });
-              pdf.setTextColor(200, 50, 50);
+              // Show full URL
+              if (sm.url) {
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(41, 128, 185); // Blue for links
+                const urlLines = pdf.splitTextToSize(sm.url, contentWidth - 15);
+                urlLines.forEach(urlLine => {
+                  checkPageBreak(5);
+                  pdf.text(urlLine, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
               yPos += 2;
             });
             yPos += 3;
           }
           
-          // Web Mentions Summary
+          // Legal Cases with full details
+          if (osintData.legal_cases?.length > 0) {
+            addSubsectionHeader(`⚠️ Catatan Hukum (${osintData.legal_cases.length} ditemukan)`);
+            osintData.legal_cases.forEach(lc => {
+              checkPageBreak(20);
+              pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'bold');
+              pdf.setTextColor(200, 50, 50);
+              pdf.text(`• ${lc.source}`, margin + 5, yPos);
+              yPos += 5;
+              
+              // Full note
+              if (lc.note) {
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(80, 80, 80);
+                const noteLines = pdf.splitTextToSize(lc.note, contentWidth - 15);
+                noteLines.forEach(line => {
+                  checkPageBreak(5);
+                  pdf.text(line, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
+              
+              // Full URL
+              if (lc.url) {
+                pdf.setTextColor(41, 128, 185);
+                const urlLines = pdf.splitTextToSize(`Link: ${lc.url}`, contentWidth - 15);
+                urlLines.forEach(urlLine => {
+                  checkPageBreak(5);
+                  pdf.text(urlLine, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
+              yPos += 3;
+            });
+            yPos += 3;
+          }
+          
+          // Web Mentions - FULL DETAILS with URLs
           if (osintData.web_mentions?.length > 0) {
             addSubsectionHeader(`Temuan Web (${osintData.web_mentions.length} hasil)`);
-            pdf.setFontSize(8);
-            pdf.setTextColor(...colors.text);
-            osintData.web_mentions.slice(0, 5).forEach((wm, idx) => {
-              checkPageBreak(10);
-              pdf.text(`${idx + 1}. ${wm.title?.substring(0, 60)}...`, margin + 5, yPos);
-              yPos += 5;
+            osintData.web_mentions.forEach((wm, idx) => {
+              checkPageBreak(25);
+              
+              // Title
+              pdf.setFontSize(9);
+              pdf.setFont('helvetica', 'bold');
+              pdf.setTextColor(...colors.text);
+              const titleLines = pdf.splitTextToSize(`${idx + 1}. ${wm.title || 'Tanpa Judul'}`, contentWidth - 10);
+              titleLines.forEach(titleLine => {
+                checkPageBreak(5);
+                pdf.text(titleLine, margin + 5, yPos);
+                yPos += 5;
+              });
+              
+              // Snippet (full text)
+              if (wm.snippet) {
+                pdf.setFontSize(8);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(80, 80, 80);
+                const snippetLines = pdf.splitTextToSize(wm.snippet, contentWidth - 15);
+                snippetLines.forEach(snippetLine => {
+                  checkPageBreak(5);
+                  pdf.text(snippetLine, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
+              
+              // Full URL
+              if (wm.url) {
+                pdf.setTextColor(41, 128, 185);
+                const urlLines = pdf.splitTextToSize(wm.url, contentWidth - 15);
+                urlLines.forEach(urlLine => {
+                  checkPageBreak(5);
+                  pdf.text(urlLine, margin + 10, yPos);
+                  yPos += 4;
+                });
+              }
+              
+              yPos += 3;
             });
-            if (osintData.web_mentions.length > 5) {
-              pdf.setTextColor(120, 120, 120);
-              pdf.text(`... dan ${osintData.web_mentions.length - 5} hasil lainnya`, margin + 5, yPos);
-              yPos += 5;
-            }
           }
         }
         
