@@ -3357,23 +3357,50 @@ export const NonGeointSearchDialog = ({
                           borderBottom: '1px solid var(--borders-subtle)'
                         }}
                         onClick={() => {
-                          toast.info('Fitur FAKTA OSINT akan segera hadir');
-                          setShowAdvancedDropdown(false);
+                          // Get selected NIK and name
+                          if (selectedNiks.length > 0) {
+                            const nik = selectedNiks[0];
+                            const nikData = investigation?.results?.[nik];
+                            const name = nikData?.nik_data?.data?.['Full Name'] || 
+                                        nikData?.nik_data?.data?.['Nama'] ||
+                                        searchResults?.name || '';
+                            
+                            if (name) {
+                              startFaktaOsint(nik, name);
+                              setShowAdvancedDropdown(false);
+                            } else {
+                              toast.error('Nama target tidak ditemukan');
+                            }
+                          } else {
+                            toast.error('Tidak ada NIK yang dipilih');
+                          }
                         }}
+                        disabled={isLoadingOsint[selectedNiks[0]]}
                         data-testid="fakta-osint-btn"
                       >
                         <div 
                           className="w-8 h-8 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
                         >
-                          <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                          {isLoadingOsint[selectedNiks[0]] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#3b82f6' }} />
+                          ) : getOsintStatus(selectedNiks[0]) === 'completed' ? (
+                            <div className="relative">
+                              <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                              <CheckCircle className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
+                            </div>
+                          ) : (
+                            <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
+                          )}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
                             FAKTA OSINT
                           </p>
                           <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                            Pencarian informasi terbuka
+                            {isLoadingOsint[selectedNiks[0]] ? 'Sedang mencari...' : 
+                             getOsintStatus(selectedNiks[0]) === 'completed' ? 'Lihat hasil OSINT' :
+                             'Pencarian informasi terbuka'}
                           </p>
                         </div>
                         <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
