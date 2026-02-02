@@ -31,7 +31,11 @@ import {
   Minus,
   Maximize2,
   AlertTriangle,
-  X
+  X,
+  Zap,
+  Phone,
+  Network,
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
