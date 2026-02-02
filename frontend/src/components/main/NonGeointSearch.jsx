@@ -996,6 +996,7 @@ export const NonGeointSearchDialog = ({
               fullSearchData.status !== 'waiting_selection') {
             console.log('[NonGeoint] Investigation found with status:', fullSearchData.investigation.status);
             console.log('[NonGeoint] Investigation results:', fullSearchData.investigation.results);
+            console.log('[NonGeoint] OSINT results:', fullSearchData.investigation.osint_results);
             
             setInvestigation(fullSearchData.investigation);
             
@@ -1004,6 +1005,18 @@ export const NonGeointSearchDialog = ({
               const investigatedNiks = Object.keys(fullSearchData.investigation.results);
               setSelectedNiks(investigatedNiks);
               console.log('[NonGeoint] Loaded investigated NIKs:', investigatedNiks);
+            }
+            
+            // Load cached OSINT results if available
+            if (fullSearchData.investigation.osint_results) {
+              console.log('[NonGeoint] Loading cached OSINT results');
+              setOsintResults(fullSearchData.investigation.osint_results);
+            }
+            
+            // Also check nongeoint_searches for OSINT (backup location)
+            if (fullSearchData.osint_results && !fullSearchData.investigation.osint_results) {
+              console.log('[NonGeoint] Loading OSINT from search data');
+              setOsintResults(fullSearchData.osint_results);
             }
             
             toast.success('Hasil pendalaman sebelumnya dimuat');
