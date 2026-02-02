@@ -1655,6 +1655,90 @@ export const NonGeointSearchDialog = ({
     }
   };
 
+  // ==================== FAKTA OSINT Functions ====================
+  
+  const startFaktaOsint = async (nik, name) => {
+    if (!searchResults?.id || !nik || !name) {
+      toast.error('Data tidak lengkap untuk FAKTA OSINT');
+      return;
+    }
+    
+    setIsLoadingOsint(prev => ({ ...prev, [nik]: true }));
+    toast.info(`Memulai FAKTA OSINT untuk ${name}...`);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/fakta-osint`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          search_id: searchResults.id,
+          nik: nik,
+          name: name
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to start OSINT');
+      
+      const data = await response.json();
+      console.log('[FAKTA OSINT] Started:', data);
+      
+      // Start polling for results
+      osintPollingRef.current[nik] = setInterval(() => {
+        pollOsintResults(data.osint_id, nik);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('OSINT error:', error);
+      toast.error('Gagal memulai FAKTA OSINT');
+      setIsLoadingOsint(prev => ({ ...prev, [nik]: false }));
+    }
+  };
+  
+  const pollOsintResults = async (osintId, nik) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/fakta-osint/${osintId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Failed to get OSINT');
+      
+      const data = await response.json();
+      console.log('[FAKTA OSINT] Poll result:', data.status);
+      
+      if (data.status === 'completed' || data.status === 'error') {
+        // Stop polling
+        if (osintPollingRef.current[nik]) {
+          clearInterval(osintPollingRef.current[nik]);
+          delete osintPollingRef.current[nik];
+        }
+        
+        setIsLoadingOsint(prev => ({ ...prev, [nik]: false }));
+        setOsintResults(prev => ({ ...prev, [nik]: data.results }));
+        
+        if (data.status === 'completed') {
+          toast.success(`FAKTA OSINT selesai untuk NIK ${nik}`);
+        } else {
+          toast.error(`FAKTA OSINT gagal: ${data.error || 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      console.error('OSINT polling error:', error);
+    }
+  };
+  
+  const getOsintStatus = (nik) => {
+    if (isLoadingOsint[nik]) return 'processing';
+    if (osintResults[nik]) return 'completed';
+    // Check from investigation data
+    if (investigation?.osint_results?.[nik]?.status === 'completed') return 'completed';
+    return 'pending';
+  };
+
   // Generate PDF with all results
   const generatePDF = () => {
     const pdf = new jsPDF();
