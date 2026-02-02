@@ -6403,73 +6403,189 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
             {"$set": {"status": "generating_summary", "results.legal_cases": results["legal_cases"]}}
         )
         
-        # ============ 4. AI Summary Generation ============
+        # ============ 4. AI Summary Generation - COMPREHENSIVE ANTESEDEN ============
         try:
             from emergentintegrations.llm.chat import LlmChat, UserMessage
             
             api_key = os.getenv('EMERGENT_LLM_KEY')
             if api_key:
-                # Prepare data for AI
-                web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:8]])
-                social_summary = "\n".join([f"- {s['platform']}: @{s['username']} ({s.get('url', '')})" for s in social_media_found])
+                # Prepare INTERNAL DATA summary
+                internal_summary = ""
+                
+                # NIK Data
+                if internal_data.get("nik_data"):
+                    nik_info = internal_data["nik_data"]
+                    if isinstance(nik_info, dict):
+                        internal_summary += "\n--- DATA NIK (CAPIL) ---\n"
+                        for key, val in nik_info.items():
+                            if val and str(val).strip():
+                                internal_summary += f"- {key}: {val}\n"
+                
+                # NKK Data (Family)
+                if internal_data.get("nkk_data"):
+                    nkk_info = internal_data["nkk_data"]
+                    internal_summary += "\n--- DATA NKK (KELUARGA) ---\n"
+                    if isinstance(nkk_info, dict):
+                        for key, val in nkk_info.items():
+                            if val and str(val).strip():
+                                internal_summary += f"- {key}: {val}\n"
+                    elif isinstance(nkk_info, list):
+                        internal_summary += f"- Jumlah anggota keluarga: {len(nkk_info)}\n"
+                        for i, member in enumerate(nkk_info[:5]):
+                            if isinstance(member, dict):
+                                name = member.get('nama') or member.get('Nama') or member.get('name', 'N/A')
+                                relation = member.get('hubungan') or member.get('Hubungan') or member.get('relation', 'N/A')
+                                internal_summary += f"  {i+1}. {name} ({relation})\n"
+                
+                # REGNIK Data
+                if internal_data.get("regnik_data"):
+                    regnik_info = internal_data["regnik_data"]
+                    internal_summary += "\n--- DATA REGNIK ---\n"
+                    if isinstance(regnik_info, dict):
+                        for key, val in regnik_info.items():
+                            if val and str(val).strip():
+                                internal_summary += f"- {key}: {val}\n"
+                
+                # Passport Data
+                if internal_data.get("passport_data"):
+                    passport_info = internal_data["passport_data"]
+                    internal_summary += "\n--- DATA PASSPORT ---\n"
+                    if isinstance(passport_info, dict):
+                        passports = passport_info.get("passports", [])
+                        if passports:
+                            internal_summary += f"- Jumlah passport: {len(passports)}\n"
+                            for p in passports[:3]:
+                                internal_summary += f"  - No: {p}\n"
+                        wni_data = passport_info.get("wni_data", {})
+                        if wni_data:
+                            result_list = wni_data.get("result") or wni_data.get("data") or []
+                            if result_list:
+                                for item in result_list[:2]:
+                                    if isinstance(item, dict):
+                                        internal_summary += f"  - Nama: {item.get('nama_lengkap') or item.get('GIVENNAME', 'N/A')}\n"
+                                        internal_summary += f"  - Tanggal Lahir: {item.get('tanggal_lahir') or item.get('DATEOFBIRTH', 'N/A')}\n"
+                
+                # Perlintasan Data (Border Crossings)
+                if internal_data.get("perlintasan_data"):
+                    perlintasan_info = internal_data["perlintasan_data"]
+                    internal_summary += "\n--- DATA PERLINTASAN (IMIGRASI) ---\n"
+                    if isinstance(perlintasan_info, dict):
+                        results_list = perlintasan_info.get("results", [])
+                        if results_list:
+                            total_crossings = 0
+                            for passport_result in results_list:
+                                crossings = passport_result.get("crossings", [])
+                                total_crossings += len(crossings)
+                                for c in crossings[:5]:
+                                    direction = "MASUK" if c.get("direction_code") == "A" else "KELUAR"
+                                    internal_summary += f"  - {c.get('movement_date', 'N/A')}: {direction} via {c.get('tpi_name', 'N/A')} ({c.get('port_description', 'N/A')})\n"
+                            internal_summary += f"- Total perlintasan: {total_crossings}\n"
+                
+                # Prepare WEB DATA summary
+                web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:10]])
+                
+                # Prepare SOCIAL MEDIA summary
+                social_summary = "\n".join([f"- {s['platform'].upper()}: @{s['username']} ({s.get('url', '')})" for s in social_media_found])
+                
+                # Prepare LEGAL summary
                 legal_summary = "\n".join([f"- {lc['source']}: {lc['note']}" for lc in legal_cases])
                 
-                prompt = f"""Kamu adalah analis OSINT (Open Source Intelligence) profesional. Analisis data berikut tentang seseorang bernama "{name_cleaned}" dan buat laporan lengkap dalam Bahasa Indonesia.
+                prompt = f"""Kamu adalah analis intelijen OSINT (Open Source Intelligence) profesional Indonesia. Analisis SEMUA data berikut tentang target bernama "{name_cleaned}" (NIK: {nik}) dan buat LAPORAN ANTESEDEN INTELIJEN yang komprehensif dalam Bahasa Indonesia.
 
-=== DATA YANG DITEMUKAN ===
+==========================================
+DATA INTERNAL (DARI DATABASE PEMERINTAH)
+==========================================
+{internal_summary if internal_summary.strip() else "Tidak ada data internal yang tersedia"}
+
+==========================================
+DATA EKSTERNAL (DARI INTERNET)
+==========================================
 
 INFORMASI WEB:
 {web_summary if web_summary else "Tidak ditemukan informasi signifikan di internet"}
 
-MEDIA SOSIAL:
-{social_summary if social_summary else "Tidak ditemukan akun media sosial yang teridentifikasi"}
+MEDIA SOSIAL TERIDENTIFIKASI:
+{social_summary if social_summary else "Tidak ditemukan akun media sosial"}
 
 CATATAN HUKUM:
 {legal_summary if legal_summary else "Tidak ditemukan catatan hukum atau perkara terkait"}
 
-=== FORMAT LAPORAN ===
+==========================================
+FORMAT LAPORAN ANTESEDEN INTELIJEN
+==========================================
 
-Buat laporan OSINT yang komprehensif dengan format berikut:
+Buat laporan anteseden intelijen yang komprehensif dengan format berikut:
 
-**1. RINGKASAN PROFIL TARGET**
-Tulis 3-5 kalimat yang menjelaskan siapa orang ini berdasarkan data yang ditemukan. Sebutkan pekerjaan, afiliasi, atau aktivitas publik jika ada.
+**I. IDENTITAS & BIODATA**
+Rangkum informasi identitas target berdasarkan data NIK, NKK, REGNIK, dan Passport:
+- Nama lengkap, NIK, tempat/tanggal lahir
+- Alamat domisili, status perkawinan
+- Pekerjaan/profesi yang tercatat
+- Nomor passport (jika ada)
+- Anggota keluarga utama (dari NKK)
 
-**2. ANTESEDEN & LATAR BELAKANG**
-Tulis paragraf lengkap (minimum 5 kalimat) yang menjelaskan:
-- Latar belakang orang ini berdasarkan informasi yang ditemukan
-- Aktivitas publik atau jejak digital yang teridentifikasi
-- Afiliasi organisasi, komunitas, atau kelompok jika ada
-- Catatan khusus atau peringatan yang perlu diperhatikan
+**II. AKTIVITAS & PERGERAKAN**
+Analisis aktivitas target berdasarkan data yang tersedia:
+- Riwayat perlintasan/perjalanan internasional (dari data imigrasi)
+- Aktivitas online/digital footprint
+- Pekerjaan, usaha, atau kegiatan yang teridentifikasi
+- Pola pergerakan atau mobilitas geografis
 
-**3. PENILAIAN RISIKO**
-Berikan penilaian objektif tentang tingkat risiko atau perhatian yang diperlukan berdasarkan data:
-- RENDAH: Tidak ada indikasi negatif
+**III. RELASI & JARINGAN SOSIAL**
+Identifikasi hubungan dan jaringan target:
+- Anggota keluarga (dari NKK)
+- Akun media sosial dan koneksi digital
+- Afiliasi organisasi, komunitas, atau kelompok
+- Rekan kerja atau mitra bisnis yang teridentifikasi
+
+**IV. ASET & KEPEMILIKAN**
+Identifikasi aset yang dapat diidentifikasi:
+- Properti atau kendaraan (jika ada di data)
+- Akun digital dan platform online
+- Usaha atau bisnis yang terkait
+
+**V. CATATAN KHUSUS & PERINGATAN**
+Informasi penting yang perlu diperhatikan:
+- Catatan hukum atau perkara (dari Pusiknas/SIPP)
+- Indikasi aktivitas mencurigakan
+- Hal-hal yang memerlukan investigasi lanjutan
+
+**VI. PENILAIAN RISIKO**
+Berikan penilaian risiko berdasarkan SEMUA data:
+- RENDAH: Tidak ada indikasi negatif, profil normal
 - SEDANG: Ada beberapa catatan yang perlu diverifikasi
-- TINGGI: Ada catatan hukum atau indikasi yang perlu investigasi lanjut
+- TINGGI: Ada catatan hukum atau indikasi serius yang perlu investigasi lanjut
 
-**4. REKOMENDASI INVESTIGASI**
-Berikan 2-3 langkah investigasi lanjutan yang disarankan untuk memvalidasi informasi.
+**VII. REKOMENDASI TINDAK LANJUT**
+Berikan 3-5 langkah investigasi lanjutan yang spesifik dan dapat dilakukan.
 
-Catatan: Jika data terbatas, tetap buat analisis berdasarkan informasi yang ada dan sebutkan keterbatasan data dalam laporan."""
+CATATAN PENTING:
+- Analisis SEMUA data yang tersedia, baik internal maupun eksternal
+- Jika data terbatas, tetap buat analisis berdasarkan informasi yang ada
+- Sebutkan secara eksplisit jika ada data yang tidak tersedia atau perlu diverifikasi
+- Gunakan bahasa formal dan profesional untuk laporan intelijen"""
 
                 chat = LlmChat(
                     api_key=api_key,
                     session_id=f"osint-{osint_id}",
-                    system_message="Kamu adalah analis OSINT profesional dengan pengalaman dalam investigasi digital. Berikan analisis yang komprehensif, objektif, dan dapat dipertanggungjawabkan. Gunakan Bahasa Indonesia yang formal dan profesional."
+                    system_message="Kamu adalah analis intelijen senior Indonesia dengan spesialisasi OSINT. Tugasmu adalah menyusun laporan anteseden intelijen yang komprehensif, akurat, dan dapat dipertanggungjawabkan. Analisis semua data yang tersedia dan berikan penilaian objektif. Gunakan format laporan resmi dan Bahasa Indonesia yang formal."
                 ).with_model("gemini", "gemini-2.5-flash")
                 
                 user_message = UserMessage(text=prompt)
                 ai_summary = await chat.send_message(user_message)
                 
                 results["summary"] = ai_summary
-                results["antecedents"] = ai_summary  # Same for now
-                logger.info(f"[FAKTA OSINT {osint_id}] AI summary generated")
+                results["antecedents"] = ai_summary
+                results["risk_assessment"] = "Lihat bagian PENILAIAN RISIKO di summary"
+                logger.info(f"[FAKTA OSINT {osint_id}] AI anteseden generated successfully")
             else:
-                results["summary"] = "AI tidak tersedia - silakan review data manual"
+                results["summary"] = "AI tidak tersedia - silakan review data manual. Data internal dan eksternal telah dikumpulkan."
                 results["antecedents"] = "AI tidak tersedia"
                 
         except Exception as e:
             logger.error(f"[FAKTA OSINT {osint_id}] AI summary error: {e}")
+            import traceback
+            traceback.print_exc()
             results["summary"] = f"Error generating summary: {str(e)}"
             results["antecedents"] = "Error generating antecedents"
         
