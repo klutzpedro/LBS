@@ -6222,38 +6222,107 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
             {"$set": {"status": "searching_social", "results.web_mentions": results["web_mentions"]}}
         )
         
-        # ============ 2. Social Media Detection from web results ============
+        # ============ 2. Social Media Detection - Enhanced ============
         social_media_patterns = {
-            "facebook": {"pattern": r'facebook\.com/([^/?\s"]+)', "icon": "facebook"},
-            "instagram": {"pattern": r'instagram\.com/([^/?\s"]+)', "icon": "instagram"},
-            "twitter": {"pattern": r'(?:twitter|x)\.com/([^/?\s"]+)', "icon": "twitter"},
-            "youtube": {"pattern": r'youtube\.com/(?:user|channel|c|@)/([^/?\s"]+)', "icon": "youtube"},
-            "tiktok": {"pattern": r'tiktok\.com/@([^/?\s"]+)', "icon": "tiktok"},
-            "linkedin": {"pattern": r'linkedin\.com/in/([^/?\s"]+)', "icon": "linkedin"},
+            "facebook": {"pattern": r'facebook\.com/([^/?\s"]+)', "icon": "facebook", "url_template": "https://facebook.com/{}"},
+            "instagram": {"pattern": r'instagram\.com/([^/?\s"]+)', "icon": "instagram", "url_template": "https://instagram.com/{}"},
+            "twitter": {"pattern": r'(?:twitter|x)\.com/([^/?\s"]+)', "icon": "twitter", "url_template": "https://x.com/{}"},
+            "youtube": {"pattern": r'youtube\.com/(?:user|channel|c|@)?/?([^/?\s"]+)', "icon": "youtube", "url_template": "https://youtube.com/@{}"},
+            "tiktok": {"pattern": r'tiktok\.com/@?([^/?\s"]+)', "icon": "tiktok", "url_template": "https://tiktok.com/@{}"},
+            "linkedin": {"pattern": r'linkedin\.com/in/([^/?\s"]+)', "icon": "linkedin", "url_template": "https://linkedin.com/in/{}"},
+            "email": {"pattern": r'[\w\.-]+@[\w\.-]+\.\w+', "icon": "email", "url_template": "mailto:{}"},
+            "github": {"pattern": r'github\.com/([^/?\s"]+)', "icon": "github", "url_template": "https://github.com/{}"},
+            "telegram": {"pattern": r't\.me/([^/?\s"]+)', "icon": "telegram", "url_template": "https://t.me/{}"},
         }
         
         social_media_found = []
         import re
         
+        # Blacklist common non-profile URLs
+        blacklist_usernames = ["search", "explore", "hashtag", "login", "signup", "share", "watch", "help", "about", "settings", "privacy", "terms", "policy"]
+        
         # Search web data for social media links
         for item in web_data:
             url = item.get("url", "")
             snippet = item.get("snippet", "")
-            combined = f"{url} {snippet}"
+            title = item.get("title", "")
+            combined = f"{url} {snippet} {title}"
             
             for platform, config in social_media_patterns.items():
                 matches = re.findall(config["pattern"], combined, re.IGNORECASE)
                 for match in matches:
-                    if match and match not in ["search", "explore", "hashtag", "login"]:
+                    match_clean = match.strip().rstrip('.,;:')
+                    if match_clean and match_clean.lower() not in blacklist_usernames and len(match_clean) > 2:
+                        # Build proper URL
+                        if platform == "email":
+                            profile_url = f"mailto:{match_clean}"
+                        else:
+                            profile_url = config["url_template"].format(match_clean)
+                        
                         social_entry = {
                             "platform": platform,
-                            "username": match,
-                            "url": url if platform in url.lower() else f"https://{platform}.com/{match}",
-                            "icon": config["icon"]
+                            "username": match_clean,
+                            "url": profile_url,
+                            "icon": config["icon"],
+                            "source": url
                         }
                         # Avoid duplicates
-                        if not any(s["platform"] == platform and s["username"] == match for s in social_media_found):
+                        if not any(s["platform"] == platform and s["username"].lower() == match_clean.lower() for s in social_media_found):
                             social_media_found.append(social_entry)
+        
+        # Direct search for social media profiles by name
+        try:
+            import aiohttp
+            import urllib.parse
+            
+            # Search for specific social media profiles
+            social_searches = [
+                f'site:linkedin.com/in "{name_cleaned}"',
+                f'site:facebook.com "{name_cleaned}"',
+                f'site:instagram.com "{name_cleaned}"',
+            ]
+            
+            connector = aiohttp.TCPConnector(family=socket.AF_INET)
+            async with aiohttp.ClientSession(connector=connector) as session:
+                for search_query in social_searches:
+                    try:
+                        encoded_query = urllib.parse.quote(search_query)
+                        ddg_url = f"https://html.duckduckgo.com/html/?q={encoded_query}"
+                        
+                        async with session.get(
+                            ddg_url,
+                            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+                            timeout=aiohttp.ClientTimeout(total=10)
+                        ) as response:
+                            if response.status == 200:
+                                html = await response.text()
+                                soup = BeautifulSoup(html, 'html.parser')
+                                
+                                for result in soup.find_all('div', class_='result')[:3]:
+                                    title_elem = result.find('a', class_='result__a')
+                                    if title_elem:
+                                        link = title_elem.get('href', '')
+                                        for platform, config in social_media_patterns.items():
+                                            if platform in ['email']:
+                                                continue
+                                            matches = re.findall(config["pattern"], link, re.IGNORECASE)
+                                            for match in matches:
+                                                match_clean = match.strip().rstrip('.,;:')
+                                                if match_clean and match_clean.lower() not in blacklist_usernames:
+                                                    profile_url = config["url_template"].format(match_clean)
+                                                    if not any(s["platform"] == platform and s["username"].lower() == match_clean.lower() for s in social_media_found):
+                                                        social_media_found.append({
+                                                            "platform": platform,
+                                                            "username": match_clean,
+                                                            "url": profile_url,
+                                                            "icon": config["icon"],
+                                                            "source": "direct_search"
+                                                        })
+                    except Exception as e:
+                        pass
+                    await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"[FAKTA OSINT {osint_id}] Social search error: {e}")
         
         results["social_media"] = social_media_found
         logger.info(f"[FAKTA OSINT {osint_id}] Found {len(social_media_found)} social media profiles")
@@ -6279,7 +6348,8 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
                         pusiknas_url,
                         headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
                         timeout=aiohttp.ClientTimeout(total=10),
-                        allow_redirects=True
+                        allow_redirects=True,
+                        ssl=False  # Skip SSL verification for government sites
                     ) as response:
                         if response.status == 200:
                             html = await response.text()
