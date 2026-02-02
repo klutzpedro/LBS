@@ -857,6 +857,10 @@ export const NonGeointSearchDialog = ({
     setCachedSearch(false);
     // Reset advanced dropdown
     setShowAdvancedDropdown(false);
+    // Reset OSINT states
+    setOsintResults({});
+    setIsLoadingOsint({});
+    setOsintDetailDialog({ open: false, nik: null, data: null });
   };
 
   // Handler to load more photos (next batch)
