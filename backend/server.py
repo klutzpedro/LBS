@@ -6275,32 +6275,52 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
             api_key = os.getenv('EMERGENT_LLM_KEY')
             if api_key:
                 # Prepare data for AI
-                web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:5]])
-                social_summary = "\n".join([f"- {s['platform']}: @{s['username']}" for s in social_media_found])
+                web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:8]])
+                social_summary = "\n".join([f"- {s['platform']}: @{s['username']} ({s.get('url', '')})" for s in social_media_found])
                 legal_summary = "\n".join([f"- {lc['source']}: {lc['note']}" for lc in legal_cases])
                 
-                prompt = f"""Analisis data OSINT berikut tentang seseorang bernama "{name_cleaned}" dan berikan ringkasan dalam Bahasa Indonesia:
+                prompt = f"""Kamu adalah analis OSINT (Open Source Intelligence) profesional. Analisis data berikut tentang seseorang bernama "{name_cleaned}" dan buat laporan lengkap dalam Bahasa Indonesia.
+
+=== DATA YANG DITEMUKAN ===
 
 INFORMASI WEB:
-{web_summary if web_summary else "Tidak ditemukan informasi signifikan"}
+{web_summary if web_summary else "Tidak ditemukan informasi signifikan di internet"}
 
 MEDIA SOSIAL:
-{social_summary if social_summary else "Tidak ditemukan akun media sosial"}
+{social_summary if social_summary else "Tidak ditemukan akun media sosial yang teridentifikasi"}
 
 CATATAN HUKUM:
-{legal_summary if legal_summary else "Tidak ditemukan catatan hukum"}
+{legal_summary if legal_summary else "Tidak ditemukan catatan hukum atau perkara terkait"}
 
-Berikan:
-1. RINGKASAN PROFIL (2-3 kalimat tentang siapa orang ini berdasarkan data yang ada)
-2. ANTESEDEN (latar belakang, aktivitas, atau catatan penting yang ditemukan)
-3. REKOMENDASI (langkah investigasi lanjutan yang disarankan)
+=== FORMAT LAPORAN ===
 
-Format respons dalam paragraf singkat dan jelas. Jika data tidak cukup, nyatakan bahwa informasi terbatas."""
+Buat laporan OSINT yang komprehensif dengan format berikut:
+
+**1. RINGKASAN PROFIL TARGET**
+Tulis 3-5 kalimat yang menjelaskan siapa orang ini berdasarkan data yang ditemukan. Sebutkan pekerjaan, afiliasi, atau aktivitas publik jika ada.
+
+**2. ANTESEDEN & LATAR BELAKANG**
+Tulis paragraf lengkap (minimum 5 kalimat) yang menjelaskan:
+- Latar belakang orang ini berdasarkan informasi yang ditemukan
+- Aktivitas publik atau jejak digital yang teridentifikasi
+- Afiliasi organisasi, komunitas, atau kelompok jika ada
+- Catatan khusus atau peringatan yang perlu diperhatikan
+
+**3. PENILAIAN RISIKO**
+Berikan penilaian objektif tentang tingkat risiko atau perhatian yang diperlukan berdasarkan data:
+- RENDAH: Tidak ada indikasi negatif
+- SEDANG: Ada beberapa catatan yang perlu diverifikasi
+- TINGGI: Ada catatan hukum atau indikasi yang perlu investigasi lanjut
+
+**4. REKOMENDASI INVESTIGASI**
+Berikan 2-3 langkah investigasi lanjutan yang disarankan untuk memvalidasi informasi.
+
+Catatan: Jika data terbatas, tetap buat analisis berdasarkan informasi yang ada dan sebutkan keterbatasan data dalam laporan."""
 
                 chat = LlmChat(
                     api_key=api_key,
                     session_id=f"osint-{osint_id}",
-                    system_message="Kamu adalah analis OSINT profesional. Berikan analisis objektif berdasarkan data yang tersedia."
+                    system_message="Kamu adalah analis OSINT profesional dengan pengalaman dalam investigasi digital. Berikan analisis yang komprehensif, objektif, dan dapat dipertanggungjawabkan. Gunakan Bahasa Indonesia yang formal dan profesional."
                 ).with_model("gemini", "gemini-2.5-flash")
                 
                 user_message = UserMessage(text=prompt)
