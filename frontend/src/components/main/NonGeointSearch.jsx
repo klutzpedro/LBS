@@ -2605,9 +2605,9 @@ export const NonGeointSearchDialog = ({
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
+          <div className="flex-1 overflow-y-auto p-3" style={{ minHeight: 0 }}>
             {/* Search Input */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <div className="flex gap-2">
                 <div className="flex-1">
                   <Input
@@ -2626,6 +2626,7 @@ export const NonGeointSearchDialog = ({
                     }}
                     onKeyDown={(e) => e.key === 'Enter' && !isSearching && !nameValidationError && startSearch()}
                     disabled={isSearching || isInvestigating}
+                    className="h-9"
                     style={{
                       backgroundColor: 'var(--background-tertiary)',
                       borderColor: nameValidationError ? 'var(--status-error)' : 'var(--borders-default)',
@@ -2642,6 +2643,7 @@ export const NonGeointSearchDialog = ({
               <Button
                 onClick={startSearch}
                 disabled={isSearching || isInvestigating || !searchName.trim() || !!nameValidationError}
+                className="h-9 px-4"
                 style={{
                   backgroundColor: nameValidationError ? 'var(--foreground-muted)' : 'var(--accent-primary)',
                   color: 'var(--background-primary)'
@@ -2662,8 +2664,8 @@ export const NonGeointSearchDialog = ({
 
           {/* Loading from History indicator */}
           {currentStep === 'loading' && (
-            <div className="mt-6 flex flex-col items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin mb-3" style={{ color: 'var(--accent-primary)' }} />
+            <div className="mt-4 flex flex-col items-center justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin mb-2" style={{ color: 'var(--accent-primary)' }} />
               <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
                 Memuat data dari history...
               </p>
@@ -2672,12 +2674,12 @@ export const NonGeointSearchDialog = ({
 
           {/* Search Progress / Results */}
           {(isSearching || searchResults) && (
-            <div className="mt-6 space-y-4">
+            <div className="mt-4 space-y-3">
               
               {/* Blinking Warning Message during Search & Photo Fetch */}
               {(isSearching || searchResults?.status === 'fetching_photos') && (
                 <div 
-                  className="p-4 rounded-md border-2 text-center"
+                  className="p-3 rounded-md border-2 text-center"
                   style={{
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     borderColor: '#ef4444',
