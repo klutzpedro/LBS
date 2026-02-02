@@ -4532,10 +4532,105 @@ export const NonGeointSearchDialog = ({
                   </div>
                 )}
                 
+                {/* Family Cache Data */}
+                {osintDetailDialog.data.family_cache?.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      👨‍👩‍👧‍👦 Data Keluarga dari Cache ({osintDetailDialog.data.family_cache.length})
+                    </h4>
+                    <div className="space-y-3">
+                      {osintDetailDialog.data.family_cache.map((fm, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-md border"
+                          style={{ 
+                            backgroundColor: 'var(--background-tertiary)',
+                            borderColor: 'var(--borders-subtle)'
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: 'var(--foreground-primary)' }}>
+                                {fm.nama}
+                              </p>
+                              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                                {fm.hubungan} • NIK: {fm.nik}
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              {fm.has_investigation && (
+                                <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6' }}>
+                                  Data NIK
+                                </span>
+                              )}
+                              {fm.has_osint && (
+                                <span className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
+                                  OSINT
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Investigation Data */}
+                          {fm.investigation_data?.nik_data?.data && (
+                            <div className="mt-2 text-xs space-y-1" style={{ color: 'var(--foreground-muted)' }}>
+                              {fm.investigation_data.nik_data.data.Address && (
+                                <p>📍 {fm.investigation_data.nik_data.data.Address || fm.investigation_data.nik_data.data.Alamat}</p>
+                              )}
+                              {fm.investigation_data.nik_data.data.Occupation && (
+                                <p>💼 {fm.investigation_data.nik_data.data.Occupation || fm.investigation_data.nik_data.data.Pekerjaan}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* OSINT Data */}
+                          {fm.osint_data && (
+                            <div className="mt-2">
+                              {fm.osint_data.social_media?.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {fm.osint_data.social_media.slice(0, 4).map((sm, smIdx) => (
+                                    <a
+                                      key={smIdx}
+                                      href={sm.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-2 py-0.5 rounded text-xs hover:opacity-80"
+                                      style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--accent-primary)' }}
+                                    >
+                                      {sm.platform === 'facebook' && '📘'}
+                                      {sm.platform === 'instagram' && '📷'}
+                                      {sm.platform === 'linkedin' && '💼'}
+                                      {sm.platform === 'twitter' && '🐦'}
+                                      {sm.platform === 'tiktok' && '🎵'}
+                                      {sm.platform === 'email' && '📧'}
+                                      {' '}{sm.platform}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                              {fm.osint_data.summary && (
+                                <p className="text-xs mt-2 text-green-400">✓ Laporan OSINT tersedia</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Search Info */}
+                          {fm.search_info && (
+                            <p className="text-xs mt-2 opacity-60">
+                              Dari pencarian: {fm.search_info.name} ({fm.search_info.created_by})
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 {/* No results message */}
                 {!osintDetailDialog.data.social_media?.length && 
                  !osintDetailDialog.data.legal_cases?.length && 
-                 !osintDetailDialog.data.web_mentions?.length && (
+                 !osintDetailDialog.data.web_mentions?.length &&
+                 !osintDetailDialog.data.family_cache?.length && (
                   <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
                     <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
                     <p>Tidak ditemukan informasi OSINT untuk target ini</p>
