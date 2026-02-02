@@ -791,8 +791,14 @@ export const NonGeointSearchDialog = ({
   // PENDALAMAN LANJUTAN dropdown state
   const [showAdvancedDropdown, setShowAdvancedDropdown] = useState(false);
   
+  // FAKTA OSINT state
+  const [osintResults, setOsintResults] = useState({}); // Per-NIK OSINT results
+  const [isLoadingOsint, setIsLoadingOsint] = useState({}); // Per-NIK loading state
+  const [osintDetailDialog, setOsintDetailDialog] = useState({ open: false, nik: null, data: null });
+  
   const pollingRef = useRef(null);
   const investigationPollingRef = useRef(null);
+  const osintPollingRef = useRef({});
   const lastOpenedWithSearchRef = useRef(null); // Track which search was last opened
 
   // Notify parent when investigation state changes
