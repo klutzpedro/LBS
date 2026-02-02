@@ -6579,6 +6579,26 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
                                     internal_summary += f"  - {c.get('movement_date', 'N/A')}: {direction} via {c.get('tpi_name', 'N/A')} ({c.get('port_description', 'N/A')})\n"
                             internal_summary += f"- Total perlintasan: {total_crossings}\n"
                 
+                # Prepare FAMILY CACHE summary
+                family_summary = ""
+                if family_cache_data:
+                    family_summary = "\n--- DATA KELUARGA DARI CACHE ---\n"
+                    for fm in family_cache_data:
+                        family_summary += f"\n{fm['nama']} ({fm['hubungan']}) - NIK: {fm['nik']}\n"
+                        if fm.get('has_investigation') and fm.get('investigation_data'):
+                            inv_data = fm['investigation_data']
+                            if inv_data.get('nik_data', {}).get('data'):
+                                nik_info = inv_data['nik_data']['data']
+                                family_summary += f"  - Alamat: {nik_info.get('Address') or nik_info.get('Alamat', 'N/A')}\n"
+                                family_summary += f"  - Pekerjaan: {nik_info.get('Occupation') or nik_info.get('Pekerjaan', 'N/A')}\n"
+                        if fm.get('has_osint') and fm.get('osint_data'):
+                            osint = fm['osint_data']
+                            if osint.get('social_media'):
+                                sm_list = ", ".join([f"{s['platform']}" for s in osint['social_media'][:3]])
+                                family_summary += f"  - Media Sosial: {sm_list}\n"
+                            if osint.get('summary'):
+                                family_summary += f"  - Sudah ada laporan OSINT sebelumnya\n"
+                
                 # Prepare WEB DATA summary
                 web_summary = "\n".join([f"- {w['title']}: {w['snippet']}" for w in web_data[:10]])
                 
@@ -6594,6 +6614,7 @@ async def process_fakta_osint(osint_id: str, search_id: str, nik: str, name: str
 DATA INTERNAL (DARI DATABASE PEMERINTAH)
 ==========================================
 {internal_summary if internal_summary.strip() else "Tidak ada data internal yang tersedia"}
+{family_summary if family_summary.strip() else ""}
 
 ==========================================
 DATA EKSTERNAL (DARI INTERNET)
