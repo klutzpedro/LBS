@@ -1086,6 +1086,9 @@ const MainApp = () => {
           });
           const updatedTarget = pollResponse.data;
           
+          // Always update targets state with latest data (for progress visibility)
+          setTargets(prev => prev.map(t => t.id === target.id ? updatedTarget : t));
+          
           if ((updatedTarget.status === 'completed' || updatedTarget.status === 'not_found' || updatedTarget.status === 'error') && !isCompleted) {
             isCompleted = true;
             clearInterval(checkInterval);
