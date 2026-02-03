@@ -885,6 +885,10 @@ export const NonGeointSearchDialog = ({
     setOsintResults({});
     setIsLoadingOsint({});
     setOsintDetailDialog({ open: false, nik: null, data: null });
+    // Reset SNA states
+    setSnaResults({});
+    setIsLoadingSna({});
+    setSnaDetailDialog({ open: false, nik: null, data: null });
   };
 
   // Handler to load more photos (next batch)
