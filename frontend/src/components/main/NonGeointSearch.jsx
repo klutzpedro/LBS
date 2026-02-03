@@ -809,6 +809,12 @@ export const NonGeointSearchDialog = ({
   // PENDALAMAN LANJUTAN dropdown state
   const [showAdvancedDropdown, setShowAdvancedDropdown] = useState(false);
   
+  // SOCIAL NETWORK ANALYTICS state
+  const [snaResults, setSnaResults] = useState({}); // Per-NIK SNA results
+  const [isLoadingSna, setIsLoadingSna] = useState({}); // Per-NIK loading state
+  const [snaDetailDialog, setSnaDetailDialog] = useState({ open: false, nik: null, data: null });
+  const snaPollingRef = useRef({});
+  
   // FAKTA OSINT state
   const [osintResults, setOsintResults] = useState({}); // Per-NIK OSINT results
   const [isLoadingOsint, setIsLoadingOsint] = useState({}); // Per-NIK loading state
