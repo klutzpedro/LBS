@@ -1249,7 +1249,7 @@ User melaporkan data tertukar di Face Recognition:
   - Dropdown menu with 3 options when clicked:
     1. **FAKTA OSINT** - ✅ FULLY IMPLEMENTED (see above)
     2. **CALL DATA RECORDER** - Placeholder (coming soon)
-    3. **SOCIAL NETWORK ANALYTICS** - Placeholder (coming soon)
+    3. **SOCIAL NETWORK ANALYTICS** - ✅ FULLY IMPLEMENTED (see below)
 - **Trigger:** `investigation?.status === 'completed'`
 - **Data Test IDs:**
   - `pendalaman-lanjutan-btn`
@@ -1257,12 +1257,46 @@ User melaporkan data tertukar di Face Recognition:
   - `call-data-recorder-btn`
   - `social-network-analytics-btn`
 
+### SOCIAL NETWORK ANALYTICS Feature - FULLY IMPLEMENTED (February 2026)
+- **Feature:** Comprehensive Social Network Analysis for target based on social media profiles
+- **Prerequisites:** Must run FAKTA OSINT first to obtain social media profiles
+- **Backend Processing:**
+  1. **Profile Scraping:** Scrapes public profile data from social media URLs (followers, following, bio)
+  2. **Network Graph Generation:** Creates network graph with target as center node and social profiles as connected nodes
+  3. **Statistics Aggregation:** Counts total followers, following, friends/connections across all platforms
+  4. **AI Analysis (Gemini):** Generates comprehensive SNA report covering:
+     - Profil Digital (platform activity, engagement)
+     - Analisis Jaringan Sosial (network size, influence potential)
+     - Tokoh Penting & Koneksi (key connections, affiliations)
+     - Analisis Politik (political tendency, radicalism indicators)
+     - Kesimpulan & Rekomendasi (summary, risk level, next steps)
+- **Supported Platforms:** Twitter/X, Instagram, Facebook, LinkedIn, TikTok, YouTube
+- **API Endpoints:**
+  - `POST /api/nongeoint/social-network-analytics` - Start SNA analysis
+  - `GET /api/nongeoint/social-network-analytics/{sna_id}` - Get SNA results
+- **Database:** Collection `social_network_analytics` for storing results
+- **Frontend UI:**
+  - SNA indicator in sub-query status row (Network icon with checkmark when complete)
+  - Click on SNA indicator to open detail dialog
+  - Detail dialog shows:
+    - Statistics summary (followers, following, connections in grid)
+    - Profile cards with platform icons, usernames, follower counts
+    - Simple network graph visualization
+    - Full AI analysis text
+- **Caching:** Results cached in `nik_investigations.sna_results` for history access
+- **Files Modified:**
+  - `/app/backend/server.py`: SnaRequest model, start_sna, get_sna, process_sna functions
+  - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
+    - Added `startSocialNetworkAnalytics`, `pollSnaResults`, `getSnaStatus`, `getSnaData` functions
+    - Added SNA indicator in investigation results
+    - Added SNA detail dialog with statistics, profiles, graph, and AI analysis
+    - Updated resetAllStates and cleanup useEffect for SNA states
+
 ## Future Tasks
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
 - Export to Excel/CSV functionality
 - Implement remaining PENDALAMAN LANJUTAN features:
   - CALL DATA RECORDER (pending user requirements)
-  - SOCIAL NETWORK ANALYTICS (pending user requirements)
 - P0: Fix map popup interaction bug for overlapping markers
 
