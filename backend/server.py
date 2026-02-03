@@ -6766,6 +6766,396 @@ CATATAN PENTING:
 
 # ==================== END FAKTA OSINT ====================
 
+# ==================== SOCIAL NETWORK ANALYTICS ====================
+
+class SnaRequest(BaseModel):
+    search_id: str
+    nik: str
+    name: str
+    social_media: List[dict] = []  # From OSINT results
+
+@api_router.post("/nongeoint/social-network-analytics")
+async def start_sna(request: SnaRequest, username: str = Depends(verify_token)):
+    """
+    Start Social Network Analytics for a target
+    """
+    sna_id = str(uuid.uuid4())[:8]
+    logger.info(f"[SNA {sna_id}] Starting for {request.name} (NIK: {request.nik})")
+    
+    # Create SNA document
+    sna_doc = {
+        "id": sna_id,
+        "search_id": request.search_id,
+        "nik": request.nik,
+        "name": request.name,
+        "social_media_input": request.social_media,
+        "status": "processing",
+        "results": {},
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": username
+    }
+    await db.social_network_analytics.insert_one(sna_doc)
+    
+    # Start background processing
+    asyncio.create_task(process_sna(sna_id, request.search_id, request.nik, request.name, request.social_media))
+    
+    return {"sna_id": sna_id, "status": "processing"}
+
+@api_router.get("/nongeoint/social-network-analytics/{sna_id}")
+async def get_sna(sna_id: str, username: str = Depends(verify_token)):
+    """Get Social Network Analytics results"""
+    sna = await db.social_network_analytics.find_one({"id": sna_id}, {"_id": 0})
+    if not sna:
+        raise HTTPException(status_code=404, detail="SNA not found")
+    
+    logger.info(f"[GET SNA {sna_id}] Status: {sna.get('status')}")
+    return sna
+
+async def process_sna(sna_id: str, search_id: str, nik: str, name: str, social_media_input: List[dict]):
+    """Process Social Network Analytics - scrape and analyze social media profiles"""
+    try:
+        logger.info(f"[SNA {sna_id}] Processing for {name}")
+        
+        results = {
+            "profiles": [],  # Detailed profile data
+            "network_graph": {
+                "nodes": [],
+                "edges": []
+            },
+            "statistics": {
+                "total_friends": 0,
+                "total_followers": 0,
+                "total_following": 0,
+                "total_posts": 0,
+                "total_engagement": 0
+            },
+            "analysis": None,
+            "important_connections": [],
+            "political_analysis": None
+        }
+        
+        # Get OSINT data if not provided
+        if not social_media_input:
+            osint = await db.fakta_osint.find_one(
+                {"nik": nik, "status": "completed"},
+                {"_id": 0, "results.social_media": 1}
+            )
+            if osint and osint.get("results", {}).get("social_media"):
+                social_media_input = osint["results"]["social_media"]
+        
+        if not social_media_input:
+            # Try from investigation
+            inv = await db.nik_investigations.find_one(
+                {"search_id": search_id},
+                {"_id": 0, f"osint_results.{nik}.social_media": 1}
+            )
+            if inv and inv.get("osint_results", {}).get(nik, {}).get("social_media"):
+                social_media_input = inv["osint_results"][nik]["social_media"]
+        
+        logger.info(f"[SNA {sna_id}] Found {len(social_media_input)} social media profiles to analyze")
+        
+        # Update progress
+        await db.social_network_analytics.update_one(
+            {"id": sna_id},
+            {"$set": {"status": "scraping_profiles"}}
+        )
+        
+        # ============ 1. Scrape Profile Data ============
+        import aiohttp
+        import socket
+        from bs4 import BeautifulSoup
+        import re
+        
+        # Add target as center node
+        results["network_graph"]["nodes"].append({
+            "id": "target",
+            "label": name,
+            "type": "target",
+            "platform": "center",
+            "size": 30
+        })
+        
+        connector = aiohttp.TCPConnector(family=socket.AF_INET)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            for sm in social_media_input:
+                platform = sm.get("platform", "").lower()
+                username_sm = sm.get("username", "")
+                url = sm.get("url", "")
+                
+                profile_data = {
+                    "platform": platform,
+                    "username": username_sm,
+                    "url": url,
+                    "followers": 0,
+                    "following": 0,
+                    "friends": 0,
+                    "posts": 0,
+                    "likes": 0,
+                    "engagement_rate": 0,
+                    "bio": "",
+                    "connections": [],
+                    "scraped": False
+                }
+                
+                try:
+                    # Try to scrape public profile data
+                    headers = {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    }
+                    
+                    async with session.get(
+                        url,
+                        headers=headers,
+                        timeout=aiohttp.ClientTimeout(total=15),
+                        allow_redirects=True,
+                        ssl=False
+                    ) as response:
+                        if response.status == 200:
+                            html = await response.text()
+                            soup = BeautifulSoup(html, 'html.parser')
+                            
+                            # Platform-specific parsing
+                            if platform == "twitter" or "x.com" in url:
+                                # Try to find follower count from meta or page content
+                                followers_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*(?:Followers|followers)', html)
+                                following_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*(?:Following|following)', html)
+                                
+                                if followers_match:
+                                    profile_data["followers"] = parse_count(followers_match.group(1))
+                                if following_match:
+                                    profile_data["following"] = parse_count(following_match.group(1))
+                                    
+                            elif platform == "instagram":
+                                # Instagram meta tags
+                                meta_desc = soup.find("meta", property="og:description")
+                                if meta_desc:
+                                    content = meta_desc.get("content", "")
+                                    followers_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*Followers', content)
+                                    following_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*Following', content)
+                                    posts_match = re.search(r'(\d+(?:,\d+)*)\s*Posts', content)
+                                    
+                                    if followers_match:
+                                        profile_data["followers"] = parse_count(followers_match.group(1))
+                                    if following_match:
+                                        profile_data["following"] = parse_count(following_match.group(1))
+                                    if posts_match:
+                                        profile_data["posts"] = parse_count(posts_match.group(1))
+                                        
+                            elif platform == "linkedin":
+                                # LinkedIn connections
+                                connections_match = re.search(r'(\d+(?:,\d+)*)\+?\s*(?:connections|koneksi)', html, re.IGNORECASE)
+                                if connections_match:
+                                    profile_data["friends"] = parse_count(connections_match.group(1))
+                                    
+                            elif platform == "facebook":
+                                # Facebook friends
+                                friends_match = re.search(r'(\d+(?:,\d+)*)\s*(?:friends|teman)', html, re.IGNORECASE)
+                                followers_match = re.search(r'(\d+(?:,\d+)*)\s*(?:followers|pengikut)', html, re.IGNORECASE)
+                                
+                                if friends_match:
+                                    profile_data["friends"] = parse_count(friends_match.group(1))
+                                if followers_match:
+                                    profile_data["followers"] = parse_count(followers_match.group(1))
+                                    
+                            elif platform == "tiktok":
+                                # TikTok
+                                followers_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*Followers', html)
+                                following_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*Following', html)
+                                likes_match = re.search(r'(\d+(?:,\d+)*(?:\.\d+)?[KMB]?)\s*Likes', html)
+                                
+                                if followers_match:
+                                    profile_data["followers"] = parse_count(followers_match.group(1))
+                                if following_match:
+                                    profile_data["following"] = parse_count(following_match.group(1))
+                                if likes_match:
+                                    profile_data["likes"] = parse_count(likes_match.group(1))
+                            
+                            # Try to get bio
+                            bio_elem = soup.find("meta", property="og:description") or soup.find("meta", attrs={"name": "description"})
+                            if bio_elem:
+                                profile_data["bio"] = bio_elem.get("content", "")[:500]
+                            
+                            profile_data["scraped"] = True
+                            logger.info(f"[SNA {sna_id}] Scraped {platform}: followers={profile_data['followers']}, following={profile_data['following']}")
+                            
+                except Exception as e:
+                    logger.warning(f"[SNA {sna_id}] Failed to scrape {platform}: {e}")
+                
+                results["profiles"].append(profile_data)
+                
+                # Add to network graph
+                node_id = f"{platform}_{username_sm}"
+                results["network_graph"]["nodes"].append({
+                    "id": node_id,
+                    "label": f"@{username_sm}",
+                    "platform": platform,
+                    "type": "profile",
+                    "followers": profile_data["followers"],
+                    "following": profile_data["following"],
+                    "size": 20
+                })
+                
+                # Add edge from target to this profile
+                results["network_graph"]["edges"].append({
+                    "from": "target",
+                    "to": node_id,
+                    "label": platform
+                })
+                
+                # Update statistics
+                results["statistics"]["total_followers"] += profile_data["followers"]
+                results["statistics"]["total_following"] += profile_data["following"]
+                results["statistics"]["total_friends"] += profile_data["friends"]
+                results["statistics"]["total_posts"] += profile_data["posts"]
+                results["statistics"]["total_engagement"] += profile_data["likes"]
+                
+                await asyncio.sleep(0.5)
+        
+        # Update progress
+        await db.social_network_analytics.update_one(
+            {"id": sna_id},
+            {"$set": {"status": "analyzing", "results.profiles": results["profiles"], "results.statistics": results["statistics"]}}
+        )
+        
+        # ============ 2. AI Analysis ============
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            
+            api_key = os.getenv('EMERGENT_LLM_KEY')
+            if api_key:
+                # Prepare profile summary for AI
+                profiles_summary = ""
+                for p in results["profiles"]:
+                    profiles_summary += f"\n{p['platform'].upper()} (@{p['username']}):\n"
+                    profiles_summary += f"  - Followers: {p['followers']:,}\n"
+                    profiles_summary += f"  - Following: {p['following']:,}\n"
+                    if p['friends'] > 0:
+                        profiles_summary += f"  - Friends/Connections: {p['friends']:,}\n"
+                    if p['posts'] > 0:
+                        profiles_summary += f"  - Posts: {p['posts']:,}\n"
+                    if p['bio']:
+                        profiles_summary += f"  - Bio: {p['bio'][:200]}...\n"
+                
+                prompt = f"""Kamu adalah analis Social Network Analysis (SNA) profesional. Analisis data media sosial berikut untuk target "{name}" dan berikan laporan SNA komprehensif dalam Bahasa Indonesia.
+
+=== DATA MEDIA SOSIAL ===
+{profiles_summary if profiles_summary.strip() else "Tidak ada data media sosial yang berhasil diambil"}
+
+=== STATISTIK TOTAL ===
+- Total Followers: {results['statistics']['total_followers']:,}
+- Total Following: {results['statistics']['total_following']:,}
+- Total Friends/Connections: {results['statistics']['total_friends']:,}
+- Total Posts: {results['statistics']['total_posts']:,}
+- Total Engagement (Likes): {results['statistics']['total_engagement']:,}
+
+=== FORMAT LAPORAN SNA ===
+
+Berikan analisis dalam format berikut:
+
+**I. PROFIL DIGITAL**
+Analisis kehadiran digital target di berbagai platform media sosial:
+- Platform mana yang paling aktif
+- Rasio followers vs following (influencer atau follower)
+- Tingkat engagement
+
+**II. ANALISIS JARINGAN SOSIAL**
+Berdasarkan data yang ada, analisis:
+- Estimasi ukuran jaringan sosial
+- Potensi jangkauan pengaruh
+- Pola interaksi sosial
+
+**III. TOKOH PENTING & KONEKSI**
+Berdasarkan jumlah followers dan engagement:
+- Apakah target berpotensi terhubung dengan tokoh penting
+- Estimasi tipe koneksi (publik figure, profesional, pribadi)
+- Kemungkinan afiliasi dengan organisasi/komunitas
+
+**IV. ANALISIS POLITIK**
+Berikan penilaian objektif:
+- Kecenderungan politik: KIRI / KANAN / NETRAL / TIDAK TERIDENTIFIKASI
+- Apakah ada indikasi radikal: YA / TIDAK / TIDAK CUKUP DATA
+- Dasar penilaian
+
+**V. KESIMPULAN & REKOMENDASI**
+- Ringkasan profil SNA target
+- Tingkat risiko jaringan sosial: RENDAH / SEDANG / TINGGI
+- Rekomendasi investigasi lanjutan
+
+CATATAN: Jika data terbatas, tetap berikan analisis berdasarkan informasi yang tersedia dan sebutkan keterbatasan data."""
+
+                chat = LlmChat(
+                    api_key=api_key,
+                    session_id=f"sna-{sna_id}",
+                    system_message="Kamu adalah analis Social Network Analysis (SNA) dan intelijen media sosial profesional. Berikan analisis yang objektif, terukur, dan dapat dipertanggungjawabkan berdasarkan data yang tersedia."
+                ).with_model("gemini", "gemini-2.5-flash")
+                
+                user_message = UserMessage(text=prompt)
+                ai_analysis = await chat.send_message(user_message)
+                
+                results["analysis"] = ai_analysis
+                logger.info(f"[SNA {sna_id}] AI analysis completed")
+            else:
+                results["analysis"] = "AI tidak tersedia - silakan review data manual"
+                
+        except Exception as e:
+            logger.error(f"[SNA {sna_id}] AI analysis error: {e}")
+            results["analysis"] = f"Error generating analysis: {str(e)}"
+        
+        # ============ 3. Save final results ============
+        await db.social_network_analytics.update_one(
+            {"id": sna_id},
+            {"$set": {
+                "status": "completed",
+                "results": results,
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Also save to investigation for cache
+        await db.nik_investigations.update_one(
+            {"search_id": search_id},
+            {"$set": {f"sna_results.{nik}": {
+                "sna_id": sna_id,
+                "status": "completed",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "statistics": results["statistics"],
+                "profiles": results["profiles"],
+                "analysis": results["analysis"],
+                "network_graph": results["network_graph"]
+            }}}
+        )
+        
+        logger.info(f"[SNA {sna_id}] Completed successfully")
+        
+    except Exception as e:
+        logger.error(f"[SNA {sna_id}] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        await db.social_network_analytics.update_one(
+            {"id": sna_id},
+            {"$set": {"status": "error", "error": str(e)}}
+        )
+
+def parse_count(count_str: str) -> int:
+    """Parse count string like '1.5K', '2M', '1,234' to integer"""
+    try:
+        count_str = count_str.strip().replace(",", "")
+        multiplier = 1
+        if count_str.endswith('K'):
+            multiplier = 1000
+            count_str = count_str[:-1]
+        elif count_str.endswith('M'):
+            multiplier = 1000000
+            count_str = count_str[:-1]
+        elif count_str.endswith('B'):
+            multiplier = 1000000000
+            count_str = count_str[:-1]
+        return int(float(count_str) * multiplier)
+    except:
+        return 0
+
+# ==================== END SOCIAL NETWORK ANALYTICS ====================
+
 async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
     """Process NIK deep investigation with queue system"""
     global telegram_client
