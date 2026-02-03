@@ -4926,6 +4926,206 @@ export const NonGeointSearchDialog = ({
           </div>
         </DraggableDialogContent>
       </DraggableDialog>
+
+      {/* SOCIAL NETWORK ANALYTICS Detail Dialog */}
+      <DraggableDialog open={snaDetailDialog.open} onOpenChange={() => setSnaDetailDialog({ open: false, nik: null, data: null })}>
+        <DraggableDialogContent 
+          className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)',
+            zIndex: 10000
+          }}
+        >
+          <DraggableDialogHeader>
+            <DraggableDialogTitle style={{ color: 'var(--foreground-primary)' }}>
+              <div className="flex items-center gap-2">
+                <Network className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                SOCIAL NETWORK ANALYTICS - NIK: <span className="font-mono">{snaDetailDialog.nik}</span>
+              </div>
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {snaDetailDialog.data ? (
+              <>
+                {/* Statistics Summary */}
+                {snaDetailDialog.data.statistics && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      📊 Statistik Jaringan
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                        <p className="text-2xl font-bold" style={{ color: '#3b82f6' }}>
+                          {(snaDetailDialog.data.statistics.total_followers || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Followers</p>
+                      </div>
+                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                        <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
+                          {(snaDetailDialog.data.statistics.total_following || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Following</p>
+                      </div>
+                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                        <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
+                          {(snaDetailDialog.data.statistics.total_friends || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Connections</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Social Media Profiles */}
+                {snaDetailDialog.data.profiles?.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      📱 Profil Media Sosial ({snaDetailDialog.data.profiles.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {snaDetailDialog.data.profiles.map((profile, idx) => (
+                        <div 
+                          key={idx} 
+                          className="p-3 rounded-md"
+                          style={{ backgroundColor: 'var(--background-tertiary)' }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">
+                                {profile.platform === 'facebook' && '📘'}
+                                {profile.platform === 'instagram' && '📷'}
+                                {profile.platform === 'twitter' && '🐦'}
+                                {profile.platform === 'linkedin' && '💼'}
+                                {profile.platform === 'tiktok' && '🎵'}
+                                {profile.platform === 'youtube' && '▶️'}
+                              </span>
+                              <div>
+                                <p className="font-medium text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                                  {profile.platform.toUpperCase()}
+                                </p>
+                                <p className="text-xs" style={{ color: 'var(--accent-primary)' }}>
+                                  @{profile.username}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                              <p>{profile.followers?.toLocaleString() || 0} followers</p>
+                              <p>{profile.following?.toLocaleString() || 0} following</p>
+                            </div>
+                          </div>
+                          {profile.bio && (
+                            <p className="text-xs mt-2 p-2 rounded" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--foreground-muted)' }}>
+                              {profile.bio.slice(0, 200)}...
+                            </p>
+                          )}
+                          {profile.url && (
+                            <a 
+                              href={profile.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-xs mt-2 inline-block hover:underline"
+                              style={{ color: 'var(--accent-primary)' }}
+                            >
+                              Buka profil →
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Network Graph Visualization */}
+                {snaDetailDialog.data.network_graph && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      🕸️ Graf Jaringan
+                    </h3>
+                    <div 
+                      className="p-4 rounded-md relative"
+                      style={{ backgroundColor: 'var(--background-tertiary)', minHeight: '200px' }}
+                    >
+                      {/* Simple Network Visualization */}
+                      <div className="flex flex-col items-center justify-center gap-4">
+                        {/* Center node (Target) */}
+                        <div 
+                          className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg"
+                          style={{ backgroundColor: '#f59e0b', color: 'white' }}
+                        >
+                          <User className="w-8 h-8" />
+                        </div>
+                        <p className="text-xs font-medium" style={{ color: 'var(--foreground-primary)' }}>TARGET</p>
+                        
+                        {/* Connection lines and platform nodes */}
+                        <div className="flex flex-wrap justify-center gap-4 mt-4">
+                          {snaDetailDialog.data.network_graph.nodes?.filter(n => n.id !== 'target').map((node, idx) => (
+                            <div key={idx} className="flex flex-col items-center">
+                              <div className="w-1 h-6" style={{ backgroundColor: 'var(--borders-default)' }} />
+                              <div 
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-xs"
+                                style={{ 
+                                  backgroundColor: node.platform === 'twitter' ? '#1da1f2' :
+                                                   node.platform === 'instagram' ? '#e1306c' :
+                                                   node.platform === 'facebook' ? '#4267b2' :
+                                                   node.platform === 'linkedin' ? '#0077b5' :
+                                                   node.platform === 'tiktok' ? '#000000' :
+                                                   '#888888',
+                                  color: 'white'
+                                }}
+                              >
+                                {node.platform?.slice(0, 2).toUpperCase()}
+                              </div>
+                              <p className="text-xs mt-1 max-w-[60px] truncate" style={{ color: 'var(--foreground-muted)' }}>
+                                {node.label}
+                              </p>
+                              <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                                {node.followers?.toLocaleString() || '0'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Analysis */}
+                {snaDetailDialog.data.analysis && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
+                      🤖 Analisis AI
+                    </h3>
+                    <div 
+                      className="p-4 rounded-md text-sm whitespace-pre-wrap"
+                      style={{ 
+                        backgroundColor: 'var(--background-tertiary)',
+                        color: 'var(--foreground-primary)'
+                      }}
+                    >
+                      {snaDetailDialog.data.analysis}
+                    </div>
+                  </div>
+                )}
+
+                {/* No results message */}
+                {!snaDetailDialog.data.profiles?.length && !snaDetailDialog.data.analysis && (
+                  <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                    <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Tidak ada data Social Network Analytics</p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8" style={{ color: 'var(--foreground-muted)' }}>
+                <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin" />
+                <p>Memuat data...</p>
+              </div>
+            )}
+          </div>
+        </DraggableDialogContent>
+      </DraggableDialog>
     </>
   );
 };
