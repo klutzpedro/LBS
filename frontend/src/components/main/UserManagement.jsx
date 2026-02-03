@@ -329,9 +329,9 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
         </div>
 
         {!isMinimized && (
-          <div className="p-4">
+          <div className="flex-1 flex flex-col overflow-hidden p-4" style={{ minHeight: 0 }}>
             {/* Tabs */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-4 flex-shrink-0">
               <Button
                 variant={activeTab === 'pending' ? 'default' : 'outline'}
                 size="sm"
