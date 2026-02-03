@@ -39,7 +39,8 @@ class TestSNAEndpoints:
         """Test admin login works"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "username": "admin",
-            "password": "Paparoni290483#"
+            "password": "Paparoni290483#",
+            "force_login": True  # Force logout other sessions
         })
         
         assert response.status_code == 200, f"Login failed: {response.text}"
