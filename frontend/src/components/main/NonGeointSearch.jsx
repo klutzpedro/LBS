@@ -405,18 +405,28 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
     setDeleting(null);
   };
 
-  const getStatusBadge = (status, hasInvestigation = false) => {
-    // If search status is "completed" but no investigation started yet,
-    // it means user hasn't selected a target - show as "waiting_selection"
+  const getStatusBadge = (status, hasInvestigation = false, niksFound = null) => {
+    // Determine the correct display status
     let displayStatus = status;
-    if (status === 'completed' && !hasInvestigation) {
-      displayStatus = 'waiting_selection';
+    
+    if (status === 'completed' || status === 'waiting_selection') {
+      if (hasInvestigation) {
+        // Has investigation = truly completed
+        displayStatus = 'completed';
+      } else if (niksFound === 0) {
+        // No NIKs found = no data
+        displayStatus = 'no_data';
+      } else {
+        // Has NIKs but no investigation yet = waiting for user to select
+        displayStatus = 'waiting_selection';
+      }
     }
     
     const styles = {
       completed: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'completed' },
       processing: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'processing' },
       waiting_selection: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'waiting selection' },
+      no_data: { bg: 'bg-gray-500/20', text: 'text-gray-400', label: 'no data' },
       error: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'error' }
     };
     const s = styles[displayStatus] || styles.processing;
