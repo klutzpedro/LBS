@@ -1042,18 +1042,9 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-3 border-t" style={{ borderColor: 'var(--borders-default)' }}>
+          <div className="flex justify-end pt-3 border-t" style={{ borderColor: 'var(--borders-default)' }}>
             <Button variant="outline" onClick={() => setDetailOpen(false)}>
               Tutup
-            </Button>
-            <Button
-              onClick={() => {
-                handleUseResult(selectedItem);
-                setDetailOpen(false);
-              }}
-              style={{ backgroundColor: '#10b981', color: '#000' }}
-            >
-              Gunakan Hasil Ini
             </Button>
           </div>
         </DialogContent>
