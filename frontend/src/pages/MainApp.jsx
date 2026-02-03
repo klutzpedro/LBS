@@ -703,6 +703,35 @@ const MainApp = () => {
     }
   };
 
+  // Check request status - returns true if system is idle
+  const checkRequestStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API}/request-status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setRequestStatus(data);
+      return data;
+    } catch (error) {
+      console.error('Failed to check request status:', error);
+      return { is_busy: false };
+    }
+  };
+
+  // Validate if user can perform query - returns true if allowed
+  const canPerformQuery = async () => {
+    const status = await checkRequestStatus();
+    if (status.is_busy) {
+      toast.error(`Sistem sedang digunakan oleh ${status.username || 'user lain'} untuk ${status.operation || 'query'}. Silakan tunggu.`, {
+        duration: 5000,
+        icon: '🚫'
+      });
+      return false;
+    }
+    return true;
+  };
+
   const fetchTargets = async (caseId) => {
     try {
       const token = localStorage.getItem('token');
