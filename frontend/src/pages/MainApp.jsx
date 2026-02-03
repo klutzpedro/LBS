@@ -1094,6 +1094,12 @@ const MainApp = () => {
       return;
     }
     
+    // Check if system is busy (another user is querying)
+    const canQuery = await canPerformQuery();
+    if (!canQuery) {
+      return;
+    }
+    
     setGlobalProcessing(true);
     setGlobalProcessType('refresh');
     
