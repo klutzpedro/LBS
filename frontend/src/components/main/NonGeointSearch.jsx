@@ -3660,6 +3660,40 @@ export const NonGeointSearchDialog = ({
                                 OSINT
                               </span>
                             </span>
+                            
+                            {/* SNA (Social Network Analytics) indicator */}
+                            <span 
+                              className="flex items-center gap-1 cursor-pointer hover:opacity-80"
+                              onClick={() => {
+                                const snaStatus = getSnaStatus(nik);
+                                if (snaStatus === 'completed') {
+                                  // Show SNA details
+                                  setSnaDetailDialog({
+                                    open: true,
+                                    nik: nik,
+                                    data: getSnaData(nik)
+                                  });
+                                }
+                              }}
+                              title={getSnaStatus(nik) === 'completed' ? 'Lihat hasil SNA' : 'SNA belum dijalankan'}
+                            >
+                              {getSnaStatus(nik) === 'processing' ? (
+                                <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#f59e0b' }} />
+                              ) : getSnaStatus(nik) === 'completed' ? (
+                                <div className="relative">
+                                  <Network className="w-3 h-3" style={{ color: '#f59e0b' }} />
+                                  <CheckCircle 
+                                    className="w-2 h-2 absolute -bottom-0.5 -right-0.5" 
+                                    style={{ color: '#22c55e' }} 
+                                  />
+                                </div>
+                              ) : (
+                                <Network className="w-3 h-3 opacity-40" style={{ color: 'var(--foreground-muted)' }} />
+                              )}
+                              <span className={getSnaStatus(nik) === 'completed' ? 'text-amber-400' : ''}>
+                                SNA
+                              </span>
+                            </span>
                           </div>
                         </div>
                       );
