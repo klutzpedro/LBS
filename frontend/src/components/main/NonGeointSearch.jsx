@@ -551,7 +551,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                         {search.name}
                       </span>
                       <div className="flex items-center gap-2">
-                        {getStatusBadge(search.status)}
+                        {getStatusBadge(search.status, search.has_investigation)}
                         {/* Show investigation badge if exists */}
                         {search.has_investigation && (
                           <span 
