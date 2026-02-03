@@ -793,13 +793,6 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
     setDetailOpen(true);
   };
 
-  const handleUseResult = (item) => {
-    if (onSelectHistory) {
-      onSelectHistory(item);
-    }
-    onOpenChange(false);
-  };
-
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     try {
