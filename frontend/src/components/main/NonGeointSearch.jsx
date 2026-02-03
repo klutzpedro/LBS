@@ -1794,6 +1794,116 @@ export const NonGeointSearchDialog = ({
     return 'pending';
   };
 
+  // ==================== SOCIAL NETWORK ANALYTICS Functions ====================
+  
+  const startSocialNetworkAnalytics = async (nik, name) => {
+    if (!searchResults?.id || !nik || !name) {
+      toast.error('Data tidak lengkap untuk Social Network Analytics');
+      return;
+    }
+    
+    // Get social media data from OSINT results
+    const osintData = osintResults[nik] || investigation?.osint_results?.[nik];
+    if (!osintData?.social_media || osintData.social_media.length === 0) {
+      toast.error('Jalankan FAKTA OSINT terlebih dahulu untuk mendapatkan data media sosial');
+      return;
+    }
+    
+    setIsLoadingSna(prev => ({ ...prev, [nik]: true }));
+    toast.info(`Memulai Social Network Analytics untuk ${name}...`);
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/social-network-analytics`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          search_id: searchResults.id,
+          nik: nik,
+          name: name,
+          social_media: osintData.social_media
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to start SNA');
+      
+      const data = await response.json();
+      console.log('[SNA] Started:', data);
+      
+      // Start polling for results
+      snaPollingRef.current[nik] = setInterval(() => {
+        pollSnaResults(data.sna_id, nik);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('SNA error:', error);
+      toast.error('Gagal memulai Social Network Analytics');
+      setIsLoadingSna(prev => ({ ...prev, [nik]: false }));
+    }
+  };
+  
+  const pollSnaResults = async (snaId, nik) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/nongeoint/social-network-analytics/${snaId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error('Failed to get SNA');
+      
+      const data = await response.json();
+      console.log('[SNA] Poll result:', data.status);
+      
+      if (data.status === 'completed' || data.status === 'error') {
+        // Stop polling
+        if (snaPollingRef.current[nik]) {
+          clearInterval(snaPollingRef.current[nik]);
+          delete snaPollingRef.current[nik];
+        }
+        
+        setIsLoadingSna(prev => ({ ...prev, [nik]: false }));
+        setSnaResults(prev => ({ ...prev, [nik]: data.results }));
+        
+        // Also update investigation state to include SNA (for consistency)
+        if (data.status === 'completed' && investigation) {
+          setInvestigation(prev => ({
+            ...prev,
+            sna_results: {
+              ...(prev?.sna_results || {}),
+              [nik]: {
+                status: 'completed',
+                ...data.results
+              }
+            }
+          }));
+        }
+        
+        if (data.status === 'completed') {
+          toast.success(`Social Network Analytics selesai untuk NIK ${nik}`);
+        } else {
+          toast.error(`SNA gagal: ${data.error || 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      console.error('SNA polling error:', error);
+    }
+  };
+  
+  const getSnaStatus = (nik) => {
+    if (isLoadingSna[nik]) return 'processing';
+    if (snaResults[nik]) return 'completed';
+    // Check from investigation data
+    if (investigation?.sna_results?.[nik]?.status === 'completed') return 'completed';
+    return 'pending';
+  };
+  
+  const getSnaData = (nik) => {
+    return snaResults[nik] || investigation?.sna_results?.[nik] || null;
+  };
+
   // Generate PDF with all results
   const generatePDF = () => {
     const pdf = new jsPDF();
