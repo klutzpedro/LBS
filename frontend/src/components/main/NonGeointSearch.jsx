@@ -1047,6 +1047,18 @@ export const NonGeointSearchDialog = ({
               setOsintResults(fullSearchData.osint_results);
             }
             
+            // Load cached SNA results if available
+            if (fullSearchData.investigation.sna_results) {
+              console.log('[NonGeoint] Loading cached SNA results');
+              setSnaResults(fullSearchData.investigation.sna_results);
+            }
+            
+            // Also check nongeoint_searches for SNA (backup location)
+            if (fullSearchData.sna_results && !fullSearchData.investigation.sna_results) {
+              console.log('[NonGeoint] Loading SNA from search data');
+              setSnaResults(fullSearchData.sna_results);
+            }
+            
             toast.success('Hasil pendalaman sebelumnya dimuat');
           } else if (fullSearchData.status === 'waiting_selection') {
             console.log('[NonGeoint] Status is waiting_selection - showing photo selection');
