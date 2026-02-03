@@ -405,16 +405,24 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
     setDeleting(null);
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, hasInvestigation = false) => {
+    // If search status is "completed" but no investigation started yet,
+    // it means user hasn't selected a target - show as "waiting_selection"
+    let displayStatus = status;
+    if (status === 'completed' && !hasInvestigation) {
+      displayStatus = 'waiting_selection';
+    }
+    
     const styles = {
-      completed: { bg: 'bg-green-500/20', text: 'text-green-400' },
-      processing: { bg: 'bg-blue-500/20', text: 'text-blue-400' },
-      error: { bg: 'bg-red-500/20', text: 'text-red-400' }
+      completed: { bg: 'bg-green-500/20', text: 'text-green-400', label: 'completed' },
+      processing: { bg: 'bg-blue-500/20', text: 'text-blue-400', label: 'processing' },
+      waiting_selection: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', label: 'waiting selection' },
+      error: { bg: 'bg-red-500/20', text: 'text-red-400', label: 'error' }
     };
-    const s = styles[status] || styles.processing;
+    const s = styles[displayStatus] || styles.processing;
     return (
       <span className={`px-2 py-0.5 rounded text-xs ${s.bg} ${s.text}`}>
-        {status}
+        {s.label}
       </span>
     );
   };
