@@ -1333,6 +1333,18 @@ export const NonGeointSearchDialog = ({
         investigationPollingRef.current = null;
       }
       
+      // Clear OSINT polling
+      Object.keys(osintPollingRef.current).forEach(nik => {
+        clearInterval(osintPollingRef.current[nik]);
+        delete osintPollingRef.current[nik];
+      });
+      
+      // Clear SNA polling
+      Object.keys(snaPollingRef.current).forEach(nik => {
+        clearInterval(snaPollingRef.current[nik]);
+        delete snaPollingRef.current[nik];
+      });
+      
       // Only reset if user explicitly started a NEW search or there's no ongoing search
       // Don't reset here - let it persist so reopening continues from where we left off
     }
