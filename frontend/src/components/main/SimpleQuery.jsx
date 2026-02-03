@@ -940,17 +940,6 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
                         </div>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUseResult(item);
-                      }}
-                      style={{ borderColor: '#10b981', color: '#10b981' }}
-                    >
-                      Gunakan
-                    </Button>
                   </div>
                 </div>
               ))
