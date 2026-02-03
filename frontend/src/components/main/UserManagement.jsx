@@ -355,7 +355,7 @@ export const UserManagementDialog = ({ open, onOpenChange }) => {
             </div>
 
             {/* User List */}
-            <div className="flex-1 overflow-y-auto space-y-2" style={{ minHeight: 0 }}>
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2" style={{ minHeight: 0, maxHeight: '100%' }}>
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#8b5cf6' }} />
