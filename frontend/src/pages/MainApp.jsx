@@ -967,6 +967,12 @@ const MainApp = () => {
   };
 
   const createNewTarget = async (phoneNumber) => {
+    // Check if system is busy before starting query
+    const canQuery = await canPerformQuery();
+    if (!canQuery) {
+      return;
+    }
+    
     setSubmitting(true);
     try {
       const response = await axios.post(`${API}/targets`, {
