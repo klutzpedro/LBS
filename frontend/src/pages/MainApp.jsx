@@ -95,6 +95,9 @@ const MainApp = () => {
   const [selectedNonGeointSearch, setSelectedNonGeointSearch] = useState(null);
   const [isGlobalInvestigating, setIsGlobalInvestigating] = useState(false); // Track if any investigation is running
   
+  // Request status for query locking
+  const [requestStatus, setRequestStatus] = useState({ is_busy: false, username: null, operation: null });
+  
   // Face Recognition
   const [frDialogOpen, setFrDialogOpen] = useState(false);
   const [frHistoryOpen, setFrHistoryOpen] = useState(false);
