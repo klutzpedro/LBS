@@ -3802,23 +3802,57 @@ export const NonGeointSearchDialog = ({
                         className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
                         style={{ backgroundColor: 'transparent' }}
                         onClick={() => {
-                          toast.info('Fitur SOCIAL NETWORK ANALYTICS akan segera hadir');
-                          setShowAdvancedDropdown(false);
+                          // Get selected NIK and name
+                          if (selectedNiks.length > 0) {
+                            const nik = selectedNiks[0];
+                            const nikData = investigation?.results?.[nik];
+                            const name = nikData?.nik_data?.data?.['Full Name'] || 
+                                        nikData?.nik_data?.data?.['Nama'] ||
+                                        searchResults?.name || '';
+                            
+                            if (name) {
+                              // Check if OSINT has been run first
+                              const hasOsint = getOsintStatus(nik) === 'completed';
+                              if (!hasOsint) {
+                                toast.warning('Jalankan FAKTA OSINT terlebih dahulu untuk mendapatkan data media sosial');
+                              } else {
+                                startSocialNetworkAnalytics(nik, name);
+                              }
+                              setShowAdvancedDropdown(false);
+                            } else {
+                              toast.error('Nama target tidak ditemukan');
+                            }
+                          } else {
+                            toast.error('Tidak ada NIK yang dipilih');
+                          }
                         }}
+                        disabled={isLoadingSna[selectedNiks[0]]}
                         data-testid="social-network-analytics-btn"
                       >
                         <div 
                           className="w-8 h-8 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
                         >
-                          <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                          {isLoadingSna[selectedNiks[0]] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#f59e0b' }} />
+                          ) : getSnaStatus(selectedNiks[0]) === 'completed' ? (
+                            <div className="relative">
+                              <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                              <CheckCircle className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
+                            </div>
+                          ) : (
+                            <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                          )}
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
                             SOCIAL NETWORK ANALYTICS
                           </p>
                           <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                            Analisis jaringan sosial
+                            {isLoadingSna[selectedNiks[0]] ? 'Sedang menganalisis...' : 
+                             getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat hasil SNA' :
+                             getOsintStatus(selectedNiks[0]) !== 'completed' ? 'Jalankan OSINT dulu' :
+                             'Analisis jaringan sosial'}
                           </p>
                         </div>
                         <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
