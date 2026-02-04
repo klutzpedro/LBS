@@ -125,6 +125,7 @@ export const Sidebar = ({
         onDeleteCase={onDeleteCase}
         onPrintCase={onPrintCase}
         printingCase={printingCase}
+        isAdmin={isAdmin}
       />
 
       {/* Targets Section */}
