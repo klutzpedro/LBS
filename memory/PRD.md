@@ -1278,18 +1278,30 @@ User melaporkan data tertukar di Face Recognition:
 - **Frontend UI:**
   - SNA indicator in sub-query status row (Network icon with checkmark when complete)
   - Click on SNA indicator to open detail dialog
+  - **SNA Input Dialog:** Dialog untuk memasukkan link social media manual (Instagram, Facebook, TikTok, Twitter/X, LinkedIn) sebelum menjalankan SNA
   - Detail dialog shows:
-    - Statistics summary (followers, following, connections in grid)
-    - Profile cards with platform icons, usernames, follower counts
+    - Statistics summary (followers, following, likes, posts, friends, connections - dinamis per platform)
+    - Profile cards with platform icons, usernames, dan statistik yang relevan per platform
     - Simple network graph visualization
     - Full AI analysis text
+  - **SNA di VIEW Dialog:** Section SNA ditampilkan setelah OSINT dengan statistik dan profil lengkap
+  - **SNA di PDF:** Section SNA termasuk dalam laporan PDF dengan tabel profil dan AI analysis
+- **Platform-Specific Statistics:**
+  - Twitter/X: Followers, Following
+  - Instagram: Followers, Following, Posts
+  - TikTok: Followers, Following, Likes
+  - Facebook: Followers, Friends
+  - LinkedIn: Connections
 - **Caching:** Results cached in `nik_investigations.sna_results` for history access
 - **Files Modified:**
-  - `/app/backend/server.py`: SnaRequest model, start_sna, get_sna, process_sna functions
+  - `/app/backend/server.py`: SnaRequest model, start_sna, get_sna, process_sna functions, enhanced statistics
   - `/app/frontend/src/components/main/NonGeointSearch.jsx`:
-    - Added `startSocialNetworkAnalytics`, `pollSnaResults`, `getSnaStatus`, `getSnaData` functions
+    - Added `openSnaInputDialog`, `startSocialNetworkAnalytics`, `pollSnaResults`, `getSnaStatus`, `getSnaData`, `extractUsername` functions
+    - Added SNA Input Dialog with manual link inputs
     - Added SNA indicator in investigation results
-    - Added SNA detail dialog with statistics, profiles, graph, and AI analysis
+    - Added SNA detail dialog with dynamic platform statistics
+    - Added SNA section in VIEW detail dialog
+    - Added SNA section in PDF generation
     - Updated resetAllStates and cleanup useEffect for SNA states
 
 ## Future Tasks
