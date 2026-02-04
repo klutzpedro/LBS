@@ -2664,10 +2664,22 @@ export const NonGeointSearchDialog = ({
         if (osintData) {
           addSectionHeader('🌐 FAKTA OSINT');
           
+          // Helper function to clean text for PDF
+          const cleanPdfText = (text) => {
+            if (!text || typeof text !== 'string') return text;
+            let cleaned = text.replace(/""/g, '"');
+            cleaned = cleaned.replace(/^"+|"+$/g, '');
+            cleaned = cleaned.replace(/\\"/g, '"');
+            cleaned = cleaned.replace(/^"/gm, '');
+            cleaned = cleaned.replace(/"$/gm, '');
+            cleaned = cleaned.replace(/ +/g, ' ');
+            return cleaned.trim();
+          };
+          
           // AI Summary / Antecedents - FULL TEXT
           if (osintData.summary || osintData.antecedents) {
             addSubsectionHeader('Ringkasan & Anteseden Target');
-            const summaryText = osintData.summary || osintData.antecedents || '';
+            const summaryText = cleanPdfText(osintData.summary || osintData.antecedents || '');
             const summaryLines = pdf.splitTextToSize(summaryText, contentWidth - 10);
             pdf.setFontSize(9);
             pdf.setTextColor(...colors.text);
