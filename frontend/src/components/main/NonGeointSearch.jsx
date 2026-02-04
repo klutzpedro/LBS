@@ -913,12 +913,14 @@ export const NonGeointSearchDialog = ({
     if (deleteFromBackend && searchResults?.id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}`, {
+        // Pass clear_nik_cache=true to also clear NIK cache from backend
+        const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}?clear_nik_cache=true`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
-          console.log('[NonGeoint] Backend cache deleted for search:', searchResults.id);
+          const data = await response.json();
+          console.log('[NonGeoint] Backend cache deleted:', data);
         } else {
           console.warn('[NonGeoint] Failed to delete backend cache:', response.status);
         }
