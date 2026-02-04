@@ -8561,7 +8561,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                     "status": "completed",
                     "data": parsed_data,
                     "raw_text": combined_text,
-                    "photo": None,
+                    "photo": photo_base64,  # Use the collected photo
                     "family_data": family_data
                 }
             
