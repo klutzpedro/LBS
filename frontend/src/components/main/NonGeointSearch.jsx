@@ -906,8 +906,26 @@ export const NonGeointSearchDialog = ({
   };
 
   // Helper function to reset all states
-  const resetAllStates = () => {
-    console.log('[NonGeoint] Resetting all states...');
+  const resetAllStates = async (deleteFromBackend = false) => {
+    console.log('[NonGeoint] Resetting all states...', { deleteFromBackend });
+    
+    // If deleteFromBackend is true and we have a search, delete it from backend cache
+    if (deleteFromBackend && searchResults?.id) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          console.log('[NonGeoint] Backend cache deleted for search:', searchResults.id);
+        } else {
+          console.warn('[NonGeoint] Failed to delete backend cache:', response.status);
+        }
+      } catch (error) {
+        console.error('[NonGeoint] Error deleting backend cache:', error);
+      }
+    }
     
     // Clear localStorage cache
     localStorage.removeItem('nongeoint_ongoing_search_id');
