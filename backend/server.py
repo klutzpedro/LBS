@@ -1114,6 +1114,7 @@ class Case(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     target_count: int = 0
+    created_by: Optional[str] = None  # Owner of the case
 
 class TargetCreate(BaseModel):
     case_id: str
