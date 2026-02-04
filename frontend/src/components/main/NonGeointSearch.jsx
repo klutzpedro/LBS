@@ -4144,11 +4144,12 @@ export const NonGeointSearchDialog = ({
                             if (name) {
                               const snaStatus = getSnaStatus(nik);
                               if (snaStatus === 'completed') {
-                                // Show SNA results
-                                setSnaDetailDialog({
+                                // Data sudah ada, tampilkan dialog konfirmasi
+                                setRefreshConfirmDialog({
                                   open: true,
+                                  type: 'sna',
                                   nik: nik,
-                                  data: getSnaData(nik)
+                                  name: name
                                 });
                               } else {
                                 // Open input dialog for manual links
@@ -4186,7 +4187,7 @@ export const NonGeointSearchDialog = ({
                           </p>
                           <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                             {isLoadingSna[selectedNiks[0]] ? 'Sedang menganalisis...' : 
-                             getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat hasil SNA' :
+                             getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
                              'Analisis jaringan sosial'}
                           </p>
                         </div>
