@@ -813,6 +813,15 @@ export const NonGeointSearchDialog = ({
   const [snaResults, setSnaResults] = useState({}); // Per-NIK SNA results
   const [isLoadingSna, setIsLoadingSna] = useState({}); // Per-NIK loading state
   const [snaDetailDialog, setSnaDetailDialog] = useState({ open: false, nik: null, data: null });
+  // State untuk input manual social media links sebelum SNA
+  const [snaInputDialog, setSnaInputDialog] = useState({ open: false, nik: null, name: null });
+  const [snaManualLinks, setSnaManualLinks] = useState({
+    instagram: '',
+    facebook: '',
+    tiktok: '',
+    twitter: '',
+    linkedin: ''
+  });
   const snaPollingRef = useRef({});
   
   // FAKTA OSINT state
