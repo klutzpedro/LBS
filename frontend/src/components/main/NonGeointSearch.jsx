@@ -5480,8 +5480,11 @@ export const NonGeointSearchDialog = ({
                               </div>
                             </div>
                             <div className="text-right text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                              <p>{profile.followers?.toLocaleString() || 0} followers</p>
-                              <p>{profile.following?.toLocaleString() || 0} following</p>
+                              {profile.followers > 0 && <p>{profile.followers.toLocaleString()} followers</p>}
+                              {profile.following > 0 && <p>{profile.following.toLocaleString()} following</p>}
+                              {profile.likes > 0 && <p>{profile.likes.toLocaleString()} likes</p>}
+                              {profile.posts > 0 && <p>{profile.posts.toLocaleString()} posts</p>}
+                              {profile.friends > 0 && <p>{profile.friends.toLocaleString()} friends</p>}
                             </div>
                           </div>
                           {profile.bio && (
