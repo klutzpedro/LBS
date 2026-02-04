@@ -594,9 +594,11 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                         </Button>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                      <span>
-                        {search.niks_found?.length || 0} NIK ditemukan
+                    {/* Info akun dan waktu */}
+                    <div className="flex items-center justify-between text-xs mb-1" style={{ color: 'var(--foreground-muted)' }}>
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {search.created_by || 'Unknown'}
                       </span>
                       <span>
                         {new Date(search.created_at).toLocaleDateString('id-ID', {
@@ -606,6 +608,14 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                           hour: '2-digit',
                           minute: '2-digit'
                         })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                      <span>
+                        {search.niks_found?.length || 0} NIK ditemukan
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {search.query_types?.join(', ') || 'CAPIL'}
                       </span>
                     </div>
                   </div>
