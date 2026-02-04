@@ -5631,6 +5631,95 @@ export const NonGeointSearchDialog = ({
         </DraggableDialogContent>
       </DraggableDialog>
 
+      {/* Dialog Konfirmasi Refresh OSINT/SNA */}
+      <DraggableDialog open={refreshConfirmDialog.open} onOpenChange={() => setRefreshConfirmDialog({ open: false, type: null, nik: null, name: null })}>
+        <DraggableDialogContent 
+          className="max-w-sm"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)',
+            zIndex: 10002
+          }}
+        >
+          <DraggableDialogHeader>
+            <DraggableDialogTitle style={{ color: 'var(--foreground-primary)' }}>
+              <div className="flex items-center gap-2">
+                {refreshConfirmDialog.type === 'osint' ? (
+                  <Globe className="w-5 h-5" style={{ color: '#3b82f6' }} />
+                ) : (
+                  <Network className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                )}
+                {refreshConfirmDialog.type === 'osint' ? 'FAKTA OSINT' : 'Social Network Analytics'}
+              </div>
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
+          
+          <div className="p-4 space-y-4">
+            <p className="text-sm" style={{ color: 'var(--foreground-primary)' }}>
+              Data {refreshConfirmDialog.type === 'osint' ? 'FAKTA OSINT' : 'SNA'} untuk NIK ini sudah ada.
+            </p>
+            <p className="text-sm font-medium" style={{ color: 'var(--foreground-secondary)' }}>
+              Apakah hendak diperbaharui?
+            </p>
+            
+            <div className="flex gap-2 pt-2">
+              {/* Tombol Lihat Data */}
+              <button
+                onClick={() => {
+                  if (refreshConfirmDialog.type === 'osint') {
+                    // Buka OSINT detail dialog
+                    setOsintDetailDialog({
+                      open: true,
+                      nik: refreshConfirmDialog.nik,
+                      data: osintResults[refreshConfirmDialog.nik] || investigation?.osint_results?.[refreshConfirmDialog.nik]
+                    });
+                  } else {
+                    // Buka SNA detail dialog
+                    setSnaDetailDialog({
+                      open: true,
+                      nik: refreshConfirmDialog.nik,
+                      data: getSnaData(refreshConfirmDialog.nik)
+                    });
+                  }
+                  setRefreshConfirmDialog({ open: false, type: null, nik: null, name: null });
+                }}
+                className="flex-1 px-4 py-2 rounded text-sm font-medium"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--foreground-primary)',
+                  border: '1px solid var(--borders-subtle)'
+                }}
+                data-testid="refresh-confirm-view-btn"
+              >
+                Tidak, Lihat Data
+              </button>
+              
+              {/* Tombol Perbaharui */}
+              <button
+                onClick={() => {
+                  if (refreshConfirmDialog.type === 'osint') {
+                    // Jalankan ulang OSINT
+                    startFaktaOsint(refreshConfirmDialog.nik, refreshConfirmDialog.name);
+                  } else {
+                    // Buka input dialog SNA untuk refresh
+                    openSnaInputDialog(refreshConfirmDialog.nik, refreshConfirmDialog.name);
+                  }
+                  setRefreshConfirmDialog({ open: false, type: null, nik: null, name: null });
+                }}
+                className="flex-1 px-4 py-2 rounded text-sm font-medium"
+                style={{ 
+                  backgroundColor: refreshConfirmDialog.type === 'osint' ? '#3b82f6' : '#f59e0b',
+                  color: 'white'
+                }}
+                data-testid="refresh-confirm-yes-btn"
+              >
+                Ya, Perbaharui
+              </button>
+            </div>
+          </div>
+        </DraggableDialogContent>
+      </DraggableDialog>
+
       {/* SNA Input Dialog - untuk memasukkan link social media manual */}
       <DraggableDialog open={snaInputDialog.open} onOpenChange={() => setSnaInputDialog({ open: false, nik: null, name: null })}>
         <DraggableDialogContent 
