@@ -632,7 +632,8 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
 // Person Selection Card - WITH PHOTO (handles not available)
 const PersonSelectionCard = ({ person, isSelected, onSelect, index }) => {
   const ttl = person.ttl || person.tempat_lahir || person.tgl_lahir || '-';
-  const hasPhoto = person.photo && person.photo.startsWith('data:');
+  // Handle both base64 and URL photos
+  const hasPhoto = person.photo && (person.photo.startsWith('data:') || person.photo.startsWith('http'));
   const photoNotAvailable = person.status === 'not_found' || person.error || (!person.photo && person.nik);
   const similarity = person.similarity || 0;
   
