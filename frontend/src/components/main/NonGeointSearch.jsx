@@ -1956,6 +1956,23 @@ export const NonGeointSearchDialog = ({
           social_media: socialMediaUrls
         })
       });
+      
+      if (!response.ok) throw new Error('Failed to start SNA');
+      
+      const data = await response.json();
+      console.log('[SNA] Started:', data);
+      
+      // Start polling for results
+      snaPollingRef.current[nik] = setInterval(() => {
+        pollSnaResults(data.sna_id, nik);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('SNA error:', error);
+      toast.error('Gagal memulai Social Network Analytics');
+      setIsLoadingSna(prev => ({ ...prev, [nik]: false }));
+    }
+  };
   
   // Helper to extract username from URL
   const extractUsername = (url, platform) => {
@@ -1978,23 +1995,6 @@ export const NonGeointSearchDialog = ({
       }
     } catch {
       return url;
-    }
-  };
-      
-      if (!response.ok) throw new Error('Failed to start SNA');
-      
-      const data = await response.json();
-      console.log('[SNA] Started:', data);
-      
-      // Start polling for results
-      snaPollingRef.current[nik] = setInterval(() => {
-        pollSnaResults(data.sna_id, nik);
-      }, 3000);
-      
-    } catch (error) {
-      console.error('SNA error:', error);
-      toast.error('Gagal memulai Social Network Analytics');
-      setIsLoadingSna(prev => ({ ...prev, [nik]: false }));
     }
   };
   
