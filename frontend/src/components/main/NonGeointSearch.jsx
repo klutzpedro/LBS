@@ -2576,43 +2576,61 @@ export const NonGeointSearchDialog = ({
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'bold');
                 pdf.text(`Passport: ${passportResult.passport_no} (${passportResult.crossings.length} perjalanan)`, margin + 5, yPos);
-                yPos += 6;
+                yPos += 8;
                 
-                // Crossing table
-                pdf.setFillColor(...colors.lightGray);
-                pdf.rect(margin, yPos, contentWidth, 6, 'F');
-                
-                pdf.setFontSize(7);
-                pdf.text('No', margin + 2, yPos + 4);
-                pdf.text('Tanggal', margin + 12, yPos + 4);
-                pdf.text('Arah', margin + 42, yPos + 4);
-                pdf.text('TPI', margin + 60, yPos + 4);
-                pdf.text('Port', margin + 110, yPos + 4);
-                
-                yPos += 7;
-                
-                pdf.setFont('helvetica', 'normal');
-                passportResult.crossings.slice(0, 10).forEach((crossing, cIdx) => {
-                  checkPageBreak(8);
-                  
-                  const dir = crossing.direction_code === 'A' ? '[IN] MASUK' : crossing.direction_code === 'D' ? '[OUT] KELUAR' : crossing.direction;
-                  
-                  pdf.text(String(cIdx + 1), margin + 2, yPos);
-                  pdf.text(crossing.movement_date || '-', margin + 12, yPos);
-                  pdf.text(dir.substring(0, 12), margin + 42, yPos);
-                  pdf.text((crossing.tpi_name || '-').substring(0, 25), margin + 60, yPos);
-                  pdf.text((crossing.port_description || '-').substring(0, 25), margin + 110, yPos);
-                  
-                  yPos += 5;
+                // Perlintasan table with proper borders
+                const tableData = passportResult.crossings.slice(0, 10).map((crossing, cIdx) => {
+                  const dir = crossing.direction_code === 'A' ? 'MASUK' : crossing.direction_code === 'D' ? 'KELUAR' : crossing.direction;
+                  return [
+                    String(cIdx + 1),
+                    crossing.movement_date || '-',
+                    dir,
+                    (crossing.tpi_name || '-').substring(0, 28),
+                    (crossing.port_description || '-').substring(0, 22)
+                  ];
                 });
                 
+                // Use autoTable for proper table rendering
+                pdf.autoTable({
+                  startY: yPos,
+                  head: [['No', 'Tanggal', 'Arah', 'TPI', 'Tujuan/Asal']],
+                  body: tableData,
+                  theme: 'grid',
+                  margin: { left: margin },
+                  styles: { 
+                    fontSize: 7, 
+                    cellPadding: 2,
+                    lineColor: [100, 100, 100],
+                    lineWidth: 0.1
+                  },
+                  headStyles: { 
+                    fillColor: [45, 55, 72], 
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    halign: 'center'
+                  },
+                  columnStyles: {
+                    0: { halign: 'center', cellWidth: 10 },
+                    1: { cellWidth: 32 },
+                    2: { halign: 'center', cellWidth: 20 },
+                    3: { cellWidth: 50 },
+                    4: { cellWidth: 45 }
+                  },
+                  alternateRowStyles: { fillColor: [245, 247, 250] }
+                });
+                
+                yPos = pdf.lastAutoTable.finalY + 5;
+                
                 if (passportResult.crossings.length > 10) {
+                  pdf.setFontSize(8);
                   pdf.setFont('helvetica', 'italic');
+                  pdf.setTextColor(100, 100, 100);
                   pdf.text(`... dan ${passportResult.crossings.length - 10} perjalanan lainnya`, margin + 5, yPos);
-                  yPos += 5;
+                  pdf.setTextColor(...colors.text);
+                  yPos += 8;
                 }
                 
-                yPos += 5;
+                yPos += 3;
               }
             });
           } else {
