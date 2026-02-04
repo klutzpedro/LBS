@@ -694,7 +694,8 @@ const CasesSection = ({
   onNewCase, 
   onDeleteCase,
   onPrintCase,
-  printingCase
+  printingCase,
+  isAdmin
 }) => {
   const [currentIndex, setCurrentIndex] = React.useState(0);
   
