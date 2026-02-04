@@ -3461,9 +3461,9 @@ export const NonGeointSearchDialog = ({
               {/* Reset Button - shown when there's data */}
               {(searchResults || investigation) && (
                 <Button
-                  onClick={() => {
-                    if (window.confirm('Reset semua data pencarian? Ini akan menghapus hasil pencarian dan pendalaman saat ini.')) {
-                      resetAllStates();
+                  onClick={async () => {
+                    if (window.confirm('Reset semua data pencarian? Ini akan menghapus hasil pencarian dan cache dari server.')) {
+                      await resetAllStates(true); // Pass true to delete from backend
                       toast.success('Data berhasil direset');
                     }
                   }}
@@ -3475,7 +3475,7 @@ export const NonGeointSearchDialog = ({
                     color: 'var(--status-error)',
                     backgroundColor: 'transparent'
                   }}
-                  title="Reset semua data"
+                  title="Reset semua data dan hapus cache"
                   data-testid="reset-search-btn"
                 >
                   <RotateCcw className="w-4 h-4" />
