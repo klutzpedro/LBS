@@ -33,7 +33,6 @@ import {
   AlertTriangle,
   X,
   Zap,
-  Phone,
   Network,
   ChevronRight,
   RotateCcw
