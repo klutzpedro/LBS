@@ -6693,8 +6693,29 @@ CATATAN PENTING:
                 user_message = UserMessage(text=prompt)
                 ai_summary = await chat.send_message(user_message)
                 
-                results["summary"] = ai_summary
-                results["antecedents"] = ai_summary
+                # Clean up AI response - remove excessive quotes and markdown artifacts
+                def clean_ai_text(text):
+                    if not text:
+                        return text
+                    # Remove excessive double quotes
+                    text = text.replace('""', '"')
+                    # Remove quotes around entire text
+                    text = text.strip('"')
+                    # Remove markdown code blocks if any
+                    text = text.replace('```', '')
+                    # Remove escaped quotes
+                    text = text.replace('\\"', '"')
+                    # Remove multiple consecutive spaces
+                    import re
+                    text = re.sub(r' +', ' ', text)
+                    # Remove quotes at the beginning of lines
+                    text = re.sub(r'^"', '', text, flags=re.MULTILINE)
+                    text = re.sub(r'"$', '', text, flags=re.MULTILINE)
+                    return text.strip()
+                
+                cleaned_summary = clean_ai_text(ai_summary)
+                results["summary"] = cleaned_summary
+                results["antecedents"] = cleaned_summary
                 results["risk_assessment"] = "Lihat bagian PENILAIAN RISIKO di summary"
                 logger.info(f"[FAKTA OSINT {osint_id}] AI anteseden generated successfully")
             else:
