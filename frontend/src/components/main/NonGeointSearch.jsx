@@ -1866,7 +1866,26 @@ export const NonGeointSearchDialog = ({
 
   // ==================== SOCIAL NETWORK ANALYTICS Functions ====================
   
-  const startSocialNetworkAnalytics = async (nik, name) => {
+  // Open input dialog before starting SNA
+  const openSnaInputDialog = (nik, name) => {
+    if (!searchResults?.id || !nik || !name) {
+      toast.error('Data tidak lengkap untuk Social Network Analytics');
+      return;
+    }
+    
+    // Reset manual links
+    setSnaManualLinks({
+      instagram: '',
+      facebook: '',
+      tiktok: '',
+      twitter: '',
+      linkedin: ''
+    });
+    
+    setSnaInputDialog({ open: true, nik, name });
+  };
+  
+  const startSocialNetworkAnalytics = async (nik, name, manualLinks = null) => {
     if (!searchResults?.id || !nik || !name) {
       toast.error('Data tidak lengkap untuk Social Network Analytics');
       return;
@@ -1892,12 +1911,31 @@ export const NonGeointSearchDialog = ({
       }
     }
     
+    // Add manual links if provided
+    if (manualLinks) {
+      if (manualLinks.instagram) {
+        socialMediaUrls.push({ platform: 'instagram', url: manualLinks.instagram, username: extractUsername(manualLinks.instagram, 'instagram') });
+      }
+      if (manualLinks.facebook) {
+        socialMediaUrls.push({ platform: 'facebook', url: manualLinks.facebook, username: extractUsername(manualLinks.facebook, 'facebook') });
+      }
+      if (manualLinks.tiktok) {
+        socialMediaUrls.push({ platform: 'tiktok', url: manualLinks.tiktok, username: extractUsername(manualLinks.tiktok, 'tiktok') });
+      }
+      if (manualLinks.twitter) {
+        socialMediaUrls.push({ platform: 'twitter', url: manualLinks.twitter, username: extractUsername(manualLinks.twitter, 'twitter') });
+      }
+      if (manualLinks.linkedin) {
+        socialMediaUrls.push({ platform: 'linkedin', url: manualLinks.linkedin, username: extractUsername(manualLinks.linkedin, 'linkedin') });
+      }
+    }
+    
     console.log('[SNA] OSINT data found:', osintData);
     console.log('[SNA] Social media URLs:', socialMediaUrls);
     
     if (socialMediaUrls.length === 0) {
-      // Even if no social media, still allow SNA to run - it will try to find profiles
-      toast.warning('Tidak ditemukan URL media sosial dari OSINT. SNA akan mencoba mencari profil berdasarkan nama.');
+      toast.error('Tidak ada link media sosial. Masukkan minimal satu link atau jalankan OSINT terlebih dahulu.');
+      return;
     }
     
     setIsLoadingSna(prev => ({ ...prev, [nik]: true }));
@@ -1918,6 +1956,30 @@ export const NonGeointSearchDialog = ({
           social_media: socialMediaUrls
         })
       });
+  
+  // Helper to extract username from URL
+  const extractUsername = (url, platform) => {
+    try {
+      const urlObj = new URL(url);
+      const path = urlObj.pathname.replace(/^\/+|\/+$/g, '');
+      const parts = path.split('/');
+      
+      switch(platform) {
+        case 'instagram':
+        case 'tiktok':
+        case 'twitter':
+          return parts[0]?.replace('@', '') || '';
+        case 'facebook':
+          return parts[0] || '';
+        case 'linkedin':
+          return parts[1] || parts[0] || '';
+        default:
+          return parts[0] || '';
+      }
+    } catch {
+      return url;
+    }
+  };
       
       if (!response.ok) throw new Error('Failed to start SNA');
       
