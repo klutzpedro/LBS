@@ -4028,12 +4028,17 @@ export const NonGeointSearchDialog = ({
                                         searchResults?.name || '';
                             
                             if (name) {
-                              // Check if OSINT has been run first
-                              const hasOsint = getOsintStatus(nik) === 'completed';
-                              if (!hasOsint) {
-                                toast.warning('Jalankan FAKTA OSINT terlebih dahulu untuk mendapatkan data media sosial');
+                              const snaStatus = getSnaStatus(nik);
+                              if (snaStatus === 'completed') {
+                                // Show SNA results
+                                setSnaDetailDialog({
+                                  open: true,
+                                  nik: nik,
+                                  data: getSnaData(nik)
+                                });
                               } else {
-                                startSocialNetworkAnalytics(nik, name);
+                                // Open input dialog for manual links
+                                openSnaInputDialog(nik, name);
                               }
                               setShowAdvancedDropdown(false);
                             } else {
@@ -4068,7 +4073,6 @@ export const NonGeointSearchDialog = ({
                           <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                             {isLoadingSna[selectedNiks[0]] ? 'Sedang menganalisis...' : 
                              getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat hasil SNA' :
-                             getOsintStatus(selectedNiks[0]) !== 'completed' ? 'Jalankan OSINT dulu' :
                              'Analisis jaringan sosial'}
                           </p>
                         </div>
