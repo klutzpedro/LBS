@@ -2938,6 +2938,89 @@ export const NonGeointSearchDialog = ({
           }
         }
         
+        // ============ SOCIAL NETWORK ANALYTICS SECTION ============
+        const snaData = snaResults[nik] || investigation?.sna_results?.[nik];
+        if (snaData) {
+          addSectionHeader('🕸️ SOCIAL NETWORK ANALYTICS');
+          
+          // Platform Statistics
+          if (snaData.statistics) {
+            addSubsectionHeader('Statistik Jaringan');
+            
+            const statsTable = [];
+            if (snaData.statistics.total_followers) statsTable.push(['Followers', snaData.statistics.total_followers.toLocaleString()]);
+            if (snaData.statistics.total_following) statsTable.push(['Following', snaData.statistics.total_following.toLocaleString()]);
+            if (snaData.statistics.total_likes) statsTable.push(['Total Likes', snaData.statistics.total_likes.toLocaleString()]);
+            if (snaData.statistics.total_posts) statsTable.push(['Total Posts', snaData.statistics.total_posts.toLocaleString()]);
+            if (snaData.statistics.total_friends) statsTable.push(['Friends', snaData.statistics.total_friends.toLocaleString()]);
+            if (snaData.statistics.total_connections) statsTable.push(['Connections', snaData.statistics.total_connections.toLocaleString()]);
+            
+            if (statsTable.length > 0) {
+              pdf.autoTable({
+                startY: yPos,
+                body: statsTable,
+                theme: 'plain',
+                margin: { left: margin + 5 },
+                styles: { fontSize: 9, cellPadding: 2 },
+                columnStyles: {
+                  0: { fontStyle: 'bold', cellWidth: 50 },
+                  1: { cellWidth: 60 }
+                }
+              });
+              yPos = pdf.lastAutoTable.finalY + 5;
+            }
+          }
+          
+          // Profiles
+          if (snaData.profiles?.length > 0) {
+            addSubsectionHeader(`Profil Media Sosial (${snaData.profiles.length} ditemukan)`);
+            
+            const profilesData = snaData.profiles.map(p => {
+              const platformIcon = p.platform === 'instagram' ? '📷' : p.platform === 'facebook' ? '📘' : p.platform === 'twitter' ? '🐦' : p.platform === 'tiktok' ? '🎵' : p.platform === 'linkedin' ? '💼' : '🌐';
+              const stats = [];
+              if (p.followers) stats.push(`${p.followers.toLocaleString()} followers`);
+              if (p.likes) stats.push(`${p.likes.toLocaleString()} likes`);
+              if (p.posts) stats.push(`${p.posts.toLocaleString()} posts`);
+              return [
+                `${platformIcon} ${p.platform.toUpperCase()}`,
+                `@${p.username}`,
+                stats.join(', ') || '-'
+              ];
+            });
+            
+            pdf.autoTable({
+              startY: yPos,
+              head: [['Platform', 'Username', 'Statistik']],
+              body: profilesData,
+              theme: 'grid',
+              margin: { left: margin },
+              styles: { fontSize: 8, cellPadding: 2 },
+              headStyles: { fillColor: [245, 158, 11], textColor: [255, 255, 255] },
+              columnStyles: {
+                0: { cellWidth: 35 },
+                1: { cellWidth: 50 },
+                2: { cellWidth: 70 }
+              }
+            });
+            yPos = pdf.lastAutoTable.finalY + 5;
+          }
+          
+          // AI Analysis
+          if (snaData.analysis) {
+            addSubsectionHeader('Analisis AI');
+            const cleanedAnalysis = cleanPdfText(snaData.analysis);
+            const analysisLines = pdf.splitTextToSize(cleanedAnalysis, contentWidth - 10);
+            pdf.setFontSize(9);
+            pdf.setTextColor(...colors.text);
+            analysisLines.forEach(line => {
+              checkPageBreak(6);
+              pdf.text(line, margin + 5, yPos);
+              yPos += 5;
+            });
+            yPos += 5;
+          }
+        }
+        
         yPos += 10;
       });
     }
