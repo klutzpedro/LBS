@@ -4486,7 +4486,7 @@ export const NonGeointSearchDialog = ({
                             Ringkasan & Anteseden
                           </p>
                           <p className="text-xs whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--foreground-primary)' }}>
-                            {osintData.summary}
+                            {cleanDisplayText(osintData.summary)}
                           </p>
                         </div>
                       )}
