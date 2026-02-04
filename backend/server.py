@@ -5362,21 +5362,60 @@ async def clear_nongeoint_cache_by_name(name: str, username: str = Depends(verif
     }
 
 @api_router.delete("/nongeoint/search/{search_id}")
-async def delete_nongeoint_search(search_id: str, username: str = Depends(verify_token)):
-    """Delete a NON GEOINT search and its associated investigation"""
-    # Check if search exists and belongs to user
-    search = await db.nongeoint_searches.find_one({"id": search_id, "created_by": username})
+async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False, username: str = Depends(verify_token)):
+    """Delete a NON GEOINT search and its associated investigation
+    
+    Args:
+        clear_nik_cache: If True, also delete NIK cache from simple_query_cache
+    """
+    # Check if search exists and belongs to user (admin can delete any)
+    if username == "admin":
+        search = await db.nongeoint_searches.find_one({"id": search_id})
+    else:
+        search = await db.nongeoint_searches.find_one({"id": search_id, "created_by": username})
+    
     if not search:
         raise HTTPException(status_code=404, detail="Search not found")
+    
+    # Get NIKs from search before deleting (for cache clearing)
+    niks_to_clear = search.get("niks_found", [])
     
     # Delete the search
     await db.nongeoint_searches.delete_one({"id": search_id})
     
     # Also delete associated investigations
-    await db.nik_investigations.delete_many({"search_id": search_id})
+    investigation = await db.nik_investigations.find_one({"search_id": search_id})
+    if investigation:
+        # Get additional NIKs from investigation results
+        if investigation.get("results"):
+            niks_to_clear.extend(list(investigation["results"].keys()))
+        await db.nik_investigations.delete_many({"search_id": search_id})
+    
+    # Clear NIK cache from simple_query_cache if requested
+    if clear_nik_cache and niks_to_clear:
+        unique_niks = list(set(niks_to_clear))
+        logger.info(f"[NONGEOINT] Clearing cache for {len(unique_niks)} NIKs")
+        
+        for nik in unique_niks:
+            # Delete all cache types for this NIK
+            cache_keys_to_delete = [
+                f"capil_nik:{nik}",
+                f"nkk:{nik}",
+                f"regnik:{nik}",
+                f"passport:{nik}",
+                f"perlintasan:{nik}"
+            ]
+            await db.simple_query_cache.delete_many({"cache_key": {"$in": cache_keys_to_delete}})
+            
+            # Also try with NKK variations if we have Family ID
+            if investigation and investigation.get("results", {}).get(nik, {}).get("nik_data", {}).get("data", {}).get("Family ID"):
+                family_id = investigation["results"][nik]["nik_data"]["data"]["Family ID"]
+                await db.simple_query_cache.delete_many({"cache_key": f"nkk:{family_id}"})
+        
+        logger.info(f"[NONGEOINT] NIK cache cleared for search {search_id}")
     
     logger.info(f"[NONGEOINT] Deleted search {search_id} by {username}")
-    return {"message": "Search deleted successfully"}
+    return {"message": "Search deleted successfully", "cache_cleared": clear_nik_cache}
 
 async def process_nongeoint_search(search_id: str, name: str, query_types: List[str]):
     """Process NON GEOINT search with queue system - includes auto photo fetch"""
