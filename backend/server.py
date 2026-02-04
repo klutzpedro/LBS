@@ -7028,7 +7028,12 @@ async def process_sna(sna_id: str, search_id: str, nik: str, name: str, social_m
                 results["statistics"]["total_following"] += profile_data["following"]
                 results["statistics"]["total_friends"] += profile_data["friends"]
                 results["statistics"]["total_posts"] += profile_data["posts"]
+                results["statistics"]["total_likes"] = results["statistics"].get("total_likes", 0) + profile_data["likes"]
                 results["statistics"]["total_engagement"] += profile_data["likes"]
+                
+                # LinkedIn connections
+                if platform == "linkedin" and profile_data["friends"] > 0:
+                    results["statistics"]["total_connections"] = results["statistics"].get("total_connections", 0) + profile_data["friends"]
                 
                 await asyncio.sleep(0.5)
         
