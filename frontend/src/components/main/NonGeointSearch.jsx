@@ -5482,6 +5482,193 @@ export const NonGeointSearchDialog = ({
           </div>
         </DraggableDialogContent>
       </DraggableDialog>
+
+      {/* SNA Input Dialog - untuk memasukkan link social media manual */}
+      <DraggableDialog open={snaInputDialog.open} onOpenChange={() => setSnaInputDialog({ open: false, nik: null, name: null })}>
+        <DraggableDialogContent 
+          className="max-w-md"
+          style={{ 
+            backgroundColor: 'var(--background-elevated)',
+            border: '1px solid var(--borders-default)',
+            zIndex: 10001
+          }}
+        >
+          <DraggableDialogHeader>
+            <DraggableDialogTitle style={{ color: 'var(--foreground-primary)' }}>
+              <div className="flex items-center gap-2">
+                <Network className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                Social Network Analytics
+              </div>
+            </DraggableDialogTitle>
+          </DraggableDialogHeader>
+          
+          <div className="p-4 space-y-4">
+            <p className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+              Masukkan link profil media sosial target (opsional). Jika tidak diisi, SNA akan menggunakan data dari hasil OSINT.
+            </p>
+            
+            {/* Instagram */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                <span>📷</span> Instagram
+              </label>
+              <input
+                type="url"
+                placeholder="https://instagram.com/username"
+                value={snaManualLinks.instagram}
+                onChange={(e) => setSnaManualLinks(prev => ({ ...prev, instagram: e.target.value }))}
+                className="w-full px-3 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  border: '1px solid var(--borders-subtle)',
+                  color: 'var(--foreground-primary)'
+                }}
+                data-testid="sna-input-instagram"
+              />
+            </div>
+            
+            {/* Facebook */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                <span>📘</span> Facebook
+              </label>
+              <input
+                type="url"
+                placeholder="https://facebook.com/username"
+                value={snaManualLinks.facebook}
+                onChange={(e) => setSnaManualLinks(prev => ({ ...prev, facebook: e.target.value }))}
+                className="w-full px-3 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  border: '1px solid var(--borders-subtle)',
+                  color: 'var(--foreground-primary)'
+                }}
+                data-testid="sna-input-facebook"
+              />
+            </div>
+            
+            {/* TikTok */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                <span>🎵</span> TikTok
+              </label>
+              <input
+                type="url"
+                placeholder="https://tiktok.com/@username"
+                value={snaManualLinks.tiktok}
+                onChange={(e) => setSnaManualLinks(prev => ({ ...prev, tiktok: e.target.value }))}
+                className="w-full px-3 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  border: '1px solid var(--borders-subtle)',
+                  color: 'var(--foreground-primary)'
+                }}
+                data-testid="sna-input-tiktok"
+              />
+            </div>
+            
+            {/* Twitter/X */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                <span>🐦</span> Twitter / X
+              </label>
+              <input
+                type="url"
+                placeholder="https://twitter.com/username"
+                value={snaManualLinks.twitter}
+                onChange={(e) => setSnaManualLinks(prev => ({ ...prev, twitter: e.target.value }))}
+                className="w-full px-3 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  border: '1px solid var(--borders-subtle)',
+                  color: 'var(--foreground-primary)'
+                }}
+                data-testid="sna-input-twitter"
+              />
+            </div>
+            
+            {/* LinkedIn */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mb-1" style={{ color: 'var(--foreground-primary)' }}>
+                <span>💼</span> LinkedIn
+              </label>
+              <input
+                type="url"
+                placeholder="https://linkedin.com/in/username"
+                value={snaManualLinks.linkedin}
+                onChange={(e) => setSnaManualLinks(prev => ({ ...prev, linkedin: e.target.value }))}
+                className="w-full px-3 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  border: '1px solid var(--borders-subtle)',
+                  color: 'var(--foreground-primary)'
+                }}
+                data-testid="sna-input-linkedin"
+              />
+            </div>
+            
+            {/* Info about OSINT data */}
+            {(() => {
+              const osintData = osintResults[snaInputDialog.nik] || investigation?.osint_results?.[snaInputDialog.nik];
+              if (osintData?.social_media?.length > 0) {
+                return (
+                  <div className="p-3 rounded text-xs" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                    <p className="font-medium mb-1" style={{ color: '#3b82f6' }}>
+                      ℹ️ Data dari OSINT ({osintData.social_media.length} profil)
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {osintData.social_media.map((sm, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--background-secondary)', color: 'var(--foreground-muted)' }}>
+                          {sm.platform}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+            
+            {/* Action buttons */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setSnaInputDialog({ open: false, nik: null, name: null })}
+                className="flex-1 px-4 py-2 rounded text-sm"
+                style={{ 
+                  backgroundColor: 'var(--background-secondary)',
+                  color: 'var(--foreground-primary)',
+                  border: '1px solid var(--borders-subtle)'
+                }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  const hasManualLinks = snaManualLinks.instagram || snaManualLinks.facebook || snaManualLinks.tiktok || snaManualLinks.twitter || snaManualLinks.linkedin;
+                  const osintData = osintResults[snaInputDialog.nik] || investigation?.osint_results?.[snaInputDialog.nik];
+                  const hasOsintData = osintData?.social_media?.length > 0;
+                  
+                  if (!hasManualLinks && !hasOsintData) {
+                    toast.error('Masukkan minimal satu link media sosial atau jalankan OSINT terlebih dahulu');
+                    return;
+                  }
+                  
+                  startSocialNetworkAnalytics(snaInputDialog.nik, snaInputDialog.name, hasManualLinks ? snaManualLinks : null);
+                  setSnaInputDialog({ open: false, nik: null, name: null });
+                }}
+                className="flex-1 px-4 py-2 rounded text-sm font-medium"
+                style={{ 
+                  backgroundColor: '#f59e0b',
+                  color: 'white'
+                }}
+                data-testid="sna-start-btn"
+              >
+                Mulai SNA
+              </button>
+            </div>
+          </div>
+        </DraggableDialogContent>
+      </DraggableDialog>
     </>
   );
 };
