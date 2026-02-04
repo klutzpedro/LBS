@@ -1246,15 +1246,13 @@ User melaporkan data tertukar di Face Recognition:
 - **Location:** Appears after investigation (pendalaman) is completed in Full Query dialog
 - **UI Elements:**
   - Purple gradient button with ⚡ icon
-  - Dropdown menu with 3 options when clicked:
+  - Dropdown menu with 2 options when clicked:
     1. **FAKTA OSINT** - ✅ FULLY IMPLEMENTED (see above)
-    2. **CALL DATA RECORDER** - Placeholder (coming soon)
-    3. **SOCIAL NETWORK ANALYTICS** - ✅ FULLY IMPLEMENTED (see below)
+    2. **SOCIAL NETWORK ANALYTICS** - ✅ FULLY IMPLEMENTED (see below)
 - **Trigger:** `investigation?.status === 'completed'`
 - **Data Test IDs:**
   - `pendalaman-lanjutan-btn`
   - `fakta-osint-btn`
-  - `call-data-recorder-btn`
   - `social-network-analytics-btn`
 
 ### SOCIAL NETWORK ANALYTICS Feature - FULLY IMPLEMENTED (February 2026)
