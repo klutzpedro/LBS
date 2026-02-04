@@ -907,6 +907,32 @@ export const NonGeointSearchDialog = ({
 
   // Helper function to reset all states
   const resetAllStates = () => {
+    console.log('[NonGeoint] Resetting all states...');
+    
+    // Clear localStorage cache
+    localStorage.removeItem('nongeoint_ongoing_search_id');
+    
+    // Clear all polling intervals
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+    if (investigationPollingRef.current) {
+      clearInterval(investigationPollingRef.current);
+      investigationPollingRef.current = null;
+    }
+    // Clear OSINT polling
+    Object.keys(osintPollingRef.current).forEach(nik => {
+      clearInterval(osintPollingRef.current[nik]);
+      delete osintPollingRef.current[nik];
+    });
+    // Clear SNA polling
+    Object.keys(snaPollingRef.current).forEach(nik => {
+      clearInterval(snaPollingRef.current[nik]);
+      delete snaPollingRef.current[nik];
+    });
+    
+    // Reset main search states
     setSearchResults(null);
     setSearchName('');
     setSelectedNiks([]);
@@ -917,6 +943,7 @@ export const NonGeointSearchDialog = ({
     setIsSearching(false);
     setIsInvestigating(false);
     setIsLoadingFromHistory(false);
+    
     // Reset pagination states
     setIsLoadingMorePhotos(false);
     setHasMoreBatches(false);
@@ -924,16 +951,34 @@ export const NonGeointSearchDialog = ({
     setPhotosFetched(0);
     setCurrentBatch(0);
     setCachedSearch(false);
+    
     // Reset advanced dropdown
     setShowAdvancedDropdown(false);
+    
     // Reset OSINT states
     setOsintResults({});
     setIsLoadingOsint({});
     setOsintDetailDialog({ open: false, nik: null, data: null });
+    
     // Reset SNA states
     setSnaResults({});
     setIsLoadingSna({});
     setSnaDetailDialog({ open: false, nik: null, data: null });
+    
+    // Reset refresh confirm dialog
+    setRefreshConfirmDialog({ open: false, type: null, nik: null, name: null });
+    
+    // Reset SNA input dialog
+    setSnaInputDialog({ open: false, nik: null, name: null });
+    setSnaManualLinks({
+      instagram: '',
+      facebook: '',
+      tiktok: '',
+      twitter: '',
+      linkedin: ''
+    });
+    
+    console.log('[NonGeoint] All states reset complete');
   };
 
   // Handler to load more photos (next batch)
