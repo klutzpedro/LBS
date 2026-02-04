@@ -1815,10 +1815,25 @@ export const NonGeointSearchDialog = ({
   };
   
   const getOsintStatus = (nik) => {
+    if (!nik) return 'pending';
     if (isLoadingOsint[nik]) return 'processing';
-    if (osintResults[nik]) return 'completed';
-    // Check from investigation data
-    if (investigation?.osint_results?.[nik]?.status === 'completed') return 'completed';
+    
+    // Check local state first (after fresh OSINT run)
+    if (osintResults[nik]) {
+      // osintResults[nik] is directly the results object (without status wrapper)
+      // If it exists and has any data, OSINT is completed
+      return 'completed';
+    }
+    
+    // Check from investigation data (loaded from history)
+    if (investigation?.osint_results?.[nik]) {
+      const osintData = investigation.osint_results[nik];
+      // Check if status is explicitly 'completed' or if data exists
+      if (osintData.status === 'completed' || osintData.summary || osintData.social_media || osintData.web_search) {
+        return 'completed';
+      }
+    }
+    
     return 'pending';
   };
 
