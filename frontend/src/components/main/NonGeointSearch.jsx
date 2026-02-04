@@ -4747,6 +4747,141 @@ export const NonGeointSearchDialog = ({
                   </div>
                 );
               })()}
+              
+              {/* ============ SNA SECTION IN VIEW ============ */}
+              {(() => {
+                const snaData = snaResults[detailDialog.nik] || investigation?.sna_results?.[detailDialog.nik];
+                if (!snaData) return null;
+                
+                return (
+                  <div 
+                    className="p-4 rounded-lg mt-4"
+                    style={{ backgroundColor: 'var(--background-tertiary)', border: '1px solid rgba(245, 158, 11, 0.3)' }}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
+                      <h4 className="font-semibold text-sm" style={{ color: '#f59e0b' }}>
+                        SOCIAL NETWORK ANALYTICS
+                      </h4>
+                    </div>
+                    
+                    <div className="space-y-4 text-xs">
+                      {/* Platform Statistics */}
+                      {snaData.statistics && (
+                        <div>
+                          <p className="font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            📊 Statistik Jaringan
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {snaData.statistics.total_followers > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#3b82f6' }}>
+                                  {snaData.statistics.total_followers?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Followers</p>
+                              </div>
+                            )}
+                            {snaData.statistics.total_following > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#10b981' }}>
+                                  {snaData.statistics.total_following?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Following</p>
+                              </div>
+                            )}
+                            {snaData.statistics.total_likes > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#ef4444' }}>
+                                  {snaData.statistics.total_likes?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Likes</p>
+                              </div>
+                            )}
+                            {snaData.statistics.total_posts > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#8b5cf6' }}>
+                                  {snaData.statistics.total_posts?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Posts</p>
+                              </div>
+                            )}
+                            {snaData.statistics.total_friends > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#f59e0b' }}>
+                                  {snaData.statistics.total_friends?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Friends</p>
+                              </div>
+                            )}
+                            {snaData.statistics.total_connections > 0 && (
+                              <div className="p-2 rounded text-center" style={{ backgroundColor: 'var(--background-secondary)' }}>
+                                <p className="text-lg font-bold" style={{ color: '#0077b5' }}>
+                                  {snaData.statistics.total_connections?.toLocaleString() || 0}
+                                </p>
+                                <p style={{ color: 'var(--foreground-muted)' }}>Connections</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Profiles */}
+                      {snaData.profiles?.length > 0 && (
+                        <div>
+                          <p className="font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            📱 Profil ({snaData.profiles.length})
+                          </p>
+                          <div className="space-y-2">
+                            {snaData.profiles.map((profile, idx) => (
+                              <div 
+                                key={idx} 
+                                className="p-2 rounded flex items-center justify-between"
+                                style={{ backgroundColor: 'var(--background-secondary)' }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>
+                                    {profile.platform === 'instagram' && '📷'}
+                                    {profile.platform === 'facebook' && '📘'}
+                                    {profile.platform === 'twitter' && '🐦'}
+                                    {profile.platform === 'tiktok' && '🎵'}
+                                    {profile.platform === 'linkedin' && '💼'}
+                                    {profile.platform === 'youtube' && '▶️'}
+                                  </span>
+                                  <div>
+                                    <p className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                                      @{profile.username}
+                                    </p>
+                                    <p style={{ color: 'var(--foreground-muted)' }}>
+                                      {profile.platform}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right" style={{ color: 'var(--foreground-muted)' }}>
+                                  {profile.followers > 0 && <p>{profile.followers?.toLocaleString()} followers</p>}
+                                  {profile.likes > 0 && <p>{profile.likes?.toLocaleString()} likes</p>}
+                                  {profile.posts > 0 && <p>{profile.posts?.toLocaleString()} posts</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* AI Analysis */}
+                      {snaData.analysis && (
+                        <div>
+                          <p className="font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                            🤖 Analisis AI
+                          </p>
+                          <p className="whitespace-pre-wrap" style={{ color: 'var(--foreground-primary)' }}>
+                            {cleanDisplayText(snaData.analysis)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </DraggableDialogContent>
         </DraggableDialog>
