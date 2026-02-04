@@ -5396,21 +5396,60 @@ async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False,
         unique_niks = list(set(niks_to_clear))
         logger.info(f"[NONGEOINT] Clearing cache for {len(unique_niks)} NIKs")
         
+        # Collect all cache keys to delete
+        all_cache_keys = []
+        
         for nik in unique_niks:
-            # Delete all cache types for this NIK
-            cache_keys_to_delete = [
+            # Standard NIK-based cache keys
+            all_cache_keys.extend([
                 f"capil_nik:{nik}",
                 f"nkk:{nik}",
-                f"regnik:{nik}",
-                f"passport:{nik}",
-                f"perlintasan:{nik}"
-            ]
-            await db.simple_query_cache.delete_many({"cache_key": {"$in": cache_keys_to_delete}})
-            
-            # Also try with NKK variations if we have Family ID
-            if investigation and investigation.get("results", {}).get(nik, {}).get("nik_data", {}).get("data", {}).get("Family ID"):
-                family_id = investigation["results"][nik]["nik_data"]["data"]["Family ID"]
-                await db.simple_query_cache.delete_many({"cache_key": f"nkk:{family_id}"})
+                f"reghp:{nik}",  # RegNIK uses 'reghp' prefix
+            ])
+        
+        # Get names and family IDs from investigation results for additional cache keys
+        if investigation and investigation.get("results"):
+            for nik, result in investigation["results"].items():
+                # Get Family ID for NKK cache
+                family_id = None
+                if result.get("nik_data", {}).get("data", {}).get("Family ID"):
+                    family_id = result["nik_data"]["data"]["Family ID"]
+                elif result.get("nkk_data", {}).get("data", {}).get("Family ID"):
+                    family_id = result["nkk_data"]["data"]["Family ID"]
+                
+                if family_id:
+                    all_cache_keys.append(f"nkk:{family_id}")
+                
+                # Get name for passport cache (passport uses name, not NIK)
+                name = None
+                if result.get("nik_data", {}).get("data", {}).get("Full Name"):
+                    name = result["nik_data"]["data"]["Full Name"]
+                elif result.get("nik_data", {}).get("data", {}).get("Nama"):
+                    name = result["nik_data"]["data"]["Nama"]
+                
+                if name:
+                    all_cache_keys.append(f"passport_wni:{name.upper()}")
+                
+                # Get passport numbers for perlintasan cache
+                if result.get("passport_data", {}).get("results"):
+                    for passport_result in result["passport_data"]["results"]:
+                        passport_no = passport_result.get("passport_no")
+                        if passport_no:
+                            all_cache_keys.append(f"perlintasan:{passport_no}")
+        
+        # Also get name from search data
+        if search.get("name"):
+            all_cache_keys.append(f"passport_wni:{search['name'].upper()}")
+        
+        # Remove duplicates
+        all_cache_keys = list(set(all_cache_keys))
+        
+        logger.info(f"[NONGEOINT] Deleting {len(all_cache_keys)} cache keys: {all_cache_keys[:10]}...")
+        
+        # Delete all cache keys
+        if all_cache_keys:
+            delete_result = await db.simple_query_cache.delete_many({"cache_key": {"$in": all_cache_keys}})
+            logger.info(f"[NONGEOINT] Deleted {delete_result.deleted_count} cache entries")
         
         logger.info(f"[NONGEOINT] NIK cache cleared for search {search_id}")
     
