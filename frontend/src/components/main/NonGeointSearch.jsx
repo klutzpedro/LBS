@@ -4132,36 +4132,6 @@ export const NonGeointSearchDialog = ({
                         <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
                       </button>
                       
-                      {/* CALL DATA RECORDER */}
-                      <button
-                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
-                        style={{ 
-                          backgroundColor: 'transparent',
-                          borderBottom: '1px solid var(--borders-subtle)'
-                        }}
-                        onClick={() => {
-                          toast.info('Fitur CALL DATA RECORDER akan segera hadir');
-                          setShowAdvancedDropdown(false);
-                        }}
-                        data-testid="call-data-recorder-btn"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}
-                        >
-                          <Phone className="w-4 h-4" style={{ color: '#10b981' }} />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                            CALL DATA RECORDER
-                          </p>
-                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                            Analisis data panggilan
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
-                      </button>
-                      
                       {/* SOCIAL NETWORK ANALYTICS */}
                       <button
                         className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
