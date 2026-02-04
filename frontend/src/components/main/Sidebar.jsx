@@ -797,6 +797,15 @@ const CasesSection = ({
               <div className="flex-1">
                 <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
                   {currentCase.name}
+                  {/* Show owner for admin */}
+                  {isAdmin && currentCase.created_by && (
+                    <span 
+                      className="ml-1 text-xs font-normal"
+                      style={{ color: 'var(--accent-secondary)' }}
+                    >
+                      ({currentCase.created_by})
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                   {currentCase.target_count || 0} targets
