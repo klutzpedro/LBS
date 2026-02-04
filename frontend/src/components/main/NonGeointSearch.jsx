@@ -1845,11 +1845,32 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
-    // Get social media data from OSINT results
-    const osintData = osintResults[nik] || investigation?.osint_results?.[nik];
-    if (!osintData?.social_media || osintData.social_media.length === 0) {
-      toast.error('Jalankan FAKTA OSINT terlebih dahulu untuk mendapatkan data media sosial');
-      return;
+    // Get social media data from OSINT results - check multiple possible locations
+    let osintData = osintResults[nik] || investigation?.osint_results?.[nik];
+    let socialMediaUrls = [];
+    
+    // Extract social media URLs from various possible structures
+    if (osintData) {
+      // Direct social_media array
+      if (osintData.social_media && Array.isArray(osintData.social_media)) {
+        socialMediaUrls = osintData.social_media;
+      }
+      // Nested in results
+      else if (osintData.results?.social_media && Array.isArray(osintData.results.social_media)) {
+        socialMediaUrls = osintData.results.social_media;
+      }
+      // Check web_search results for social media links
+      else if (osintData.web_search?.social_results) {
+        socialMediaUrls = osintData.web_search.social_results;
+      }
+    }
+    
+    console.log('[SNA] OSINT data found:', osintData);
+    console.log('[SNA] Social media URLs:', socialMediaUrls);
+    
+    if (socialMediaUrls.length === 0) {
+      // Even if no social media, still allow SNA to run - it will try to find profiles
+      toast.warning('Tidak ditemukan URL media sosial dari OSINT. SNA akan mencoba mencari profil berdasarkan nama.');
     }
     
     setIsLoadingSna(prev => ({ ...prev, [nik]: true }));
@@ -1867,7 +1888,7 @@ export const NonGeointSearchDialog = ({
           search_id: searchResults.id,
           nik: nik,
           name: name,
-          social_media: osintData.social_media
+          social_media: socialMediaUrls
         })
       });
       
