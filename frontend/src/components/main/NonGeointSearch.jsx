@@ -3008,7 +3008,18 @@ export const NonGeointSearchDialog = ({
           // AI Analysis
           if (snaData.analysis) {
             addSubsectionHeader('Analisis AI');
-            const cleanedAnalysis = cleanPdfText(snaData.analysis);
+            // Use the same text cleaning as other sections
+            const cleanSnaText = (text) => {
+              if (!text || typeof text !== 'string') return text;
+              let cleaned = text.replace(/""/g, '"');
+              cleaned = cleaned.replace(/^"+|"+$/g, '');
+              cleaned = cleaned.replace(/\\"/g, '"');
+              cleaned = cleaned.replace(/^"/gm, '');
+              cleaned = cleaned.replace(/"$/gm, '');
+              cleaned = cleaned.replace(/ +/g, ' ');
+              return cleaned.trim();
+            };
+            const cleanedAnalysis = cleanSnaText(snaData.analysis);
             const analysisLines = pdf.splitTextToSize(cleanedAnalysis, contentWidth - 10);
             pdf.setFontSize(9);
             pdf.setTextColor(...colors.text);
