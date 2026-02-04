@@ -5394,25 +5394,55 @@ export const NonGeointSearchDialog = ({
                     <h3 className="font-semibold flex items-center gap-2" style={{ color: 'var(--foreground-secondary)' }}>
                       📊 Statistik Jaringan
                     </h3>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                        <p className="text-2xl font-bold" style={{ color: '#3b82f6' }}>
-                          {(snaDetailDialog.data.statistics.total_followers || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Followers</p>
-                      </div>
-                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                        <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
-                          {(snaDetailDialog.data.statistics.total_following || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Following</p>
-                      </div>
-                      <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
-                        <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
-                          {(snaDetailDialog.data.statistics.total_friends || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Total Connections</p>
-                      </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {snaDetailDialog.data.statistics.total_followers > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#3b82f6' }}>
+                            {snaDetailDialog.data.statistics.total_followers.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Followers</p>
+                        </div>
+                      )}
+                      {snaDetailDialog.data.statistics.total_following > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#10b981' }}>
+                            {snaDetailDialog.data.statistics.total_following.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Following</p>
+                        </div>
+                      )}
+                      {snaDetailDialog.data.statistics.total_likes > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#ef4444' }}>
+                            {snaDetailDialog.data.statistics.total_likes.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Likes</p>
+                        </div>
+                      )}
+                      {snaDetailDialog.data.statistics.total_posts > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#8b5cf6' }}>
+                            {snaDetailDialog.data.statistics.total_posts.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Posts</p>
+                        </div>
+                      )}
+                      {snaDetailDialog.data.statistics.total_friends > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
+                            {snaDetailDialog.data.statistics.total_friends.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Friends</p>
+                        </div>
+                      )}
+                      {snaDetailDialog.data.statistics.total_connections > 0 && (
+                        <div className="p-3 rounded-md text-center" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                          <p className="text-2xl font-bold" style={{ color: '#0077b5' }}>
+                            {snaDetailDialog.data.statistics.total_connections.toLocaleString()}
+                          </p>
+                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Connections</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
