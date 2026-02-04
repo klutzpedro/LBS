@@ -3395,6 +3395,29 @@ export const NonGeointSearchDialog = ({
                     </p>
                   )}
                 </div>
+              {/* Reset Button - shown when there's data */}
+              {(searchResults || investigation) && (
+                <Button
+                  onClick={() => {
+                    if (window.confirm('Reset semua data pencarian? Ini akan menghapus hasil pencarian dan pendalaman saat ini.')) {
+                      resetAllStates();
+                      toast.success('Data berhasil direset');
+                    }
+                  }}
+                  disabled={isSearching || isInvestigating}
+                  className="h-9 px-3"
+                  variant="outline"
+                  style={{
+                    borderColor: 'var(--status-error)',
+                    color: 'var(--status-error)',
+                    backgroundColor: 'transparent'
+                  }}
+                  title="Reset semua data"
+                  data-testid="reset-search-btn"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
               <Button
                 onClick={startSearch}
                 disabled={isSearching || isInvestigating || !searchName.trim() || !!nameValidationError}
