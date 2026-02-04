@@ -1306,7 +1306,5 @@ User melaporkan data tertukar di Face Recognition:
 - Admin Security Logs UI (backend endpoint `/api/admin/security-logs` exists)
 - NKK Parser fix verification with real data
 - Export to Excel/CSV functionality
-- Implement remaining PENDALAMAN LANJUTAN features:
-  - CALL DATA RECORDER (pending user requirements)
 - P0: Fix map popup interaction bug for overlapping markers
 
