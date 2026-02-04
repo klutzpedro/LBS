@@ -822,6 +822,14 @@ export const NonGeointSearchDialog = ({
     twitter: '',
     linkedin: ''
   });
+  
+  // State untuk dialog konfirmasi refresh OSINT/SNA
+  const [refreshConfirmDialog, setRefreshConfirmDialog] = useState({ 
+    open: false, 
+    type: null, // 'osint' atau 'sna'
+    nik: null, 
+    name: null 
+  });
   const snaPollingRef = useRef({});
   
   // FAKTA OSINT state
