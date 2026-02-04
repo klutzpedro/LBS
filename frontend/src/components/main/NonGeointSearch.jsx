@@ -35,7 +35,8 @@ import {
   Zap,
   Phone,
   Network,
-  ChevronRight
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
