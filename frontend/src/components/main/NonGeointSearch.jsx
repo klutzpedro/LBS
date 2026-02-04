@@ -845,6 +845,24 @@ export const NonGeointSearchDialog = ({
     }
   };
 
+  // Helper function to clean text from excessive quotes and formatting issues
+  const cleanDisplayText = (text) => {
+    if (!text || typeof text !== 'string') return text;
+    // Remove excessive double quotes
+    let cleaned = text.replace(/""/g, '"');
+    // Remove quotes at beginning and end
+    cleaned = cleaned.replace(/^"+|"+$/g, '');
+    // Remove escaped quotes
+    cleaned = cleaned.replace(/\\"/g, '"');
+    // Remove quotes at beginning of lines
+    cleaned = cleaned.replace(/^"/gm, '');
+    // Remove quotes at end of lines
+    cleaned = cleaned.replace(/"$/gm, '');
+    // Fix multiple spaces
+    cleaned = cleaned.replace(/ +/g, ' ');
+    return cleaned.trim();
+  };
+
   const confirmBackgroundProcess = () => {
     setShowBackgroundWarning(false);
     if (pendingAction === 'minimize') {
