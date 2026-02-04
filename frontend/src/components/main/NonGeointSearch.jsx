@@ -4046,7 +4046,19 @@ export const NonGeointSearchDialog = ({
                                         searchResults?.name || '';
                             
                             if (name) {
-                              startFaktaOsint(nik, name);
+                              const osintStatus = getOsintStatus(nik);
+                              if (osintStatus === 'completed') {
+                                // Data sudah ada, tampilkan dialog konfirmasi
+                                setRefreshConfirmDialog({
+                                  open: true,
+                                  type: 'osint',
+                                  nik: nik,
+                                  name: name
+                                });
+                              } else {
+                                // Data belum ada, langsung jalankan
+                                startFaktaOsint(nik, name);
+                              }
                               setShowAdvancedDropdown(false);
                             } else {
                               toast.error('Nama target tidak ditemukan');
@@ -4079,7 +4091,7 @@ export const NonGeointSearchDialog = ({
                           </p>
                           <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
                             {isLoadingOsint[selectedNiks[0]] ? 'Sedang mencari...' : 
-                             getOsintStatus(selectedNiks[0]) === 'completed' ? 'Lihat hasil OSINT' :
+                             getOsintStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
                              'Pencarian informasi terbuka'}
                           </p>
                         </div>
