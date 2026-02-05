@@ -5346,11 +5346,13 @@ async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str],
                     "photos_fetched_count": len(existing_photos),
                     "status": "completed" if all_completed else "waiting_selection",
                     "all_batches_completed": all_completed,
-                    "current_batch": batch_num + 1
+                    "current_batch": batch_num + 1,
+                    "has_more_batches": not all_completed
                 }}
             )
             
             logger.info(f"[NONGEOINT {search_id}] Batch {batch_num + 1} completed. Total photos: {len(existing_photos)}/{len(all_niks)}")
+            clear_batch_status()
             
         except Exception as e:
             logger.error(f"[NONGEOINT {search_id}] Batch photo fetch error: {e}")
@@ -5358,6 +5360,7 @@ async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str],
                 {"id": search_id},
                 {"$set": {"status": "waiting_selection", "error": str(e)}}
             )
+            clear_batch_status()
 
 @api_router.post("/nongeoint/clear-cache")
 async def clear_nongeoint_cache(username: str = Depends(verify_token)):
