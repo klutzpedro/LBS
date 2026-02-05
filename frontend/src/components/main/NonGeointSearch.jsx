@@ -3236,12 +3236,31 @@ export const NonGeointSearchDialog = ({
     const data = nikData?.[queryType];
     if (!data) return 'pending';
     
-    // If status exists, use it
-    if (data.status) return data.status;
+    // If status exists, use it - backend may return 'success' or 'completed'
+    if (data.status) {
+      // Map 'success' to 'completed' for consistent display
+      if (data.status === 'success') return 'completed';
+      return data.status;
+    }
     
     // If data or raw_text exists but no status, consider it completed
     if (data.data || data.raw_text || data.photo || data.phones || data.passports || data.results) {
       return 'completed';
+    }
+    
+    // Special case for regnik_data - check if phones array exists (even if empty, data was fetched)
+    if (queryType === 'regnik_data' && Array.isArray(data.phones)) {
+      return 'completed';
+    }
+    
+    // Special case for passport_data - various result structures
+    if (queryType === 'passport_data' && (data.wni_data || data.passport_info || data.search_results)) {
+      return 'completed';
+    }
+    
+    // Special case for perlintasan_data
+    if (queryType === 'perlintasan_data' && (Array.isArray(data.results) || data.status === 'no_passport')) {
+      return data.status || 'completed';
     }
     
     return 'pending';
