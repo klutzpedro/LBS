@@ -10384,6 +10384,360 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             }
     
     # ============================================
+    # EMAIL BREACH CHECK - HAVE I BEEN PWNED (HIBP)
+    # ============================================
+    if query_type == 'email_breach':
+        logger.info(f"[SIMPLE QUERY] Email Breach Check (HIBP) for: {query_value}")
+        
+        try:
+            import re
+            email = query_value.lower().strip()
+            
+            # Basic email validation
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, email):
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "Format email tidak valid",
+                    "source": "HIBP"
+                }
+            
+            # HIBP API - Free tier without API key (limited)
+            # Using public endpoint which has rate limits
+            hibp_url = f"https://haveibeenpwned.com/api/v3/breachedaccount/{email}"
+            
+            headers = {
+                "User-Agent": "NETRA-OSINT-App/1.0",
+                "Accept": "application/json"
+            }
+            
+            # Check if HIBP API key exists
+            hibp_api_key = os.getenv("HIBP_API_KEY")
+            if hibp_api_key:
+                headers["hibp-api-key"] = hibp_api_key
+            
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.get(hibp_url, headers=headers)
+                
+                if response.status_code == 200:
+                    breaches = response.json()
+                    
+                    # Format response
+                    lines = [
+                        "=== EMAIL BREACH CHECK ===",
+                        f"Email: {email}",
+                        f"Status: ⚠️ COMPROMISED",
+                        f"Total Breaches: {len(breaches)}",
+                        "=" * 35,
+                        ""
+                    ]
+                    
+                    for i, breach in enumerate(breaches, 1):
+                        lines.append(f"--- Breach #{i}: {breach.get('Name', 'Unknown')} ---")
+                        lines.append(f"Domain: {breach.get('Domain', '-')}")
+                        lines.append(f"Breach Date: {breach.get('BreachDate', '-')}")
+                        lines.append(f"Compromised Data: {', '.join(breach.get('DataClasses', []))}")
+                        lines.append(f"Affected Accounts: {breach.get('PwnCount', 0):,}")
+                        lines.append(f"Verified: {'✓' if breach.get('IsVerified') else '✗'}")
+                        lines.append("")
+                    
+                    raw_response = "\n".join(lines)
+                    
+                    # Save to cache
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "breach_count": len(breaches),
+                        "breaches": breaches,
+                        "queried_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    
+                    clear_request_status()
+                    return {
+                        "success": True,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "breach_count": len(breaches),
+                        "verified": True,
+                        "cached": False,
+                        "source": "HIBP"
+                    }
+                
+                elif response.status_code == 404:
+                    # No breaches found - this is good!
+                    raw_response = f"""=== EMAIL BREACH CHECK ===
+Email: {email}
+Status: ✅ AMAN (Tidak ada breach ditemukan)
+=================================
+
+Email ini tidak ditemukan dalam database breach yang diketahui.
+Catatan: Tidak ada dalam database bukan berarti 100% aman."""
+                    
+                    # Save to cache
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "breach_count": 0,
+                        "breaches": [],
+                        "queried_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    
+                    clear_request_status()
+                    return {
+                        "success": True,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "breach_count": 0,
+                        "verified": True,
+                        "cached": False,
+                        "source": "HIBP"
+                    }
+                
+                elif response.status_code == 401:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": "HIBP API Key tidak valid atau tidak ada. Fitur ini memerlukan API key berbayar dari haveibeenpwned.com",
+                        "source": "HIBP"
+                    }
+                
+                elif response.status_code == 429:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": "Rate limit tercapai. Coba lagi dalam beberapa menit.",
+                        "source": "HIBP"
+                    }
+                
+                else:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": f"HIBP Error: {response.status_code}",
+                        "source": "HIBP"
+                    }
+                    
+        except Exception as e:
+            logger.error(f"[EMAIL BREACH] Exception: {e}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "HIBP"
+            }
+    
+    # ============================================
+    # IP GEOLOCATION LOOKUP - IPINFO.IO
+    # ============================================
+    if query_type == 'ip_lookup':
+        logger.info(f"[SIMPLE QUERY] IP Geolocation Lookup for: {query_value}")
+        
+        try:
+            import ipaddress
+            ip = query_value.strip()
+            
+            # Validate IP address
+            try:
+                ipaddress.ip_address(ip)
+            except ValueError:
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "Format IP Address tidak valid. Gunakan format IPv4 (contoh: 8.8.8.8) atau IPv6.",
+                    "source": "IPINFO"
+                }
+            
+            # Check if private/reserved IP
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_reserved or ip_obj.is_loopback:
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "IP Address private/reserved tidak bisa di-lookup. Gunakan IP publik.",
+                    "source": "IPINFO"
+                }
+            
+            # IPinfo.io API - Free tier (50k requests/month)
+            ipinfo_token = os.getenv("IPINFO_TOKEN")
+            if ipinfo_token:
+                ipinfo_url = f"https://ipinfo.io/{ip}?token={ipinfo_token}"
+            else:
+                ipinfo_url = f"https://ipinfo.io/{ip}/json"
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(ipinfo_url)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Parse location
+                    loc = data.get("loc", "")
+                    lat, lon = "", ""
+                    if loc and "," in loc:
+                        lat, lon = loc.split(",")
+                    
+                    # Format response
+                    lines = [
+                        "=== IP GEOLOCATION LOOKUP ===",
+                        f"IP Address: {data.get('ip', ip)}",
+                        "=" * 35,
+                        "",
+                        "📍 LOKASI:",
+                        f"   Kota: {data.get('city', '-')}",
+                        f"   Provinsi/State: {data.get('region', '-')}",
+                        f"   Negara: {data.get('country', '-')}",
+                        f"   Kode Pos: {data.get('postal', '-')}",
+                        f"   Timezone: {data.get('timezone', '-')}",
+                        f"   Koordinat: {lat}, {lon}",
+                        "",
+                        "🌐 NETWORK:",
+                        f"   Hostname: {data.get('hostname', '-')}",
+                        f"   Organisasi: {data.get('org', '-')}",
+                    ]
+                    
+                    # Add ASN info if available
+                    if data.get('asn'):
+                        asn = data['asn']
+                        lines.extend([
+                            "",
+                            "📡 ASN INFO:",
+                            f"   ASN: {asn.get('asn', '-')}",
+                            f"   Nama: {asn.get('name', '-')}",
+                            f"   Domain: {asn.get('domain', '-')}",
+                            f"   Route: {asn.get('route', '-')}",
+                            f"   Type: {asn.get('type', '-')}",
+                        ])
+                    
+                    # Add company info if available
+                    if data.get('company'):
+                        company = data['company']
+                        lines.extend([
+                            "",
+                            "🏢 COMPANY:",
+                            f"   Nama: {company.get('name', '-')}",
+                            f"   Domain: {company.get('domain', '-')}",
+                            f"   Type: {company.get('type', '-')}",
+                        ])
+                    
+                    # Add privacy info if available
+                    if data.get('privacy'):
+                        privacy = data['privacy']
+                        lines.extend([
+                            "",
+                            "🔒 PRIVACY FLAGS:",
+                            f"   VPN: {'✓' if privacy.get('vpn') else '✗'}",
+                            f"   Proxy: {'✓' if privacy.get('proxy') else '✗'}",
+                            f"   Tor: {'✓' if privacy.get('tor') else '✗'}",
+                            f"   Relay: {'✓' if privacy.get('relay') else '✗'}",
+                            f"   Hosting: {'✓' if privacy.get('hosting') else '✗'}",
+                        ])
+                    
+                    # Add carrier info for mobile IPs
+                    if data.get('carrier'):
+                        carrier = data['carrier']
+                        lines.extend([
+                            "",
+                            "📱 MOBILE CARRIER:",
+                            f"   Nama: {carrier.get('name', '-')}",
+                            f"   MCC: {carrier.get('mcc', '-')}",
+                            f"   MNC: {carrier.get('mnc', '-')}",
+                        ])
+                    
+                    raw_response = "\n".join(lines)
+                    
+                    # Save to cache
+                    cache_doc = {
+                        "cache_key": cache_key,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "ip_data": data,
+                        "queried_by": username,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.simple_query_cache.update_one(
+                        {"cache_key": cache_key},
+                        {"$set": cache_doc},
+                        upsert=True
+                    )
+                    
+                    clear_request_status()
+                    return {
+                        "success": True,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "raw_response": raw_response,
+                        "ip_data": data,
+                        "verified": True,
+                        "cached": False,
+                        "source": "IPINFO"
+                    }
+                
+                elif response.status_code == 429:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": "Rate limit tercapai. Coba lagi dalam beberapa menit.",
+                        "source": "IPINFO"
+                    }
+                
+                else:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": f"IPinfo Error: {response.status_code}",
+                        "source": "IPINFO"
+                    }
+                    
+        except Exception as e:
+            logger.error(f"[IP LOOKUP] Exception: {e}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error: {str(e)}",
+                "source": "IPINFO"
+            }
+    
+    # ============================================
     # OSINT SOCIAL MEDIA SEARCH - MEDSOS-1 (MAIGRET)
     # ============================================
     if query_type == 'medsos_maigret':
