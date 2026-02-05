@@ -5245,7 +5245,11 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
 
 async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str], batch_num: int):
     """Background task to fetch a batch of photos"""
-    global telegram_client
+    global telegram_client, request_status
+    
+    def clear_batch_status():
+        global request_status
+        request_status = {"is_busy": False, "operation": None, "username": None}
     
     nik_photos = {}
     
@@ -5263,6 +5267,7 @@ async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str],
                     {"id": search_id},
                     {"$set": {"status": "waiting_selection", "error": "Telegram connection failed for batch"}}
                 )
+                clear_batch_status()
                 return
             
             for idx, nik in enumerate(niks_to_fetch):
