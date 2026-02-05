@@ -1040,6 +1040,8 @@ export const NonGeointSearchDialog = ({
 
   // Polling for batch photo fetch completion
   const startBatchPolling = (searchId) => {
+    console.log('[NonGeoint] Starting batch polling for search:', searchId);
+    
     const pollInterval = setInterval(async () => {
       try {
         const token = localStorage.getItem('token');
@@ -1054,18 +1056,32 @@ export const NonGeointSearchDialog = ({
             nik_photos_count: Object.keys(data.nik_photos || {}).length,
             photos_fetched_count: data.photos_fetched_count,
             has_more_batches: data.has_more_batches,
+            current_batch: data.current_batch,
             total_niks: data.total_niks
           });
+          
+          // Update progress while fetching
+          if (data.photo_fetch_progress && data.photo_fetch_total) {
+            setPhotosFetched(Object.keys(data.nik_photos || {}).length);
+          }
           
           if (data.status !== 'fetching_photos') {
             clearInterval(pollInterval);
             setIsLoadingMorePhotos(false);
-            setSearchResults(data);
+            
+            // Update search results with merged data
+            setSearchResults(prev => ({
+              ...prev,
+              ...data,
+              nik_photos: data.nik_photos || prev?.nik_photos || {}
+            }));
+            
             setHasMoreBatches(data.has_more_batches || false);
             setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
             setCurrentBatch(data.current_batch || 0);
+            setTotalNiks(data.total_niks || 0);
             
-            // Refresh persons list with new photos
+            // Refresh persons list with ALL photos (including new batch)
             if (data.nik_photos) {
               const nikPhotosCount = Object.keys(data.nik_photos).length;
               console.log(`[NonGeoint] Updating personsFound with ${nikPhotosCount} photos from nik_photos`);
@@ -1085,9 +1101,13 @@ export const NonGeointSearchDialog = ({
                 }))
                 .sort((a, b) => b.similarity - a.similarity);
               
-              console.log(`[NonGeoint] Setting personsFound to ${persons.length} persons`);
+              console.log(`[NonGeoint] Setting personsFound to ${persons.length} persons (batch ${data.current_batch})`);
               setPersonsFound(persons);
-              toast.success(`Batch selesai! Menampilkan ${persons.length} dari ${data.total_niks} target`);
+              
+              const batchInfo = data.has_more_batches 
+                ? `Batch ${data.current_batch} selesai! Menampilkan ${persons.length} dari ${data.total_niks} target. Masih ada ${data.total_niks - persons.length} target lagi.`
+                : `Semua batch selesai! Menampilkan ${persons.length} target.`;
+              toast.success(batchInfo);
             }
           } else {
             console.log('[NonGeoint] Still fetching photos, continuing to poll...');
@@ -1097,6 +1117,9 @@ export const NonGeointSearchDialog = ({
         console.error('Batch polling error:', error);
       }
     }, 3000);
+    
+    // Store interval ref so we can clear it on unmount
+    pollingRef.current = pollInterval;
     
     // Clear after 5 minutes max
     setTimeout(() => {
