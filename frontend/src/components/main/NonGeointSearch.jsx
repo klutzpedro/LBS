@@ -1026,6 +1026,10 @@ export const NonGeointSearchDialog = ({
           toast.success('Semua foto sudah diambil');
           setHasMoreBatches(false);
           setIsLoadingMorePhotos(false);
+        } else if (data.status === 'busy') {
+          // System is busy with another request
+          toast.warning(data.message || 'Sistem sedang sibuk, coba lagi nanti');
+          setIsLoadingMorePhotos(false);
         }
       } else {
         toast.error('Gagal mengambil foto berikutnya');
