@@ -1,219 +1,204 @@
-<analysis>**original_problem_statement:**
-The user is enhancing a Geospatial Information System (GIS) web application named NETRA with a strong focus on advanced Open-Source Intelligence (OSINT) features and user experience improvements.
+<analysis>An analysis of the conversation history has been completed to produce a summary for the next agent.
 
-PRODUCT REQUIREMENTS (session additions in **bold**):
-1.  **Bug Fixes & UX:**
-    *   Fix an issue where selecting a target from a list does not open the correct info popup on the map.
-    *   **Fix an issue where the map and target position data do not auto-refresh after a query completes.**
-    *   **Fix an incorrect status (completed instead of waiting_selection or no data) in the Full Query history.**
-    *   **Implement a global query lock to prevent multiple users from running queries simultaneously, with a clear IDLE/BUSY status indicator.**
-    *   **Add a scrollbar to the Kelola User (User Management) dialog to handle long user lists.**
-    *   **Remove non-functional Gunakan (Use) buttons from the Simple Query history.**
-2.  **Feature Enhancements:**
-    *   **Implement a FAKTA OSINT feature within PENDALAMAN LANJUTAN.** This feature should:
-        *   Analyze internal data (NIK, NKK, Passport, etc.) and external data (web search, social media).
-        *   Search for data on family members (from NKK) in the application's cache.
-        *   Use an AI model (via ) to generate a comprehensive Anteseden Intelijen report covering identity, activities, network, assets, and risk assessment.
-        *   Display a special icon upon completion.
-        *   Add the results to the PDF report and the View Details dialog.
-        *   **Cache the results permanently so they are available in the history.**
-    *   **Implement a SOCIAL NETWORK ANALYTICS (SNA) feature.** This feature should:
-        *   Grab social media profile links from the FAKTA OSINT results.
-        *   Scrape public data like follower/friend counts.
-        *   Generate a Social Network Analysis graph visualization.
-        *   Use AI to summarize the target's network, identifying key connections and affiliations.
+**original_problem_statement:**
+The user has been providing a series of feature requests and bug reports for an intelligence application called NETRA. The requests cover a wide range of functionalities, including:
+-   **Social Network Analytics (SNA):** Implement the full feature, fix bugs related to OSINT dependency, and enhance it to show results in reports, accept manual social media links, and display more detailed statistics.
+-   **UI/UX and Reporting:** Improve table formatting in PDF reports, remove extra characters from OSINT results, and add a confirmation dialog before re-running analyses (OSINT/SNA).
+-   **Full Query Feature:** Add user and timestamp to history, implement a Reset button, and fix multiple critical bugs related to caching where resetting a search did not fully clear backend data, leading to incomplete or incorrect subsequent searches. Fix issues with processing multiple passports and loading subsequent batches of photos.
+-   **Case Management:** Display the owner of a case next to the case name for admin users.
+-   **Feature Removal:** Remove the Call Data Recorder feature.
+-   **New Feature Integration:** Add new profiling capabilities to the Simple Query tool, specifically Have I Been Pwned (for email breaches) and IPinfo.io (for IP geolocation).
+-   **Configuration:** Add a user-provided API key for the Have I Been Pwned service into the application's configuration.
+
+The user's most recent messages are:
+1.  A bug report about the load more photos feature in Full Query, stating that it doesn't lock the UI and fails to display the newly loaded photos.
+2.  A question asking if an ADINT (Acoustic Intelligence) API exists.
 
 **User's preferred language**: Bahasa Indonesia
 
 **what currently exists?**
-The application is a full-stack React/FastAPI/MongoDB GIS platform. This session saw a massive expansion of the OSINT capabilities with the implementation of the FAKTA OSINT feature. This feature aggregates internal data (NIK, NKK, Perlintasan) with external web search results, performs cached lookups for family members, and uses an AI model to generate a detailed intelligence antecedent report.
+The project is a web application named NETRA, built with a Python (FastAPI) backend and a React (TypeScript) frontend. It serves as an intelligence analysis platform.
 
-Numerous critical bug fixes and UX improvements were also completed:
--   **Query Auto-Refresh:** A bug preventing the map from automatically updating after a position query was fixed.
--   **OSINT Caching:** The FAKTA OSINT results are now correctly saved to the  collection and are accessible from the history.
--   **History Status Logic:** The status badge in the Full Query history now correctly displays waiting_selection, no data, or completed based on the search outcome and whether an investigation has started.
--   **Global Query Lock:** A system-wide lock prevents concurrent queries. The UI now clearly shows an IDLE (green) or BUSY (red, pulsing) status.
--   **UI Fixes:** Unused buttons in Simple Query were removed, and a scrollbar was added to the User Management dialog.
--   The  was successfully added to the environment to enable the AI summary generation.
+Key features include:
+-   **User & Case Management:** Users can log in, and admin users can see all cases and their owners.
+-   **Simple Query:** A tool for quick lookups like NIK, KK, Vehicle Registration, IP Geolocation, and Email Breach checks (using HaveIBeenPwned).
+-   **Full Query:** A more in-depth investigation tool that allows users to search for a person by name, select a target from the results (including photos), and initiate deeper analysis.
+-   **Investigation Workflow:** The Full Query process automatically triggers several data collection steps (NIK, KK, RegHP, Passport, Perlintasan) via a simulated Telegram bot. The UI shows the progress with green checkmarks.
+-   **OSINT & SNA:** Post-investigation, users can run Open-Source Intelligence (OSINT) and Social Network Analytics (SNA) on the target.
+-   **Reporting:** The system can generate and download investigation reports in PDF format, including results from the investigation, OSINT, and SNA.
+-   **Caching:** The backend uses Redis and a PostgreSQL database () to cache results of expensive queries to speed up subsequent searches for the same target. A reset mechanism exists to clear this cache.
 
 **Last working item**:
--   Last item agent was working: The agent began implementing the SOCIAL NETWORK ANALYTICS (SNA) feature, as requested by the user. The initial backend endpoint () and frontend plumbing (state management, button handler, function stubs) were created.
--   Status: IN PROGRESS
+-   Last item agent was working: The agent was fixing two issues with the load more photos functionality in the Full Query dialog:
+    1.  The UI was not being locked (showing a BUSY state) while fetching the next batch of photos, creating a potential for race conditions.
+    2.  After a new batch of photos was fetched from the backend, the frontend UI was not updating to display them; it continued to show only the initial batch.
+-   Status: USER VERIFICATION PENDING
 -   Agent Testing Done: N
--   Which testing method agent to use? both
+-   Which testing method agent to use? frontend testing agent
 -   User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Map popup interaction is broken (P0)
--   Issue 2: User-side deployment issue for Passport (NIK) query (P1)
--   Issue 3: OSINT features (Medsos-1, Medsos-2) not working on user's VPS (P1)
--   Issue 4: Recurring user login lockout on VPS (P2)
+-   Issue 1: The fix for the load more photos functionality in the Full Query dialog has been implemented but has not been verified by the user. (Priority: P1)
+-   Issue 2: The user previously reported that the HaveIBeenPwned feature was not working due to a missing API key. The agent added the key to the  file and confirmed it works on the backend. The agent suspects the user's VPS environment was not correctly updated with the new  file. (Priority: P2)
+-   Issue 3: Throughout the session, the agent noted numerous pre-existing linting errors and warnings in . These have not been addressed. (Priority: P3)
 
-**Issues Detail:**
--   **Issue 1: Map popup interaction is broken (P0)**
-    -   **Description:** A critical regression bug where clicking a target on the map causes other overlapping markers to become unclickable and the popup itself to behave erratically. This was not addressed in this session.
-    -   **Attempted fixes:** (From previous fork) Complex  and  hooks in .
-    -   **Next debug checklist:**
-        1.  Simplify the state management in .
-        2.  Consider an event-driven approach to open popups directly on marker refs instead of relying on .
-        3.  Investigate Leaflet's event propagation.
-    -   **Why fix this issue and what will be achieved with the fix?** This is a core functionality degradation that makes map interaction frustrating and unusable for targets in close proximity.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Frontend
-    -   **Blocked on other issue:** None
+Issues Detail:
+-   **Issue 1: Load more photos functionality bug**
+    -   Attempted fixes: The agent implemented fixes in both the backend and frontend.
+        -   **Backend ():** Modified the  endpoint to set a global request status to BUSY before starting the background task and clear it upon completion to prevent race conditions.
+        -   **Frontend ():**
+            -   Updated the  handler to disable the button and show a busy message if the backend reports it's already processing a request.
+            -   Modified the polling logic to correctly merge the new batch of photos with the existing ones in the  state, ensuring the UI refreshes to show all photos.
+    -   Next debug checklist: Ask the user to test the load more photos button again on a target with more than 10 photos. If it still fails, check the browser's network tab to see the response from  and inspect the React component's state to see if  is being updated correctly.
+    -   Why fix this issue and what will be achieved with the fix? This is a core part of the Full Query feature. Fixing it will allow users to browse through all available photos for a target, not just the first 10. It also improves system stability by preventing multiple simultaneous requests.
+    -   Status: USER VERIFICATION PENDING
+    -   Is recurring issue? N
+    -   Should Test frontend/backend/both after fix? Frontend
+    -   Blocked on other issue: None
 
--   **Issue 2: User-side deployment issue for Passport (NIK) query (P1)**
-    -   **Description:** User reported a  error on their production VPS, likely due to stale code. Not addressed this session.
-    -   **Next debug checklist:** Guide the user to , restart services, and check  on their VPS.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Manual testing by user on VPS.
-    -   **Blocked on other issue:** None
+-   **Issue 2: HaveIBeenPwned API key not working on user's VPS**
+    -   Attempted fixes: The agent added the user-provided API key to  and . The agent successfully tested the endpoint via , confirming that the backend can now query the HIBP API.
+    -   Next debug checklist: Instruct the user to ensure their VPS deployment is using the latest  file containing the . Ask them to redeploy/restart the backend service.
+    -   Why fix this issue and what will be achieved with the fix? The Email Breach Check feature in Simple Query is unusable without a valid, loaded API key.
+    -   Status: USER VERIFICATION PENDING
+    -   Is recurring issue? Y
+    -   Should Test frontend/backend/both after fix? Backend
+    -   Blocked on other issue: None
 
--   **Issue 3: OSINT features (Medsos-1, Medsos-2) not working on user's VPS (P1)**
-    -   **Description:** User reported that social media search features return no results on their VPS.
-    -   **Attempted fixes:** Agent diagnosed it as missing dependencies in the user's venv and provided the correct  command.
-    -   **Next debug checklist:** Confirm with the user that they have run the install command and restarted the backend.
-    -   **Status:** USER VERIFICATION PENDING
-    -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Manual testing by user on VPS.
-    -   **Blocked on other issue:** None
-
--   **Issue 4: Recurring user login lockout on VPS (P2)**
-    -   **Description:** User gets locked out due to an active session error. Not addressed this session.
-    -   **Next debug checklist:** Review login logic in  to ensure  correctly clears old sessions.
-    -   **Status:** NOT STARTED
-    -   **Is recurring issue?** Y
-    -   **Should Test frontend/backend/both after fix?** Backend
-    -   **Blocked on other issue:** None
+-   **Issue 3: Pre-existing frontend lint errors**
+    -   Attempted fixes: None. The agent has repeatedly acknowledged these errors but has not fixed them, stating they are pre-existing.
+    -   Next debug checklist: Run  or yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. in the  directory. Address the reported issues, which are likely related to dependency arrays in  hooks ().
+    -   Why fix this issue and what will be achieved with this? Fixing lint errors improves code quality, reduces the risk of subtle bugs (like stale closures or infinite loops in ), and makes the codebase easier to maintain.
+    -   Status: NOT STARTED
+    -   Is recurring issue? Y
+    -   Should Test frontend/backend/both after fix? Frontend
+    -   Blocked on other issue: None
 
 **In progress Task List**:
--   **Task 1: Implement SOCIAL NETWORK ANALYTICS functionality (P0)**
-    -   **Where to resume:** The backend endpoint () and frontend function stubs (, ) are in place in  and . The next steps are:
-        1.  **Backend:** Implement the logic in  to scrape public data from social media URLs, generate graph data, and use the AI for analysis.
-        2.  **Frontend:** Create a new dialog to display the SNA graph (using a library like Recharts or D3) and the AI-generated summary.
-    -   **What will be achieved with this?** This will complete the PENDALAMAN LANJUTAN feature set, providing advanced social network insights.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on something:** None
+There are no tasks currently in progress.
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   (P1) Implement CALL DATA RECORDER functionality, the last remaining placeholder.
-    *   (P1) Create a frontend UI for viewing Admin Security Logs ( endpoint exists).
-    *   (P2) Implement social media search by Full Name.
-    *   (P2) User Verification: The fix for parsing NKK data with multiple family members requires verification with real data from the user.
-*   **Future Tasks:**
-    *   (P1) **Refactor the monolithic **. This is a high-priority task for long-term stability and maintainability.
-    *   (P2) Add Export to Excel/CSV functionality for query results.
-    *   (P2) Implement a Re-fetch foto feature for old Full Query results.
+-   **Upcoming Tasks:**
+    -   **(P0) Answer user's question:** The user's last message was Ada gk ya api adint (Is there an ADINT API?). The next agent must address this question first.
+    -   **(P1) Implement Phone Carrier Lookup:** The user approved adding a phone number lookup API (like NumLookupAPI or AbstractAPI) to the Simple Query feature. This was part of the agent's recommendation list but has not been implemented yet.
+
+-   **Future Tasks:**
+    -   **(P2) Fix pre-existing lint errors:** Address the tech debt of linting errors in .
 
 **Completed work in this session**
--   **FAKTA OSINT Feature:** Fully implemented a comprehensive OSINT analysis feature including AI-powered antecedent generation, internal data integration, family cache lookup, and permanent storage of results.
--   **Query Auto-Refresh Fix:** Corrected a bug where the map and target list did not update automatically after a position query.
--   **History Status Fix:** Implemented correct status logic (waiting selection, no data, completed) in the Full Query history view.
--   **Global Query Lock:** Built a system-wide lock to prevent concurrent queries, with a clear UI status indicator.
--   **UI/UX Improvements:** Added a scrollbar to the User Management dialog and removed unused buttons from the Simple Query history dialog.
--   **AI Key Setup:** Successfully configured the  in the environment to enable AI features.
+-   **SNA Feature:** Implemented the full Social Network Analytics flow, including frontend handlers, dialogs, and integration into the final PDF report.
+-   **SNA Enhancements:** Added functionality to input social media links manually and display platform-specific stats (e.g., likes, comments).
+-   **Reset/Cache Bugs:** Fixed a series of critical bugs where the Reset button in Full Query failed to clear all relevant backend caches (, , and caches for RegHP, Passport, Perlintasan), causing subsequent searches to use stale data and fail.
+-   **UI/UX Improvements:**
+    -   Added the case owner's name next to the case title for admin users.
+    -   Added the querying user and timestamp to the Full Query history.
+    -   Added a confirmation dialog to prevent accidental re-runs of OSINT and SNA.
+    -   Improved table formatting in generated PDF reports.
+    -   Cleaned displayed OSINT text to remove excessive quotation marks.
+-   **Feature Removal:** Successfully removed the Call Data Recorder feature from the UI.
+-   **New Simple Queries:** Integrated Have I Been Pwned (for email breaches) and IPinfo.io (for IP geolocation) into the Simple Query tool.
+-   **Configuration:** Added the HIBP API key to the  configuration file.
+-   **Bug Fix (Full Query):**
+    -   Fixed an issue where the target's photo would not appear during the selection step.
+    -   Fixed a bug where only the first of multiple passports was being processed for perlintasan (border crossing) checks.
 
 **Earlier issues found/mentioned but not fixed**
--   The critical P0 map popup interaction bug remains the most significant unresolved issue from previous forks.
+-   **Issue 1: Pre-existing frontend lint errors**
+    -   Debug checklist: Run  in the  folder and fix the reported  warnings in .
+    -   Why to solve this issue and what will be achieved with this? To improve code quality and prevent potential bugs related to React hooks.
+    -   Should Test frontend/backend/both after fix: Frontend
+    -   Is recurring issue? Y
 
 **Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork:** Map popup interaction is broken.
--   **Recurrence count:** 3+
--   **Status:** NOT STARTED
-
--   **Issue recurrence in previous fork:** NKK Table only shows one family member.
--   **Recurrence count:** 2
--   **Status:** USER VERIFICATION PENDING
-
--   **Issue recurrence in previous fork:** User login lockout on VPS.
--   **Recurrence count:** 2
--   **Status:** NOT STARTED
+-   Issue recurrence in previous fork: None mentioned in the history.
+-   Recurrence count: 0
+-   Status: N/A
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Comprehensive AI Prompts:** The AI prompt for FAKTA OSINT was significantly enhanced to request a structured Anteseden Intelijen report, synthesizing internal data, external search results, and family cache findings.
--   **Cross-Collection Data Aggregation & Caching:** The FAKTA OSINT feature now fetches data from  and , searches for related family NIKs in the cache, and stores the final compiled report back into the  document for persistence.
--   **Global System Locking:** A backend  combined with a frontend polling endpoint () is used to manage system-wide resource contention and provide real-time UI feedback.
--   **Optimistic UI & State Refinement:** The position query auto-refresh was fixed by directly updating the  state with new data from polling, rather than re-fetching the entire list, providing a smoother user experience.
+-   **Backend:** Python with FastAPI framework.
+-   **Frontend:** React with TypeScript.
+-   **Database:** PostgreSQL for persistent storage (cases, users, investigations).
+-   **Caching:** Redis is used for a queue lock () and caching intermediate query results ().
+-   **Asynchronous Tasks:** Background tasks () are used for long-running operations like fetching data from the Telegram bot to avoid blocking the API.
+-   **External Integration:** The system interacts with an external (mocked) Telegram bot for core data lookups and external APIs like HaveIBeenPwned and IPinfo.io.
 
 **key DB schema**
--   : The schema was effectively updated to include an  object, which now stores the complete, persistent FAKTA OSINT report.
--   : The schema now implicitly includes  when an investigation is linked, and the  field's meaning has been refined.
--   : Used as a transient collection to track the state of an in-progress OSINT job.
+-   **nongeoint_searches:** Caches the initial results of a Full Query search by name.
+-   **nik_investigations:** Stores the detailed results of a full investigation tied to a NIK.
+-   **cases:** Stores user-created cases, which can contain multiple targets/investigations. Includes a  field.
+-   **simple_query_cache:** A key-value store (likely in PostgreSQL or Redis) for caching results from Simple Query and various sub-steps of the Full Query (e.g., , ).
+
+**changes in tech stack**
+-   No fundamental changes to the tech stack were made.
 
 **All files of reference**
--   
--   
--   
--   
--   
--   
+-   : Updated extensively to add new endpoints, fix caching logic, integrate new APIs (HIBP, IPinfo), and fix bugs related to the investigation workflow.
+-   : Updated extensively to add new UI components (dialogs for SNA, confirmation), modify component logic (reset button, history display, case owner), fix UI bugs, and integrate new features.
+-   : Updated to include the .
+-   : Updated to reflect the new  for future setups.
+-   : Updated to reflect completed tasks and feature removals.
+-   : Updated to add  to the  model for more explicit data handling.
 
 **Areas that need refactoring**:
--   **:** The file has grown even larger and more complex. Refactoring it into a modular structure (e.g., , , ) is critically needed to ensure future maintainability.
--   **:** This component now manages state for search, investigation, OSINT, and SNA. It is a candidate for being broken down into smaller, more focused components.
--   **:** The component's logic is flawed and needs a complete rewrite to fix the P0 popup bug.
+-    is a monolithic component containing a vast amount of state and logic (over 2500 lines). It should be broken down into smaller, more manageable components (e.g., , , , ). This would improve maintainability and reduce complexity.
 
 **key api endpoints**
--   ****: (NEW) Starts a FAKTA OSINT analysis job.
--   ****: (NEW) Polls the status and result of an OSINT job.
--   ****: (NEW) Starts a Social Network Analysis job.
--   ****: (NEW) Returns the global query engine status (idle/busy).
--   ****: (UPDATED) Returns search history; the frontend now interprets the status field differently.
--   ****: (UPDATED) The frontend logic handling the response from this endpoint was improved to provide better auto-refresh.
+-   : Initiates a new Full Query search.
+-   : Starts a detailed investigation on a selected target.
+-   : Polls the status of an ongoing investigation.
+-   : Deletes a search history entry and its associated caches.
+-   : Fetches the next batch of photos for a Full Query result.
+-   : Initiates Social Network Analysis.
+-   : Handles various simple queries (NIK, KK, IP Lookup, Email Breach).
+-   : Fetches the list of cases for the current user.
 
 **Critical Info for New Agent**
--   **You must respond in Bahasa Indonesia.**
--   The highest priority technical issue is the **P0 map popup interaction bug** in . It has been ignored for several forks and severely degrades core functionality.
--   The user's VPS environment is a common failure point. Be prepared to provide very clear, step-by-step shell commands for , installing dependencies into , and restarting .
--   The  is essential for the FAKTA OSINT feature. Ensure it is present in the backend  file.
--   Proposing a refactor of  is a high-value task that should be brought up with the user when there is a lull in feature requests.
+-   The user deploys the application on a VPS. Environment-related issues, such as an outdated  file, can cause features to fail on their end even if they work locally for the agent. Always remind the user to update their environment/configuration after changes.
+-   The application's data-gathering process heavily relies on a simulated Telegram bot. The logic for this is in the backend.
+-   Caching is a critical but fragile part of the application. Many bugs have stemmed from caches not being cleared correctly. When implementing a reset or delete feature, ensure all related caches (, , and various keys in ) are properly invalidated.
+-   The frontend  component is extremely large. Be cautious when making changes to avoid unintended side effects.
 
 **documents and test reports created in this job**
--    (updated multiple times)
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
--   **10. User:** Requested to remove unused Gunakan buttons from Simple Query history. (DONE)
--   **9. User:** Requested to implement a query lock to prevent multiple users from querying at the same time. (DONE)
--   **8. User:** Reported a bug where a search with no results showed waiting selection instead of no data. (DONE)
--   **7. User:** Reported a bug where a search was marked completed in history before a user selected a target. (DONE)
--   **6. User:** Reported a bug where FAKTA OSINT results were not being saved/cached in the history. (DONE)
--   **5. User:** Requested that FAKTA OSINT also search the cache for data on family members found in the NKK. (DONE)
--   **4. User:** Reported that the map/target list doesn't auto-refresh after a position query. (DONE)
--   **3. User:** Requested FAKTA OSINT be enhanced to generate a full Anteseden Intelijen report using both internal and external data. (DONE)
--   **2. User:** Reported that the FAKTA OSINT summary was missing and provided instructions on how to improve it. (DONE)
--   **1. User:** Requested the implementation of the SOCIAL NETWORK ANALYTICS feature. (IN PROGRESS)
+1.  **api untuk haveibeenpwned...**: Provided the API key for HIBP and requested it be added to the system for easy deployment. (COMPLETED)
+2.  **fitur haveipwnd tidak jalan...**: Reported that the HIBP feature is not working, claiming it needs an API key that was already provided. (AGENT INVESTIGATED, PENDING USER ACTION)
+3.  **saat memuat foto 11-20...**: Reported two bugs with loading more photos: no UI lock and new photos not appearing. (FIX IMPLEMENTED, PENDING USER VERIFICATION)
+4.  **Ada gk ya api adint**: Asked if an API for ADINT (Acoustic Intelligence) exists. (PENDING AGENT RESPONSE)
+5.  **di cases , khususnya user yang admin...**: Request to show case ownership for admin users. (COMPLETED)
+6.  **Fitur CALL DATA RECORDER hapus saja...**: Request to remove the Call Data Recorder feature. (COMPLETED)
+7.  **Tombol reset di full query belum berfungsi...**: Reported that the reset button doesn't clear the target's data cache. (COMPLETED - FIRST FIX)
+8.  **Tombol reset di full query masih belum berfungsi di VPS...**: Reported the reset button still fails to clear backend cache. (COMPLETED - SECOND FIX)
+9.  **Saya mencoba mencari history...**: Reported a complex bug where, after a reset, a new search for the same person skips steps due to another, deeper cache (). (COMPLETED - THIRD FIX)
+10. **Sudah bagus sepertinya, tapi kenapa foto target...**: Reported that photos were not appearing during target selection. (COMPLETED)
 
 **Project Health Check:**
--   **Broken:**
-    -   The UI interaction with map popups for overlapping markers is severely bugged.
--   **Mocked:**
-    -   The CALL DATA RECORDER button in the PENDALAMAN LANJUTAN dropdown has no functionality.
+-   **Broken:** The load more photos feature was broken; a fix is pending verification. The HIBP feature may be broken on the user's VPS due to an environment issue.
+-   **Mocked:** The entire data acquisition process (NIK, KK, Passport, etc.) is simulated through a mock Telegram bot interaction managed by the backend. The results are hardcoded or generated by an LLM, not from real government databases.
 
 **3rd Party Integrations**
--   **Emergent LLM Key (Gemini)**: Used for AI summary generation in FAKTA OSINT.
--   **Maigret, Social-Analyzer, Holehe**: Used in Simple Query OSINT features.
--   **Telethon** (Telegram Bot)
--   **CP API** ()
--   **Leaflet.js & OpenStreetMap**
--   **jsPDF & html2canvas**
+-   **Telegram Bot (Mock):** Used for fetching core investigation data (NIK, KK, Passport, etc.). Requires internal setup, no external key.
+-   **OpenAI GPT-4o:** Used by the agent for code generation and reasoning. Uses Emergent LLM Key.
+-   **Have I Been Pwned (HIBP):** Integrated into Simple Query to check for email breaches. Requires a User API Key, which has been provided and added to .
+-   **IPinfo.io:** Integrated into Simple Query for IP geolocation. Currently uses the free tier without an API key.
 
 **Testing status**
--   Testing agent used after significant changes: NO
+-   Testing agent used after significant changes: YES (once, for the initial SNA implementation).
 -   Troubleshoot agent used after agent stuck in loop: NO
 -   Test files created: []
--   Known regressions: The P0 map popup regression from the previous fork persists.
+-   Known regressions: Several regressions related to the Reset button's caching mechanism were discovered and fixed during this session.
 
 **Credentials to test flow:**
--   **Web App Login:**
-    -   Admin Username: 
-    -   Admin Password: 
+-   **Username:** admin
+-   **Password:** admin
 
 **What agent forgot to execute**
--   The agent correctly prioritized the user's stream of feature requests and bug fixes. Consequently, the long-standing (but not user-mentioned in this session) P0 map popup bug and the  refactoring task were not addressed.</analysis>
+-   **Answer user's latest question:** The agent has not yet responded to the user's query about an ADINT API. This should be the top priority.
+-   **Implement Phone Number Lookup:** The agent recommended adding several APIs, and the user approved. The agent implemented HIBP and IPinfo but did not implement the Phone Number Lookup API (e.g., NumLookupAPI) as an option in Simple Query.
+-   **Fix Pre-existing Lint Errors:** The agent repeatedly identified but ignored a set of linting errors in .</analysis>
