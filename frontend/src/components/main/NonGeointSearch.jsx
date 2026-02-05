@@ -3172,6 +3172,7 @@ export const NonGeointSearchDialog = ({
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed':
+      case 'success':  // Backend returns 'success' for completed queries
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'processing':
       case 'processing_nik':
@@ -3183,6 +3184,9 @@ export const NonGeointSearchDialog = ({
       case 'error':
         return <XCircle className="w-4 h-4 text-red-500" />;
       case 'not_found':
+      case 'skipped':  // Backend returns 'skipped' when data dependency not met
+      case 'no_data':
+      case 'no_passport':
         return <AlertCircle className="w-4 h-4 text-yellow-500" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-500" />;
