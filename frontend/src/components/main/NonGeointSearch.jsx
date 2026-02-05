@@ -3222,10 +3222,11 @@ export const NonGeointSearchDialog = ({
     if (!nikData) return false;
     
     // Check if any of the sub-queries have data or raw_text
-    const hasNikData = nikData.nik_data && (nikData.nik_data.data || nikData.nik_data.raw_text || nikData.nik_data.status === 'completed' || nikData.nik_data.status === 'not_found');
-    const hasNkkData = nikData.nkk_data && (nikData.nkk_data.data || nikData.nkk_data.raw_text || nikData.nkk_data.status === 'completed' || nikData.nkk_data.status === 'not_found');
-    const hasRegnikData = nikData.regnik_data && (nikData.regnik_data.data || nikData.regnik_data.raw_text || nikData.regnik_data.status === 'completed' || nikData.regnik_data.status === 'not_found');
-    const hasPassportData = nikData.passport_data && (nikData.passport_data.passports || nikData.passport_data.wni_data || nikData.passport_data.status === 'completed' || nikData.passport_data.status === 'no_data');
+    // Note: Backend returns 'success' as status for completed queries
+    const hasNikData = nikData.nik_data && (nikData.nik_data.data || nikData.nik_data.raw_text || nikData.nik_data.photo || nikData.nik_data.status === 'completed' || nikData.nik_data.status === 'success' || nikData.nik_data.status === 'not_found');
+    const hasNkkData = nikData.nkk_data && (nikData.nkk_data.data || nikData.nkk_data.raw_text || nikData.nkk_data.family_data || nikData.nkk_data.status === 'completed' || nikData.nkk_data.status === 'success' || nikData.nkk_data.status === 'not_found' || nikData.nkk_data.status === 'skipped');
+    const hasRegnikData = nikData.regnik_data && (nikData.regnik_data.data || nikData.regnik_data.raw_text || nikData.regnik_data.phones || nikData.regnik_data.status === 'completed' || nikData.regnik_data.status === 'success' || nikData.regnik_data.status === 'not_found');
+    const hasPassportData = nikData.passport_data && (nikData.passport_data.passports || nikData.passport_data.wni_data || nikData.passport_data.search_results || nikData.passport_data.status === 'completed' || nikData.passport_data.status === 'success' || nikData.passport_data.status === 'no_data');
     const hasPerlintasanData = nikData.perlintasan_data && (nikData.perlintasan_data.results || nikData.perlintasan_data.status === 'completed' || nikData.perlintasan_data.status === 'no_passport');
     
     return hasNikData || hasNkkData || hasRegnikData || hasPassportData || hasPerlintasanData;
