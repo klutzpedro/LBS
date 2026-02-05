@@ -7594,16 +7594,38 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     )
                     
                     for passport_no in passports_to_check:
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Processing perlintasan for passport: {passport_no}")
+                        
                         # Check cache first for perlintasan
                         cache_key_perl = f"perlintasan:{passport_no}"
                         cached_perl = await db.simple_query_cache.find_one({"cache_key": cache_key_perl})
                         
                         if cached_perl and cached_perl.get("raw_response"):
                             logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Perlintasan {passport_no}")
+                            
+                            # Parse crossings from cached data
+                            crossings = []
+                            try:
+                                import json
+                                cached_data = json.loads(cached_perl.get("raw_response", "{}"))
+                                crossings_data = cached_data.get("dataPerlintasan") or cached_data.get("data") or []
+                                for c in crossings_data:
+                                    crossings.append({
+                                        "passport_no": c.get("TRAVELDOCUMENTNO", passport_no),
+                                        "movement_date": c.get("MOVEMENTDATE", "-"),
+                                        "direction": c.get("DIRECTIONDESCRIPTION", "-"),
+                                        "direction_code": c.get("DIRECTIONCODE", "-"),
+                                        "tpi_name": c.get("TPINAME", "-"),
+                                        "port_description": c.get("PORTDESCRIPTION", "-")
+                                    })
+                            except:
+                                pass
+                            
                             perlintasan_result = {
-                                "passport": passport_no,
+                                "passport_no": passport_no,
                                 "status": "success",
                                 "raw_text": cached_perl.get("raw_response"),
+                                "crossings": crossings,
                                 "from_cache": True
                             }
                         else:
