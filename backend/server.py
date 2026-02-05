@@ -5149,7 +5149,18 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
     """
     Fetch next batch of photos (10 at a time)
     Called when user wants to see more candidates
+    Uses global lock to prevent race conditions
     """
+    global request_status
+    
+    # Check if system is busy with another request
+    if request_status["is_busy"]:
+        return {
+            "status": "busy",
+            "message": f"Sistem sedang memproses request lain: {request_status['operation']}",
+            "queued": True
+        }
+    
     search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
     if not search:
         raise HTTPException(status_code=404, detail="Search not found")
@@ -5197,6 +5208,15 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
     
     logger.info(f"[NONGEOINT {search_id}] Fetching next batch: {len(niks_to_fetch)} NIKs (batch {current_batch + 1})")
     
+    # Set request status to busy BEFORE starting the task
+    request_status = {
+        "is_busy": True,
+        "operation": f"Mengambil foto batch {current_batch + 1}",
+        "username": username,
+        "search_id": search_id,
+        "started_at": datetime.now(timezone.utc).isoformat()
+    }
+    
     # Update status
     await db.nongeoint_searches.update_one(
         {"id": search_id},
@@ -5204,7 +5224,8 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
             "status": "fetching_photos",
             "current_batch": current_batch,
             "photo_fetch_progress": 0,
-            "photo_fetch_total": len(niks_to_fetch)
+            "photo_fetch_total": len(niks_to_fetch),
+            "has_more_batches": end_idx < len(all_niks)
         }}
     )
     
