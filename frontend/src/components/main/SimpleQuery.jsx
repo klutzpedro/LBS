@@ -197,6 +197,33 @@ const QUERY_TYPES = [
     errorMsg: 'Nama hanya boleh huruf (a-z), minimal 3 karakter'
   },
   // ============================================
+  // NEW: EMAIL BREACH CHECK (HIBP) & IP LOOKUP
+  // ============================================
+  { 
+    id: 'email_breach', 
+    label: 'Email Breach Check', 
+    description: 'Cek apakah email pernah bocor di data breach (HIBP)',
+    icon: ShieldAlert,
+    placeholder: 'Masukkan email (xxx@xxx.xxx)...',
+    validation: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+    inputValidation: PATTERNS.email,
+    errorMsg: 'Format email tidak valid',
+    highlight: true,
+    highlightColor: '#ef4444'
+  },
+  { 
+    id: 'ip_lookup', 
+    label: 'IP Geolocation', 
+    description: 'Lacak lokasi & info dari IP Address (IPinfo.io)',
+    icon: Globe,
+    placeholder: 'Masukkan IP Address (ex: 8.8.8.8)...',
+    validation: (v) => /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$|^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/.test(v.trim()),
+    inputValidation: /^[0-9a-fA-F.:]+$/,
+    errorMsg: 'Format IP tidak valid (IPv4 atau IPv6)',
+    highlight: true,
+    highlightColor: '#3b82f6'
+  },
+  // ============================================
   // OSINT SOCIAL MEDIA SEARCH
   // ============================================
   { 
