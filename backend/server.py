@@ -10105,6 +10105,8 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     - passport_number: Passport by number (via CP API)
     - perlintasan: Border crossing by passport number (via CP API)
     - plat_mobil: Vehicle by plate number
+    - email_breach: Check email in data breaches (via HIBP)
+    - ip_lookup: IP Address geolocation lookup (via IPinfo.io)
     """
     global telegram_client, current_request_status
     
