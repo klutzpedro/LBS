@@ -4653,7 +4653,19 @@ export const NonGeointSearchDialog = ({
                     <span className="font-semibold text-sm uppercase" style={{ color: 'var(--foreground-primary)' }}>
                       DATA PASSPORT
                     </span>
-                    {getStatusIcon(detailDialog.result.passport_data.status)}
+                    {(() => {
+                      // Determine correct status for passport icon
+                      const passportData = detailDialog.result.passport_data;
+                      const hasPassports = passportData.passports && passportData.passports.length > 0;
+                      const hasWniData = passportData.wni_data && (passportData.wni_data.result?.length > 0 || passportData.wni_data.data?.length > 0);
+                      const hasWnaData = passportData.wna_data && Object.keys(passportData.wna_data).length > 0;
+                      
+                      let displayStatus = passportData.status;
+                      if (passportData.status === 'completed' && !hasPassports && !hasWniData && !hasWnaData) {
+                        displayStatus = 'no_data';
+                      }
+                      return getStatusIcon(displayStatus);
+                    })()}
                   </div>
                   <div className="p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
                     {detailDialog.result.passport_data.passports && detailDialog.result.passport_data.passports.length > 0 ? (
