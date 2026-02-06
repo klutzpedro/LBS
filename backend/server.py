@@ -10321,11 +10321,13 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
         logger.info(f"[SIMPLE QUERY] ✓ Matched passport type! Using CP API for: {query_type} = {query_value}")
         
         try:
+            logger.info(f"[SIMPLE QUERY] Calling query_passport_simple_cp_api...")
             cp_result = await query_passport_simple_cp_api(query_type, query_value)
+            logger.info(f"[SIMPLE QUERY] Passport cp_result type: {type(cp_result)}, value: {str(cp_result)[:200]}")
             
             # Safety check - ensure cp_result is a dict
             if cp_result is None:
-                logger.error(f"[SIMPLE QUERY] Passport query returned None")
+                logger.error(f"[SIMPLE QUERY] Passport query returned None!")
                 clear_request_status()
                 return {
                     "success": False,
@@ -10335,7 +10337,21 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     "source": "CP_API"
                 }
             
-            if cp_result.get("success"):
+            if not isinstance(cp_result, dict):
+                logger.error(f"[SIMPLE QUERY] Passport query returned non-dict: {type(cp_result)}")
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": f"Gagal mengambil data passport - response bukan dictionary: {type(cp_result)}",
+                    "source": "CP_API"
+                }
+            
+            success = cp_result.get("success", False)
+            logger.info(f"[SIMPLE QUERY] Passport success value: {success}")
+            
+            if success:
                 raw_response = cp_result.get("raw_response", "")
                 
                 # Save to cache
@@ -10366,16 +10382,18 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
                     "source": "CP_API"
                 }
             else:
+                error_msg = cp_result.get("error", "Gagal mengambil data passport dari CP API")
+                logger.info(f"[SIMPLE QUERY] Passport error_msg: {error_msg}")
                 clear_request_status()
                 return {
                     "success": False,
                     "query_type": query_type,
                     "query_value": query_value,
-                    "error": cp_result.get("error", "Gagal mengambil data passport dari CP API"),
+                    "error": error_msg,
                     "source": "CP_API"
                 }
         except Exception as e:
-            logger.error(f"[SIMPLE QUERY] Passport query error: {e}")
+            logger.error(f"[SIMPLE QUERY] Passport query exception: {e}")
             import traceback
             logger.error(f"[SIMPLE QUERY] Passport traceback: {traceback.format_exc()}")
             clear_request_status()
