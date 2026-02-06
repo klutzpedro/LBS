@@ -855,8 +855,9 @@ export const NonGeointSearchDialog = ({
 
   // Notify parent when investigation state changes
   useEffect(() => {
-    onInvestigatingChange(isInvestigating);
-  }, [isInvestigating, onInvestigatingChange]);
+    // Pass searchResults.id so parent knows which search is being investigated
+    onInvestigatingChange(isInvestigating, searchResults?.id || null);
+  }, [isInvestigating, onInvestigatingChange, searchResults?.id]);
 
   // Handle minimize/close during search or investigation
   const handleMinimizeOrClose = (action) => {
