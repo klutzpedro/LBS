@@ -11188,6 +11188,208 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
         }
     
     # ============================================
+    # TIKTOK PROFILE SCRAPER
+    # ============================================
+    if query_type == 'tiktok_profile':
+        logger.info(f"[SIMPLE QUERY] TikTok Profile scrape for username: {query_value}")
+        
+        try:
+            import httpx
+            import json
+            import re
+            
+            # Clean username (remove @ if present)
+            tiktok_username = query_value.strip().lower().replace('@', '')
+            
+            url = f"https://www.tiktok.com/@{tiktok_username}"
+            
+            # Headers to mimic browser
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Cache-Control': 'max-age=0',
+            }
+            
+            async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                response = await client.get(url, headers=headers)
+                
+                if response.status_code == 200:
+                    html_content = response.text
+                    
+                    # Try to find the __UNIVERSAL_DATA_FOR_REHYDRATION__ script
+                    script_match = re.search(
+                        r'<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)</script>',
+                        html_content
+                    )
+                    
+                    profile_data = {}
+                    user_info = None
+                    
+                    if script_match:
+                        try:
+                            json_data = json.loads(script_match.group(1))
+                            default_scope = json_data.get("__DEFAULT_SCOPE__", {})
+                            user_detail = default_scope.get("webapp.user-detail", {})
+                            user_info = user_detail.get("userInfo", {})
+                            
+                            if user_info:
+                                user = user_info.get("user", {})
+                                stats = user_info.get("stats", {})
+                                
+                                profile_data = {
+                                    "username": user.get("uniqueId", tiktok_username),
+                                    "nickname": user.get("nickname", "-"),
+                                    "bio": user.get("signature", "-"),
+                                    "verified": user.get("verified", False),
+                                    "private": user.get("privateAccount", False),
+                                    "avatar_url": user.get("avatarLarger", user.get("avatarMedium", "")),
+                                    "followers": stats.get("followerCount", 0),
+                                    "following": stats.get("followingCount", 0),
+                                    "likes": stats.get("heart", stats.get("heartCount", 0)),
+                                    "videos": stats.get("videoCount", 0),
+                                    "region": user.get("region", "-"),
+                                    "language": user.get("language", "-"),
+                                    "create_time": user.get("createTime", "-"),
+                                    "sec_uid": user.get("secUid", ""),
+                                    "profile_url": url
+                                }
+                        except json.JSONDecodeError as je:
+                            logger.warning(f"[SIMPLE QUERY] TikTok JSON parse error: {je}")
+                    
+                    # Fallback: Try to extract from meta tags if JSON parsing failed
+                    if not profile_data:
+                        # Try meta description
+                        meta_desc = re.search(r'<meta[^>]*name="description"[^>]*content="([^"]*)"', html_content)
+                        title_match = re.search(r'<title>([^<]+)</title>', html_content)
+                        
+                        if meta_desc or title_match:
+                            profile_data = {
+                                "username": tiktok_username,
+                                "description": meta_desc.group(1) if meta_desc else "-",
+                                "title": title_match.group(1) if title_match else "-",
+                                "profile_url": url,
+                                "note": "Partial data - full profile blocked by TikTok"
+                            }
+                    
+                    if profile_data:
+                        # Format response
+                        lines = [
+                            "=" * 50,
+                            f"🎵 TIKTOK PROFILE: @{tiktok_username}",
+                            "=" * 50,
+                            "",
+                            f"👤 Username: @{profile_data.get('username', tiktok_username)}",
+                            f"📛 Nickname: {profile_data.get('nickname', '-')}",
+                            f"✅ Verified: {'Ya' if profile_data.get('verified') else 'Tidak'}",
+                            f"🔒 Private: {'Ya' if profile_data.get('private') else 'Tidak'}",
+                            "",
+                            "📊 STATISTICS:",
+                            f"   Followers: {profile_data.get('followers', 0):,}",
+                            f"   Following: {profile_data.get('following', 0):,}",
+                            f"   Likes: {profile_data.get('likes', 0):,}",
+                            f"   Videos: {profile_data.get('videos', 0):,}",
+                            "",
+                            "📝 BIO:",
+                            f"   {profile_data.get('bio', '-')}",
+                            "",
+                            f"🌍 Region: {profile_data.get('region', '-')}",
+                            f"🗣️ Language: {profile_data.get('language', '-')}",
+                            "",
+                            f"🔗 Profile URL: {url}",
+                        ]
+                        
+                        if profile_data.get('avatar_url'):
+                            lines.append(f"🖼️ Avatar: {profile_data.get('avatar_url')}")
+                        
+                        raw_response = "\n".join(lines)
+                        
+                        # Save to cache
+                        cache_doc = {
+                            "cache_key": cache_key,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "raw_response": raw_response,
+                            "profile_data": profile_data,
+                            "queried_by": username,
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.simple_query_cache.update_one(
+                            {"cache_key": cache_key},
+                            {"$set": cache_doc},
+                            upsert=True
+                        )
+                        
+                        clear_request_status()
+                        return {
+                            "success": True,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "raw_response": raw_response,
+                            "profile_data": profile_data,
+                            "verified": True,
+                            "cached": False,
+                            "source": "TIKTOK_SCRAPER"
+                        }
+                    else:
+                        clear_request_status()
+                        return {
+                            "success": False,
+                            "query_type": query_type,
+                            "query_value": query_value,
+                            "error": f"Tidak dapat mengambil data profil @{tiktok_username}. Akun mungkin private atau TikTok memblokir request.",
+                            "source": "TIKTOK_SCRAPER"
+                        }
+                
+                elif response.status_code == 404:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": f"Akun TikTok @{tiktok_username} tidak ditemukan",
+                        "source": "TIKTOK_SCRAPER"
+                    }
+                else:
+                    clear_request_status()
+                    return {
+                        "success": False,
+                        "query_type": query_type,
+                        "query_value": query_value,
+                        "error": f"TikTok mengembalikan status {response.status_code}. Coba lagi nanti.",
+                        "source": "TIKTOK_SCRAPER"
+                    }
+                    
+        except httpx.TimeoutException:
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": "Timeout saat mengakses TikTok. Coba lagi nanti.",
+                "source": "TIKTOK_SCRAPER"
+            }
+        except Exception as e:
+            logger.error(f"[SIMPLE QUERY] TikTok scraper error: {e}")
+            import traceback
+            logger.error(f"[SIMPLE QUERY] TikTok traceback: {traceback.format_exc()}")
+            clear_request_status()
+            return {
+                "success": False,
+                "query_type": query_type,
+                "query_value": query_value,
+                "error": f"Error mengambil data TikTok: {str(e)}",
+                "source": "TIKTOK_SCRAPER"
+            }
+    
+    # ============================================
     # OSINT SOCIAL MEDIA SEARCH - MEDSOS-1 (MAIGRET)
     # ============================================
     if query_type == 'medsos_maigret':
