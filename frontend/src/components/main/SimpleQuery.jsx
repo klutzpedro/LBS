@@ -258,6 +258,48 @@ const QUERY_TYPES = [
     validation: (v) => v.trim().length >= 3,
     inputValidation: null, // Allow all characters
     errorMsg: 'Nama minimal 3 karakter'
+  },
+  // ============================================
+  // ADINT - ADVERTISING INTELLIGENCE (MOCKUP)
+  // ============================================
+  { 
+    id: 'adint_device', 
+    label: 'ADINT (Device ID)', 
+    description: 'Lacak lokasi dari Mobile Advertising ID (MAID/IDFA/GAID)',
+    icon: Globe,
+    placeholder: 'Masukkan Device ID (ex: aaaa-bbbb-cccc-dddd)...',
+    validation: (v) => v.length >= 8,
+    inputValidation: /^[a-zA-Z0-9-]+$/,
+    errorMsg: 'Device ID minimal 8 karakter (huruf, angka, dash)',
+    highlight: true,
+    highlightColor: '#8b5cf6',
+    isMockup: true
+  },
+  { 
+    id: 'adint_location', 
+    label: 'ADINT (Geofence)', 
+    description: 'Cari device yang pernah berada di lokasi tertentu',
+    icon: Globe,
+    placeholder: 'Masukkan koordinat (ex: -6.2088,106.8456)...',
+    validation: (v) => /^-?\d+\.?\d*,-?\d+\.?\d*$/.test(v.trim()),
+    inputValidation: /^[0-9,.\-]+$/,
+    errorMsg: 'Format: latitude,longitude (ex: -6.2088,106.8456)',
+    highlight: true,
+    highlightColor: '#8b5cf6',
+    isMockup: true
+  },
+  { 
+    id: 'adint_ip', 
+    label: 'ADINT (IP Address)', 
+    description: 'Lacak device dari IP Address',
+    icon: Globe,
+    placeholder: 'Masukkan IP Address (ex: 103.123.45.67)...',
+    validation: (v) => /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(v.trim()),
+    inputValidation: /^[0-9.]+$/,
+    errorMsg: 'Format IP tidak valid',
+    highlight: true,
+    highlightColor: '#8b5cf6',
+    isMockup: true
   }
 ];
 
