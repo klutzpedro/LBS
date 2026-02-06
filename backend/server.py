@@ -7322,27 +7322,79 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 
                 if cached_nik and cached_nik.get("raw_response"):
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for NIK {nik}")
+                    raw_text = cached_nik.get("raw_response", "")
+                    
+                    # Use full parser to extract all data fields
+                    parsed_data = parse_nongeoint_response(raw_text, "NIK") or {}
+                    
+                    # Also try to extract common fields with regex if parser missed them
+                    try:
+                        import re
+                        # Extract Family ID/NKK if not found
+                        if 'Family ID' not in parsed_data and 'No KK' not in parsed_data:
+                            family_match = re.search(r'(?:Family ID|No KK|NKK|NO\.?\s*KK)[:\s]*(\d{16})', raw_text, re.IGNORECASE)
+                            if family_match:
+                                parsed_data['Family ID'] = family_match.group(1)
+                        
+                        # Extract NIK if not found
+                        if 'NIK' not in parsed_data:
+                            nik_match = re.search(r'(?:^|\n)\s*NIK[:\s]*(\d{16})', raw_text, re.IGNORECASE)
+                            if nik_match:
+                                parsed_data['NIK'] = nik_match.group(1)
+                        
+                        # Extract Name if not found
+                        if 'Nama' not in parsed_data and 'Full Name' not in parsed_data and 'NAME' not in parsed_data:
+                            name_match = re.search(r'(?:Nama|Full Name|NAME)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if name_match:
+                                parsed_data['Full Name'] = name_match.group(1).strip()
+                        
+                        # Extract Tempat/Tgl Lahir
+                        if 'Tempat/Tgl Lahir' not in parsed_data and 'TTL' not in parsed_data:
+                            ttl_match = re.search(r'(?:Tempat.*Lahir|TTL|Place.*Birth)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if ttl_match:
+                                parsed_data['Tempat/Tgl Lahir'] = ttl_match.group(1).strip()
+                        
+                        # Extract Alamat
+                        if 'Alamat' not in parsed_data and 'Address' not in parsed_data:
+                            alamat_match = re.search(r'(?:Alamat|Address)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if alamat_match:
+                                parsed_data['Alamat'] = alamat_match.group(1).strip()
+                        
+                        # Extract Jenis Kelamin
+                        if 'Jenis Kelamin' not in parsed_data and 'Gender' not in parsed_data:
+                            jk_match = re.search(r'(?:Jenis Kelamin|Gender|JK)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if jk_match:
+                                parsed_data['Jenis Kelamin'] = jk_match.group(1).strip()
+                        
+                        # Extract Agama
+                        if 'Agama' not in parsed_data and 'Religion' not in parsed_data:
+                            agama_match = re.search(r'(?:Agama|Religion)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if agama_match:
+                                parsed_data['Agama'] = agama_match.group(1).strip()
+                        
+                        # Extract Pekerjaan
+                        if 'Pekerjaan' not in parsed_data and 'Occupation' not in parsed_data:
+                            kerja_match = re.search(r'(?:Pekerjaan|Occupation|Job)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if kerja_match:
+                                parsed_data['Pekerjaan'] = kerja_match.group(1).strip()
+                        
+                        # Extract Status Perkawinan
+                        if 'Status Perkawinan' not in parsed_data and 'Marital Status' not in parsed_data:
+                            status_match = re.search(r'(?:Status Perkawinan|Marital Status|Status)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
+                            if status_match:
+                                parsed_data['Status Perkawinan'] = status_match.group(1).strip()
+                                
+                    except Exception as e:
+                        logger.warning(f"[NIK INVESTIGATION {investigation_id}] Error parsing cached NIK data: {e}")
+                    
                     nik_result = {
                         "status": "success",
-                        "raw_text": cached_nik.get("raw_response"),
-                        "data": {},
+                        "raw_text": raw_text,
+                        "data": parsed_data,
                         "photo": cached_nik.get("photo"),
                         "from_cache": True
                     }
-                    # Try to parse data from raw text
-                    try:
-                        raw_text = cached_nik.get("raw_response", "")
-                        import re
-                        # Extract Family ID/NKK
-                        family_match = re.search(r'(?:Family ID|No KK|NKK|NO\.?\s*KK)[:\s]*(\d{16})', raw_text, re.IGNORECASE)
-                        if family_match:
-                            nik_result['data']['Family ID'] = family_match.group(1)
-                        # Extract Name
-                        name_match = re.search(r'(?:Nama|Full Name|NAME)[:\s]*([^\n]+)', raw_text, re.IGNORECASE)
-                        if name_match:
-                            nik_result['data']['Full Name'] = name_match.group(1).strip()
-                    except:
-                        pass
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Parsed {len(parsed_data)} fields from cached NIK data")
                 else:
                     # No cache, query Telegram
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] No cache, querying NIK for {nik}")
