@@ -10263,6 +10263,9 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     """
     global telegram_client, current_request_status
     
+    query_type = request.query_type
+    query_value = request.query_value.strip().upper()
+    
     def clear_request_status():
         """Helper to clear request status when query completes"""
         global current_request_status
@@ -10273,10 +10276,9 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             "started_at": None
         }
     
-    query_type = request.query_type
-    query_value = request.query_value.strip().upper()
-    
-    logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
+    # Global try-except to catch any unhandled errors
+    try:
+        logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
     
     # ============================================
     # CHECK CACHE FIRST
