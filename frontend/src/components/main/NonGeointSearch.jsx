@@ -1824,9 +1824,25 @@ export const NonGeointSearchDialog = ({
         })
       });
 
+      // Handle conflict - investigation already in progress by another user
+      if (response.status === 409) {
+        const errorData = await response.json();
+        const detail = errorData.detail || {};
+        toast.error(`⚠️ ${detail.message || 'Target sedang didalami oleh user lain'}`, {
+          duration: 5000
+        });
+        setIsInvestigating(false);
+        return;
+      }
+
       if (!response.ok) throw new Error('Investigation failed');
 
       const data = await response.json();
+      
+      // Handle "already processing" case (same user)
+      if (data.status === 'already_processing') {
+        toast.info(data.message || 'Pendalaman sudah berjalan');
+      }
       
       // Start polling for investigation results
       investigationPollingRef.current = setInterval(() => {
