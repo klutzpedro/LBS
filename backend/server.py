@@ -10276,38 +10276,36 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
             "started_at": None
         }
     
-    # Global try-except to catch any unhandled errors
-    try:
-        logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
-        
-        # ============================================
-        # CHECK CACHE FIRST
-        # ============================================
-        cache_key = f"{query_type}:{query_value}"
-        cached_result = await db.simple_query_cache.find_one(
-            {"cache_key": cache_key},
-            {"_id": 0}
-        )
-        
-        if cached_result and cached_result.get("raw_response"):
-            logger.info(f"[SIMPLE QUERY] Cache HIT for {cache_key}")
-            return {
-                "success": True,
-                "query_type": query_type,
-                "query_value": query_value,
-                "raw_response": cached_result["raw_response"],
-                "photo": cached_result.get("photo"),
-                "verified": True,
-                "cached": True,
-                "cached_at": cached_result.get("created_at")
-            }
-        
-        logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}")
-        
-        # Update request status for queue indicator (non-cached queries)
-        global current_request_status
-        current_request_status = {
-            "is_busy": True,
+    logger.info(f"[SIMPLE QUERY] User: {username}, Type: {query_type}, Value: {query_value}")
+    
+    # ============================================
+    # CHECK CACHE FIRST
+    # ============================================
+    cache_key = f"{query_type}:{query_value}"
+    cached_result = await db.simple_query_cache.find_one(
+        {"cache_key": cache_key},
+        {"_id": 0}
+    )
+    
+    if cached_result and cached_result.get("raw_response"):
+        logger.info(f"[SIMPLE QUERY] Cache HIT for {cache_key}")
+        return {
+            "success": True,
+            "query_type": query_type,
+            "query_value": query_value,
+            "raw_response": cached_result["raw_response"],
+            "photo": cached_result.get("photo"),
+            "verified": True,
+            "cached": True,
+            "cached_at": cached_result.get("created_at")
+        }
+    
+    logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}")
+    
+    # Update request status for queue indicator (non-cached queries)
+    global current_request_status
+    current_request_status = {
+        "is_busy": True,
         "username": username,
         "operation": f"Simple Query - {query_type}",
         "started_at": datetime.now(timezone.utc).isoformat()
