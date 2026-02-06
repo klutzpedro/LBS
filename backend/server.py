@@ -7722,13 +7722,25 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                         else:
                             perlintasan_result = await query_perlintasan_cp_api(passport_no)
                             
-                            # Save to cache
-                            if perlintasan_result.get("raw_text"):
+                            # Safety check - ensure perlintasan_result is a dict
+                            if perlintasan_result is None:
+                                perlintasan_result = {
+                                    "passport_no": passport_no,
+                                    "status": "error",
+                                    "error": "No response from perlintasan query"
+                                }
+                            
+                            # Save to cache - check both raw_text and raw_data
+                            raw_text_data = perlintasan_result.get("raw_text") or perlintasan_result.get("raw_data")
+                            if raw_text_data:
+                                # Convert to string if it's a dict
+                                if isinstance(raw_text_data, dict):
+                                    raw_text_data = json.dumps(raw_text_data)
                                 cache_doc = {
                                     "cache_key": cache_key_perl,
                                     "query_type": "perlintasan",
                                     "query_value": passport_no,
-                                    "raw_response": perlintasan_result.get("raw_text"),
+                                    "raw_response": raw_text_data,
                                     "created_by": "investigation",
                                     "created_at": datetime.now(timezone.utc).isoformat()
                                 }
