@@ -6098,8 +6098,36 @@ async def investigate_niks(request: NikDeepInvestigationRequest, username: str =
     """
     Deep investigation for selected NIKs - queries NIK, NKK, RegNIK for each
     """
+    # Check if there's already an active investigation for this search_id
+    active_investigation = await db.nik_investigations.find_one({
+        "search_id": request.search_id,
+        "status": {"$in": ["processing", "pending"]}
+    }, {"_id": 0})
+    
+    if active_investigation:
+        # Check if it's by another user
+        active_user = active_investigation.get("created_by", "unknown")
+        if active_user != username:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error": "investigation_in_progress",
+                    "message": f"Target sedang didalami oleh user lain: {active_user}",
+                    "active_user": active_user,
+                    "investigation_id": active_investigation.get("id"),
+                    "started_at": active_investigation.get("created_at")
+                }
+            )
+        else:
+            # Same user, return existing investigation
+            return {
+                "investigation_id": active_investigation.get("id"),
+                "status": "already_processing",
+                "message": "Anda sudah memulai pendalaman untuk target ini"
+            }
+    
     investigation_id = str(uuid.uuid4())[:8]
-    logger.info(f"[NIK INVESTIGATION {investigation_id}] Starting for {len(request.niks)} NIKs")
+    logger.info(f"[NIK INVESTIGATION {investigation_id}] Starting for {len(request.niks)} NIKs by {username}")
     
     # Create investigation document
     investigation_doc = {
