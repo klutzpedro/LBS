@@ -10368,45 +10368,70 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     if query_type == 'perlintasan':
         logger.info(f"[SIMPLE QUERY] Perlintasan query via CP API: {query_value}")
         
-        cp_result = await query_perlintasan_simple_cp_api(query_value)
-        
-        if cp_result.get("success"):
-            raw_response = cp_result.get("raw_response", "")
+        try:
+            cp_result = await query_perlintasan_simple_cp_api(query_value)
             
-            # Save to cache
-            cache_doc = {
-                "cache_key": cache_key,
-                "query_type": query_type,
-                "query_value": query_value,
-                "raw_response": raw_response,
-                "queried_by": username,
-                "created_by": username,
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.simple_query_cache.update_one(
-                {"cache_key": cache_key},
-                {"$set": cache_doc},
-                upsert=True
-            )
-            logger.info(f"[SIMPLE QUERY] Saved perlintasan result to cache: {cache_key}")
+            # Safety check - ensure cp_result is a dict
+            if cp_result is None:
+                logger.error(f"[SIMPLE QUERY] Perlintasan returned None")
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": "Gagal mengambil data perlintasan - response kosong",
+                    "source": "CP_API"
+                }
             
-            clear_request_status()
-            return {
-                "success": True,
-                "query_type": query_type,
-                "query_value": query_value,
-                "raw_response": raw_response,
-                "verified": True,
-                "cached": False,
-                "source": "CP_API"
-            }
-        else:
+            if cp_result.get("success"):
+                raw_response = cp_result.get("raw_response", "")
+                
+                # Save to cache
+                cache_doc = {
+                    "cache_key": cache_key,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "raw_response": raw_response,
+                    "queried_by": username,
+                    "created_by": username,
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                }
+                await db.simple_query_cache.update_one(
+                    {"cache_key": cache_key},
+                    {"$set": cache_doc},
+                    upsert=True
+                )
+                logger.info(f"[SIMPLE QUERY] Saved perlintasan result to cache: {cache_key}")
+                
+                clear_request_status()
+                return {
+                    "success": True,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "raw_response": raw_response,
+                    "verified": True,
+                    "cached": False,
+                    "source": "CP_API"
+                }
+            else:
+                clear_request_status()
+                return {
+                    "success": False,
+                    "query_type": query_type,
+                    "query_value": query_value,
+                    "error": cp_result.get("error", "Gagal mengambil data perlintasan dari CP API"),
+                    "source": "CP_API"
+                }
+        except Exception as e:
+            logger.error(f"[SIMPLE QUERY] Perlintasan error: {e}")
+            import traceback
+            logger.error(f"[SIMPLE QUERY] Perlintasan traceback: {traceback.format_exc()}")
             clear_request_status()
             return {
                 "success": False,
                 "query_type": query_type,
                 "query_value": query_value,
-                "error": cp_result.get("error", "Gagal mengambil data perlintasan dari CP API"),
+                "error": f"Error mengambil data perlintasan: {str(e)}",
                 "source": "CP_API"
             }
     
