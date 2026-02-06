@@ -10902,7 +10902,7 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
         # Contact: support@veraset.com for enterprise API access
         
         import random
-        from datetime import datetime, timedelta
+        from datetime import datetime as dt, timedelta as td
         
         # Generate realistic mock data based on query type
         mock_device_id = f"MAID-{random.randint(10000, 99999)}-{random.randint(1000, 9999)}"
@@ -10911,14 +10911,14 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
             # Mock device tracking result
             num_pings = random.randint(5, 20)
             pings = []
-            base_time = datetime.now() - timedelta(days=random.randint(1, 30))
+            base_time = dt.now() - td(days=random.randint(1, 30))
             
             # Generate location history
             base_lat = -6.2 + random.uniform(-0.1, 0.1)
             base_lon = 106.8 + random.uniform(-0.1, 0.1)
             
             for i in range(num_pings):
-                ping_time = base_time + timedelta(hours=i*random.randint(1, 5))
+                ping_time = base_time + td(hours=i*random.randint(1, 5))
                 pings.append({
                     "timestamp": ping_time.isoformat(),
                     "latitude": base_lat + random.uniform(-0.05, 0.05),
@@ -10986,7 +10986,7 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
             for i in range(min(10, num_devices)):
                 device_type = random.choice(["Android", "iOS"])
                 visit_count = random.randint(1, 15)
-                last_seen = (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d")
+                last_seen = (dt.now() - td(days=random.randint(0, 30))).strftime("%Y-%m-%d")
                 lines.append(f"   {i+1}. MAID-{random.randint(10000,99999)} | {device_type} | {visit_count} visits | Last: {last_seen}")
             
             lines.extend([
@@ -11018,7 +11018,7 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
                 device_id = f"MAID-{random.randint(10000,99999)}-{random.randint(1000,9999)}"
                 device_type = random.choice(["Android (GAID)", "iOS (IDFA)"])
                 match_confidence = random.randint(60, 95)
-                last_seen = (datetime.now() - timedelta(days=random.randint(0, 14))).strftime("%Y-%m-%d %H:%M")
+                last_seen = (dt.now() - td(days=random.randint(0, 14))).strftime("%Y-%m-%d %H:%M")
                 
                 lines.append(f"   Device {i+1}:")
                 lines.append(f"      ID: {device_id}")
