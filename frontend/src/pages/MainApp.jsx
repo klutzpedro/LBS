@@ -2102,9 +2102,9 @@ const MainApp = () => {
           }
         }}
         onSelectSearch={(search) => {
-          // Check if investigation is running
-          if (isGlobalInvestigating) {
-            toast.error('Tidak dapat membuka pencarian baru. Proses pendalaman sedang berjalan.');
+          // Check if investigation is running for a DIFFERENT search
+          if (isGlobalInvestigating && currentInvestigationSearchId && search.id !== currentInvestigationSearchId) {
+            toast.error('Tidak dapat membuka pencarian lain. Proses pendalaman sedang berjalan untuk pencarian sebelumnya.');
             return;
           }
           // Mark that we're transitioning to another dialog
