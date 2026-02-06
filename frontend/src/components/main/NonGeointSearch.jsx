@@ -3269,26 +3269,57 @@ export const NonGeointSearchDialog = ({
     const data = nikData?.[queryType];
     if (!data) return 'pending';
     
-    // If status exists, use it - backend may return 'success' or 'completed'
+    // If status exists, use it - backend may return 'success', 'completed', 'no_data', etc.
     if (data.status) {
       // Map 'success' to 'completed' for consistent display
       if (data.status === 'success') return 'completed';
+      
+      // For passport_data, check if status is 'completed' but no actual passport data
+      if (queryType === 'passport_data' && data.status === 'completed') {
+        const hasPassports = data.passports && data.passports.length > 0;
+        const hasWniData = data.wni_data && Object.keys(data.wni_data).length > 0;
+        const hasWnaData = data.wna_data && Object.keys(data.wna_data).length > 0;
+        
+        // If completed but no passport data, show as no_data
+        if (!hasPassports && !hasWniData && !hasWnaData) {
+          return 'no_data';
+        }
+      }
+      
       return data.status;
     }
     
     // If data or raw_text exists but no status, consider it completed
     if (data.data || data.raw_text || data.photo || data.phones || data.passports || data.results) {
+      // Special check for passport_data with empty passports array
+      if (queryType === 'passport_data') {
+        const hasPassports = data.passports && data.passports.length > 0;
+        const hasWniData = data.wni_data && Object.keys(data.wni_data).length > 0;
+        const hasWnaData = data.wna_data && Object.keys(data.wna_data).length > 0;
+        
+        if (!hasPassports && !hasWniData && !hasWnaData) {
+          return 'no_data';
+        }
+      }
       return 'completed';
     }
     
     // Special case for regnik_data - check if phones array exists (even if empty, data was fetched)
     if (queryType === 'regnik_data' && Array.isArray(data.phones)) {
-      return 'completed';
+      return data.phones.length > 0 ? 'completed' : 'no_data';
     }
     
     // Special case for passport_data - various result structures
-    if (queryType === 'passport_data' && (data.wni_data || data.passport_info || data.search_results)) {
-      return 'completed';
+    if (queryType === 'passport_data') {
+      const hasWniData = data.wni_data && Object.keys(data.wni_data).length > 0;
+      const hasWnaData = data.wna_data && Object.keys(data.wna_data).length > 0;
+      const hasSearchResults = data.search_results && data.search_results.length > 0;
+      
+      if (hasWniData || hasWnaData || hasSearchResults) {
+        return 'completed';
+      }
+      // Passport query completed but no data found
+      return 'no_data';
     }
     
     // Special case for perlintasan_data
