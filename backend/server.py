@@ -7763,20 +7763,22 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                 perlintasan_result = {
                                     "passport_no": passport_no,
                                     "status": "error",
-                                    "error": "No response from perlintasan query"
+                                    "error": "No response from perlintasan query",
+                                    "crossings": []
                                 }
                             
-                            # Save to cache - check both raw_text and raw_data
-                            raw_text_data = perlintasan_result.get("raw_text") or perlintasan_result.get("raw_data")
-                            if raw_text_data:
-                                # Convert to string if it's a dict
-                                if isinstance(raw_text_data, dict):
-                                    raw_text_data = json.dumps(raw_text_data)
+                            # Save to cache - use raw_data if available
+                            raw_data = perlintasan_result.get("raw_data")
+                            if raw_data:
+                                # Convert dict to JSON string for cache storage
+                                cache_raw = json.dumps(raw_data) if isinstance(raw_data, dict) else str(raw_data)
                                 cache_doc = {
                                     "cache_key": cache_key_perl,
                                     "query_type": "perlintasan",
                                     "query_value": passport_no,
-                                    "raw_response": raw_text_data,
+                                    "raw_response": cache_raw,
+                                    "crossings": perlintasan_result.get("crossings", []),
+                                    "status": perlintasan_result.get("status"),
                                     "created_by": "investigation",
                                     "created_at": datetime.now(timezone.utc).isoformat()
                                 }
@@ -7785,6 +7787,7 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                     {"$set": cache_doc},
                                     upsert=True
                                 )
+                                logger.info(f"[NIK INVESTIGATION {investigation_id}] Cached perlintasan for {passport_no}")
                         
                         perlintasan_results.append(perlintasan_result)
                         await asyncio.sleep(0.5)
