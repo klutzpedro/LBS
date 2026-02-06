@@ -7467,10 +7467,20 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     
                     if cached_nkk and cached_nkk.get("raw_response"):
                         logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for NKK {family_id}")
+                        raw_text = cached_nkk.get("raw_response", "")
+                        
+                        # Parse family data from cached raw text
+                        family_data = parse_nkk_family_data(raw_text)
+                        parsed_data = parse_nongeoint_response(raw_text, "NKK") or {}
+                        
+                        if family_data:
+                            logger.info(f"[NIK INVESTIGATION {investigation_id}] Parsed {family_data.get('member_count', 0)} family members from NKK cache")
+                        
                         nkk_result = {
                             "status": "success",
-                            "raw_text": cached_nkk.get("raw_response"),
-                            "data": {},
+                            "raw_text": raw_text,
+                            "data": parsed_data,
+                            "family_data": family_data,
                             "from_cache": True
                         }
                     else:
