@@ -7713,6 +7713,8 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 perlintasan_results = []
                 passports_to_check = passport_result.get('passports', []) if passport_result else []
                 
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passports to check for perlintasan: {passports_to_check}")
+                
                 if passports_to_check:
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Perlintasan for {len(passports_to_check)} passports")
                     await db.nik_investigations.update_one(
