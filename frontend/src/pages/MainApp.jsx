@@ -1825,6 +1825,8 @@ const MainApp = () => {
             // Full Query
             onOpenFullQuery={() => {
               if (isGlobalInvestigating) {
+                // Allow opening if it's a NEW search (no selected search yet)
+                // This blocks starting a NEW full query search while one is running
                 toast.error('Tidak dapat memulai pencarian baru. Proses pendalaman sedang berjalan.');
                 return;
               }
