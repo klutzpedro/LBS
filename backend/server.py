@@ -7796,9 +7796,10 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                 logger.info(f"[NIK INVESTIGATION {investigation_id}] Cached perlintasan for {passport_no}")
                         
                         perlintasan_results.append(perlintasan_result)
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Perlintasan result for {passport_no}: status={perlintasan_result.get('status')}, crossings={len(perlintasan_result.get('crossings', []))}")
                         await asyncio.sleep(0.5)
                     
-                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Perlintasan query complete")
+                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Perlintasan query complete. Total results: {len(perlintasan_results)}")
                 else:
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] No passports found, skipping perlintasan query")
                 
