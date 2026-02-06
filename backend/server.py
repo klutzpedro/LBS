@@ -10893,6 +10893,156 @@ Catatan: Tidak ada dalam database bukan berarti 100% aman."""
             }
     
     # ============================================
+    # ADINT - ADVERTISING INTELLIGENCE (MOCKUP)
+    # ============================================
+    if query_type in ['adint_device', 'adint_location', 'adint_ip']:
+        logger.info(f"[SIMPLE QUERY] ADINT {query_type} for: {query_value}")
+        
+        # This is a MOCKUP - real integration requires Veraset API access
+        # Contact: support@veraset.com for enterprise API access
+        
+        import random
+        from datetime import datetime, timedelta
+        
+        # Generate realistic mock data based on query type
+        mock_device_id = f"MAID-{random.randint(10000, 99999)}-{random.randint(1000, 9999)}"
+        
+        if query_type == 'adint_device':
+            # Mock device tracking result
+            num_pings = random.randint(5, 20)
+            pings = []
+            base_time = datetime.now() - timedelta(days=random.randint(1, 30))
+            
+            # Generate location history
+            base_lat = -6.2 + random.uniform(-0.1, 0.1)
+            base_lon = 106.8 + random.uniform(-0.1, 0.1)
+            
+            for i in range(num_pings):
+                ping_time = base_time + timedelta(hours=i*random.randint(1, 5))
+                pings.append({
+                    "timestamp": ping_time.isoformat(),
+                    "latitude": base_lat + random.uniform(-0.05, 0.05),
+                    "longitude": base_lon + random.uniform(-0.05, 0.05),
+                    "accuracy_m": random.randint(5, 50),
+                    "source": random.choice(["GPS", "WIFI", "CELL"])
+                })
+            
+            lines = [
+                "=" * 50,
+                "📡 ADINT - DEVICE TRACKING [MOCKUP]",
+                f"Device ID: {query_value}",
+                "=" * 50,
+                "",
+                "⚠️  DATA INI ADALAH SIMULASI/MOCKUP",
+                "    Untuk data real, hubungi: support@veraset.com",
+                "",
+                "📍 LOCATION HISTORY:",
+                f"   Total Pings: {num_pings}",
+                f"   Date Range: {pings[0]['timestamp'][:10]} - {pings[-1]['timestamp'][:10]}",
+                "",
+                "📊 RECENT LOCATIONS:",
+            ]
+            
+            for i, ping in enumerate(pings[-5:]):
+                lines.append(f"   {i+1}. [{ping['timestamp'][:16]}] {ping['latitude']:.6f}, {ping['longitude']:.6f} ({ping['source']})")
+            
+            lines.extend([
+                "",
+                "🏠 HOME LOCATION (Inferred):",
+                f"   Lat: {base_lat:.6f}",
+                f"   Lon: {base_lon:.6f}",
+                f"   Confidence: {random.randint(70, 95)}%",
+                "",
+                "🏢 WORK LOCATION (Inferred):",
+                f"   Lat: {base_lat + 0.02:.6f}",
+                f"   Lon: {base_lon + 0.03:.6f}",
+                f"   Confidence: {random.randint(60, 85)}%",
+            ])
+            
+        elif query_type == 'adint_location':
+            # Mock geofence search result
+            coords = query_value.split(",")
+            lat = float(coords[0].strip())
+            lon = float(coords[1].strip())
+            
+            num_devices = random.randint(10, 100)
+            
+            lines = [
+                "=" * 50,
+                "📍 ADINT - GEOFENCE SEARCH [MOCKUP]",
+                f"Location: {lat}, {lon}",
+                f"Radius: 500m",
+                "=" * 50,
+                "",
+                "⚠️  DATA INI ADALAH SIMULASI/MOCKUP",
+                "    Untuk data real, hubungi: support@veraset.com",
+                "",
+                f"📊 DEVICES FOUND: {num_devices}",
+                f"   Time Range: Last 30 days",
+                "",
+                "📱 SAMPLE DEVICES:",
+            ]
+            
+            for i in range(min(10, num_devices)):
+                device_type = random.choice(["Android", "iOS"])
+                visit_count = random.randint(1, 15)
+                last_seen = (datetime.now() - timedelta(days=random.randint(0, 30))).strftime("%Y-%m-%d")
+                lines.append(f"   {i+1}. MAID-{random.randint(10000,99999)} | {device_type} | {visit_count} visits | Last: {last_seen}")
+            
+            lines.extend([
+                "",
+                "📈 VISIT PATTERNS:",
+                f"   Peak Hours: {random.randint(8,11)}:00 - {random.randint(13,17)}:00",
+                f"   Peak Day: {random.choice(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])}",
+                f"   Avg Dwell Time: {random.randint(15, 90)} minutes",
+            ])
+            
+        elif query_type == 'adint_ip':
+            # Mock IP to device resolution
+            num_matches = random.randint(1, 5)
+            
+            lines = [
+                "=" * 50,
+                "🌐 ADINT - IP RESOLUTION [MOCKUP]",
+                f"IP Address: {query_value}",
+                "=" * 50,
+                "",
+                "⚠️  DATA INI ADALAH SIMULASI/MOCKUP",
+                "    Untuk data real, hubungi: support@veraset.com",
+                "",
+                f"📱 MATCHED DEVICES: {num_matches}",
+                "",
+            ]
+            
+            for i in range(num_matches):
+                device_id = f"MAID-{random.randint(10000,99999)}-{random.randint(1000,9999)}"
+                device_type = random.choice(["Android (GAID)", "iOS (IDFA)"])
+                match_confidence = random.randint(60, 95)
+                last_seen = (datetime.now() - timedelta(days=random.randint(0, 14))).strftime("%Y-%m-%d %H:%M")
+                
+                lines.append(f"   Device {i+1}:")
+                lines.append(f"      ID: {device_id}")
+                lines.append(f"      Type: {device_type}")
+                lines.append(f"      Confidence: {match_confidence}%")
+                lines.append(f"      Last Seen: {last_seen}")
+                lines.append("")
+        
+        raw_response = "\n".join(lines)
+        
+        clear_request_status()
+        return {
+            "success": True,
+            "query_type": query_type,
+            "query_value": query_value,
+            "raw_response": raw_response,
+            "verified": False,
+            "cached": False,
+            "source": "ADINT_MOCKUP",
+            "is_mockup": True,
+            "note": "Data simulasi. Untuk akses data real, hubungi Veraset: support@veraset.com"
+        }
+    
+    # ============================================
     # OSINT SOCIAL MEDIA SEARCH - MEDSOS-1 (MAIGRET)
     # ============================================
     if query_type == 'medsos_maigret':
