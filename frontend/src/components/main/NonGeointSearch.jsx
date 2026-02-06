@@ -4749,8 +4749,14 @@ export const NonGeointSearchDialog = ({
                         )}
                       </div>
                     ) : (
-                      <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                        {detailDialog.result.passport_data.status === 'no_data' ? 'Tidak ditemukan data passport' : `Status: ${detailDialog.result.passport_data.status}`}
+                      <p className="text-xs flex items-center gap-2" style={{ color: 'var(--foreground-muted)' }}>
+                        <AlertCircle className="w-4 h-4 text-yellow-500" />
+                        {detailDialog.result.passport_data.status === 'no_data' || 
+                         (!detailDialog.result.passport_data.passports?.length && 
+                          !detailDialog.result.passport_data.wni_data?.result?.length && 
+                          !detailDialog.result.passport_data.wni_data?.data?.length) 
+                          ? 'Target tidak memiliki data passport' 
+                          : `Status: ${detailDialog.result.passport_data.status}`}
                       </p>
                     )}
                   </div>
