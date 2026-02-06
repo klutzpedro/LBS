@@ -7727,32 +7727,38 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                         cache_key_perl = f"perlintasan:{passport_no}"
                         cached_perl = await db.simple_query_cache.find_one({"cache_key": cache_key_perl})
                         
-                        if cached_perl and cached_perl.get("raw_response"):
+                        if cached_perl and (cached_perl.get("raw_response") or cached_perl.get("crossings")):
                             logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Perlintasan {passport_no}")
                             
-                            # Parse crossings from cached data
-                            crossings = []
-                            try:
-                                import json
-                                cached_data = json.loads(cached_perl.get("raw_response", "{}"))
-                                crossings_data = cached_data.get("dataPerlintasan") or cached_data.get("data") or []
-                                for c in crossings_data:
-                                    crossings.append({
-                                        "passport_no": c.get("TRAVELDOCUMENTNO", passport_no),
-                                        "movement_date": c.get("MOVEMENTDATE", "-"),
-                                        "direction": c.get("DIRECTIONDESCRIPTION", "-"),
-                                        "direction_code": c.get("DIRECTIONCODE", "-"),
-                                        "tpi_name": c.get("TPINAME", "-"),
-                                        "port_description": c.get("PORTDESCRIPTION", "-")
-                                    })
-                            except:
-                                pass
+                            # Check if crossings already parsed in cache
+                            crossings = cached_perl.get("crossings", [])
+                            
+                            # If no pre-parsed crossings, try to parse from raw_response
+                            if not crossings and cached_perl.get("raw_response"):
+                                try:
+                                    cached_data = json.loads(cached_perl.get("raw_response", "{}"))
+                                    crossings_data = cached_data.get("dataPerlintasan") or cached_data.get("data") or []
+                                    for c in crossings_data:
+                                        crossings.append({
+                                            "passport_no": c.get("TRAVELDOCUMENTNO", passport_no),
+                                            "movement_date": c.get("MOVEMENTDATE", "-"),
+                                            "direction": "ARRIVAL" if c.get("DIRECTIONCODE") == "A" else "DEPARTURE" if c.get("DIRECTIONCODE") == "D" else c.get("DIRECTIONCODE", "-"),
+                                            "direction_code": c.get("DIRECTIONCODE", "-"),
+                                            "tpi_name": c.get("TPINAME", "-"),
+                                            "port_description": c.get("PORTDESCRIPTION", "-"),
+                                            "name": c.get("GIVENNAME", "-"),
+                                            "family_name": c.get("FAMILYNAME", "-"),
+                                            "nationality": c.get("NATIONALITYDESCRIPTION", "-")
+                                        })
+                                except Exception as parse_err:
+                                    logger.warning(f"[NIK INVESTIGATION {investigation_id}] Error parsing cached perlintasan: {parse_err}")
                             
                             perlintasan_result = {
                                 "passport_no": passport_no,
-                                "status": "success",
+                                "status": cached_perl.get("status", "success") if crossings else "no_data",
                                 "raw_text": cached_perl.get("raw_response"),
                                 "crossings": crossings,
+                                "total_crossings": len(crossings),
                                 "from_cache": True
                             }
                         else:
