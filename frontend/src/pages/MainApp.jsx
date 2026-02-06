@@ -2085,7 +2085,14 @@ const MainApp = () => {
         onNikPendalaman={handleNonGeointNikPendalaman}
         initialSearch={selectedNonGeointSearch}
         isGlobalInvestigating={isGlobalInvestigating}
-        onInvestigatingChange={setIsGlobalInvestigating}
+        onInvestigatingChange={(isInvestigating, searchId) => {
+          setIsGlobalInvestigating(isInvestigating);
+          if (isInvestigating && searchId) {
+            setCurrentInvestigationSearchId(searchId);
+          } else if (!isInvestigating) {
+            setCurrentInvestigationSearchId(null);
+          }
+        }}
       />
 
       {/* NON GEOINT History Dialog */}
