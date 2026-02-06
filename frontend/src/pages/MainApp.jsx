@@ -94,6 +94,7 @@ const MainApp = () => {
   const [nonGeointHistoryOpen, setNonGeointHistoryOpen] = useState(false);
   const [selectedNonGeointSearch, setSelectedNonGeointSearch] = useState(null);
   const [isGlobalInvestigating, setIsGlobalInvestigating] = useState(false); // Track if any investigation is running
+  const [currentInvestigationSearchId, setCurrentInvestigationSearchId] = useState(null); // Track which search is being investigated
   
   // Request status for query locking
   const [requestStatus, setRequestStatus] = useState({ is_busy: false, username: null, operation: null });
