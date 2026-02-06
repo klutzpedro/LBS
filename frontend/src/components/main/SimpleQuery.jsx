@@ -300,6 +300,21 @@ const QUERY_TYPES = [
     highlight: true,
     highlightColor: '#8b5cf6',
     isMockup: true
+  },
+  // ============================================
+  // TIKTOK OSINT
+  // ============================================
+  { 
+    id: 'tiktok_profile', 
+    label: 'TikTok Profile', 
+    description: 'OSINT: Scrape profil TikTok (username, bio, stats)',
+    icon: Globe,
+    placeholder: 'Masukkan username TikTok (tanpa @, ex: mrbeast)...',
+    validation: (v) => v.length >= 2 && /^[a-zA-Z0-9_.]+$/.test(v.trim()),
+    inputValidation: /^[a-zA-Z0-9_.]+$/,
+    errorMsg: 'Username TikTok minimal 2 karakter (huruf, angka, ., _)',
+    highlight: true,
+    highlightColor: '#00f2ea'
   }
 ];
 
