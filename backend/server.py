@@ -7663,6 +7663,14 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     )
                     passport_result = await query_passport_cp_api(nik, target_name)
                 
+                # Safety check - ensure passport_result is a dict
+                if passport_result is None:
+                    passport_result = {
+                        "status": "error",
+                        "error": "No response from passport query",
+                        "passports": []
+                    }
+                
                 nik_results["passport_data"] = passport_result
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, from_cache: {passport_result.get('from_cache', False)}")
                 
@@ -7675,7 +7683,7 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 
                 # Query 5: Perlintasan (Immigration Crossing) via CP API - for each passport found
                 perlintasan_results = []
-                passports_to_check = passport_result.get('passports', [])
+                passports_to_check = passport_result.get('passports', []) if passport_result else []
                 
                 if passports_to_check:
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Perlintasan for {len(passports_to_check)} passports")
