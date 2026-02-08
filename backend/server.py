@@ -7407,11 +7407,30 @@ def parse_count(count_str: str) -> int:
 
 async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
     """Process NIK deep investigation with queue system"""
-    global telegram_client
+    global telegram_client, current_request_status
     import json  # Import at function level to ensure availability
     import re    # Import at function level to ensure availability
     
     results = {}
+    
+    # Set global busy status for Full Query
+    investigation_username = None
+    try:
+        inv_doc = await db.nik_investigations.find_one({"id": investigation_id})
+        if inv_doc:
+            investigation_username = inv_doc.get("created_by", "unknown")
+    except:
+        pass
+    
+    # Update global status to BUSY
+    current_request_status = {
+        "is_busy": True,
+        "username": investigation_username,
+        "operation": f"Full Query Investigation ({len(niks)} NIK)",
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "investigation_id": investigation_id
+    }
+    logger.info(f"[NIK INVESTIGATION {investigation_id}] Set global status to BUSY by {investigation_username}")
     
     async with nongeoint_queue_lock:
         try:
