@@ -4700,38 +4700,39 @@ export const NonGeointSearchDialog = ({
                 </div>
               )}
 
-              {/* FINAL PRINT BUTTON - Always at bottom when results available */}
-              {showFinalPrintButton && (
-                <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
-                  <Button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('[PDF] Button clicked, generating PDF...');
-                      generatePDF();
-                    }}
-                    className="w-full"
-                    data-testid="download-pdf-btn"
-                    style={{
-                      background: 'linear-gradient(145deg, #10b981, #059669)',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      zIndex: 10
-                    }}
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Laporan PDF
-                  </Button>
-                  <p className="text-xs mt-2 text-center" style={{ color: 'var(--foreground-muted)' }}>
-                    Download semua hasil pencarian dan pendalaman dalam format PDF
-                  </p>
                 </div>
               )}
             </div>
           )}
           </div>
+          
+          {/* FINAL PRINT BUTTON - Fixed at bottom, outside scroll area */}
+          {showFinalPrintButton && (
+            <div className="flex-shrink-0 p-3 border-t" style={{ 
+              borderColor: 'var(--borders-default)',
+              backgroundColor: 'var(--background-elevated)'
+            }}>
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('[PDF] Button clicked, generating PDF...');
+                  generatePDF();
+                }}
+                className="w-full"
+                data-testid="download-pdf-btn"
+                style={{
+                  background: 'linear-gradient(145deg, #10b981, #059669)',
+                  color: '#fff',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                  cursor: 'pointer'
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Laporan PDF
+              </Button>
+            </div>
+          )}
         </DraggableDialogContent>
       </DraggableDialog>
 
