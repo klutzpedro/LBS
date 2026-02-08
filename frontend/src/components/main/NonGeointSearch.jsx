@@ -4704,12 +4704,21 @@ export const NonGeointSearchDialog = ({
               {showFinalPrintButton && (
                 <div className="mt-6 pt-4 border-t" style={{ borderColor: 'var(--borders-subtle)' }}>
                   <Button
-                    onClick={generatePDF}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('[PDF] Button clicked, generating PDF...');
+                      generatePDF();
+                    }}
                     className="w-full"
+                    data-testid="download-pdf-btn"
                     style={{
                       background: 'linear-gradient(145deg, #10b981, #059669)',
                       color: '#fff',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                      cursor: 'pointer',
+                      position: 'relative',
+                      zIndex: 10
                     }}
                   >
                     <Download className="w-4 h-4 mr-2" />
