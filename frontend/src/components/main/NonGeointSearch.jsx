@@ -1925,32 +1925,56 @@ export const NonGeointSearchDialog = ({
       if (!response.ok) throw new Error('Failed to get investigation');
 
       const data = await response.json();
-      console.log('Investigation poll result:', data);
-      console.log('Investigation results:', data.results);
+      console.log('[NonGeoint] Investigation poll result:', data);
+      console.log('[NonGeoint] Investigation status:', data.status);
+      console.log('[NonGeoint] Investigation results keys:', data.results ? Object.keys(data.results) : 'none');
+      
+      // IMPORTANT: Update investigation state first
       setInvestigation(data);
 
       // Check if any NIK has data (for View button)
       if (data.results) {
         Object.entries(data.results).forEach(([nik, nikData]) => {
-          console.log(`NIK ${nik} data:`, nikData);
+          console.log(`[NonGeoint] NIK ${nik} has data:`, {
+            nik_data: !!nikData.nik_data,
+            nkk_data: !!nikData.nkk_data,
+            regnik_data: !!nikData.regnik_data,
+            passport_data: !!nikData.passport_data,
+            perlintasan_data: !!nikData.perlintasan_data
+          });
         });
       }
 
       if (data.status === 'completed' || data.status === 'error') {
+        console.log('[NonGeoint] Investigation COMPLETED/ERROR - clearing polling');
         if (investigationPollingRef.current) {
           clearInterval(investigationPollingRef.current);
           investigationPollingRef.current = null;
         }
-        setIsInvestigating(false);
-
-        if (data.status === 'completed') {
-          toast.success('Pendalaman NIK selesai!');
-        } else if (data.status === 'error') {
-          toast.error(`Error: ${data.error || 'Unknown error'}`);
-        }
+        
+        // FIX: Use callback to ensure investigation is set before isInvestigating becomes false
+        // This prevents race condition where UI checks state between the two updates
+        setInvestigation(prevInv => {
+          console.log('[NonGeoint] Setting final investigation state, prevInv:', prevInv?.status);
+          // Return the new data to ensure it's set
+          return data;
+        });
+        
+        // Small delay to ensure investigation state is fully updated before setting isInvestigating to false
+        // This prevents the useEffect from seeing stale investigation state
+        setTimeout(() => {
+          console.log('[NonGeoint] Setting isInvestigating to FALSE after investigation completed');
+          setIsInvestigating(false);
+          
+          if (data.status === 'completed') {
+            toast.success('Pendalaman NIK selesai!');
+          } else if (data.status === 'error') {
+            toast.error(`Error: ${data.error || 'Unknown error'}`);
+          }
+        }, 100);
       }
     } catch (error) {
-      console.error('Investigation polling error:', error);
+      console.error('[NonGeoint] Investigation polling error:', error);
     }
   };
 
