@@ -1256,12 +1256,12 @@ async def get_request_status():
     """
     global current_request_status
     
-    # Check if lock is actually held OR if current_request_status is busy
-    # Full Query may set is_busy without holding telegram_query_lock
-    is_locked = telegram_query_lock.locked()
+    # Only check current_request_status.is_busy
+    # telegram_query_lock being held doesn't mean system is busy for other users
+    # (it could be initial nongeoint search which doesn't block others)
     is_busy = current_request_status.get("is_busy", False)
     
-    if is_busy or is_locked:
+    if is_busy:
         return {
             "is_busy": True,
             "username": current_request_status.get("username"),
@@ -1271,14 +1271,6 @@ async def get_request_status():
             "message": f"User '{current_request_status.get('username')}' sedang melakukan {current_request_status.get('operation', 'request')}"
         }
     else:
-        # Make sure status is cleared if not busy
-        current_request_status = {
-            "is_busy": False,
-            "username": None,
-            "operation": None,
-            "started_at": None,
-            "investigation_id": None
-        }
         return {
             "is_busy": False,
             "username": None,
