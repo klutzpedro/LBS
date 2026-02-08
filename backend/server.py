@@ -5421,10 +5421,15 @@ async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False,
     """Delete a NON GEOINT search and its associated investigation
     
     Args:
-        clear_nik_cache: If True, also delete NIK cache from simple_query_cache
+        clear_nik_cache: If True, also delete ALL related cache from simple_query_cache
+                        This includes: NIK, NKK, REGNIK, Passport, Perlintasan, OSINT, SNA
+                        Data will be deleted for ALL users (global cache clear)
     """
     # Check if search exists and belongs to user (admin can delete any)
-    if username == "admin":
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    if is_admin:
         search = await db.nongeoint_searches.find_one({"id": search_id})
     else:
         search = await db.nongeoint_searches.find_one({"id": search_id, "created_by": username})
@@ -5446,13 +5451,17 @@ async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False,
             niks_to_clear.extend(list(investigation["results"].keys()))
         await db.nik_investigations.delete_many({"search_id": search_id})
     
-    # Clear NIK cache from simple_query_cache if requested
+    # Clear ALL related cache from simple_query_cache if requested
+    # This removes data for ALL users (global cache clear for this target)
     if clear_nik_cache and niks_to_clear:
         unique_niks = list(set(niks_to_clear))
-        logger.info(f"[NONGEOINT] Clearing cache for {len(unique_niks)} NIKs")
+        logger.info(f"[NONGEOINT] FULL CACHE CLEAR for {len(unique_niks)} NIKs - clearing NIK, NKK, REGNIK, Passport, Perlintasan, OSINT, SNA")
         
         # Collect all cache keys to delete
         all_cache_keys = []
+        names_to_clear = []
+        family_ids_to_clear = []
+        passport_numbers_to_clear = []
         
         for nik in unique_niks:
             # Standard NIK-based cache keys
@@ -5460,9 +5469,11 @@ async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False,
                 f"capil_nik:{nik}",
                 f"nkk:{nik}",
                 f"reghp:{nik}",  # RegNIK uses 'reghp' prefix
+                f"osint:{nik}",  # OSINT cache
+                f"sna:{nik}",    # SNA cache
             ])
         
-        # Get names and family IDs from investigation results for additional cache keys
+        # Get names, family IDs, and passport numbers from investigation results
         if investigation and investigation.get("results"):
             for nik, result in investigation["results"].items():
                 # Get Family ID for NKK cache
@@ -5471,42 +5482,92 @@ async def delete_nongeoint_search(search_id: str, clear_nik_cache: bool = False,
                     family_id = result["nik_data"]["data"]["Family ID"]
                 elif result.get("nkk_data", {}).get("data", {}).get("Family ID"):
                     family_id = result["nkk_data"]["data"]["Family ID"]
+                elif result.get("nik_data", {}).get("data", {}).get("No KK"):
+                    family_id = result["nik_data"]["data"]["No KK"]
                 
-                if family_id:
+                if family_id and family_id not in family_ids_to_clear:
+                    family_ids_to_clear.append(family_id)
                     all_cache_keys.append(f"nkk:{family_id}")
                 
                 # Get name for passport cache (passport uses name, not NIK)
-                name = None
+                target_name = None
                 if result.get("nik_data", {}).get("data", {}).get("Full Name"):
-                    name = result["nik_data"]["data"]["Full Name"]
+                    target_name = result["nik_data"]["data"]["Full Name"]
                 elif result.get("nik_data", {}).get("data", {}).get("Nama"):
-                    name = result["nik_data"]["data"]["Nama"]
+                    target_name = result["nik_data"]["data"]["Nama"]
                 
-                if name:
-                    all_cache_keys.append(f"passport_wni:{name.upper()}")
+                if target_name and target_name.upper() not in names_to_clear:
+                    names_to_clear.append(target_name.upper())
+                    all_cache_keys.append(f"passport_wni:{target_name.upper()}")
                 
                 # Get passport numbers for perlintasan cache
-                if result.get("passport_data", {}).get("results"):
-                    for passport_result in result["passport_data"]["results"]:
-                        passport_no = passport_result.get("passport_no")
-                        if passport_no:
+                # Check both 'passports' array and 'results' array (different formats)
+                passport_data = result.get("passport_data", {})
+                if passport_data:
+                    # Format 1: passports array
+                    for passport_no in passport_data.get("passports", []):
+                        if passport_no and passport_no not in passport_numbers_to_clear:
+                            passport_numbers_to_clear.append(passport_no)
+                            all_cache_keys.append(f"perlintasan:{passport_no}")
+                    
+                    # Format 2: wni_data.result array
+                    wni_data = passport_data.get("wni_data", {})
+                    if wni_data:
+                        for item in wni_data.get("result", []) or wni_data.get("data", []) or []:
+                            passport_no = item.get("no_paspor") or item.get("NO_PASPOR")
+                            if passport_no and passport_no not in passport_numbers_to_clear:
+                                passport_numbers_to_clear.append(passport_no)
+                                all_cache_keys.append(f"perlintasan:{passport_no}")
+                
+                # Also check perlintasan_data for additional passport numbers
+                perlintasan_data = result.get("perlintasan_data", {})
+                if perlintasan_data:
+                    for perl_result in perlintasan_data.get("results", []):
+                        passport_no = perl_result.get("passport_no")
+                        if passport_no and passport_no not in passport_numbers_to_clear:
+                            passport_numbers_to_clear.append(passport_no)
                             all_cache_keys.append(f"perlintasan:{passport_no}")
         
         # Also get name from search data
         if search.get("name"):
-            all_cache_keys.append(f"passport_wni:{search['name'].upper()}")
+            search_name = search['name'].upper()
+            if search_name not in names_to_clear:
+                names_to_clear.append(search_name)
+                all_cache_keys.append(f"passport_wni:{search_name}")
         
         # Remove duplicates
         all_cache_keys = list(set(all_cache_keys))
         
-        logger.info(f"[NONGEOINT] Deleting {len(all_cache_keys)} cache keys: {all_cache_keys[:10]}...")
+        logger.info(f"[NONGEOINT] Cache keys to delete ({len(all_cache_keys)}): {all_cache_keys}")
+        logger.info(f"[NONGEOINT] Names: {names_to_clear}, Family IDs: {family_ids_to_clear}, Passports: {passport_numbers_to_clear}")
         
         # Delete all cache keys
+        deleted_count = 0
         if all_cache_keys:
             delete_result = await db.simple_query_cache.delete_many({"cache_key": {"$in": all_cache_keys}})
-            logger.info(f"[NONGEOINT] Deleted {delete_result.deleted_count} cache entries")
+            deleted_count = delete_result.deleted_count
+            logger.info(f"[NONGEOINT] Deleted {deleted_count} cache entries from simple_query_cache")
         
-        logger.info(f"[NONGEOINT] NIK cache cleared for search {search_id}")
+        # Also delete OSINT results stored in separate collection (if exists)
+        osint_deleted = await db.osint_results.delete_many({"nik": {"$in": unique_niks}}) if hasattr(db, 'osint_results') else None
+        if osint_deleted:
+            logger.info(f"[NONGEOINT] Deleted {osint_deleted.deleted_count} OSINT results")
+        
+        # Also delete SNA results stored in separate collection (if exists)
+        sna_deleted = await db.sna_results.delete_many({"nik": {"$in": unique_niks}}) if hasattr(db, 'sna_results') else None
+        if sna_deleted:
+            logger.info(f"[NONGEOINT] Deleted {sna_deleted.deleted_count} SNA results")
+        
+        logger.info(f"[NONGEOINT] FULL CACHE CLEAR completed for search {search_id}")
+        
+        return {
+            "message": "Search deleted successfully with FULL cache clear",
+            "cache_cleared": True,
+            "niks_cleared": unique_niks,
+            "cache_keys_deleted": deleted_count,
+            "names_cleared": names_to_clear,
+            "passport_numbers_cleared": passport_numbers_to_clear
+        }
     
     logger.info(f"[NONGEOINT] Deleted search {search_id} by {username}")
     return {"message": "Search deleted successfully", "cache_cleared": clear_nik_cache}
