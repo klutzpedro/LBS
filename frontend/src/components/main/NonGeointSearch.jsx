@@ -1699,6 +1699,22 @@ export const NonGeointSearchDialog = ({
         })
       });
 
+      // Handle 503 Service Unavailable (system busy)
+      if (response.status === 503) {
+        let errorMsg = 'Antrian query sedang berjalan. Mohon tunggu hingga akun lain selesai melakukan query.';
+        try {
+          const errorData = await response.json();
+          if (errorData.detail?.message) {
+            errorMsg = errorData.detail.message;
+          }
+        } catch (e) {
+          // If can't parse JSON, use default message
+        }
+        toast.error(errorMsg, { duration: 5000 });
+        setIsSearching(false);
+        return;
+      }
+
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
