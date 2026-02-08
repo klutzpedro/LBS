@@ -5599,6 +5599,19 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
     nik_photos = {}  # Store photos for each NIK: {nik: {photo, name, raw_data}}
     
     async with nongeoint_queue_lock:
+        # Acquire global telegram lock and set BUSY status
+        search_doc = await db.nongeoint_searches.find_one({"id": search_id})
+        search_username = search_doc.get("created_by", "unknown") if search_doc else "unknown"
+        lock_acquired = await acquire_telegram_lock(f"Full Query - {name}", search_username)
+        
+        if not lock_acquired:
+            logger.error(f"[NONGEOINT {search_id}] Could not acquire telegram lock")
+            await db.nongeoint_searches.update_one(
+                {"id": search_id},
+                {"$set": {"status": "error", "error": "Sistem sedang sibuk, coba lagi nanti"}}
+            )
+            return
+        
         try:
             # Ensure Telegram connection
             connected = await safe_telegram_operation(
