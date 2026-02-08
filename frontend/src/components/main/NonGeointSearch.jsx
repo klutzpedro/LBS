@@ -1592,10 +1592,17 @@ export const NonGeointSearchDialog = ({
         searchResults?.investigation?.results && 
         Object.keys(searchResults.investigation.results).length > 0;
       
-      if (!hasCompletedInvestigation && (persons.length >= 1 || isWaitingSelection)) {
+      // FIX: Also check the local investigation state (updated by polling)
+      const hasCompletedLocalInvestigation = investigation?.status === 'completed' &&
+        investigation?.results && 
+        Object.keys(investigation.results).length > 0;
+      
+      const hasAnyCompletedInvestigation = hasCompletedInvestigation || hasCompletedLocalInvestigation;
+      
+      if (!hasAnyCompletedInvestigation && (persons.length >= 1 || isWaitingSelection)) {
         console.log('[NonGeoint] Setting showPersonSelection = true (no completed investigation)');
         setShowPersonSelection(true);
-      } else if (hasCompletedInvestigation) {
+      } else if (hasAnyCompletedInvestigation) {
         console.log('[NonGeoint] Keeping showPersonSelection = false (has completed investigation)');
         setShowPersonSelection(false);
       } else {
@@ -1613,7 +1620,14 @@ export const NonGeointSearchDialog = ({
         searchResults?.investigation?.results && 
         Object.keys(searchResults.investigation.results).length > 0;
       
-      if (!hasCompletedInvestigation && persons.length >= 1) {
+      // FIX: Also check the local investigation state
+      const hasCompletedLocalInvestigation = investigation?.status === 'completed' &&
+        investigation?.results && 
+        Object.keys(investigation.results).length > 0;
+      
+      const hasAnyCompletedInvestigation = hasCompletedInvestigation || hasCompletedLocalInvestigation;
+      
+      if (!hasAnyCompletedInvestigation && persons.length >= 1) {
         setShowPersonSelection(true);
       } else {
         setShowPersonSelection(false);
@@ -1626,7 +1640,14 @@ export const NonGeointSearchDialog = ({
         searchResults?.investigation?.results && 
         Object.keys(searchResults.investigation.results).length > 0;
       
-      if (!hasCompletedInvestigation) {
+      // FIX: Also check the local investigation state
+      const hasCompletedLocalInvestigation = investigation?.status === 'completed' &&
+        investigation?.results && 
+        Object.keys(investigation.results).length > 0;
+      
+      const hasAnyCompletedInvestigation = hasCompletedInvestigation || hasCompletedLocalInvestigation;
+      
+      if (!hasAnyCompletedInvestigation) {
         console.log('[NonGeoint] Waiting selection but no nik_photos - will wait for data');
         setShowPersonSelection(true);
       } else {
@@ -1634,7 +1655,7 @@ export const NonGeointSearchDialog = ({
         setShowPersonSelection(false);
       }
     }
-  }, [searchResults?.id, searchResults?.status, searchResults?.nik_photos, searchResults?.investigation]);
+  }, [searchResults?.id, searchResults?.status, searchResults?.nik_photos, searchResults?.investigation, investigation?.status, investigation?.results]);
 
   const startSearch = async () => {
     if (!searchName.trim()) {
