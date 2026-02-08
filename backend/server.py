@@ -5111,12 +5111,19 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
     if investigation:
         search["investigation"] = investigation
         logger.info(f"[NONGEOINT] Loaded investigation for search {search_id}: status={investigation.get('status')}, results_count={len(investigation.get('results', {}))}")
-        # Log each NIK result briefly
+        # Log each NIK result in detail
         for nik, result in investigation.get('results', {}).items():
             has_nik = 'nik_data' in result
             has_nkk = 'nkk_data' in result  
             has_regnik = 'regnik_data' in result
-            logger.info(f"[NONGEOINT]   NIK {nik}: nik_data={has_nik}, nkk_data={has_nkk}, regnik_data={has_regnik}")
+            has_passport = 'passport_data' in result
+            has_perlintasan = 'perlintasan_data' in result
+            # Log passport and perlintasan details
+            passport_data = result.get('passport_data', {})
+            passport_count = len(passport_data.get('passports', [])) if passport_data else 0
+            perlintasan_data = result.get('perlintasan_data', {})
+            perlintasan_count = len(perlintasan_data.get('results', [])) if perlintasan_data else 0
+            logger.info(f"[NONGEOINT]   NIK {nik}: nik_data={has_nik}, nkk_data={has_nkk}, regnik_data={has_regnik}, passport_data={has_passport}(count:{passport_count}), perlintasan_data={has_perlintasan}(count:{perlintasan_count})")
     else:
         logger.info(f"[NONGEOINT] No investigation found for search {search_id}")
     
