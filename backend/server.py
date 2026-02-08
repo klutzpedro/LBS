@@ -142,13 +142,15 @@ async def acquire_telegram_lock(operation_name: str, username: str = None, timeo
         )
         if acquired:
             logger.info(f"[LOCK] Acquired for: {operation_name} by {username}")
-            # Update request status
-            current_request_status = {
-                "is_busy": True,
-                "username": username,
-                "operation": operation_name,
-                "started_at": datetime.now(timezone.utc).isoformat()
-            }
+            # Only update request status for specific operations (not initial search)
+            # Full Query investigation will set its own status
+            if not operation_name.startswith("NONGEOINT_") and not operation_name.startswith("nongeoint_"):
+                current_request_status = {
+                    "is_busy": True,
+                    "username": username,
+                    "operation": operation_name,
+                    "started_at": datetime.now(timezone.utc).isoformat()
+                }
         return acquired
     except asyncio.TimeoutError:
         logger.error(f"[LOCK] Timeout waiting for lock: {operation_name} (waited {timeout}s)")
@@ -164,13 +166,15 @@ def release_telegram_lock(operation_name: str):
         if telegram_query_lock.locked():
             telegram_query_lock.release()
             logger.info(f"[LOCK] Released for: {operation_name}")
-            # Clear request status
-            current_request_status = {
-                "is_busy": False,
-                "username": None,
-                "operation": None,
-                "started_at": None
-            }
+            # Only clear request status if it was set by this operation type
+            # Don't clear if it's a nongeoint search (those don't set status)
+            if not operation_name.startswith("NONGEOINT_") and not operation_name.startswith("nongeoint_"):
+                current_request_status = {
+                    "is_busy": False,
+                    "username": None,
+                    "operation": None,
+                    "started_at": None
+                }
     except Exception as e:
         logger.error(f"[LOCK] Error releasing lock for {operation_name}: {e}")
 
