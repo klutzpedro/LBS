@@ -5090,9 +5090,13 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
     """Get NON GEOINT search results with investigation if exists"""
     logger.info(f"[NONGEOINT] Fetching search {search_id}")
     
-    # Filter by user ownership
+    # Check if user is admin
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
+    # Filter by user ownership - admin can see all
     query = {"id": search_id}
-    if username != "admin":
+    if not is_admin:
         query["created_by"] = username
     
     search = await db.nongeoint_searches.find_one(query, {"_id": 0})
