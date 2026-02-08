@@ -7699,14 +7699,17 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     # FIX: Check for cached passports array first (more reliable), then fall back to raw_response parsing
                     if cached_passport and (cached_passport.get("passports") or cached_passport.get("raw_response")):
                         logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Passport {target_name}")
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Cache has passports array: {bool(cached_passport.get('passports'))}, raw_response: {bool(cached_passport.get('raw_response'))}")
                         
                         # FIX: First try to use pre-stored passports array
                         passport_numbers = cached_passport.get("passports", [])
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Pre-stored passports from cache: {passport_numbers}")
                         
                         # If no pre-stored passports, try to extract from raw_response
                         if not passport_numbers and cached_passport.get("raw_response"):
                             import re
                             raw_text = cached_passport.get("raw_response", "")
+                            logger.info(f"[NIK INVESTIGATION {investigation_id}] Parsing raw_response (first 500 chars): {raw_text[:500]}")
                             
                             # Extract passport numbers with various patterns
                             # Indonesian passport: A1234567 (letter + 7 digits)
@@ -7728,6 +7731,7 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                     passport_no = match.upper().strip()
                                     if passport_no and len(passport_no) >= 7 and passport_no not in passport_numbers:
                                         passport_numbers.append(passport_no)
+                                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Extracted passport via regex: {passport_no}")
                             
                             # Also try to parse as JSON if it looks like JSON
                             if raw_text.strip().startswith('{') or raw_text.strip().startswith('['):
@@ -7735,16 +7739,18 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                     import json
                                     cached_json = json.loads(raw_text)
                                     data_list = cached_json.get("result") or cached_json.get("data") or []
+                                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Parsed JSON, data_list type: {type(data_list)}, length: {len(data_list) if isinstance(data_list, list) else 'N/A'}")
                                     if isinstance(data_list, list):
                                         for item in data_list:
                                             for field in ["no_paspor", "no_paspor_lama", "TRAVELDOCUMENTNO", "NO_PASPOR", "passport_no"]:
                                                 pno = item.get(field)
                                                 if pno and pno not in passport_numbers:
                                                     passport_numbers.append(pno)
-                                except:
-                                    pass
+                                                    logger.info(f"[NIK INVESTIGATION {investigation_id}] Extracted passport from JSON field {field}: {pno}")
+                                except Exception as json_err:
+                                    logger.warning(f"[NIK INVESTIGATION {investigation_id}] JSON parsing failed: {json_err}")
                         
-                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Retrieved {len(passport_numbers)} passports from cache: {passport_numbers}")
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Final passport_numbers from cache: {passport_numbers}")
                         
                         passport_result = {
                             "status": "success",
