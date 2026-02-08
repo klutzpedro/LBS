@@ -3683,7 +3683,13 @@ export const NonGeointSearchDialog = ({
   const currentStep = getCurrentStep();
 
   // Check if we should show the final print button
-  const showFinalPrintButton = investigation?.status === 'completed' || 
+  // Show PDF download button when:
+  // 1. Local investigation state is completed
+  // 2. OR searchResults has completed investigation (from history)
+  // 3. OR search completed but no NIKs found
+  const showFinalPrintButton = 
+    investigation?.status === 'completed' || 
+    searchResults?.investigation?.status === 'completed' ||
     (searchResults?.status === 'completed' && !searchResults?.niks_found?.length);
 
   return (
