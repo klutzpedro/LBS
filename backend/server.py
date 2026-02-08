@@ -10511,6 +10511,26 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     query_type = request.query_type
     query_value = request.query_value.strip().upper()
     
+    # ============================================
+    # CHECK IF SYSTEM IS BUSY (Full Query running)
+    # ============================================
+    if current_request_status.get("is_busy"):
+        busy_user = current_request_status.get("username", "unknown")
+        busy_operation = current_request_status.get("operation", "unknown")
+        # Allow same user to see their own operation progress
+        if busy_user != username:
+            logger.warning(f"[SIMPLE QUERY] Blocked - System busy by {busy_user} doing {busy_operation}")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "system_busy",
+                    "message": f"Sistem sedang sibuk. User '{busy_user}' sedang melakukan {busy_operation}. Silakan tunggu.",
+                    "busy_user": busy_user,
+                    "operation": busy_operation,
+                    "started_at": current_request_status.get("started_at")
+                }
+            )
+    
     def clear_request_status():
         """Helper to clear request status when query completes"""
         global current_request_status
