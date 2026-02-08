@@ -562,8 +562,8 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                       </span>
                       <div className="flex items-center gap-2">
                         {getStatusBadge(search.status, search.has_investigation, search.niks_found?.length || search.total_niks || 0)}
-                        {/* Show investigation badge if exists */}
-                        {search.has_investigation && (
+                        {/* Show investigation badge if exists AND has results */}
+                        {search.has_investigation && search.investigated_niks_count > 0 && (
                           <span 
                             className="px-1.5 py-0.5 rounded text-xs"
                             style={{ 
@@ -575,7 +575,7 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
                                 : '#3b82f6'
                             }}
                           >
-                            ✓ Pendalaman
+                            {search.investigation_status === 'completed' ? '✓' : '⟳'} Pendalaman ({search.investigated_niks_count} NIK)
                           </span>
                         )}
                         <Button
