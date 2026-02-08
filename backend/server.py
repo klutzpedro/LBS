@@ -5160,8 +5160,8 @@ async def list_nongeoint_searches(username: str = Depends(verify_token)):
             search["investigation_id"] = investigation.get("id") if has_valid_results else None
             search["investigated_niks_count"] = len(results)
             
-            # Log for debugging
-            logger.debug(f"[NONGEOINT] Search {search['id']}: investigation_status={investigation.get('status')}, results_count={len(results)}, has_valid={has_valid_results}")
+            # Log for debugging - always log, not just debug level
+            logger.info(f"[NONGEOINT LIST] Search {search['id']}: investigation found - status={investigation.get('status')}, results_count={len(results)}, has_valid={has_valid_results}, returning investigation_status={search['investigation_status']}")
         else:
             search["has_investigation"] = False
             search["investigation_status"] = None
