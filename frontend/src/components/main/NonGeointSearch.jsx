@@ -3419,31 +3419,6 @@ export const NonGeointSearchDialog = ({
     
     return 'no_results';
   };
-    // ALWAYS show photo selection even if only 1 NIK (for verification)
-    if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      // Only show person selection if showPersonSelection is true AND no completed investigation
-      if (showPersonSelection) {
-        return 'select_person';
-      }
-      // If person selection is done (showPersonSelection=false) but not investigating yet,
-      // and no completed investigation, show person selection again
-      if (!investigation?.status || investigation.status !== 'completed') {
-        return 'select_person';
-      }
-      // Otherwise, investigation is completed - will be handled above
-    }
-    
-    // Legacy: show person selection from CAPIL extraction (even for 1 person for verification)
-    // But skip if investigation is completed
-    if (personsFound.length >= 1 && (!investigation?.status || investigation.status !== 'completed')) {
-      return 'select_person';
-    }
-    
-    // If we have NIKs found but no photos, show NIK selection as fallback
-    if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) return 'select_nik';
-    
-    return 'no_results';
-  };
 
   const currentStep = getCurrentStep();
 
