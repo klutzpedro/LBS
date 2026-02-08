@@ -8663,13 +8663,13 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             return {"status": "error", "error": "Failed to send NIK to bot"}
         
         logger.info(f"[{query_token}] Sent NIK: {nik}")
-        await asyncio.sleep(4)
+        await asyncio.sleep(5)  # Increased wait time for more reliable response
         
-        # Step 2: Get buttons
+        # Step 2: Get buttons - with retry
         async def get_buttons():
             return await telegram_client.get_messages(BOT_USERNAME, limit=5)
         
-        messages = await safe_telegram_operation(get_buttons, f"get_buttons_{query_token}", max_retries=3)
+        messages = await safe_telegram_operation(get_buttons, f"get_buttons_{query_token}", max_retries=4)
         if not messages:
             return {"status": "error", "error": "Failed to get bot buttons"}
         
