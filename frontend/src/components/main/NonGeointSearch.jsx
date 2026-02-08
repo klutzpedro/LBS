@@ -1895,6 +1895,18 @@ export const NonGeointSearchDialog = ({
         return;
       }
 
+      // Handle system busy - another user is doing Full Query or Simple Query
+      if (response.status === 503) {
+        const errorData = await response.json();
+        const detail = errorData.detail || {};
+        toast.error(`🔒 ${detail.message || 'Sistem sedang sibuk, coba lagi nanti'}`, {
+          duration: 5000
+        });
+        setIsInvestigating(false);
+        return;
+      }
+
+
       if (!response.ok) throw new Error('Investigation failed');
 
       const data = await response.json();
