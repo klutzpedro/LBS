@@ -7617,7 +7617,16 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                             {"id": investigation_id},
                             {"$set": {f"results.{nik}.status": "processing_nkk"}}
                         )
-                        nkk_result = await execute_nik_button_query(investigation_id, family_id, "NKK")
+                        
+                        # Execute NKK query with retry
+                        nkk_result = None
+                        for retry_attempt in range(2):  # Try up to 2 times
+                            nkk_result = await execute_nik_button_query(investigation_id, family_id, "NKK")
+                            if nkk_result.get("status") == "success" and nkk_result.get("raw_text"):
+                                break
+                            elif retry_attempt < 1:
+                                logger.warning(f"[NIK INVESTIGATION {investigation_id}] NKK query failed, retrying... (attempt {retry_attempt + 1})")
+                                await asyncio.sleep(3)
                         
                         # Save to cache
                         if nkk_result.get("status") == "success" and nkk_result.get("raw_text"):
@@ -7634,6 +7643,8 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                 {"$set": cache_doc},
                                 upsert=True
                             )
+                        else:
+                            logger.warning(f"[NIK INVESTIGATION {investigation_id}] NKK query did not return success after retries")
                     
                     nik_results["nkk_data"] = nkk_result
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] NKK result status: {nkk_result.get('status')}, from_cache: {nkk_result.get('from_cache', False)}")
