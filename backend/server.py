@@ -7687,13 +7687,16 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                         )
                         passport_result = await query_passport_cp_api(nik, target_name)
                         
-                        # Save to cache if successful
-                        if passport_result.get("raw_text") and target_name:
+                        # Save to cache if successful - FIX: use raw_response (not raw_text) and also save passports array
+                        raw_resp = passport_result.get("raw_response")
+                        passports_list = passport_result.get("passports", [])
+                        if (raw_resp or passports_list) and target_name:
                             cache_doc = {
                                 "cache_key": cache_key_passport,
                                 "query_type": "passport_wni",
                                 "query_value": target_name.upper(),
-                                "raw_response": passport_result.get("raw_text"),
+                                "raw_response": raw_resp,
+                                "passports": passports_list,  # FIX: Store passports array for reliable retrieval
                                 "created_by": "investigation",
                                 "created_at": datetime.now(timezone.utc).isoformat()
                             }
@@ -7702,6 +7705,7 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                                 {"$set": cache_doc},
                                 upsert=True
                             )
+                            logger.info(f"[NIK INVESTIGATION {investigation_id}] Cached passport data with {len(passports_list)} passports")
                 else:
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] No name found, querying Passport directly")
                     await db.nik_investigations.update_one(
