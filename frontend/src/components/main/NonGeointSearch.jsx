@@ -4699,9 +4699,6 @@ export const NonGeointSearchDialog = ({
                   )}
                 </div>
               )}
-
-                </div>
-              )}
             </div>
           )}
           </div>
