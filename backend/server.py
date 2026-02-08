@@ -7993,12 +7993,32 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
             )
             logger.info(f"[NIK INVESTIGATION {investigation_id}] Completed")
             
+            # Release global busy status
+            current_request_status = {
+                "is_busy": False,
+                "username": None,
+                "operation": None,
+                "started_at": None,
+                "investigation_id": None
+            }
+            logger.info(f"[NIK INVESTIGATION {investigation_id}] Released global status to IDLE")
+            
         except Exception as e:
             logger.error(f"[NIK INVESTIGATION {investigation_id}] Error: {e}")
             await db.nik_investigations.update_one(
                 {"id": investigation_id},
                 {"$set": {"status": "error", "error": str(e)}}
             )
+            
+            # Release global busy status even on error
+            current_request_status = {
+                "is_busy": False,
+                "username": None,
+                "operation": None,
+                "started_at": None,
+                "investigation_id": None
+            }
+            logger.info(f"[NIK INVESTIGATION {investigation_id}] Released global status to IDLE (after error)")
 
 async def execute_regnik_query(investigation_id: str, nik: str) -> dict:
     """Execute RegNIK query and parse multiple phone numbers"""
