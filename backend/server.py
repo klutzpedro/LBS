@@ -142,17 +142,13 @@ async def acquire_telegram_lock(operation_name: str, username: str = None, timeo
         )
         if acquired:
             logger.info(f"[LOCK] Acquired for: {operation_name} by {username}")
-            # Only update request status for specific operations (not initial search)
-            # Full Query investigation will set its own status
-            # Skip for NONGEOINT operations (initial name search)
-            is_nongeoint_search = "NONGEOINT_" in operation_name or "nongeoint_" in operation_name
-            if not is_nongeoint_search:
-                current_request_status = {
-                    "is_busy": True,
-                    "username": username,
-                    "operation": operation_name,
-                    "started_at": datetime.now(timezone.utc).isoformat()
-                }
+            # Update request status for ALL operations
+            current_request_status = {
+                "is_busy": True,
+                "username": username,
+                "operation": operation_name,
+                "started_at": datetime.now(timezone.utc).isoformat()
+            }
         return acquired
     except asyncio.TimeoutError:
         logger.error(f"[LOCK] Timeout waiting for lock: {operation_name} (waited {timeout}s)")
