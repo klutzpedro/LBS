@@ -2849,17 +2849,31 @@ export const NonGeointSearchDialog = ({
         }
         
         // ============ 6. DATA PASSPORT ============
+        console.log('[PDF] Checking passport_data for NIK:', nik, nikResult?.passport_data);
         if (nikResult?.passport_data) {
           addSubsectionHeader('[6] Data Passport');
           
           const passportData = nikResult.passport_data;
+          console.log('[PDF] Passport data:', {
+            status: passportData.status,
+            passports: passportData.passports,
+            wni_data: passportData.wni_data,
+            wna_data: passportData.wna_data
+          });
           
           if (passportData.passports && passportData.passports.length > 0) {
             addKeyValue('Jumlah Passport', passportData.passports.length, 3);
             
-            // Detail each passport
+            // List passport numbers
+            passportData.passports.forEach((pno, idx) => {
+              addKeyValue(`Passport ${idx + 1}`, pno, 5);
+            });
+            
+            // Detail each passport from WNI data
             const wniData = passportData.wni_data?.result || passportData.wni_data?.data || [];
+            console.log('[PDF] WNI data array:', wniData);
             if (Array.isArray(wniData) && wniData.length > 0) {
+              yPos += 3;
               wniData.forEach((passport, pIdx) => {
                 checkPageBreak(40);
                 
@@ -2869,7 +2883,7 @@ export const NonGeointSearchDialog = ({
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'bold');
                 pdf.setTextColor(...colors.primary);
-                pdf.text(`Passport ${pIdx + 1}`, margin + 8, yPos + 6);
+                pdf.text(`Detail Passport ${pIdx + 1}`, margin + 8, yPos + 6);
                 
                 pdf.setFont('helvetica', 'normal');
                 pdf.setTextColor(...colors.text);
@@ -2885,19 +2899,65 @@ export const NonGeointSearchDialog = ({
                 yPos += 38;
               });
             }
-          } else if (passportData.status === 'no_data') {
+          } else if (passportData.status === 'no_data' || passportData.status === 'completed') {
+            // Check if there's raw data even if passports array is empty
+            if (passportData.wni_data || passportData.wna_data) {
+              addKeyValue('Status', 'Data ditemukan (lihat detail)', 3);
+              // Try to extract from wni_data directly
+              const wniResult = passportData.wni_data?.result || passportData.wni_data?.data || [];
+              if (Array.isArray(wniResult) && wniResult.length > 0) {
+                wniResult.forEach((passport, pIdx) => {
+                  checkPageBreak(40);
+                  yPos += 3;
+                  
+                  pdf.setFillColor(255, 250, 240);
+                  pdf.roundedRect(margin + 3, yPos, contentWidth - 6, 35, 2, 2, 'F');
+                  
+                  pdf.setFontSize(9);
+                  pdf.setFont('helvetica', 'bold');
+                  pdf.setTextColor(...colors.primary);
+                  pdf.text(`Passport ${pIdx + 1}`, margin + 8, yPos + 6);
+                  
+                  pdf.setFont('helvetica', 'normal');
+                  pdf.setTextColor(...colors.text);
+                  pdf.setFontSize(8);
+                  
+                  const pY = yPos + 11;
+                  pdf.text(`No. Paspor: ${passport.no_paspor || passport.TRAVELDOCUMENTNO || '-'}`, margin + 8, pY);
+                  pdf.text(`Nama: ${passport.nama_lengkap || passport.nama_di_paspor || passport.GIVENNAME || '-'}`, margin + 8, pY + 5);
+                  pdf.text(`TTL: ${passport.tempat_lahir || '-'}, ${passport.tanggal_lahir || passport.DATEOFBIRTH || '-'}`, margin + 8, pY + 10);
+                  pdf.text(`Berlaku s/d: ${passport.tanggal_habis_berlaku_paspor || passport.EXPIRATIONDATE || '-'}`, margin + 8, pY + 15);
+                  pdf.text(`Kantor: ${passport.kantor_penerbit || passport.ISSUINGSTATEDESCRIPTION || '-'}`, margin + 8, pY + 20);
+                  
+                  yPos += 38;
+                });
+              }
+            } else {
+              pdf.setFontSize(9);
+              pdf.setTextColor(150, 150, 150);
+              pdf.text('Tidak ada data passport', margin + 5, yPos);
+              yPos += 8;
+            }
+          } else {
             pdf.setFontSize(9);
             pdf.setTextColor(150, 150, 150);
             pdf.text('Tidak ada data passport', margin + 5, yPos);
             yPos += 8;
           }
+          pdf.setTextColor(...colors.text);
         }
         
         // ============ 7. DATA PERLINTASAN ============
+        console.log('[PDF] Checking perlintasan_data for NIK:', nik, nikResult?.perlintasan_data);
         if (nikResult?.perlintasan_data) {
           addSubsectionHeader('[7] Data Perlintasan Imigrasi');
           
           const perlintasanData = nikResult.perlintasan_data;
+          console.log('[PDF] Perlintasan data:', {
+            status: perlintasanData.status,
+            total_passports: perlintasanData.total_passports,
+            results_count: perlintasanData.results?.length
+          });
           
           if (perlintasanData.results && perlintasanData.results.length > 0) {
             perlintasanData.results.forEach((passportResult) => {
