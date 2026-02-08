@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { FamilyTreeViz } from '@/components/FamilyTreeViz';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
