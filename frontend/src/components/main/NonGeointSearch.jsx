@@ -3439,17 +3439,32 @@ export const NonGeointSearchDialog = ({
     const isCreator = currentUser === searchCreator;
     
     // Check if there's a completed investigation with results
+    // IMPORTANT: Check local investigation state FIRST (updated by polling), then fallback to searchResults
     const inv = investigation || searchResults?.investigation;
     const hasCompletedInvestigation = inv && inv.status === 'completed' && inv.results && Object.keys(inv.results).length > 0;
     
+    // DEBUG: Log what we're checking
+    console.log('[NonGeoint] getCurrentStep DEBUG:', {
+      searchResults_status: searchResults.status,
+      local_investigation_status: investigation?.status,
+      local_investigation_results_count: investigation?.results ? Object.keys(investigation.results).length : 0,
+      searchResults_investigation_status: searchResults?.investigation?.status,
+      inv_used: inv ? 'local' : 'searchResults',
+      inv_status: inv?.status,
+      hasCompletedInvestigation,
+      isInvestigating,
+      isCreator
+    });
+    
     // CASE 1: Investigation is completed with results - ALWAYS show results (for both creator and admin)
     if (hasCompletedInvestigation) {
-      console.log('[NonGeoint] getCurrentStep: Investigation completed with results, showing investigation view');
+      console.log('[NonGeoint] getCurrentStep: RETURN investigation (completed with results)');
       return 'investigation';
     }
     
     // CASE 2: Currently investigating - show investigation progress
     if (isInvestigating) {
+      console.log('[NonGeoint] getCurrentStep: RETURN investigation (isInvestigating=true)');
       return 'investigation';
     }
     
@@ -3458,32 +3473,40 @@ export const NonGeointSearchDialog = ({
     if (!isCreator) {
       // Admin cannot select NIK for other users
       // Show a message or empty state
-      console.log('[NonGeoint] getCurrentStep: Admin viewing incomplete investigation from', searchCreator);
+      console.log('[NonGeoint] getCurrentStep: RETURN admin_view_incomplete');
       return 'admin_view_incomplete';
     }
     
     // CASE 4: User IS the creator and status is waiting_selection
     if (searchResults.status === 'waiting_selection') {
       if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+        console.log('[NonGeoint] getCurrentStep: RETURN select_person (waiting_selection + photos)');
         return 'select_person';
       }
       if (personsFound.length >= 1) {
+        console.log('[NonGeoint] getCurrentStep: RETURN select_person (waiting_selection + personsFound)');
         return 'select_person';
       }
+      console.log('[NonGeoint] getCurrentStep: RETURN searching (waiting_selection but no photos)');
       return 'searching';
     }
     
     // CASE 5: User IS the creator, search completed, show person selection
     if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      if (showPersonSelection) {
-        return 'select_person';
-      }
+      console.log('[NonGeoint] getCurrentStep: RETURN select_person (has photos)');
       return 'select_person';
     }
     
-    if (personsFound.length >= 1) return 'select_person';
-    if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) return 'select_nik';
+    if (personsFound.length >= 1) {
+      console.log('[NonGeoint] getCurrentStep: RETURN select_person (personsFound)');
+      return 'select_person';
+    }
+    if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) {
+      console.log('[NonGeoint] getCurrentStep: RETURN select_nik');
+      return 'select_nik';
+    }
     
+    console.log('[NonGeoint] getCurrentStep: RETURN no_results');
     return 'no_results';
   };
 
