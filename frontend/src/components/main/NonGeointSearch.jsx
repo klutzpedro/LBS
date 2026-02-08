@@ -3366,22 +3366,36 @@ export const NonGeointSearchDialog = ({
     if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
-    // PRIORITY 1 (HIGHEST): If investigation exists AND is completed, ALWAYS show results
-    // Check BOTH investigation state AND searchResults.investigation (for timing issues)
+    // Get current user info
+    const currentUser = localStorage.getItem('username');
+    const searchCreator = searchResults.created_by;
+    const isCreator = currentUser === searchCreator;
+    
+    // Check if there's a completed investigation with results
     const inv = investigation || searchResults?.investigation;
-    if (inv && inv.status === 'completed' && inv.results && Object.keys(inv.results).length > 0) {
+    const hasCompletedInvestigation = inv && inv.status === 'completed' && inv.results && Object.keys(inv.results).length > 0;
+    
+    // CASE 1: Investigation is completed with results - ALWAYS show results (for both creator and admin)
+    if (hasCompletedInvestigation) {
       console.log('[NonGeoint] getCurrentStep: Investigation completed with results, showing investigation view');
-      console.log('[NonGeoint] Investigation results count:', Object.keys(inv.results).length);
       return 'investigation';
     }
     
-    // PRIORITY 2: If currently investigating, show investigation step
+    // CASE 2: Currently investigating - show investigation progress
     if (isInvestigating) {
       return 'investigation';
     }
     
-    // PRIORITY 3: For 'waiting_selection' status, show photo selection if NO completed investigation
-    // This is for cases where user hasn't selected/investigated yet
+    // CASE 3: No completed investigation - behavior depends on user role
+    // If user is NOT the creator (admin viewing other's search)
+    if (!isCreator) {
+      // Admin cannot select NIK for other users
+      // Show a message or empty state
+      console.log('[NonGeoint] getCurrentStep: Admin viewing incomplete investigation from', searchCreator);
+      return 'admin_view_incomplete';
+    }
+    
+    // CASE 4: User IS the creator and status is waiting_selection
     if (searchResults.status === 'waiting_selection') {
       if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
         return 'select_person';
@@ -3389,11 +3403,22 @@ export const NonGeointSearchDialog = ({
       if (personsFound.length >= 1) {
         return 'select_person';
       }
-      // If no photos yet for waiting_selection, show searching
       return 'searching';
     }
     
-    // PRIORITY 4: Show person selection if we have nik_photos AND showPersonSelection is true
+    // CASE 5: User IS the creator, search completed, show person selection
+    if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
+      if (showPersonSelection) {
+        return 'select_person';
+      }
+      return 'select_person';
+    }
+    
+    if (personsFound.length >= 1) return 'select_person';
+    if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) return 'select_nik';
+    
+    return 'no_results';
+  };
     // ALWAYS show photo selection even if only 1 NIK (for verification)
     if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
       // Only show person selection if showPersonSelection is true AND no completed investigation
