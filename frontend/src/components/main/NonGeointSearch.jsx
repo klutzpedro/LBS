@@ -3369,7 +3369,7 @@ export const NonGeointSearchDialog = ({
             if (snaData.statistics.total_connections) statsTable.push(['Connections', snaData.statistics.total_connections.toLocaleString()]);
             
             if (statsTable.length > 0) {
-              pdf.autoTable({
+              autoTable(pdf, {
                 startY: yPos,
                 body: statsTable,
                 theme: 'plain',
@@ -3401,7 +3401,7 @@ export const NonGeointSearchDialog = ({
               ];
             });
             
-            pdf.autoTable({
+            autoTable(pdf, {
               startY: yPos,
               head: [['Platform', 'Username', 'Statistik']],
               body: profilesData,
