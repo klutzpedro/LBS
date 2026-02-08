@@ -8709,7 +8709,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             return {"status": "error", "error": "Failed to click button"}
         
         logger.info(f"[{query_token}] Clicked button: {target_button.text}")
-        await asyncio.sleep(8)  # Wait longer for response including photo
+        await asyncio.sleep(10)  # Increased from 8 to 10 seconds - wait longer for response including photo
         
         # Time threshold for filtering messages (30 seconds buffer before query for photos)
         # Photos sometimes arrive before or much after the text
