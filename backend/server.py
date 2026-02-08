@@ -7534,7 +7534,16 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                         {"id": investigation_id},
                         {"$set": {f"results.{nik}.status": "processing_nik"}}
                     )
-                    nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
+                    
+                    # Execute NIK query with retry
+                    nik_result = None
+                    for retry_attempt in range(2):  # Try up to 2 times
+                        nik_result = await execute_nik_button_query(investigation_id, nik, "NIK")
+                        if nik_result.get("status") == "success" and nik_result.get("raw_text"):
+                            break
+                        elif retry_attempt < 1:
+                            logger.warning(f"[NIK INVESTIGATION {investigation_id}] NIK query failed, retrying... (attempt {retry_attempt + 1})")
+                            await asyncio.sleep(3)
                     
                     # Save to Simple Query Cache
                     if nik_result.get("status") == "success" and nik_result.get("raw_text"):
@@ -7553,6 +7562,8 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                             upsert=True
                         )
                         logger.info(f"[NIK INVESTIGATION {investigation_id}] Saved NIK result to cache")
+                    else:
+                        logger.warning(f"[NIK INVESTIGATION {investigation_id}] NIK query did not return success after retries")
                 
                 nik_results["nik_data"] = nik_result
                 logger.info(f"[NIK INVESTIGATION {investigation_id}] NIK result status: {nik_result.get('status')}, from_cache: {nik_result.get('from_cache', False)}")
