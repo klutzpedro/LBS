@@ -3270,8 +3270,10 @@ export const NonGeointSearchDialog = ({
 
   // Check if any NIK has results to show View button
   const getNikInvestigationStatus = (nik) => {
-    if (!investigation?.results?.[nik]) return null;
-    return investigation.results[nik];
+    // Check both investigation state AND searchResults.investigation for timing issues
+    const inv = investigation || searchResults?.investigation;
+    if (!inv?.results?.[nik]) return null;
+    return inv.results[nik];
   };
 
   const hasNikResults = (nik) => {
