@@ -1514,24 +1514,38 @@ export const NonGeointSearchDialog = ({
       status: searchResults?.status,
       nik_photos_count: Object.keys(searchResults?.nik_photos || {}).length,
       investigation_exists: !!investigation,
-      investigation_status: investigation?.status
+      investigation_status: investigation?.status,
+      isInvestigating: isInvestigating
     });
     
-    // For 'waiting_selection' status, ALWAYS force show photo selection
-    // This is critical for reopening from history
+    // For 'waiting_selection' status, check if investigation is completed or in progress
     const isWaitingSelection = searchResults?.status === 'waiting_selection';
     
+    // FIX: Don't reset investigation if it's completed or currently investigating
+    // This prevents the bug where completed investigation gets reset
     if (isWaitingSelection) {
-      console.log('[NonGeoint] WAITING_SELECTION detected - forcing photo selection display');
-      // Force reset investigation for waiting_selection
-      setInvestigation(null);
+      // Only reset if there's NO investigation or investigation is not started
+      const hasOngoingOrCompletedInvestigation = investigation && 
+        (investigation.status === 'completed' || investigation.status === 'processing' || isInvestigating);
+      
+      if (!hasOngoingOrCompletedInvestigation) {
+        console.log('[NonGeoint] WAITING_SELECTION detected with no investigation - showing photo selection');
+        // Don't call setInvestigation(null) here anymore, it was causing the bug
+      } else {
+        console.log('[NonGeoint] WAITING_SELECTION but investigation exists:', investigation?.status);
+        // Skip person selection setup if we have a completed investigation
+        if (investigation?.status === 'completed') {
+          console.log('[NonGeoint] Investigation is completed, skipping person selection setup');
+          return;
+        }
+      }
     }
     
     // SKIP person selection setup ONLY if:
     // 1. Investigation exists AND is COMPLETED 
-    // 2. AND search status is NOT 'waiting_selection'
-    if (investigation && investigation.status === 'completed' && !isWaitingSelection) {
-      console.log('[NonGeoint] Investigation completed from history, skipping person selection setup');
+    // 2. AND search status is NOT 'waiting_selection' OR investigation is completed
+    if (investigation && investigation.status === 'completed') {
+      console.log('[NonGeoint] Investigation completed, skipping person selection setup');
       return;
     }
     
