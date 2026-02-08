@@ -1168,7 +1168,15 @@ export const NonGeointSearchDialog = ({
               if (investigatedNiks.length > 0) {
                 setSelectedNiks(investigatedNiks);
                 setShowPersonSelection(false);
-                console.log('[NonGeoint] Set showPersonSelection to FALSE - investigation completed');
+                setIsInvestigating(false); // IMPORTANT: Set to false for completed investigation
+                
+                // Clear any existing polling to prevent re-polling
+                if (investigationPollingRef.current) {
+                  clearInterval(investigationPollingRef.current);
+                  investigationPollingRef.current = null;
+                }
+                
+                console.log('[NonGeoint] Set showPersonSelection to FALSE, isInvestigating to FALSE - investigation completed from history');
               }
               
               // Load cached OSINT results if available
