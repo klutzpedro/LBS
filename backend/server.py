@@ -5133,14 +5133,25 @@ async def list_nongeoint_searches(username: str = Depends(verify_token)):
     for search in searches:
         investigation = await db.nik_investigations.find_one(
             {"search_id": search["id"]}, 
-            {"_id": 0, "status": 1, "id": 1}
+            {"_id": 0, "status": 1, "id": 1, "results": 1}
         )
         if investigation:
-            search["has_investigation"] = True
-            search["investigation_status"] = investigation.get("status")
-            search["investigation_id"] = investigation.get("id")
+            results = investigation.get("results", {})
+            has_valid_results = len(results) > 0
+            
+            # Only mark as has_investigation if there are actual results
+            search["has_investigation"] = has_valid_results
+            search["investigation_status"] = investigation.get("status") if has_valid_results else None
+            search["investigation_id"] = investigation.get("id") if has_valid_results else None
+            search["investigated_niks_count"] = len(results)
+            
+            # Log for debugging
+            logger.debug(f"[NONGEOINT] Search {search['id']}: investigation_status={investigation.get('status')}, results_count={len(results)}, has_valid={has_valid_results}")
         else:
             search["has_investigation"] = False
+            search["investigation_status"] = None
+            search["investigation_id"] = None
+            search["investigated_niks_count"] = 0
     
     return searches
 
