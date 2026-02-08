@@ -10594,13 +10594,11 @@ async def simple_query(request: SimpleQueryRequest, username: str = Depends(veri
     logger.info(f"[SIMPLE QUERY] Cache MISS for {cache_key}")
     
     # Update request status for queue indicator (non-cached queries)
-    global current_request_status
-    current_request_status = {
-        "is_busy": True,
-        "username": username,
-        "operation": f"Simple Query - {query_type}",
-        "started_at": datetime.now(timezone.utc).isoformat()
-    }
+    # Note: current_request_status is already accessed above, no need for global declaration here
+    current_request_status["is_busy"] = True
+    current_request_status["username"] = username
+    current_request_status["operation"] = f"Simple Query - {query_type}"
+    current_request_status["started_at"] = datetime.now(timezone.utc).isoformat()
     
     # ============================================
     # PASSPORT QUERIES USE CP API DIRECTLY (NO TELEGRAM)
