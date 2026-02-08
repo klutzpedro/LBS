@@ -7728,7 +7728,8 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     }
                 
                 nik_results["passport_data"] = passport_result
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, from_cache: {passport_result.get('from_cache', False)}")
+                passports_found = passport_result.get('passports', []) if passport_result else []
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passport result status: {passport_result.get('status')}, from_cache: {passport_result.get('from_cache', False)}, passports_found: {passports_found}")
                 
                 # Save immediately after passport query
                 await db.nik_investigations.update_one(
@@ -7739,9 +7740,9 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                 
                 # Query 5: Perlintasan (Immigration Crossing) via CP API - for each passport found
                 perlintasan_results = []
-                passports_to_check = passport_result.get('passports', []) if passport_result else []
+                passports_to_check = passports_found
                 
-                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passports to check for perlintasan: {passports_to_check}")
+                logger.info(f"[NIK INVESTIGATION {investigation_id}] Passports to check for perlintasan: {passports_to_check} (count: {len(passports_to_check)})")
                 
                 if passports_to_check:
                     logger.info(f"[NIK INVESTIGATION {investigation_id}] Querying Perlintasan for {len(passports_to_check)} passports")
