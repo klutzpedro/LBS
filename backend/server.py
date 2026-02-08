@@ -1252,31 +1252,35 @@ async def get_request_status():
     """
     global current_request_status
     
-    # Check if lock is actually held
+    # Check if lock is actually held OR if current_request_status is busy
+    # Full Query may set is_busy without holding telegram_query_lock
     is_locked = telegram_query_lock.locked()
+    is_busy = current_request_status.get("is_busy", False)
     
-    if is_locked and current_request_status.get("is_busy"):
+    if is_busy or is_locked:
         return {
             "is_busy": True,
             "username": current_request_status.get("username"),
             "operation": current_request_status.get("operation"),
             "started_at": current_request_status.get("started_at"),
-            "message": f"User '{current_request_status.get('username')}' sedang melakukan request"
+            "investigation_id": current_request_status.get("investigation_id"),
+            "message": f"User '{current_request_status.get('username')}' sedang melakukan {current_request_status.get('operation', 'request')}"
         }
     else:
-        # Make sure status is cleared if lock is not held
-        if not is_locked:
-            current_request_status = {
-                "is_busy": False,
-                "username": None,
-                "operation": None,
-                "started_at": None
-            }
+        # Make sure status is cleared if not busy
+        current_request_status = {
+            "is_busy": False,
+            "username": None,
+            "operation": None,
+            "started_at": None,
+            "investigation_id": None
+        }
         return {
             "is_busy": False,
             "username": None,
             "operation": None,
             "started_at": None,
+            "investigation_id": None,
             "message": "Semua Akun Idle (No Request)"
         }
 
