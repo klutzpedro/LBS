@@ -422,6 +422,24 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
         })
       });
 
+      // Handle 503 Service Unavailable (system busy)
+      if (response.status === 503) {
+        let errorMsg = 'Sistem sedang sibuk. Mohon tunggu hingga akun lain selesai melakukan query.';
+        try {
+          const errorData = await response.json();
+          if (errorData.detail?.message) {
+            errorMsg = errorData.detail.message;
+          }
+        } catch (e) {
+          // If can't parse JSON, use default message
+        }
+        toast.error(errorMsg, { duration: 5000 });
+        setResult({ success: false, error: errorMsg });
+        setStatusMessage('');
+        setIsLoading(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (response.ok) {
