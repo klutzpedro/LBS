@@ -3369,9 +3369,11 @@ export const NonGeointSearchDialog = ({
     if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
     // PRIORITY 1 (HIGHEST): If investigation exists AND is completed, ALWAYS show results
-    // This must be checked BEFORE waiting_selection to handle history with completed investigations
-    if (investigation && investigation.status === 'completed' && investigation.results && Object.keys(investigation.results).length > 0) {
+    // Check BOTH investigation state AND searchResults.investigation (for timing issues)
+    const inv = investigation || searchResults?.investigation;
+    if (inv && inv.status === 'completed' && inv.results && Object.keys(inv.results).length > 0) {
       console.log('[NonGeoint] getCurrentStep: Investigation completed with results, showing investigation view');
+      console.log('[NonGeoint] Investigation results count:', Object.keys(inv.results).length);
       return 'investigation';
     }
     
