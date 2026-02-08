@@ -1962,12 +1962,27 @@ export const NonGeointSearchDialog = ({
         
         // Small delay to ensure investigation state is fully updated before setting isInvestigating to false
         // This prevents the useEffect from seeing stale investigation state
-        setTimeout(() => {
+        setTimeout(async () => {
           console.log('[NonGeoint] Setting isInvestigating to FALSE after investigation completed');
           setIsInvestigating(false);
           
           if (data.status === 'completed') {
             toast.success('Pendalaman NIK selesai!');
+            
+            // FIX: Also update searchResults with the completed investigation
+            // This ensures the UI reflects the completed status
+            setSearchResults(prev => {
+              if (prev) {
+                return {
+                  ...prev,
+                  investigation: data,
+                  has_investigation: true,
+                  investigation_status: 'completed',
+                  investigated_niks_count: data.results ? Object.keys(data.results).length : 0
+                };
+              }
+              return prev;
+            });
           } else if (data.status === 'error') {
             toast.error(`Error: ${data.error || 'Unknown error'}`);
           }
