@@ -6185,6 +6185,28 @@ async def investigate_niks(request: NikDeepInvestigationRequest, username: str =
     """
     Deep investigation for selected NIKs - queries NIK, NKK, RegNIK for each
     """
+    global current_request_status
+    
+    # ============================================
+    # CHECK IF SYSTEM IS BUSY (another operation running)
+    # ============================================
+    if current_request_status.get("is_busy"):
+        busy_user = current_request_status.get("username", "unknown")
+        busy_operation = current_request_status.get("operation", "unknown")
+        # Block if another user is doing something
+        if busy_user != username:
+            logger.warning(f"[INVESTIGATE] Blocked - System busy by {busy_user} doing {busy_operation}")
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "system_busy",
+                    "message": f"Sistem sedang sibuk. User '{busy_user}' sedang melakukan {busy_operation}. Silakan tunggu.",
+                    "busy_user": busy_user,
+                    "operation": busy_operation,
+                    "started_at": current_request_status.get("started_at")
+                }
+            )
+    
     # Check if there's already an active investigation for this search_id
     active_investigation = await db.nik_investigations.find_one({
         "search_id": request.search_id,
