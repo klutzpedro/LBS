@@ -4530,173 +4530,157 @@ export const NonGeointSearchDialog = ({
                 </div>
               )}
 
-              {/* PENDALAMAN LANJUTAN Button - Show when investigation completed */}
+              {/* PENDALAMAN LANJUTAN - Show when investigation completed */}
               {investigation?.status === 'completed' && (
-                <div className="mt-4 relative">
-                  <Button
-                    onClick={() => setShowAdvancedDropdown(!showAdvancedDropdown)}
-                    className="w-full"
-                    data-testid="pendalaman-lanjutan-btn"
-                    style={{
-                      background: 'linear-gradient(145deg, #8b5cf6, #7c3aed)',
-                      color: '#fff',
-                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-                    }}
+                <div className="mt-4">
+                  <div 
+                    className="mb-3 pb-2 border-b flex items-center gap-2"
+                    style={{ borderColor: 'var(--borders-subtle)' }}
                   >
-                    <Zap className="w-4 h-4 mr-2" />
-                    PENDALAMAN LANJUTAN
-                    {showAdvancedDropdown ? (
-                      <ChevronUp className="w-4 h-4 ml-2" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    )}
-                  </Button>
+                    <Zap className="w-4 h-4" style={{ color: '#8b5cf6' }} />
+                    <span className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                      PENDALAMAN LANJUTAN
+                    </span>
+                  </div>
                   
-                  {/* Dropdown Menu */}
-                  {showAdvancedDropdown && (
-                    <div 
-                      className="absolute top-full left-0 right-0 mt-2 rounded-md border shadow-lg z-50 overflow-hidden"
-                      style={{
-                        backgroundColor: 'var(--background-elevated)',
-                        borderColor: 'var(--borders-default)'
+                  {/* Options Grid - Always visible */}
+                  <div className="space-y-2">
+                    {/* FAKTA OSINT */}
+                    <button
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:opacity-80 transition-all text-left rounded-lg border"
+                      style={{ 
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgba(59, 130, 246, 0.3)'
                       }}
+                      onClick={() => {
+                        // Get selected NIK and name
+                        if (selectedNiks.length > 0) {
+                          const nik = selectedNiks[0];
+                          const nikData = investigation?.results?.[nik];
+                          const name = nikData?.nik_data?.data?.['Full Name'] || 
+                                      nikData?.nik_data?.data?.['Nama'] ||
+                                      searchResults?.name || '';
+                          
+                          if (name) {
+                            const osintStatus = getOsintStatus(nik);
+                            if (osintStatus === 'completed') {
+                              // Data sudah ada, tampilkan dialog konfirmasi
+                              setRefreshConfirmDialog({
+                                open: true,
+                                type: 'osint',
+                                nik: nik,
+                                name: name
+                              });
+                            } else {
+                              // Data belum ada, langsung jalankan
+                              startFaktaOsint(nik, name);
+                            }
+                          } else {
+                            toast.error('Nama target tidak ditemukan');
+                          }
+                        } else {
+                          toast.error('Tidak ada NIK yang dipilih');
+                        }
+                      }}
+                      disabled={isLoadingOsint[selectedNiks[0]]}
+                      data-testid="fakta-osint-btn"
                     >
-                      {/* FAKTA OSINT */}
-                      <button
-                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
-                        style={{ 
-                          backgroundColor: 'transparent',
-                          borderBottom: '1px solid var(--borders-subtle)'
-                        }}
-                        onClick={() => {
-                          // Get selected NIK and name
-                          if (selectedNiks.length > 0) {
-                            const nik = selectedNiks[0];
-                            const nikData = investigation?.results?.[nik];
-                            const name = nikData?.nik_data?.data?.['Full Name'] || 
-                                        nikData?.nik_data?.data?.['Nama'] ||
-                                        searchResults?.name || '';
-                            
-                            if (name) {
-                              const osintStatus = getOsintStatus(nik);
-                              if (osintStatus === 'completed') {
-                                // Data sudah ada, tampilkan dialog konfirmasi
-                                setRefreshConfirmDialog({
-                                  open: true,
-                                  type: 'osint',
-                                  nik: nik,
-                                  name: name
-                                });
-                              } else {
-                                // Data belum ada, langsung jalankan
-                                startFaktaOsint(nik, name);
-                              }
-                              setShowAdvancedDropdown(false);
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+                      >
+                        {isLoadingOsint[selectedNiks[0]] ? (
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#3b82f6' }} />
+                        ) : getOsintStatus(selectedNiks[0]) === 'completed' ? (
+                          <div className="relative">
+                            <Globe className="w-5 h-5" style={{ color: '#3b82f6' }} />
+                            <CheckCircle className="w-3 h-3 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
+                          </div>
+                        ) : (
+                          <Globe className="w-5 h-5" style={{ color: '#3b82f6' }} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm" style={{ color: '#3b82f6' }}>
+                          FAKTA OSINT
+                        </p>
+                        <p className="text-xs truncate" style={{ color: 'var(--foreground-muted)' }}>
+                          {isLoadingOsint[selectedNiks[0]] ? 'Sedang mencari...' : 
+                           getOsintStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
+                           'Pencarian informasi terbuka'}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: '#3b82f6' }} />
+                    </button>
+                    
+                    {/* SOCIAL NETWORK ANALYTICS */}
+                    <button
+                      className="w-full px-4 py-3 flex items-center gap-3 hover:opacity-80 transition-all text-left rounded-lg border"
+                      style={{ 
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderColor: 'rgba(245, 158, 11, 0.3)'
+                      }}
+                      onClick={() => {
+                        // Get selected NIK and name
+                        if (selectedNiks.length > 0) {
+                          const nik = selectedNiks[0];
+                          const nikData = investigation?.results?.[nik];
+                          const name = nikData?.nik_data?.data?.['Full Name'] || 
+                                      nikData?.nik_data?.data?.['Nama'] ||
+                                      searchResults?.name || '';
+                          
+                          if (name) {
+                            const snaStatus = getSnaStatus(nik);
+                            if (snaStatus === 'completed') {
+                              // Data sudah ada, tampilkan dialog konfirmasi
+                              setRefreshConfirmDialog({
+                                open: true,
+                                type: 'sna',
+                                nik: nik,
+                                name: name
+                              });
                             } else {
-                              toast.error('Nama target tidak ditemukan');
+                              // Open input dialog for manual links
+                              openSnaInputDialog(nik, name);
                             }
                           } else {
-                            toast.error('Tidak ada NIK yang dipilih');
+                            toast.error('Nama target tidak ditemukan');
                           }
-                        }}
-                        disabled={isLoadingOsint[selectedNiks[0]]}
-                        data-testid="fakta-osint-btn"
+                        } else {
+                          toast.error('Tidak ada NIK yang dipilih');
+                        }
+                      }}
+                      disabled={isLoadingSna[selectedNiks[0]]}
+                      data-testid="social-network-analytics-btn"
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
                       >
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
-                        >
-                          {isLoadingOsint[selectedNiks[0]] ? (
-                            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#3b82f6' }} />
-                          ) : getOsintStatus(selectedNiks[0]) === 'completed' ? (
-                            <div className="relative">
-                              <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
-                              <CheckCircle className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
-                            </div>
-                          ) : (
-                            <Globe className="w-4 h-4" style={{ color: '#3b82f6' }} />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                            FAKTA OSINT
-                          </p>
-                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                            {isLoadingOsint[selectedNiks[0]] ? 'Sedang mencari...' : 
-                             getOsintStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
-                             'Pencarian informasi terbuka'}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
-                      </button>
-                      
-                      {/* SOCIAL NETWORK ANALYTICS */}
-                      <button
-                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-opacity-50 transition-colors text-left"
-                        style={{ backgroundColor: 'transparent' }}
-                        onClick={() => {
-                          // Get selected NIK and name
-                          if (selectedNiks.length > 0) {
-                            const nik = selectedNiks[0];
-                            const nikData = investigation?.results?.[nik];
-                            const name = nikData?.nik_data?.data?.['Full Name'] || 
-                                        nikData?.nik_data?.data?.['Nama'] ||
-                                        searchResults?.name || '';
-                            
-                            if (name) {
-                              const snaStatus = getSnaStatus(nik);
-                              if (snaStatus === 'completed') {
-                                // Data sudah ada, tampilkan dialog konfirmasi
-                                setRefreshConfirmDialog({
-                                  open: true,
-                                  type: 'sna',
-                                  nik: nik,
-                                  name: name
-                                });
-                              } else {
-                                // Open input dialog for manual links
-                                openSnaInputDialog(nik, name);
-                              }
-                              setShowAdvancedDropdown(false);
-                            } else {
-                              toast.error('Nama target tidak ditemukan');
-                            }
-                          } else {
-                            toast.error('Tidak ada NIK yang dipilih');
-                          }
-                        }}
-                        disabled={isLoadingSna[selectedNiks[0]]}
-                        data-testid="social-network-analytics-btn"
-                      >
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)' }}
-                        >
-                          {isLoadingSna[selectedNiks[0]] ? (
-                            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#f59e0b' }} />
-                          ) : getSnaStatus(selectedNiks[0]) === 'completed' ? (
-                            <div className="relative">
-                              <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
-                              <CheckCircle className="w-2.5 h-2.5 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
-                            </div>
-                          ) : (
-                            <Network className="w-4 h-4" style={{ color: '#f59e0b' }} />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-semibold text-sm" style={{ color: 'var(--foreground-primary)' }}>
-                            SOCIAL NETWORK ANALYTICS
-                          </p>
-                          <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
-                            {isLoadingSna[selectedNiks[0]] ? 'Sedang menganalisis...' : 
-                             getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
-                             'Analisis jaringan sosial'}
-                          </p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 ml-auto" style={{ color: 'var(--foreground-muted)' }} />
-                      </button>
-                    </div>
-                  )}
+                        {isLoadingSna[selectedNiks[0]] ? (
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#f59e0b' }} />
+                        ) : getSnaStatus(selectedNiks[0]) === 'completed' ? (
+                          <div className="relative">
+                            <Network className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                            <CheckCircle className="w-3 h-3 absolute -bottom-0.5 -right-0.5" style={{ color: '#22c55e' }} />
+                          </div>
+                        ) : (
+                          <Network className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm" style={{ color: '#f59e0b' }}>
+                          SOCIAL NETWORK ANALYTICS
+                        </p>
+                        <p className="text-xs truncate" style={{ color: 'var(--foreground-muted)' }}>
+                          {isLoadingSna[selectedNiks[0]] ? 'Sedang menganalisis...' : 
+                           getSnaStatus(selectedNiks[0]) === 'completed' ? 'Lihat/Perbaharui hasil' :
+                           'Analisis jaringan sosial'}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 flex-shrink-0" style={{ color: '#f59e0b' }} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
