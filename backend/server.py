@@ -8910,9 +8910,9 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                         for msg in response_messages:
                             if msg.date < time_threshold:
                                 continue
-                            # Must be AFTER our NIK message, within 5 seconds
+                            # Must be AFTER our NIK message, within 15 seconds (increased from 5)
                             time_diff = (msg.date - nik_msg_time).total_seconds()
-                            if time_diff >= 0 and time_diff <= 5:
+                            if time_diff >= -2 and time_diff <= 15:  # Also allow photo slightly before (-2s)
                                 if msg.photo and msg.id != nik_msg.id:
                                     # Extra check: this message should NOT contain a DIFFERENT NIK
                                     if msg.text:
@@ -8934,6 +8934,34 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
                                         logger.error(f"[{query_token}] Photo download error: {e}")
                         if photo_base64:
                             break
+                
+                # Strategy 3: If still no photo, check ALL recent photos near our query time
+                if not photo_base64 and our_nik_messages:
+                    logger.info(f"[{query_token}] Strategy 3: Looking for any nearby photo...")
+                    for msg in response_messages:
+                        if msg.date < time_threshold:
+                            continue
+                        if msg.photo:
+                            # Must be within 30 seconds of query start
+                            time_diff = (msg.date - query_start_time).total_seconds()
+                            if abs(time_diff) <= 30:
+                                # Check if this photo message doesn't have a DIFFERENT NIK
+                                if msg.text:
+                                    other_niks = re.findall(r'\b\d{16}\b', msg.text)
+                                    if other_niks and nik not in other_niks:
+                                        logger.info(f"[{query_token}] Skipping photo - contains different NIK")
+                                        continue
+                                
+                                try:
+                                    logger.info(f"[{query_token}] Found nearby photo (msg_id={msg.id}, time_diff={time_diff}s from query)")
+                                    photo_bytes = await telegram_client.download_media(msg.photo, bytes)
+                                    if photo_bytes:
+                                        import base64
+                                        photo_base64 = f"data:image/jpeg;base64,{base64.b64encode(photo_bytes).decode('utf-8')}"
+                                        logger.info(f"[{query_token}] ✓ Downloaded photo from Strategy 3 ({len(photo_bytes)} bytes)")
+                                        break
+                                except Exception as e:
+                                    logger.error(f"[{query_token}] Photo download error: {e}")
             
             # If no NIK messages found, log warning
             if not our_nik_messages:
