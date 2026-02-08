@@ -2341,42 +2341,47 @@ export const NonGeointSearchDialog = ({
 
   // Generate PDF with all results
   const generatePDF = () => {
-    const pdf = new jsPDF();
-    let yPos = 15;
-    const lineHeight = 6;
-    const pageHeight = 280;
-    const pageWidth = 210;
-    const margin = 15;
-    const contentWidth = pageWidth - (margin * 2);
-    
-    // Color palette
-    const colors = {
-      primary: [0, 82, 147],      // Dark blue
-      secondary: [41, 128, 185],   // Light blue
-      accent: [46, 204, 113],      // Green
-      warning: [241, 196, 15],     // Yellow
-      text: [44, 62, 80],          // Dark gray
-      lightGray: [236, 240, 241],  // Light gray bg
-      border: [189, 195, 199]      // Border gray
-    };
-    
-    // Helper: Check page break
-    const checkPageBreak = (neededHeight = 20) => {
-      if (yPos + neededHeight > pageHeight) {
-        pdf.addPage();
-        yPos = 20;
-        addHeader(false); // Add header to new page
-        return true;
-      }
-      return false;
-    };
-    
-    // Helper: Draw horizontal line
-    const drawLine = (y, color = colors.border) => {
-      pdf.setDrawColor(...color);
-      pdf.setLineWidth(0.3);
-      pdf.line(margin, y, pageWidth - margin, y);
-    };
+    try {
+      console.log('[PDF] Starting generatePDF...');
+      console.log('[PDF] investigation:', investigation);
+      console.log('[PDF] searchResults?.investigation:', searchResults?.investigation);
+      
+      const pdf = new jsPDF();
+      let yPos = 15;
+      const lineHeight = 6;
+      const pageHeight = 280;
+      const pageWidth = 210;
+      const margin = 15;
+      const contentWidth = pageWidth - (margin * 2);
+      
+      // Color palette
+      const colors = {
+        primary: [0, 82, 147],      // Dark blue
+        secondary: [41, 128, 185],   // Light blue
+        accent: [46, 204, 113],      // Green
+        warning: [241, 196, 15],     // Yellow
+        text: [44, 62, 80],          // Dark gray
+        lightGray: [236, 240, 241],  // Light gray bg
+        border: [189, 195, 199]      // Border gray
+      };
+      
+      // Helper: Check page break
+      const checkPageBreak = (neededHeight = 20) => {
+        if (yPos + neededHeight > pageHeight) {
+          pdf.addPage();
+          yPos = 20;
+          addHeader(false); // Add header to new page
+          return true;
+        }
+        return false;
+      };
+      
+      // Helper: Draw horizontal line
+      const drawLine = (y, color = colors.border) => {
+        pdf.setDrawColor(...color);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, y, pageWidth - margin, y);
+      };
     
     // Helper: Draw section header with background
     const addSectionHeader = (title, icon = '') => {
