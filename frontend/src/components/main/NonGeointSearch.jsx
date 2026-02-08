@@ -4123,9 +4123,10 @@ export const NonGeointSearchDialog = ({
                     {selectedNiks.map(nik => {
                       const nikData = getNikInvestigationStatus(nik);
                       const hasResults = hasNikResults(nik);
-                      // Determine NIK status - if investigation is completed and this NIK has data, consider it completed
+                      // Determine NIK status - check both investigation state and searchResults.investigation
+                      const inv = investigation || searchResults?.investigation;
                       let nikStatus = nikData?.status || 'processing';
-                      if (investigation?.status === 'completed' && nikData) {
+                      if ((inv?.status === 'completed') && nikData) {
                         nikStatus = 'completed';
                       }
                       
