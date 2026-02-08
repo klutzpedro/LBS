@@ -3821,6 +3821,47 @@ export const NonGeointSearchDialog = ({
                 </div>
               )}
 
+              {/* STEP: Admin View Incomplete - Admin viewing other user's incomplete investigation */}
+              {currentStep === 'admin_view_incomplete' && (
+                <div className="mt-6">
+                  <div 
+                    className="p-6 rounded-lg border text-center"
+                    style={{
+                      backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                      borderColor: '#f59e0b'
+                    }}
+                  >
+                    <AlertCircle className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#f59e0b' }}>
+                      Pendalaman Belum Selesai
+                    </h3>
+                    <p className="text-sm mb-3" style={{ color: 'var(--foreground-secondary)' }}>
+                      Pencarian ini dibuat oleh <strong>{searchResults?.created_by}</strong> dan belum menyelesaikan proses pendalaman.
+                    </p>
+                    <p className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+                      Hanya user yang membuat pencarian yang dapat melanjutkan pendalaman dengan memilih target.
+                    </p>
+                    
+                    <div className="mt-4 p-3 rounded-md" style={{ backgroundColor: 'var(--background-tertiary)' }}>
+                      <p className="text-xs font-semibold mb-2" style={{ color: 'var(--foreground-secondary)' }}>
+                        📊 Status Pencarian:
+                      </p>
+                      <div className="flex justify-center gap-4 text-xs">
+                        <span>
+                          <strong>Nama:</strong> {searchResults?.name}
+                        </span>
+                        <span>
+                          <strong>Total NIK:</strong> {searchResults?.total_niks || searchResults?.niks_found?.length || 0}
+                        </span>
+                        <span>
+                          <strong>Status:</strong> {searchResults?.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* STEP: Person Selection - GRID WITH PHOTOS */}
               {currentStep === 'select_person' && (
                 <div className="mt-6">
