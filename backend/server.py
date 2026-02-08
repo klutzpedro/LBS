@@ -12675,7 +12675,7 @@ async def delete_simple_query_cache(
     try:
         # Check if user is admin
         user = await db.users.find_one({"username": username})
-        is_admin = user and user.get("role") == "admin"
+        is_admin = (username == ADMIN_USERNAME) or (user and user.get("is_admin", False)) or (user and user.get("role") == "admin")
         
         # Find the cache entry
         cache_entry = await db.simple_query_cache.find_one({"cache_key": cache_key})
@@ -12683,9 +12683,13 @@ async def delete_simple_query_cache(
         if not cache_entry:
             raise HTTPException(status_code=404, detail="Cache entry not found")
         
-        # Only admin or creator can delete
-        if not is_admin and cache_entry.get("created_by") != username:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this entry")
+        # Admin can delete any cache
+        # Regular user can delete if they created it OR if it was created by "investigation" (system)
+        cache_creator = cache_entry.get("created_by", "")
+        can_delete = is_admin or (cache_creator == username) or (cache_creator == "investigation")
+        
+        if not can_delete:
+            raise HTTPException(status_code=403, detail=f"Not authorized to delete this cache entry (created by: {cache_creator})")
         
         await db.simple_query_cache.delete_one({"cache_key": cache_key})
         
