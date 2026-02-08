@@ -3080,7 +3080,7 @@ export const NonGeointSearchDialog = ({
                 });
                 
                 // Use autoTable for proper table rendering
-                pdf.autoTable({
+                autoTable(pdf, {
                   startY: yPos,
                   head: [['No', 'Tanggal', 'Arah', 'TPI', 'Tujuan/Asal']],
                   body: tableData,
