@@ -3368,8 +3368,20 @@ export const NonGeointSearchDialog = ({
     if (searchResults.status === 'fetching_photos') return 'searching';
     if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
-    // SPECIAL CASE: For 'waiting_selection' status, ALWAYS show photo selection
-    // This is critical for reopening from history where user hasn't selected yet
+    // PRIORITY 1 (HIGHEST): If investigation exists AND is completed, ALWAYS show results
+    // This must be checked BEFORE waiting_selection to handle history with completed investigations
+    if (investigation && investigation.status === 'completed' && investigation.results && Object.keys(investigation.results).length > 0) {
+      console.log('[NonGeoint] getCurrentStep: Investigation completed with results, showing investigation view');
+      return 'investigation';
+    }
+    
+    // PRIORITY 2: If currently investigating, show investigation step
+    if (isInvestigating) {
+      return 'investigation';
+    }
+    
+    // PRIORITY 3: For 'waiting_selection' status, show photo selection if NO completed investigation
+    // This is for cases where user hasn't selected/investigated yet
     if (searchResults.status === 'waiting_selection') {
       if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
         return 'select_person';
@@ -3379,22 +3391,6 @@ export const NonGeointSearchDialog = ({
       }
       // If no photos yet for waiting_selection, show searching
       return 'searching';
-    }
-    
-    // PRIORITY 1: If investigation exists AND is completed (from history), show investigation results
-    if (investigation && investigation.status === 'completed') {
-      return 'investigation';
-    }
-    
-    // PRIORITY 2: If currently investigating, show investigation step
-    if (isInvestigating) {
-      return 'investigation';
-    }
-    
-    // PRIORITY 3: Check if investigation already completed - skip person selection
-    if (investigation?.status === 'completed' && investigation?.results && Object.keys(investigation.results).length > 0) {
-      console.log('[NonGeoint] getCurrentStep: Investigation completed, showing results');
-      return 'investigation';
     }
     
     // PRIORITY 4: Show person selection if we have nik_photos AND showPersonSelection is true
