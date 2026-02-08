@@ -8196,7 +8196,15 @@ async def query_passport_cp_api(nik: str, name: str = None) -> dict:
                 except json.JSONDecodeError as e:
                     logger.warning(f"[PASSPORT CP] WNA JSON decode error: {e}")
         
-        result["status"] = "completed" if (result["wni_data"] or result["wna_data"]) else "no_data"
+        # Determine final status based on whether passports were actually found
+        if result["passports"] and len(result["passports"]) > 0:
+            result["status"] = "completed"  # Passport(s) found - green checkmark
+        elif result["wni_data"] or result["wna_data"]:
+            result["status"] = "no_data"    # Query succeeded but no passport found - yellow warning
+        else:
+            result["status"] = "no_data"    # No response at all - yellow warning
+        
+        logger.info(f"[PASSPORT CP] Final status: {result['status']}, passports found: {len(result['passports'])}")
         
     except subprocess.TimeoutExpired:
         logger.error(f"[PASSPORT CP] Timeout")
