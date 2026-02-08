@@ -170,7 +170,8 @@ def release_telegram_lock(operation_name: str):
             logger.info(f"[LOCK] Released for: {operation_name}")
             # Only clear request status if it was set by this operation type
             # Don't clear if it's a nongeoint search (those don't set status)
-            if not operation_name.startswith("NONGEOINT_") and not operation_name.startswith("nongeoint_"):
+            is_nongeoint_search = "NONGEOINT_" in operation_name or "nongeoint_" in operation_name
+            if not is_nongeoint_search:
                 current_request_status = {
                     "is_busy": False,
                     "username": None,
