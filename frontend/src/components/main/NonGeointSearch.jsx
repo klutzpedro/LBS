@@ -1198,47 +1198,40 @@ export const NonGeointSearchDialog = ({
             console.log('[NonGeoint] Loading SNA from search data');
             setSnaResults(fullSearchData.sna_results);
           }
+          
+          // Process nik_photos for display (regardless of investigation status)
+          if (fullSearchData.nik_photos && Object.keys(fullSearchData.nik_photos).length > 0) {
+            console.log('[NonGeoint] Loading nik_photos:', Object.keys(fullSearchData.nik_photos).length);
+            const persons = Object.entries(fullSearchData.nik_photos)
+              .map(([nik, data]) => ({
+                nik: nik,
+                nama: data.name || data.nama,
+                name: data.name || data.nama,
+                photo: data.photo,
+                ttl: data.ttl,
+                alamat: data.alamat,
+                jk: data.jk,
+                status: data.status,
+                similarity: data.similarity || 0,
+                batch: data.batch || 0
+              }))
+              .sort((a, b) => {
+                if (b.similarity !== a.similarity) return b.similarity - a.similarity;
+                return (a.nama || '').localeCompare(b.nama || '');
+              });
             
+            setPersonsFound(persons);
+            setTotalNiks(fullSearchData.total_niks || persons.length);
+            setPhotosFetched(fullSearchData.photos_fetched_count || persons.length);
+            setHasMoreBatches(fullSearchData.has_more_batches || false);
+            setCurrentBatch(fullSearchData.current_batch || 0);
+          }
+          
+          // Show success message only if investigation was loaded
+          if (fullSearchData.investigation?.status === 'completed' && 
+              fullSearchData.investigation?.results && 
+              Object.keys(fullSearchData.investigation.results).length > 0) {
             toast.success('Hasil pendalaman sebelumnya dimuat');
-          } else if (fullSearchData.status === 'waiting_selection') {
-            console.log('[NonGeoint] Status is waiting_selection - showing photo selection');
-            // Reset investigation state - user needs to select from photos
-            setInvestigation(null);
-            setSelectedNiks([]);
-            setShowPersonSelection(true);
-            
-            // Process nik_photos to show photo selection
-            if (fullSearchData.nik_photos && Object.keys(fullSearchData.nik_photos).length > 0) {
-              console.log('[NonGeoint] Loading nik_photos for selection:', Object.keys(fullSearchData.nik_photos).length);
-              const persons = Object.entries(fullSearchData.nik_photos)
-                .map(([nik, data]) => ({
-                  nik: nik,
-                  nama: data.name || data.nama,
-                  name: data.name || data.nama,
-                  photo: data.photo,
-                  ttl: data.ttl,
-                  alamat: data.alamat,
-                  jk: data.jk,
-                  status: data.status,
-                  similarity: data.similarity || 0,
-                  batch: data.batch || 0
-                }))
-                .sort((a, b) => {
-                  if (b.similarity !== a.similarity) return b.similarity - a.similarity;
-                  return (a.nama || '').localeCompare(b.nama || '');
-                });
-              
-              setPersonsFound(persons);
-              setTotalNiks(fullSearchData.total_niks || persons.length);
-              setPhotosFetched(fullSearchData.photos_fetched_count || persons.length);
-              setHasMoreBatches(fullSearchData.has_more_batches || false);
-              setCurrentBatch(fullSearchData.current_batch || 0);
-            }
-          } else {
-            console.log('[NonGeoint] No completed investigation found for this search');
-            // No investigation yet, reset investigation state
-            setInvestigation(null);
-            setSelectedNiks([]);
           }
           
           setIsLoadingFromHistory(false); // Done loading
