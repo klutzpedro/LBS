@@ -8223,14 +8223,15 @@ async def query_perlintasan_cp_api(passport_no: str) -> dict:
     try:
         logger.info(f"[PERLINTASAN CP] Querying crossings for passport: {passport_no}")
         
-        # Use curl with -4 for IPv4 and -d for POST data
+        # Use curl with -4 for IPv4, -X POST explicitly, and -d for POST data
+        # FIX: Added -X POST to match Simple Query behavior
         lintas_cmd = [
-            "curl", "-4", "-s",
+            "curl", "-4", "-s", "-X", "POST",
             "-H", f"api-key: {CP_API_KEY}",
             "-d", f"nopas={passport_no}",
             f"{CP_API_URL}/api/v3/imigrasi/lintas"
         ]
-        logger.info(f"[PERLINTASAN CP] curl command: {' '.join(lintas_cmd[:5])}...")
+        logger.info(f"[PERLINTASAN CP] curl command: curl -4 -s -X POST -H api-key:*** -d nopas={passport_no} {CP_API_URL}/api/v3/imigrasi/lintas")
         
         process = subprocess.run(lintas_cmd, capture_output=True, text=True, timeout=30)
         
