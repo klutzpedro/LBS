@@ -3466,8 +3466,14 @@ export const NonGeointSearchDialog = ({
     
     // Save PDF
     const fileName = `Investigasi_${searchResults?.name?.replace(/\s+/g, '_') || 'Report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    console.log('[PDF] Saving file:', fileName);
     pdf.save(fileName);
     toast.success('PDF berhasil dibuat!');
+    
+    } catch (error) {
+      console.error('[PDF] Error generating PDF:', error);
+      toast.error(`Gagal membuat PDF: ${error.message}`);
+    }
   };
 
   const getStatusIcon = (status) => {
