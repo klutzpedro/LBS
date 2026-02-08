@@ -2956,28 +2956,70 @@ export const NonGeointSearchDialog = ({
           console.log('[PDF] Perlintasan data:', {
             status: perlintasanData.status,
             total_passports: perlintasanData.total_passports,
-            results_count: perlintasanData.results?.length
+            results_count: perlintasanData.results?.length,
+            results: perlintasanData.results,
+            raw_keys: Object.keys(perlintasanData)
           });
           
-          if (perlintasanData.results && perlintasanData.results.length > 0) {
-            perlintasanData.results.forEach((passportResult) => {
-              if (passportResult.crossings && passportResult.crossings.length > 0) {
+          // Handle different data formats
+          let perlintasanResults = perlintasanData.results || [];
+          
+          // If results is empty, check for alternative data structures
+          if (perlintasanResults.length === 0) {
+            // Check if data is stored directly with crossings
+            if (perlintasanData.crossings && perlintasanData.crossings.length > 0) {
+              perlintasanResults = [{
+                passport_no: perlintasanData.passport_no || 'Unknown',
+                crossings: perlintasanData.crossings
+              }];
+            }
+            // Check for data array
+            else if (perlintasanData.data && Array.isArray(perlintasanData.data)) {
+              perlintasanResults = perlintasanData.data.map(item => ({
+                passport_no: item.passport_no || item.TRAVELDOCUMENTNO || 'Unknown',
+                crossings: item.crossings || item.data || []
+              }));
+            }
+          }
+          
+          console.log('[PDF] Processed perlintasan results:', perlintasanResults);
+          
+          if (perlintasanResults.length > 0) {
+            let hasCrossings = false;
+            
+            perlintasanResults.forEach((passportResult) => {
+              console.log('[PDF] Processing passport result:', passportResult);
+              
+              const crossings = passportResult.crossings || passportResult.data || [];
+              
+              if (crossings.length > 0) {
+                hasCrossings = true;
                 checkPageBreak(15);
                 
                 pdf.setFontSize(9);
                 pdf.setFont('helvetica', 'bold');
-                pdf.text(`Passport: ${passportResult.passport_no} (${passportResult.crossings.length} perjalanan)`, margin + 5, yPos);
+                pdf.setTextColor(...colors.text);
+                pdf.text(`Passport: ${passportResult.passport_no} (${crossings.length} perjalanan)`, margin + 5, yPos);
                 yPos += 8;
                 
                 // Perlintasan table with proper borders
-                const tableData = passportResult.crossings.slice(0, 10).map((crossing, cIdx) => {
-                  const dir = crossing.direction_code === 'A' ? 'MASUK' : crossing.direction_code === 'D' ? 'KELUAR' : crossing.direction;
+                const tableData = crossings.slice(0, 15).map((crossing, cIdx) => {
+                  // Handle different field names
+                  const dir = crossing.direction_code === 'A' ? 'MASUK' : 
+                             crossing.direction_code === 'D' ? 'KELUAR' : 
+                             crossing.DIRECTIONCODE === 'A' ? 'MASUK' :
+                             crossing.DIRECTIONCODE === 'D' ? 'KELUAR' :
+                             crossing.direction || '-';
+                  const date = crossing.movement_date || crossing.MOVEMENTDATE || crossing.tanggal || '-';
+                  const tpi = crossing.tpi_name || crossing.TPINAME || crossing.tpi || '-';
+                  const port = crossing.port_description || crossing.PORTDESCRIPTION || crossing.tujuan || '-';
+                  
                   return [
                     String(cIdx + 1),
-                    crossing.movement_date || '-',
+                    date,
                     dir,
-                    (crossing.tpi_name || '-').substring(0, 28),
-                    (crossing.port_description || '-').substring(0, 22)
+                    tpi.substring(0, 28),
+                    port.substring(0, 22)
                   ];
                 });
                 
@@ -3012,11 +3054,11 @@ export const NonGeointSearchDialog = ({
                 
                 yPos = pdf.lastAutoTable.finalY + 5;
                 
-                if (passportResult.crossings.length > 10) {
+                if (crossings.length > 15) {
                   pdf.setFontSize(8);
                   pdf.setFont('helvetica', 'italic');
                   pdf.setTextColor(100, 100, 100);
-                  pdf.text(`... dan ${passportResult.crossings.length - 10} perjalanan lainnya`, margin + 5, yPos);
+                  pdf.text(`... dan ${crossings.length - 15} perjalanan lainnya`, margin + 5, yPos);
                   pdf.setTextColor(...colors.text);
                   yPos += 8;
                 }
@@ -3024,12 +3066,25 @@ export const NonGeointSearchDialog = ({
                 yPos += 3;
               }
             });
+            
+            if (!hasCrossings) {
+              pdf.setFontSize(9);
+              pdf.setTextColor(150, 150, 150);
+              pdf.text('Tidak ada data perlintasan (tidak ada crossing)', margin + 5, yPos);
+              yPos += 8;
+            }
+          } else if (perlintasanData.status === 'no_passport') {
+            pdf.setFontSize(9);
+            pdf.setTextColor(150, 150, 150);
+            pdf.text('Tidak ada passport untuk dicek perlintasan', margin + 5, yPos);
+            yPos += 8;
           } else {
             pdf.setFontSize(9);
             pdf.setTextColor(150, 150, 150);
             pdf.text('Tidak ada data perlintasan', margin + 5, yPos);
             yPos += 8;
           }
+          pdf.setTextColor(...colors.text);
         }
         
         // ============ FAKTA OSINT SECTION ============
