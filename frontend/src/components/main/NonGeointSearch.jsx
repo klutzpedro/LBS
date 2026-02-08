@@ -1157,10 +1157,9 @@ export const NonGeointSearchDialog = ({
           setSearchName(fullSearchData.name || '');
           
           // If investigation already exists AND is completed, load it
-          // For 'waiting_selection' status, don't load investigation - user needs to select
-          if (fullSearchData.investigation && 
-              fullSearchData.investigation.status === 'completed' &&
-              fullSearchData.status !== 'waiting_selection') {
+          // IMPORTANT: Load investigation regardless of search status if investigation is completed
+          // This fixes the issue where completed investigations are not shown when search has many NIKs
+          if (fullSearchData.investigation && fullSearchData.investigation.status === 'completed') {
             console.log('[NonGeoint] Investigation found with status:', fullSearchData.investigation.status);
             console.log('[NonGeoint] Investigation results:', fullSearchData.investigation.results);
             console.log('[NonGeoint] OSINT results:', fullSearchData.investigation.osint_results);
@@ -1172,6 +1171,11 @@ export const NonGeointSearchDialog = ({
               const investigatedNiks = Object.keys(fullSearchData.investigation.results);
               setSelectedNiks(investigatedNiks);
               console.log('[NonGeoint] Loaded investigated NIKs:', investigatedNiks);
+              
+              // If there are investigated NIKs, show the investigation view, not selection
+              if (investigatedNiks.length > 0) {
+                setShowPersonSelection(false);
+              }
             }
             
             // Load cached OSINT results if available
