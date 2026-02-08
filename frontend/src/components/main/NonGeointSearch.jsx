@@ -3391,22 +3391,32 @@ export const NonGeointSearchDialog = ({
       return 'investigation';
     }
     
-    // PRIORITY 3: Show person selection if we have nik_photos AND showPersonSelection is true
+    // PRIORITY 3: Check if investigation already completed - skip person selection
+    if (investigation?.status === 'completed' && investigation?.results && Object.keys(investigation.results).length > 0) {
+      console.log('[NonGeoint] getCurrentStep: Investigation completed, showing results');
+      return 'investigation';
+    }
+    
+    // PRIORITY 4: Show person selection if we have nik_photos AND showPersonSelection is true
     // ALWAYS show photo selection even if only 1 NIK (for verification)
     if (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) {
-      // Only show person selection if showPersonSelection is true
+      // Only show person selection if showPersonSelection is true AND no completed investigation
       if (showPersonSelection) {
         return 'select_person';
       }
       // If person selection is done (showPersonSelection=false) but not investigating yet,
-      // this means user hasn't clicked "Mulai Pendalaman" - keep showing person selection
-      // OR skip to investigation if isInvestigating
-      // Since isInvestigating is checked above, if we reach here, show person selection again
-      return 'select_person';
+      // and no completed investigation, show person selection again
+      if (!investigation?.status || investigation.status !== 'completed') {
+        return 'select_person';
+      }
+      // Otherwise, investigation is completed - will be handled above
     }
     
     // Legacy: show person selection from CAPIL extraction (even for 1 person for verification)
-    if (personsFound.length >= 1) return 'select_person';
+    // But skip if investigation is completed
+    if (personsFound.length >= 1 && (!investigation?.status || investigation.status !== 'completed')) {
+      return 'select_person';
+    }
     
     // If we have NIKs found but no photos, show NIK selection as fallback
     if (searchResults.niks_found?.length > 0 && !searchResults.nik_photos) return 'select_nik';
