@@ -2543,6 +2543,16 @@ export const NonGeointSearchDialog = ({
     
     // ==================== START PDF GENERATION ====================
     
+    // Use investigation from local state OR from searchResults (whichever is available)
+    const invData = investigation || searchResults?.investigation;
+    
+    console.log('[PDF] Starting PDF generation with:', {
+      investigation_status: investigation?.status,
+      searchResults_investigation_status: searchResults?.investigation?.status,
+      invData_status: invData?.status,
+      invData_results_count: invData?.results ? Object.keys(invData.results).length : 0
+    });
+    
     // Header
     addHeader(true);
     
@@ -2575,8 +2585,8 @@ export const NonGeointSearchDialog = ({
     }
     
     // Then, fallback to investigation results if photo not found
-    if (investigation?.results) {
-      Object.entries(investigation.results).forEach(([nik, nikResult]) => {
+    if (invData?.results) {
+      Object.entries(invData.results).forEach(([nik, nikResult]) => {
         if (!allPhotos[nik]?.photo && nikResult?.nik_data?.photo) {
           allPhotos[nik] = {
             ...allPhotos[nik],
