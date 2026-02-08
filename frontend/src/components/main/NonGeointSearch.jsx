@@ -3614,9 +3614,9 @@ export const NonGeointSearchDialog = ({
               {(searchResults || investigation) && (
                 <Button
                   onClick={async () => {
-                    if (window.confirm('Reset semua data pencarian? Ini akan menghapus hasil pencarian dan cache dari server.')) {
+                    if (window.confirm('RESET TARGET: Semua data akan dihapus sepenuhnya!\n\nData yang akan dihapus:\n- NIK, NKK, REGNIK\n- Passport & Perlintasan\n- OSINT & SNA\n\nData akan dihapus dari cache server untuk SEMUA akun.\n\nLanjutkan?')) {
                       await resetAllStates(true); // Pass true to delete from backend
-                      toast.success('Data berhasil direset');
+                      toast.success('Data target berhasil dihapus dari semua cache');
                     }
                   }}
                   disabled={isSearching || isInvestigating}
@@ -3627,7 +3627,7 @@ export const NonGeointSearchDialog = ({
                     color: 'var(--status-error)',
                     backgroundColor: 'transparent'
                   }}
-                  title="Reset semua data dan hapus cache"
+                  title="Reset semua data target (NIK, NKK, REGNIK, Passport, Perlintasan, OSINT, SNA) dari cache server"
                   data-testid="reset-search-btn"
                 >
                   <RotateCcw className="w-4 h-4" />
