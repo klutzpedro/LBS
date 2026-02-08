@@ -1153,54 +1153,51 @@ export const NonGeointSearchDialog = ({
           // Mark as loaded
           lastOpenedWithSearchRef.current = initialSearch.id;
           
+          // IMPORTANT: Set investigation FIRST before searchResults to avoid race condition
+          // Always set investigation if it exists (even if not completed, for status display)
+          if (fullSearchData.investigation) {
+            console.log('[NonGeoint] Setting investigation state:', fullSearchData.investigation.status);
+            console.log('[NonGeoint] Investigation results:', fullSearchData.investigation.results);
+            setInvestigation(fullSearchData.investigation);
+            
+            // If investigation is completed with results, set up the view
+            if (fullSearchData.investigation.status === 'completed' && fullSearchData.investigation.results) {
+              const investigatedNiks = Object.keys(fullSearchData.investigation.results);
+              console.log('[NonGeoint] Loaded investigated NIKs:', investigatedNiks);
+              
+              if (investigatedNiks.length > 0) {
+                setSelectedNiks(investigatedNiks);
+                setShowPersonSelection(false);
+                console.log('[NonGeoint] Set showPersonSelection to FALSE - investigation completed');
+              }
+              
+              // Load cached OSINT results if available
+              if (fullSearchData.investigation.osint_results) {
+                console.log('[NonGeoint] Loading cached OSINT results');
+                setOsintResults(fullSearchData.investigation.osint_results);
+              }
+              
+              // Load cached SNA results if available
+              if (fullSearchData.investigation.sna_results) {
+                console.log('[NonGeoint] Loading cached SNA results');
+                setSnaResults(fullSearchData.investigation.sna_results);
+              }
+            }
+          }
+          
+          // Now set searchResults (which triggers other effects)
           setSearchResults(fullSearchData);
           setSearchName(fullSearchData.name || '');
           
-          // If investigation already exists AND is completed, load it
-          // IMPORTANT: Load investigation regardless of search status if investigation is completed
-          // This fixes the issue where completed investigations are not shown when search has many NIKs
-          if (fullSearchData.investigation && fullSearchData.investigation.status === 'completed') {
-            console.log('[NonGeoint] Investigation found with status:', fullSearchData.investigation.status);
-            console.log('[NonGeoint] Investigation results:', fullSearchData.investigation.results);
-            console.log('[NonGeoint] OSINT results:', fullSearchData.investigation.osint_results);
-            
-            setInvestigation(fullSearchData.investigation);
-            
-            // Set selected NIKs from investigation
-            if (fullSearchData.investigation.results) {
-              const investigatedNiks = Object.keys(fullSearchData.investigation.results);
-              setSelectedNiks(investigatedNiks);
-              console.log('[NonGeoint] Loaded investigated NIKs:', investigatedNiks);
-              
-              // If there are investigated NIKs, show the investigation view, not selection
-              if (investigatedNiks.length > 0) {
-                setShowPersonSelection(false);
-              }
-            }
-            
-            // Load cached OSINT results if available
-            if (fullSearchData.investigation.osint_results) {
-              console.log('[NonGeoint] Loading cached OSINT results');
-              setOsintResults(fullSearchData.investigation.osint_results);
-            }
-            
-            // Also check nongeoint_searches for OSINT (backup location)
-            if (fullSearchData.osint_results && !fullSearchData.investigation.osint_results) {
-              console.log('[NonGeoint] Loading OSINT from search data');
-              setOsintResults(fullSearchData.osint_results);
-            }
-            
-            // Load cached SNA results if available
-            if (fullSearchData.investigation.sna_results) {
-              console.log('[NonGeoint] Loading cached SNA results');
-              setSnaResults(fullSearchData.investigation.sna_results);
-            }
-            
-            // Also check nongeoint_searches for SNA (backup location)
-            if (fullSearchData.sna_results && !fullSearchData.investigation.sna_results) {
-              console.log('[NonGeoint] Loading SNA from search data');
-              setSnaResults(fullSearchData.sna_results);
-            }
+          // Also load OSINT/SNA from search level (backup location)
+          if (fullSearchData.osint_results && !fullSearchData.investigation?.osint_results) {
+            console.log('[NonGeoint] Loading OSINT from search data');
+            setOsintResults(fullSearchData.osint_results);
+          }
+          if (fullSearchData.sna_results && !fullSearchData.investigation?.sna_results) {
+            console.log('[NonGeoint] Loading SNA from search data');
+            setSnaResults(fullSearchData.sna_results);
+          }
             
             toast.success('Hasil pendalaman sebelumnya dimuat');
           } else if (fullSearchData.status === 'waiting_selection') {
