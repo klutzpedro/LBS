@@ -5817,6 +5817,10 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
                 {"id": search_id},
                 {"$set": {"status": "error", "error": str(e)}}
             )
+        finally:
+            # Always release lock when done
+            release_telegram_lock(f"Full Query - {name}")
+            logger.info(f"[NONGEOINT {search_id}] Released telegram lock")
 
 async def execute_nongeoint_query(search_id: str, name: str, query_type: str) -> dict:
     """Execute a single NON GEOINT query"""
