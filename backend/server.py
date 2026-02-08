@@ -7408,6 +7408,8 @@ def parse_count(count_str: str) -> int:
 async def process_nik_investigation(investigation_id: str, search_id: str, niks: List[str]):
     """Process NIK deep investigation with queue system"""
     global telegram_client
+    import json  # Import at function level to ensure availability
+    import re    # Import at function level to ensure availability
     
     results = {}
     
