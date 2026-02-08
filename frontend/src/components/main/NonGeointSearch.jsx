@@ -1574,10 +1574,18 @@ export const NonGeointSearchDialog = ({
       console.log('[NonGeoint] Persons array created:', persons.length, 'persons');
       setPersonsFound(persons);
       
-      // ALWAYS show person selection for waiting_selection or if we have persons
-      if (persons.length >= 1 || isWaitingSelection) {
-        console.log('[NonGeoint] Setting showPersonSelection = true');
+      // ONLY show person selection if there's NO completed investigation
+      // Don't override showPersonSelection if investigation already loaded
+      const hasCompletedInvestigation = searchResults?.investigation?.status === 'completed' &&
+        searchResults?.investigation?.results && 
+        Object.keys(searchResults.investigation.results).length > 0;
+      
+      if (!hasCompletedInvestigation && (persons.length >= 1 || isWaitingSelection)) {
+        console.log('[NonGeoint] Setting showPersonSelection = true (no completed investigation)');
         setShowPersonSelection(true);
+      } else if (hasCompletedInvestigation) {
+        console.log('[NonGeoint] Keeping showPersonSelection = false (has completed investigation)');
+        setShowPersonSelection(false);
       } else {
         setShowPersonSelection(false);
       }
@@ -1588,19 +1596,33 @@ export const NonGeointSearchDialog = ({
       const persons = extractPersonsFromCapil(searchResults.results.capil);
       setPersonsFound(persons);
       
-      // ALWAYS show person selection for verification (even for single person)
-      if (persons.length >= 1) {
+      // ONLY show person selection if there's NO completed investigation
+      const hasCompletedInvestigation = searchResults?.investigation?.status === 'completed' &&
+        searchResults?.investigation?.results && 
+        Object.keys(searchResults.investigation.results).length > 0;
+      
+      if (!hasCompletedInvestigation && persons.length >= 1) {
         setShowPersonSelection(true);
       } else {
         setShowPersonSelection(false);
       }
     }
     // If waiting_selection but no nik_photos yet, still set showPersonSelection
+    // BUT only if no completed investigation
     else if (isWaitingSelection) {
-      console.log('[NonGeoint] Waiting selection but no nik_photos - will wait for data');
-      setShowPersonSelection(true);
+      const hasCompletedInvestigation = searchResults?.investigation?.status === 'completed' &&
+        searchResults?.investigation?.results && 
+        Object.keys(searchResults.investigation.results).length > 0;
+      
+      if (!hasCompletedInvestigation) {
+        console.log('[NonGeoint] Waiting selection but no nik_photos - will wait for data');
+        setShowPersonSelection(true);
+      } else {
+        console.log('[NonGeoint] Has completed investigation - skip person selection');
+        setShowPersonSelection(false);
+      }
     }
-  }, [searchResults?.id, searchResults?.status, searchResults?.nik_photos]);
+  }, [searchResults?.id, searchResults?.status, searchResults?.nik_photos, searchResults?.investigation]);
 
   const startSearch = async () => {
     if (!searchName.trim()) {
