@@ -7628,54 +7628,59 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                     cache_key_passport = f"passport_wni:{target_name.upper()}"
                     cached_passport = await db.simple_query_cache.find_one({"cache_key": cache_key_passport})
                     
-                    if cached_passport and cached_passport.get("raw_response"):
+                    # FIX: Check for cached passports array first (more reliable), then fall back to raw_response parsing
+                    if cached_passport and (cached_passport.get("passports") or cached_passport.get("raw_response")):
                         logger.info(f"[NIK INVESTIGATION {investigation_id}] CACHE HIT for Passport {target_name}")
                         
-                        # Try to extract passport numbers from cached data
-                        import re
-                        raw_text = cached_passport.get("raw_response", "")
+                        # FIX: First try to use pre-stored passports array
+                        passport_numbers = cached_passport.get("passports", [])
                         
-                        # Extract passport numbers with various patterns
-                        # Indonesian passport: A1234567 (letter + 7 digits)
-                        # Old format: B12345678 (letter + 8 digits)
-                        passport_numbers = []
+                        # If no pre-stored passports, try to extract from raw_response
+                        if not passport_numbers and cached_passport.get("raw_response"):
+                            import re
+                            raw_text = cached_passport.get("raw_response", "")
+                            
+                            # Extract passport numbers with various patterns
+                            # Indonesian passport: A1234567 (letter + 7 digits)
+                            # Old format: B12345678 (letter + 8 digits)
+                            passport_numbers = []
+                            
+                            # Pattern 1: Standard passport format (letter + 6-8 digits)
+                            patterns = [
+                                r'\b[A-Z]\d{6,8}\b',  # A1234567 or B12345678
+                                r'NO\.?\s*PASPOR\s*:?\s*([A-Z]\d{6,8})',  # NO. PASPOR: A1234567
+                                r'no_paspor["\']?\s*:?\s*["\']?([A-Z]\d{6,8})',  # JSON format
+                                r'TRAVELDOCUMENTNO["\']?\s*:?\s*["\']?([A-Z]?\d{6,8})',  # API format
+                            ]
+                            
+                            for pattern in patterns:
+                                matches = re.findall(pattern, raw_text, re.IGNORECASE)
+                                for match in matches:
+                                    # Clean and validate passport number
+                                    passport_no = match.upper().strip()
+                                    if passport_no and len(passport_no) >= 7 and passport_no not in passport_numbers:
+                                        passport_numbers.append(passport_no)
+                            
+                            # Also try to parse as JSON if it looks like JSON
+                            if raw_text.strip().startswith('{') or raw_text.strip().startswith('['):
+                                try:
+                                    import json
+                                    cached_json = json.loads(raw_text)
+                                    data_list = cached_json.get("result") or cached_json.get("data") or []
+                                    if isinstance(data_list, list):
+                                        for item in data_list:
+                                            for field in ["no_paspor", "no_paspor_lama", "TRAVELDOCUMENTNO", "NO_PASPOR", "passport_no"]:
+                                                pno = item.get(field)
+                                                if pno and pno not in passport_numbers:
+                                                    passport_numbers.append(pno)
+                                except:
+                                    pass
                         
-                        # Pattern 1: Standard passport format (letter + 6-8 digits)
-                        patterns = [
-                            r'\b[A-Z]\d{6,8}\b',  # A1234567 or B12345678
-                            r'NO\.?\s*PASPOR\s*:?\s*([A-Z]\d{6,8})',  # NO. PASPOR: A1234567
-                            r'no_paspor["\']?\s*:?\s*["\']?([A-Z]\d{6,8})',  # JSON format
-                            r'TRAVELDOCUMENTNO["\']?\s*:?\s*["\']?([A-Z]?\d{6,8})',  # API format
-                        ]
-                        
-                        for pattern in patterns:
-                            matches = re.findall(pattern, raw_text, re.IGNORECASE)
-                            for match in matches:
-                                # Clean and validate passport number
-                                passport_no = match.upper().strip()
-                                if passport_no and len(passport_no) >= 7 and passport_no not in passport_numbers:
-                                    passport_numbers.append(passport_no)
-                        
-                        # Also try to parse as JSON if it looks like JSON
-                        if raw_text.strip().startswith('{') or raw_text.strip().startswith('['):
-                            try:
-                                import json
-                                cached_json = json.loads(raw_text)
-                                data_list = cached_json.get("result") or cached_json.get("data") or []
-                                if isinstance(data_list, list):
-                                    for item in data_list:
-                                        for field in ["no_paspor", "no_paspor_lama", "TRAVELDOCUMENTNO", "NO_PASPOR", "passport_no"]:
-                                            pno = item.get(field)
-                                            if pno and pno not in passport_numbers:
-                                                passport_numbers.append(pno)
-                            except:
-                                pass
-                        
-                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Extracted {len(passport_numbers)} passports from cache: {passport_numbers}")
+                        logger.info(f"[NIK INVESTIGATION {investigation_id}] Retrieved {len(passport_numbers)} passports from cache: {passport_numbers}")
                         
                         passport_result = {
                             "status": "success",
-                            "raw_text": raw_text,
+                            "raw_text": cached_passport.get("raw_response", ""),
                             "passports": list(set(passport_numbers)),
                             "from_cache": True
                         }
