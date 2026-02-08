@@ -2648,8 +2648,8 @@ export const NonGeointSearchDialog = ({
     }
     
     // ============ PROCESS EACH NIK ============
-    if (investigation?.results && Object.keys(investigation.results).length > 0) {
-      Object.entries(investigation.results).forEach(([nik, nikResult], idx) => {
+    if (invData?.results && Object.keys(invData.results).length > 0) {
+      Object.entries(invData.results).forEach(([nik, nikResult], idx) => {
         // NIK Header
         checkPageBreak(30);
         yPos += 5;
