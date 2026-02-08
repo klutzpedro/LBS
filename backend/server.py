@@ -5121,13 +5121,17 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
 @api_router.get("/nongeoint/searches")
 async def list_nongeoint_searches(username: str = Depends(verify_token)):
     """List all NON GEOINT searches for user with investigation status"""
+    # Check if user is admin (either username is 'admin' or has is_admin flag)
+    requester = await db.users.find_one({"username": username})
+    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    
     # Filter by user - admin sees all
-    query = {} if username == "admin" else {"created_by": username}
+    query = {} if is_admin else {"created_by": username}
     
     searches = await db.nongeoint_searches.find(
         query,
         {"_id": 0}
-    ).sort("created_at", -1).limit(20).to_list(20)
+    ).sort("created_at", -1).limit(50).to_list(50)  # Increased limit for admin
     
     # Add investigation status for each search
     for search in searches:
