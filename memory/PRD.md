@@ -45,6 +45,14 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Fix: Full Reset Target (All Cache Clear)
+**Date:** 2025-12-09
+**Issue:** Reset target tidak menghapus semua cache (OSINT, SNA, dll)
+**Fix:**
+- Endpoint DELETE sekarang menghapus: NIK, NKK, REGNIK, Passport, Perlintasan, OSINT, SNA
+- Data dihapus untuk SEMUA akun (global)
+- Frontend konfirmasi diperjelas
+
 ### Fix: Perlintasan Multiple Passports Bug
 **Date:** 2025-12-09
 **Issue:** Data perlintasan tidak muncul untuk target dengan multiple passports
