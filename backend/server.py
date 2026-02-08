@@ -7738,7 +7738,6 @@ async def process_nik_investigation(investigation_id: str, search_id: str, niks:
                             # Also try to parse as JSON if it looks like JSON
                             if raw_text.strip().startswith('{') or raw_text.strip().startswith('['):
                                 try:
-                                    import json
                                     cached_json = json.loads(raw_text)
                                     data_list = cached_json.get("result") or cached_json.get("data") or []
                                     logger.info(f"[NIK INVESTIGATION {investigation_id}] Parsed JSON, data_list type: {type(data_list)}, length: {len(data_list) if isinstance(data_list, list) else 'N/A'}")
