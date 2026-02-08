@@ -688,6 +688,19 @@ const MainApp = () => {
     }
   }, [selectedTargetForChat]);
 
+  // Poll request status every 3 seconds to update IDLE/BUSY indicator
+  useEffect(() => {
+    // Initial fetch
+    checkRequestStatus();
+    
+    // Poll every 3 seconds
+    const statusInterval = setInterval(() => {
+      checkRequestStatus();
+    }, 3000);
+    
+    return () => clearInterval(statusInterval);
+  }, []);
+
   const fetchCases = async () => {
     try {
       const token = localStorage.getItem('token');
