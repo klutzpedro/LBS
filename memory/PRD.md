@@ -45,6 +45,23 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Bug Fix: Duplicate NIK Request in Full Query
+**Date:** 2025-02-09
+**Issue:** Saat pendalaman NIK di Full Query, webapp mengirim 2 request ke backend (seharusnya 1)
+**Root Cause:** 
+1. `startInvestigationWithNik()` melakukan initial poll setelah start interval - ini menyebabkan extra request
+2. Tidak ada guard untuk mencegah double-click atau race condition
+
+**Fixes Applied:**
+1. Removed initial poll call dari `startInvestigationWithNik()` - interval saja sudah cukup
+2. Added guard `if (isInvestigating) return` di awal fungsi untuk mencegah duplicate
+3. Added guard di `confirmPersonSelection()` untuk mencegah double-click
+4. Updated button state to disable when `isInvestigating` is true
+5. Added `clearInterval` sebelum start interval baru untuk mencegah multiple polling
+
+**Files Modified:**
+- `frontend/src/components/main/NonGeointSearch.jsx`
+
 ### Performance: History & Telegram Query Optimization
 **Date:** 2025-02-09
 **Issues Fixed:**
