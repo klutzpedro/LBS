@@ -702,6 +702,29 @@ const MainApp = () => {
     return () => clearInterval(statusInterval);
   }, []);
 
+  // Check Telegram status periodically
+  useEffect(() => {
+    const checkTelegramStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const response = await axios.get(`${API}/telegram/status`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000
+        });
+        setTelegramConnected(response.data.authorized || response.data.connected);
+      } catch (err) {
+        // Don't update state on error - keep last known status
+      }
+    };
+    
+    checkTelegramStatus();
+    const tgInterval = setInterval(checkTelegramStatus, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(tgInterval);
+  }, []);
+
   const fetchCases = async () => {
     try {
       const token = localStorage.getItem('token');
