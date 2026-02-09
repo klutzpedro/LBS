@@ -5944,7 +5944,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
             return {"status": "error", "error": "Failed to send name to bot", "niks_found": []}
         
         logger.info(f"[{query_token}] Sent name: {name}")
-        await asyncio.sleep(4)
+        await asyncio.sleep(2)  # Reduced from 4s to 2s - bot responds quickly
         
         # Step 2: Get buttons and click the right one
         async def get_buttons():
