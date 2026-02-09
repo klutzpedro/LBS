@@ -101,7 +101,7 @@ export const FaceRecognitionButton = ({ onOpenSearch, onOpenHistory, isProcessin
 };
 
 // Main FR Search Dialog (without history tab)
-export const FaceRecognitionDialog = ({ open, onOpenChange }) => {
+export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = false }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   
   // Search/Upload state
