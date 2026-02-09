@@ -30,20 +30,30 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('[Auth] Checking session validity...');
       const response = await axios.post(`${API}/auth/check-session`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000  // 5 second timeout to prevent hanging
       });
       
       console.log('[Auth] Session check response:', response.data);
       
       if (!response.data.valid) {
         console.log('[Auth] Session invalidated:', response.data.reason);
-        setSessionCheckFailed(true);
+        // Only show dialog if reason is session_invalidated (not token issues)
+        if (response.data.reason === 'session_invalidated') {
+          setSessionCheckFailed(true);
+        } else {
+          // For other reasons (token expired, etc), just logout silently
+          console.log('[Auth] Auto-logout due to:', response.data.reason);
+          logout();
+        }
       } else {
         console.log('[Auth] Session is valid');
+        setSessionCheckFailed(false);  // Reset if was in failed state
       }
     } catch (error) {
       console.error('[Auth] Session check error:', error.response?.status, error.message);
-      // Don't set sessionCheckFailed on network errors
+      // Don't set sessionCheckFailed on network errors or timeouts
+      // This prevents false positives during slow connections
     }
   }, [token]);
 
