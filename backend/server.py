@@ -12789,9 +12789,8 @@ async def get_simple_query_history(
     Admin sees all history, regular users see only their own.
     """
     try:
-        # Check if user is admin
-        requester = await db.users.find_one({"username": username})
-        is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+        # Check if user is admin - use cached check for performance
+        is_admin = await is_user_admin(username)
         
         # Build query filter
         query_filter = {"raw_response": {"$exists": True, "$ne": None}}
