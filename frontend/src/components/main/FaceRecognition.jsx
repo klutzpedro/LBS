@@ -205,9 +205,10 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
         const errorMsg = error.detail || 'Face recognition failed';
         
         // Check for Telegram setup errors
-        if (errorMsg.includes('Telegram') || errorMsg.includes('login') || errorMsg.includes('setup')) {
-          toast.error('⚠️ ' + errorMsg, { duration: 5000 });
-          setStatusMessage(errorMsg);
+        if (errorMsg.includes('Telegram') || errorMsg.includes('login') || errorMsg.includes('setup') || errorMsg.includes('session')) {
+          toast.error('⚠️ ' + errorMsg, { duration: 6000 });
+          setStatusMessage('');
+          setIsProcessing(false);
           setCurrentStep('upload');
           return;
         }
