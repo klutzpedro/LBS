@@ -6011,7 +6011,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         
         # Record time after clicking button
         button_click_time = datetime.now(timezone.utc)
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)  # Reduced from 5s to 2s - bot responds quickly
         
         # Step 4: Get response - increase limit for large results
         async def get_response():
