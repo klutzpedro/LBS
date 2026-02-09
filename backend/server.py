@@ -10118,8 +10118,22 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
         
         logger.info(f"[FR {session_id}] Image saved to {temp_path}")
         
+        # Get bot entity with proper error handling
+        try:
+            bot_entity = await telegram_client.get_entity("@northarch_bot")
+        except Exception as bot_err:
+            error_msg = str(bot_err)
+            logger.error(f"[FR {session_id}] Failed to get bot entity: {error_msg}")
+            
+            if "not registered" in error_msg.lower() or "resolve" in error_msg.lower():
+                raise HTTPException(
+                    status_code=503, 
+                    detail="Telegram session tidak valid. Silakan login ulang Telegram di Settings → Telegram Setup"
+                )
+            else:
+                raise HTTPException(status_code=503, detail=f"Gagal terhubung ke bot Telegram: {error_msg}")
+        
         # Get last message ID BEFORE sending our query - CRITICAL for isolation
-        bot_entity = await telegram_client.get_entity("@northarch_bot")
         old_messages = await telegram_client.get_messages(bot_entity, limit=1)
         last_msg_id_before = old_messages[0].id if old_messages else 0
         logger.info(f"[FR {session_id}] Last message ID before send: {last_msg_id_before}")
