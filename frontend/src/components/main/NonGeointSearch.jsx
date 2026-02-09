@@ -1867,12 +1867,13 @@ export const NonGeointSearchDialog = ({
       }
       
       // Start polling for investigation results
+      // Clear any existing polling first
+      if (investigationPollingRef.current) {
+        clearInterval(investigationPollingRef.current);
+      }
       investigationPollingRef.current = setInterval(() => {
         pollInvestigation(data.investigation_id);
       }, 2000);
-
-      // Initial poll
-      pollInvestigation(data.investigation_id);
 
     } catch (error) {
       console.error('Investigation error:', error);
