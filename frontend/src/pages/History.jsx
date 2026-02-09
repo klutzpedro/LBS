@@ -357,6 +357,44 @@ const History = () => {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t" style={{ borderColor: 'var(--borders-default)' }}>
+              <div className="text-sm" style={{ color: 'var(--foreground-muted)' }}>
+                Menampilkan {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredTargets.length)} dari {filteredTargets.length} target
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    color: 'var(--foreground-primary)',
+                    border: '1px solid var(--borders-default)'
+                  }}
+                >
+                  ← Prev
+                </button>
+                <span className="px-3 py-1 text-sm" style={{ color: 'var(--foreground-primary)' }}>
+                  {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: 'var(--background-tertiary)',
+                    color: 'var(--foreground-primary)',
+                    border: '1px solid var(--borders-default)'
+                  }}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
