@@ -244,139 +244,184 @@ export const ScheduleDialog = ({
   scheduleInterval,
   onIntervalChange,
   onSubmit
-}) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent 
-      className="z-[10000] max-w-sm p-4"
-      style={{
-        backgroundColor: 'var(--background-elevated)',
-        borderColor: 'var(--borders-strong)'
-      }}
-    >
-      <DialogHeader className="pb-2">
-        <DialogTitle 
-          className="text-lg font-bold"
-          style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
-        >
-          JADWALKAN PEMBAHARUAN
-        </DialogTitle>
-      </DialogHeader>
-      <form onSubmit={onSubmit} className="space-y-3">
-        {selectedTarget && (
-          <div 
-            className="p-2 rounded border"
-            style={{
-              backgroundColor: 'var(--background-tertiary)',
-              borderColor: 'var(--borders-default)'
-            }}
-          >
-            <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
-              Target
-            </p>
-            <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
-              {selectedTarget.phone_number}
-            </p>
-          </div>
-        )}
+}) => {
+  // Helper function to get current WIB time formatted as HH:MM
+  const getCurrentWIBTime = () => {
+    const now = new Date();
+    // Convert to WIB (UTC+7)
+    const wibOffset = 7 * 60; // minutes
+    const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const wibMinutes = utcMinutes + wibOffset;
+    const wibHours = Math.floor(wibMinutes / 60) % 24;
+    const wibMins = wibMinutes % 60;
+    return `${String(wibHours).padStart(2, '0')}:${String(wibMins).padStart(2, '0')}`;
+  };
 
-        <div>
-          <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
-            Interval Type
-          </Label>
-          <Select 
-            value={scheduleInterval.type} 
-            onValueChange={(value) => onIntervalChange({ ...scheduleInterval, type: value })}
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent 
+        className="z-[10000] max-w-sm p-4"
+        style={{
+          backgroundColor: 'var(--background-elevated)',
+          borderColor: 'var(--borders-strong)'
+        }}
+      >
+        <DialogHeader className="pb-2">
+          <DialogTitle 
+            className="text-lg font-bold"
+            style={{ fontFamily: 'Barlow Condensed, sans-serif', color: 'var(--foreground-primary)' }}
           >
-            <SelectTrigger 
-              className="w-full h-9"
+            JADWALKAN PEMBAHARUAN
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-3">
+          {selectedTarget && (
+            <div 
+              className="p-2 rounded border"
+              style={{
+                backgroundColor: 'var(--background-tertiary)',
+                borderColor: 'var(--borders-default)'
+              }}
+            >
+              <p className="text-xs uppercase tracking-wide mb-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                Target
+              </p>
+              <p className="font-mono text-sm" style={{ color: 'var(--accent-primary)' }}>
+                {selectedTarget.phone_number}
+              </p>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+              Tipe Jadwal
+            </Label>
+            <Select 
+              value={scheduleInterval.type} 
+              onValueChange={(value) => {
+                if (value === 'specific_time') {
+                  onIntervalChange({ ...scheduleInterval, type: value, scheduledTime: scheduleInterval.scheduledTime || '07:00' });
+                } else {
+                  onIntervalChange({ ...scheduleInterval, type: value });
+                }
+              }}
+            >
+              <SelectTrigger 
+                className="w-full h-9"
+                style={{
+                  backgroundColor: 'var(--background-tertiary)',
+                  borderColor: 'var(--borders-default)',
+                  color: 'var(--foreground-primary)'
+                }}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                className="z-[10001]"
+                style={{
+                  backgroundColor: 'var(--background-elevated)',
+                  borderColor: 'var(--borders-strong)',
+                  color: 'var(--foreground-primary)'
+                }}
+              >
+                <SelectItem value="specific_time" style={{ color: 'var(--foreground-primary)' }}>
+                  ⏰ Jam Tertentu (WIB)
+                </SelectItem>
+                <SelectItem value="minutes" style={{ color: 'var(--foreground-primary)' }}>
+                  Per Menit
+                </SelectItem>
+                <SelectItem value="hourly" style={{ color: 'var(--foreground-primary)' }}>
+                  Per Jam
+                </SelectItem>
+                <SelectItem value="daily" style={{ color: 'var(--foreground-primary)' }}>
+                  Per Hari
+                </SelectItem>
+                <SelectItem value="weekly" style={{ color: 'var(--foreground-primary)' }}>
+                  Per Minggu
+                </SelectItem>
+                <SelectItem value="monthly" style={{ color: 'var(--foreground-primary)' }}>
+                  Per Bulan
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {scheduleInterval.type === 'specific_time' ? (
+            <div>
+              <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                Waktu (WIB)
+              </Label>
+              <Input
+                type="time"
+                value={scheduleInterval.scheduledTime || '07:00'}
+                onChange={(e) => onIntervalChange({ ...scheduleInterval, scheduledTime: e.target.value })}
+                className="bg-background-tertiary border-borders-default h-9"
+                style={{ color: 'var(--foreground-primary)' }}
+                required
+              />
+              <p className="text-xs mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                Akan dijalankan setiap hari jam {scheduleInterval.scheduledTime || '07:00'} WIB
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                Waktu WIB sekarang: {getCurrentWIBTime()}
+              </p>
+            </div>
+          ) : (
+            <div>
+              <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
+                Interval
+              </Label>
+              <Input
+                type="number"
+                min="1"
+                value={scheduleInterval.value}
+                onChange={(e) => onIntervalChange({ ...scheduleInterval, value: parseInt(e.target.value) || 1 })}
+                className="bg-background-tertiary border-borders-default h-9"
+                style={{ color: '#000000' }}
+                placeholder="1"
+                required
+              />
+              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+                {scheduleInterval.type === 'minutes' && `Setiap ${scheduleInterval.value} menit`}
+                {scheduleInterval.type === 'hourly' && `Setiap ${scheduleInterval.value} jam`}
+                {scheduleInterval.type === 'daily' && `Setiap ${scheduleInterval.value} hari`}
+                {scheduleInterval.type === 'weekly' && `Setiap ${scheduleInterval.value} minggu`}
+                {scheduleInterval.type === 'monthly' && `Setiap ${scheduleInterval.value} bulan`}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              variant="outline"
+              className="flex-1 py-2 text-sm"
               style={{
                 backgroundColor: 'var(--background-tertiary)',
                 borderColor: 'var(--borders-default)',
                 color: 'var(--foreground-primary)'
               }}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent
-              className="z-[10001]"
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1 py-2 text-sm"
               style={{
-                backgroundColor: 'var(--background-elevated)',
-                borderColor: 'var(--borders-strong)',
-                color: 'var(--foreground-primary)'
+                backgroundColor: 'var(--accent-primary)',
+                color: 'var(--background-primary)',
+                fontFamily: 'Rajdhani, sans-serif'
               }}
             >
-              <SelectItem value="minutes" style={{ color: 'var(--foreground-primary)' }}>
-                Minutes (Per Menit)
-              </SelectItem>
-              <SelectItem value="hourly" style={{ color: 'var(--foreground-primary)' }}>
-                Hourly (Per Jam)
-              </SelectItem>
-              <SelectItem value="daily" style={{ color: 'var(--foreground-primary)' }}>
-                Daily (Per Hari)
-              </SelectItem>
-              <SelectItem value="weekly" style={{ color: 'var(--foreground-primary)' }}>
-                Weekly (Per Minggu)
-              </SelectItem>
-              <SelectItem value="monthly" style={{ color: 'var(--foreground-primary)' }}>
-                Monthly (Per Bulan)
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label className="text-xs uppercase tracking-wide mb-1 block" style={{ color: 'var(--foreground-secondary)' }}>
-            Interval Value
-          </Label>
-          <Input
-            type="number"
-            min="1"
-            value={scheduleInterval.value}
-            onChange={(e) => onIntervalChange({ ...scheduleInterval, value: parseInt(e.target.value) })}
-            className="bg-background-tertiary border-borders-default h-9"
-            style={{ color: '#000000' }}
-            placeholder="1"
-            required
-          />
-          <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
-            {scheduleInterval.type === 'minutes' && `Setiap ${scheduleInterval.value} menit`}
-            {scheduleInterval.type === 'hourly' && `Setiap ${scheduleInterval.value} jam`}
-            {scheduleInterval.type === 'daily' && `Setiap ${scheduleInterval.value} hari`}
-            {scheduleInterval.type === 'weekly' && `Setiap ${scheduleInterval.value} minggu`}
-            {scheduleInterval.type === 'monthly' && `Setiap ${scheduleInterval.value} bulan`}
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            variant="outline"
-            className="flex-1 py-2 text-sm"
-            style={{
-              backgroundColor: 'var(--background-tertiary)',
-              borderColor: 'var(--borders-default)',
-              color: 'var(--foreground-primary)'
-            }}
-          >
-            Batal
-          </Button>
-          <Button
-            type="submit"
-            className="flex-1 py-2 text-sm"
-            style={{
-              backgroundColor: 'var(--accent-primary)',
-              color: 'var(--background-primary)',
-              fontFamily: 'Rajdhani, sans-serif'
-            }}
-          >
-            BUAT JADWAL
-          </Button>
-        </div>
-      </form>
-    </DialogContent>
-  </Dialog>
-);
+              BUAT JADWAL
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 /**
  * Reghp Info Dialog
