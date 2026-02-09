@@ -45,6 +45,26 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Feature: AOI Ownership & Per-User Alarm System
+**Date:** 2025-02-09
+**Features Added:**
+1. **AOI Ownership** - Setiap AOI memiliki `created_by` field yang menentukan pemiliknya
+2. **AOI Visibility** - User hanya melihat AOI miliknya sendiri + legacy AOIs. Admin bisa lihat semua.
+3. **AOI Protection** - Hanya pemilik yang bisa edit/delete AOI miliknya
+4. **AOI Alerts per Owner** - Alert hanya muncul untuk pemilik AOI yang bersangkutan
+5. **Session Check Improvement** - Ditambahkan timeout dan handling yang lebih baik untuk mencegah hang saat refresh
+
+**Files Modified:**
+- `backend/server.py` - Added `created_by` to AOI model, ownership checks in CRUD endpoints, filtered alerts
+- `frontend/src/context/AuthContext.jsx` - Added timeout and better session check handling
+
+**Technical Details:**
+- AOI model now has `created_by` field (nullable for legacy)
+- GET /aois: Admin sees all, users see only their own + legacy
+- PUT/DELETE /aois: Only owner can modify
+- AOI alerts include `aoi_owner` for filtering
+- Session check has 5s timeout to prevent hanging
+
 ### Feature: Time-Based Scheduling & Real-Time Query Updates
 **Date:** 2025-02-09
 **Features Added:**
