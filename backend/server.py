@@ -1147,8 +1147,9 @@ class QueryStatus(BaseModel):
 class ScheduleCreate(BaseModel):
     case_id: str
     phone_number: str
-    interval_type: str  # minutes, hourly, daily, weekly, monthly
-    interval_value: int
+    interval_type: str  # minutes, hourly, daily, weekly, monthly, specific_time
+    interval_value: int = 1
+    scheduled_time: Optional[str] = None  # HH:MM format in WIB for specific_time type
     active: bool = True
 
 class Schedule(BaseModel):
@@ -1157,7 +1158,8 @@ class Schedule(BaseModel):
     case_id: str
     phone_number: str
     interval_type: str
-    interval_value: int
+    interval_value: int = 1
+    scheduled_time: Optional[str] = None  # HH:MM format in WIB
     active: bool = True
     next_run: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
