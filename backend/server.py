@@ -2195,9 +2195,8 @@ async def get_targets(case_id: Optional[str] = None, username: str = Depends(ver
 
 @api_router.get("/targets/{target_id}", response_model=Target)
 async def get_target(target_id: str, username: str = Depends(verify_token)):
-    # Check if user is admin
-    requester = await db.users.find_one({"username": username})
-    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    # Check if user is admin - use cached check
+    is_admin = await is_user_admin(username)
     
     # Filter by user ownership
     query = {"id": target_id}
