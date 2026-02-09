@@ -1880,11 +1880,10 @@ async def test_cp_api(phone_number: str, username: str = Depends(verify_token)):
 # Case Routes
 @api_router.post("/cases", response_model=Case)
 async def create_case(case_data: CaseCreate, username: str = Depends(verify_token)):
-    case = Case(**case_data.model_dump())
+    case = Case(**case_data.model_dump(), created_by=username)  # Set owner at creation
     doc = case.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     doc['updated_at'] = doc['updated_at'].isoformat()
-    doc['created_by'] = username  # Add user ownership
     
     await db.cases.insert_one(doc)
     return case
