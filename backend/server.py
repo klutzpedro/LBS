@@ -3082,6 +3082,24 @@ async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends
     if not re.match(r'^62\d{9,12}$', schedule_data.phone_number):
         raise HTTPException(status_code=400, detail="Invalid phone number format")
     
+    # Check case ownership - only case owner can schedule targets
+    case = await db.cases.find_one({"id": schedule_data.case_id}, {"_id": 0})
+    if not case:
+        raise HTTPException(status_code=404, detail="Case tidak ditemukan")
+    
+    case_owner = case.get("created_by")
+    
+    # Check if user is admin (special username or is_admin flag in database)
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    
+    # Only allow scheduling by case owner - admin cannot schedule other user's targets
+    if case_owner != username:
+        raise HTTPException(
+            status_code=403, 
+            detail="Target hanya bisa dijadwalkan oleh pemilik cases"
+        )
+    
     schedule = Schedule(**schedule_data.model_dump())
     
     # Calculate next run time
@@ -3125,15 +3143,16 @@ async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends
     elif schedule_data.interval_type == 'monthly':
         schedule.next_run = now_utc + timedelta(days=schedule_data.interval_value * 30)
     
-    doc = schedule.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    if doc.get('next_run'):
-        doc['next_run'] = doc['next_run'].isoformat()
-    if doc.get('last_run'):
-        doc['last_run'] = doc['last_run'].isoformat()
+    # Add created_by field to schedule
+    schedule_doc = schedule.model_dump()
+    schedule_doc['created_by'] = username
+    schedule_doc['created_at'] = schedule_doc['created_at'].isoformat()
+    if schedule_doc.get('next_run'):
+        schedule_doc['next_run'] = schedule_doc['next_run'].isoformat()
+    if schedule_doc.get('last_run'):
+        schedule_doc['last_run'] = schedule_doc['last_run'].isoformat()
     
-    await db.schedules.insert_one(doc)
-    return schedule
+    await db.schedules.insert_one(schedule_doc)
     return schedule
 
 @api_router.get("/schedules", response_model=List[Schedule])
