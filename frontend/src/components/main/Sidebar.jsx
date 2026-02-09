@@ -472,43 +472,43 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
         </DialogContent>
       </Dialog>
 
-      {/* Request Queue Status Indicator */}
+      {/* Request Queue Status Indicator - Compact */}
       <div 
-        className="p-3 rounded-lg border text-sm mb-2"
+        className="px-2 py-1.5 rounded border text-xs mb-1.5"
         style={{
           backgroundColor: requestStatus.is_busy ? 'rgba(255, 59, 92, 0.15)' : 'rgba(0, 255, 136, 0.1)',
           borderColor: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)'
         }}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div 
-            className={`w-2.5 h-2.5 rounded-full ${requestStatus.is_busy ? 'animate-pulse' : ''}`}
+            className={`w-2 h-2 rounded-full ${requestStatus.is_busy ? 'animate-pulse' : ''}`}
             style={{ 
               backgroundColor: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)'
             }}
           />
           <div className="flex-1 min-w-0">
             <span 
-              className="font-semibold text-xs block"
+              className="font-semibold text-[10px] block"
               style={{ color: requestStatus.is_busy ? 'var(--status-error)' : 'var(--status-success)' }}
             >
               {requestStatus.is_busy ? '⚠️ ANTRIAN AKTIF' : '✓ IDLE (Ready)'}
             </span>
             <span 
-              className="text-xs block truncate"
+              className="text-[10px] block truncate"
               style={{ color: 'var(--foreground-muted)' }}
             >
               {requestStatus.is_busy 
                 ? `${requestStatus.username} - ${requestStatus.operation || 'Processing...'}` 
-                : 'Semua Akun Idle (No Request)'}
+                : 'Semua Akun Idle'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* CP API Status (Position Query) */}
+      {/* CP API Status (Position Query) - Compact */}
       <div 
-        className="p-3 rounded-lg border text-sm mb-2"
+        className="px-2 py-1.5 rounded border text-xs mb-1.5"
         style={{
           backgroundColor: cpApiStatus.useTelegram 
             ? (telegramConnected ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 59, 92, 0.1)')
@@ -531,9 +531,9 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
           onClick={refreshCpStatus}
           title="Click to refresh status"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <div 
-              className={`w-2.5 h-2.5 rounded-full ${(cpApiStatus.useTelegram ? telegramConnected : (cpApiConnected && !cpApiStatus.quotaExceeded)) ? 'animate-pulse' : ''}`}
+              className={`w-2 h-2 rounded-full ${(cpApiStatus.useTelegram ? telegramConnected : (cpApiConnected && !cpApiStatus.quotaExceeded)) ? 'animate-pulse' : ''}`}
               style={{ 
                 backgroundColor: cpApiStatus.useTelegram 
                   ? (telegramConnected ? 'var(--status-success)' : 'var(--status-error)')
@@ -545,16 +545,16 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
               }}
             />
             <div>
-              <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+              <span className="font-medium text-[11px]" style={{ color: 'var(--foreground-primary)' }}>
                 {cpApiStatus.useTelegram 
-                  ? `Telegram Bot ${telegramConnected ? 'Active' : 'Disconnected'}`
+                  ? `Telegram Bot ${telegramConnected ? 'Active' : 'Off'}`
                   : cpApiStatus.quotaExceeded 
                     ? 'CP API (Quota Habis)' 
-                    : `CP API ${cpApiConnected ? 'Connected' : 'Disconnected'}`
+                    : `CP API ${cpApiConnected ? 'Connected' : 'Off'}`
                 }
               </span>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
-                {cpApiStatus.useTelegram ? 'Query posisi via Bot' : 'Position Query Service'}
+              <p className="text-[10px]" style={{ color: 'var(--foreground-muted)' }}>
+                {cpApiStatus.useTelegram ? 'Query posisi via Bot' : 'Position Query'}
               </p>
             </div>
           </div>
@@ -562,7 +562,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
           {!cpApiStatus.useTelegram && (
             <div className="flex flex-col items-end">
               <div 
-                className="text-sm font-bold px-2 py-0.5 rounded"
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
                 style={{ 
                   backgroundColor: cpApiStatus.quotaExceeded 
                     ? 'rgba(255, 59, 92, 0.2)'
@@ -582,7 +582,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
               >
                 {cpLoading ? '...' : (cpApiStatus.quotaExceeded ? '0' : quotaRemaining)}
               </div>
-              <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>Quota</span>
+              <span className="text-[9px]" style={{ color: 'var(--foreground-muted)' }}>Quota</span>
             </div>
           )}
         </div>
@@ -594,7 +594,7 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
               e.stopPropagation();
               cpApiStatus.toggleTelegram && cpApiStatus.toggleTelegram();
             }}
-            className="w-full mt-2 px-3 py-1.5 rounded text-xs font-medium transition-colors"
+            className="w-full mt-1 px-2 py-1 rounded text-[10px] font-medium transition-colors"
             style={{
               backgroundColor: cpApiStatus.useTelegram ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0, 255, 136, 0.2)',
               color: cpApiStatus.useTelegram ? '#3b82f6' : 'var(--status-success)',
@@ -606,9 +606,9 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
         )}
       </div>
 
-      {/* Telegram Status (NIK/NKK Query) */}
+      {/* Telegram Status (NIK/NKK Query) - Compact */}
       <div 
-        className="p-3 rounded-lg border text-sm cursor-pointer hover:opacity-90 transition-opacity"
+        className="px-2 py-1.5 rounded border text-xs cursor-pointer hover:opacity-90 transition-opacity"
         style={{
           backgroundColor: statusInfo.bgColor,
           borderColor: statusInfo.color
@@ -617,29 +617,29 @@ const SidebarHeader = ({ telegramAuthorized, telegramUser, username, isAdmin, on
         title="Telegram Bot - Click to refresh"
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <div 
-              className={`w-2.5 h-2.5 rounded-full ${status === 'connected' ? 'animate-pulse' : ''}`}
+              className={`w-2 h-2 rounded-full ${status === 'connected' ? 'animate-pulse' : ''}`}
               style={{ backgroundColor: statusInfo.color }}
             />
             <div>
-              <span className="font-medium" style={{ color: 'var(--foreground-primary)' }}>
+              <span className="font-medium text-[11px]" style={{ color: 'var(--foreground-primary)' }}>
                 {statusInfo.text}
               </span>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--foreground-muted)' }}>
+              <p className="text-[10px]" style={{ color: 'var(--foreground-muted)' }}>
                 {statusInfo.subtext}
               </p>
             </div>
           </div>
           {/* Real-time indicator */}
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex flex-col items-end">
             {loading ? (
-              <Activity className="w-4 h-4 animate-spin" style={{ color: statusInfo.color }} />
+              <Activity className="w-3 h-3 animate-spin" style={{ color: statusInfo.color }} />
             ) : (
-              <div className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+              <div className="text-[10px]" style={{ color: 'var(--foreground-muted)' }}>
                 {lastChecked ? (
                   <span title={lastChecked.toLocaleTimeString('id-ID')}>
-                    {new Date().getTime() - lastChecked.getTime() < 15000 ? '● LIVE' : '○ Checking...'}
+                    {new Date().getTime() - lastChecked.getTime() < 15000 ? '● LIVE' : '○ ...'}
                   </span>
                 ) : ''}
               </div>
