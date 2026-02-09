@@ -126,7 +126,7 @@ const MainApp = () => {
   // Schedule
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [selectedTargetForSchedule, setSelectedTargetForSchedule] = useState(null);
-  const [scheduleInterval, setScheduleInterval] = useState({ type: 'hourly', value: 1 });
+  const [scheduleInterval, setScheduleInterval] = useState({ type: 'specific_time', value: 1, scheduledTime: '07:00' });
   
   // UI state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
