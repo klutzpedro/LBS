@@ -993,16 +993,27 @@ const MainApp = () => {
         case_id: selectedCase.id,
         phone_number: phoneNumber
       });
-      toast.success('Target query dimulai!');
+      
+      // IMMEDIATELY add target to list for real-time feedback
+      const newTarget = response.data;
+      setTargets(prev => {
+        const exists = prev.some(t => t.id === newTarget.id);
+        if (!exists) {
+          return [...prev, newTarget];
+        }
+        return prev;
+      });
+      
+      toast.info(`📍 Query posisi ${phoneNumber} dimulai...`, { duration: 3000 });
       setAddTargetDialog(false);
       setNewPhoneNumber('');
-      setSelectedTargetForChat(response.data.id);
+      setSelectedTargetForChat(newTarget.id);
       
-      // Start polling for query completion
-      const targetId = response.data.id;
+      // Start polling for query completion - faster polling for better real-time feel
+      const targetId = newTarget.id;
       const token = localStorage.getItem('token');
       let attempts = 0;
-      const maxAttempts = 30;
+      const maxAttempts = 45; // Increased max attempts
       
       const pollInterval = setInterval(async () => {
         attempts++;
@@ -1025,16 +1036,21 @@ const MainApp = () => {
           if (updatedTarget.status === 'completed' || updatedTarget.status === 'not_found' || updatedTarget.status === 'error') {
             clearInterval(pollInterval);
             
-            // Final refresh to ensure consistency
-            await fetchTargets(selectedCase.id);
+            // Automatically add to visible targets if completed with data
+            if (updatedTarget.status === 'completed' && updatedTarget.data?.latitude) {
+              setVisibleTargets(prev => new Set([...prev, targetId]));
+            }
             
             if (updatedTarget.data?.latitude && updatedTarget.data?.longitude) {
+              // Smoothly pan to new location
               setMapCenter([parseFloat(updatedTarget.data.latitude), parseFloat(updatedTarget.data.longitude)]);
               setMapZoom(15);
               setMapKey(prev => prev + 1);
-              toast.success(`Lokasi ${phoneNumber} berhasil ditemukan!`);
+              toast.success(`✓ Lokasi ${phoneNumber} ditemukan!`, { duration: 4000 });
             } else if (updatedTarget.status === 'not_found') {
-              toast.warning(`Target ${phoneNumber} tidak ditemukan atau sedang OFF`);
+              toast.warning(`⚠ Target ${phoneNumber} tidak ditemukan atau sedang OFF`);
+            } else if (updatedTarget.status === 'error') {
+              toast.error(`✗ Query gagal untuk ${phoneNumber}`);
             }
           } else if (attempts >= maxAttempts) {
             clearInterval(pollInterval);
@@ -1044,7 +1060,7 @@ const MainApp = () => {
         } catch (pollError) {
           console.error('Poll error:', pollError);
         }
-      }, 2000);
+      }, 1500); // Faster polling - 1.5 seconds for better real-time feel
       
     } catch (error) {
       // Handle duplicate phone error (409)
