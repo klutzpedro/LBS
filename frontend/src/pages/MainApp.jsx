@@ -1209,18 +1209,34 @@ const MainApp = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/schedules`, {
+      const payload = {
         case_id: selectedTargetForSchedule.case_id,
         phone_number: selectedTargetForSchedule.phone_number,
         interval_type: scheduleInterval.type,
         interval_value: scheduleInterval.value,
         active: true
-      }, {
+      };
+      
+      // Add scheduled_time for specific_time type
+      if (scheduleInterval.type === 'specific_time') {
+        payload.scheduled_time = scheduleInterval.scheduledTime || '07:00';
+      }
+      
+      await axios.post(`${API}/schedules`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success('Jadwal berhasil dibuat!');
+      
+      const timeDesc = scheduleInterval.type === 'specific_time' 
+        ? `jam ${scheduleInterval.scheduledTime} WIB setiap hari`
+        : scheduleInterval.type === 'minutes' ? `setiap ${scheduleInterval.value} menit`
+        : scheduleInterval.type === 'hourly' ? `setiap ${scheduleInterval.value} jam`
+        : scheduleInterval.type === 'daily' ? `setiap ${scheduleInterval.value} hari`
+        : scheduleInterval.type === 'weekly' ? `setiap ${scheduleInterval.value} minggu`
+        : `setiap ${scheduleInterval.value} bulan`;
+      
+      toast.success(`Jadwal berhasil dibuat! (${timeDesc})`);
       setScheduleDialogOpen(false);
-      setScheduleInterval({ type: 'hourly', value: 1 });
+      setScheduleInterval({ type: 'specific_time', value: 1, scheduledTime: '07:00' });
       fetchSchedules();
     } catch (error) {
       console.error('Create schedule error:', error);
