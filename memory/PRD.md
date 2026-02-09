@@ -52,9 +52,10 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 2. **Real-time query updates** - Saat menambah target baru, target langsung muncul di list dengan status "processing". Setelah posisi ditemukan, peta otomatis pan ke lokasi baru tanpa perlu refresh halaman. Polling dipercepat ke 1.5 detik untuk responsivitas lebih baik.
 3. **Target terjadwal di atas list** - Target yang memiliki jadwal aktif otomatis muncul di urutan teratas, diurutkan berdasarkan waktu eksekusi terdekat. Target tanpa jadwal berada di bawah.
 4. **Indikator "X target terjadwal"** - Label merah berkedip (animate-pulse) menunjukkan jumlah target yang terjadwal pada case aktif.
+5. **Validasi kepemilikan penjadwalan** - Hanya pemilik case yang bisa menjadwalkan target di case tersebut. Admin bisa melihat semua case tapi tidak bisa menjadwalkan target milik user lain. Error message: "Target hanya bisa dijadwalkan oleh pemilik cases"
 
 **Files Modified:**
-- `backend/server.py` - Added `scheduled_time` field, WIB timezone handling, specific_time schedule type
+- `backend/server.py` - Added `scheduled_time` field, WIB timezone handling, specific_time schedule type, ownership validation
 - `frontend/src/components/main/TargetDialogs.jsx` - Updated ScheduleDialog with time picker for WIB
 - `frontend/src/pages/MainApp.jsx` - Updated schedule state handling and real-time polling
 - `frontend/src/components/main/Sidebar.jsx` - Display scheduled time (WIB), sorting, and scheduled count indicator
@@ -65,6 +66,7 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 - For `specific_time`, schedule recurs daily at the same time
 - Real-time polling: 1.5s for new targets, status change detection with toast notifications
 - Sorting: Scheduled targets first (by next_run ascending), then non-scheduled
+- Ownership: Cases with `created_by=null` (legacy) allow anyone to schedule; others only owner
 
 ### Fix: Status Indicator Compact & Admin Role for Cases
 **Date:** 2025-12-10
