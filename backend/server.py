@@ -10283,13 +10283,18 @@ async def fr_get_nik_details(request: FRNikRequest, username: str = Depends(veri
     set_active_query(username, "fr_nik_details", request.nik)
     
     try:
-        # Check Telegram connection AND authorization
-        if not telegram_client or not telegram_client.is_connected():
-            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan setup Telegram terlebih dahulu.")
+        # Check Telegram connection - try to reconnect if needed
+        if not telegram_client:
+            raise HTTPException(status_code=503, detail="Telegram client tidak tersedia")
         
-        # Check if authorized
-        if not await telegram_client.is_user_authorized():
-            raise HTTPException(status_code=503, detail="Telegram belum login. Silakan setup Telegram terlebih dahulu di menu Settings.")
+        # Try to connect if not connected
+        if not telegram_client.is_connected():
+            try:
+                await telegram_client.connect()
+                logger.info("[FR NIK] Telegram reconnected successfully")
+            except Exception as conn_err:
+                logger.error(f"[FR NIK] Failed to reconnect Telegram: {conn_err}")
+                raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan cek koneksi Telegram di VPS.")
         
         bot_entity = await telegram_client.get_entity("@northarch_bot")
         
