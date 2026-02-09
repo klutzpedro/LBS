@@ -3089,12 +3089,9 @@ async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends
     
     case_owner = case.get("created_by")
     
-    # Check if user is admin (special username or is_admin flag in database)
-    user = await db.users.find_one({"username": username}, {"_id": 0})
-    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
-    
     # Only allow scheduling by case owner - admin cannot schedule other user's targets
-    if case_owner != username:
+    # Exception: If case has no owner (legacy cases), allow anyone to schedule
+    if case_owner is not None and case_owner != username:
         raise HTTPException(
             status_code=403, 
             detail="Target hanya bisa dijadwalkan oleh pemilik cases"
