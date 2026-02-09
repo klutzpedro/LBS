@@ -2526,7 +2526,7 @@ async def query_telegram_bot_refresh_legacy(target_id: str, phone_number: str):
             logging.warning(f"[REFRESH] CP button not found for {phone_number}")
         
         # Wait for location response after clicking CP
-        await asyncio.sleep(5)
+        await asyncio.sleep(2)  # Reduced from 5s to 2s - bot responds quickly
         
         received_response = False
         for attempt in range(15):  # Try for ~45 seconds
