@@ -1136,6 +1136,11 @@ const TargetCard = ({
             >
               ❌ Batal Jadwal
             </Button>
+            {schedule.interval_type === 'specific_time' && schedule.scheduled_time ? (
+              <span className="text-[10px] mt-1" style={{ color: 'var(--foreground-muted)' }}>
+                ⏰ {schedule.scheduled_time} WIB
+              </span>
+            ) : null}
             <CountdownTimer 
               nextRun={schedule.next_run}
               scheduleId={schedule.id}
