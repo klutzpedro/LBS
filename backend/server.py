@@ -8884,7 +8884,7 @@ async def execute_nik_button_query(investigation_id: str, nik: str, button_type:
             return {"status": "error", "error": "Failed to send NIK to bot"}
         
         logger.info(f"[{query_token}] Sent NIK: {nik}")
-        await asyncio.sleep(5)  # Increased wait time for more reliable response
+        await asyncio.sleep(2)  # Reduced from 5s to 2s - bot responds quickly
         
         # Step 2: Get buttons - with retry
         async def get_buttons():
