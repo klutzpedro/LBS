@@ -9675,7 +9675,7 @@ def is_target_in_aoi(lat: float, lng: float, aoi: dict) -> bool:
     return False
 
 async def check_aoi_alerts(target_id: str, phone_number: str, lat: float, lng: float):
-    """Check if target is inside any AOI and create alerts"""
+    """Check if target is inside any AOI and create alerts - alerts are per AOI owner"""
     # Get all AOIs with alarm enabled - check ALL AOIs, not just monitored ones
     aois = await db.aois.find({
         "alarm_enabled": True
@@ -9696,11 +9696,12 @@ async def check_aoi_alerts(target_id: str, phone_number: str, lat: float, lng: f
             })
             
             if not existing_alert:
-                # Create new alert
+                # Create new alert - include AOI owner for filtering
                 alert = {
                     "id": str(uuid.uuid4()),
                     "aoi_id": aoi['id'],
                     "aoi_name": aoi['name'],
+                    "aoi_owner": aoi.get('created_by'),  # Store owner for filtering alerts per user
                     "aoi_color": aoi.get('color', '#FF3B5C'),
                     "target_ids": [target_id],
                     "target_phones": [phone_number],
@@ -9711,7 +9712,7 @@ async def check_aoi_alerts(target_id: str, phone_number: str, lat: float, lng: f
                     "longitude": lng
                 }
                 await db.aoi_alerts.insert_one(alert)
-                logging.info(f"[AOI ALERT] 🚨 Target {phone_number} entered AOI '{aoi['name']}' at ({lat}, {lng})")
+                logging.info(f"[AOI ALERT] 🚨 Target {phone_number} entered AOI '{aoi['name']}' (owner: {aoi.get('created_by')}) at ({lat}, {lng})")
                 
                 # Also add target to monitored_targets if not already there
                 if target_id not in aoi.get('monitored_targets', []):
