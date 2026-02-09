@@ -1322,6 +1322,10 @@ async def login(request: LoginRequest, req: Request):
                 raise HTTPException(status_code=403, detail="Pendaftaran akun Anda ditolak")
             else:
                 raise HTTPException(status_code=403, detail="Akun tidak aktif")
+        
+        # Check if user has admin role in database
+        if user.get("is_admin", False):
+            is_admin = True
     
     # Check for existing session (single device enforcement)
     existing_session = await get_active_session(request.username)
