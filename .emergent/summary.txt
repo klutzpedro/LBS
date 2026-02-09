@@ -1,204 +1,250 @@
-<analysis>An analysis of the conversation history has been completed to produce a summary for the next agent.
+<analysis>An analysis of the user's problem statement, conversation, and codebase has been conducted. The following is a summary of the work completed and the current status of the project.
 
 **original_problem_statement:**
-The user has been providing a series of feature requests and bug reports for an intelligence application called NETRA. The requests cover a wide range of functionalities, including:
--   **Social Network Analytics (SNA):** Implement the full feature, fix bugs related to OSINT dependency, and enhance it to show results in reports, accept manual social media links, and display more detailed statistics.
--   **UI/UX and Reporting:** Improve table formatting in PDF reports, remove extra characters from OSINT results, and add a confirmation dialog before re-running analyses (OSINT/SNA).
--   **Full Query Feature:** Add user and timestamp to history, implement a Reset button, and fix multiple critical bugs related to caching where resetting a search did not fully clear backend data, leading to incomplete or incorrect subsequent searches. Fix issues with processing multiple passports and loading subsequent batches of photos.
--   **Case Management:** Display the owner of a case next to the case name for admin users.
--   **Feature Removal:** Remove the Call Data Recorder feature.
--   **New Feature Integration:** Add new profiling capabilities to the Simple Query tool, specifically Have I Been Pwned (for email breaches) and IPinfo.io (for IP geolocation).
--   **Configuration:** Add a user-provided API key for the Have I Been Pwned service into the application's configuration.
+The user requested a series of bug fixes and feature enhancements for the Waskita-LBS intelligence application. The core requirements were:
 
-The user's most recent messages are:
-1.  A bug report about the load more photos feature in Full Query, stating that it doesn't lock the UI and fails to display the newly loaded photos.
-2.  A question asking if an ADINT (Acoustic Intelligence) API exists.
+**PRODUCT REQUIREMENTS:**
+- **Full Query Reliability:**
+    - Full Query results must be consistent and complete. Issues included missing crossing data for targets with multiple passports, and general inconsistency where data (like photos, NIK, NKK) would sometimes appear and sometimes not.
+    - The system must have a global locking mechanism. When any user performs a query (Simple or Full Query), the system status must change to BUSY and block all other users (including the same user) from running concurrent queries to prevent race conditions and crashes. The status indicator should visually reflect this (red for busy, green for idle).
+- **Correct UI Behavior:**
+    - After a Full Query investigation completes, the UI must show the results and a download button, not revert to the NIK selection screen.
+    - Icons must correctly represent the data status (e.g., a yellow warning for no data found vs. a green check for data found).
+    - The Download PDF button must always be functional once an investigation is complete.
+    - UI elements like dropdowns should be easily visible and usable, not hidden by other components.
+- **Data & Cache Management:**
+    - A Reset function in Full Query must completely purge all data (NIK, NKK, Passport, Perlintasan, etc.) for a target from all caches, for all users.
+    - Users must be able to delete cache entries they are authorized to, fixing not authorized errors.
+- **PDF Report Completeness:**
+    - The downloaded PDF report must contain all data visible on the screen, including Passport and Perlintasan (crossing) details.
+- **Stability & Deployment:**
+    - The application must be stable; fixing one feature should not break another.
+    - Deployment to the user's VPS must be reliable, with clear instructions to handle common issues like Git branch conflicts.
+- **Restore Missing Features:**
+    - The owner's name, which was previously visible on each case in the Cases list, should be displayed again.
 
-**User's preferred language**: Bahasa Indonesia
+**User's preferred language**: **Indonesian**. The next agent MUST respond in Indonesian.
 
 **what currently exists?**
-The project is a web application named NETRA, built with a Python (FastAPI) backend and a React (TypeScript) frontend. It serves as an intelligence analysis platform.
-
-Key features include:
--   **User & Case Management:** Users can log in, and admin users can see all cases and their owners.
--   **Simple Query:** A tool for quick lookups like NIK, KK, Vehicle Registration, IP Geolocation, and Email Breach checks (using HaveIBeenPwned).
--   **Full Query:** A more in-depth investigation tool that allows users to search for a person by name, select a target from the results (including photos), and initiate deeper analysis.
--   **Investigation Workflow:** The Full Query process automatically triggers several data collection steps (NIK, KK, RegHP, Passport, Perlintasan) via a simulated Telegram bot. The UI shows the progress with green checkmarks.
--   **OSINT & SNA:** Post-investigation, users can run Open-Source Intelligence (OSINT) and Social Network Analytics (SNA) on the target.
--   **Reporting:** The system can generate and download investigation reports in PDF format, including results from the investigation, OSINT, and SNA.
--   **Caching:** The backend uses Redis and a PostgreSQL database () to cache results of expensive queries to speed up subsequent searches for the same target. A reset mechanism exists to clear this cache.
+The project is a full-stack web application with a React frontend and a Python (Flask) backend, managed by PM2 on a VPS. It features Simple Query and Full Query functionalities that fetch data from external sources, including a Telegram bot and other APIs (CP API). The system uses a database for caching and has a recently implemented global BUSY/IDLE locking mechanism to prevent concurrent queries. PDF reports can be generated from investigation results.
 
 **Last working item**:
--   Last item agent was working: The agent was fixing two issues with the load more photos functionality in the Full Query dialog:
-    1.  The UI was not being locked (showing a BUSY state) while fetching the next batch of photos, creating a potential for race conditions.
-    2.  After a new batch of photos was fetched from the backend, the frontend UI was not updating to display them; it continued to show only the initial batch.
--   Status: USER VERIFICATION PENDING
--   Agent Testing Done: N
--   Which testing method agent to use? frontend testing agent
--   User Testing Done: N
+- **Last item agent was working:** The user reported that the owner's name for each case in the Cases list has disappeared. This is a regression, as the feature existed before. The agent started investigating the frontend code in  and identified the conditional rendering logic  as the likely cause, as it restricts visibility to admins or the owner of the case.
+- **Status:** IN PROGRESS
+- **Agent Testing Done:** N
+- **Which testing method agent to use?** Frontend testing agent or screenshot tool. The agent should verify that the owner's name appears for all cases in the list, regardless of the logged-in user's role.
+- **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   Issue 1: The fix for the load more photos functionality in the Full Query dialog has been implemented but has not been verified by the user. (Priority: P1)
--   Issue 2: The user previously reported that the HaveIBeenPwned feature was not working due to a missing API key. The agent added the key to the  file and confirmed it works on the backend. The agent suspects the user's VPS environment was not correctly updated with the new  file. (Priority: P2)
--   Issue 3: Throughout the session, the agent noted numerous pre-existing linting errors and warnings in . These have not been addressed. (Priority: P3)
+- **Issue 1: Case owner's name is missing from the Cases list (P0 - HIGHEST)**
 
-Issues Detail:
--   **Issue 1: Load more photos functionality bug**
-    -   Attempted fixes: The agent implemented fixes in both the backend and frontend.
-        -   **Backend ():** Modified the  endpoint to set a global request status to BUSY before starting the background task and clear it upon completion to prevent race conditions.
-        -   **Frontend ():**
-            -   Updated the  handler to disable the button and show a busy message if the backend reports it's already processing a request.
-            -   Modified the polling logic to correctly merge the new batch of photos with the existing ones in the  state, ensuring the UI refreshes to show all photos.
-    -   Next debug checklist: Ask the user to test the load more photos button again on a target with more than 10 photos. If it still fails, check the browser's network tab to see the response from  and inspect the React component's state to see if  is being updated correctly.
-    -   Why fix this issue and what will be achieved with the fix? This is a core part of the Full Query feature. Fixing it will allow users to browse through all available photos for a target, not just the first 10. It also improves system stability by preventing multiple simultaneous requests.
-    -   Status: USER VERIFICATION PENDING
-    -   Is recurring issue? N
-    -   Should Test frontend/backend/both after fix? Frontend
-    -   Blocked on other issue: None
-
--   **Issue 2: HaveIBeenPwned API key not working on user's VPS**
-    -   Attempted fixes: The agent added the user-provided API key to  and . The agent successfully tested the endpoint via , confirming that the backend can now query the HIBP API.
-    -   Next debug checklist: Instruct the user to ensure their VPS deployment is using the latest  file containing the . Ask them to redeploy/restart the backend service.
-    -   Why fix this issue and what will be achieved with the fix? The Email Breach Check feature in Simple Query is unusable without a valid, loaded API key.
-    -   Status: USER VERIFICATION PENDING
-    -   Is recurring issue? Y
-    -   Should Test frontend/backend/both after fix? Backend
-    -   Blocked on other issue: None
-
--   **Issue 3: Pre-existing frontend lint errors**
-    -   Attempted fixes: None. The agent has repeatedly acknowledged these errors but has not fixed them, stating they are pre-existing.
-    -   Next debug checklist: Run  or yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. in the  directory. Address the reported issues, which are likely related to dependency arrays in  hooks ().
-    -   Why fix this issue and what will be achieved with this? Fixing lint errors improves code quality, reduces the risk of subtle bugs (like stale closures or infinite loops in ), and makes the codebase easier to maintain.
-    -   Status: NOT STARTED
-    -   Is recurring issue? Y
-    -   Should Test frontend/backend/both after fix? Frontend
-    -   Blocked on other issue: None
+**Issues Detail:**
+- **Issue 1: Case owner's name is missing from the Cases list**
+    - **Attempted fixes:** None. The agent was in the process of debugging when the session ended.
+    - **Next debug checklist:**
+        1.  Open .
+        2.  Locate the section that renders the list of searches (around line 800).
+        3.  The current logic is likely .
+        4.  The user wants the owner to be visible to everyone. Modify the condition to always render the owner information if it exists, e.g., .
+        5.  Ensure the API response for  consistently provides the  field for each search item.
+    - **Why fix this issue and what will be achieved with the fix?** To restore a regression and meet the user's requirement for case ownership visibility.
+    - **Status:** IN PROGRESS
+    - **Is recurring issue?** Y (It's a regression)
+    - **Should Test frontend/backend/both after fix?** Frontend
+    - **Blocked on other issue:** None
 
 **In progress Task List**:
-There are no tasks currently in progress.
+None.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   **(P0) Answer user's question:** The user's last message was Ada gk ya api adint (Is there an ADINT API?). The next agent must address this question first.
-    -   **(P1) Implement Phone Carrier Lookup:** The user approved adding a phone number lookup API (like NumLookupAPI or AbstractAPI) to the Simple Query feature. This was part of the agent's recommendation list but has not been implemented yet.
-
--   **Future Tasks:**
-    -   **(P2) Fix pre-existing lint errors:** Address the tech debt of linting errors in .
+- **Task 1: Application Stabilization (P0)**: The user has repeatedly expressed frustration with the application's instability, where fixing one bug introduces another. The next agent's highest priority, alongside fixing the pending issue, should be to perform thorough regression testing after every change to ensure core features (Full Query, Simple Query, PDF Download, System Lock) remain functional.
+- **Task 2: Code Refactoring (P2)**: The backend  (over 10,000 lines) and the frontend  (over 4,000 lines) are monolithic and extremely difficult to maintain. This technical debt is the root cause of the frequent regressions. A long-term task should be to break these files into smaller, manageable modules. This is a lower priority than immediate bug fixes and stability.
 
 **Completed work in this session**
--   **SNA Feature:** Implemented the full Social Network Analytics flow, including frontend handlers, dialogs, and integration into the final PDF report.
--   **SNA Enhancements:** Added functionality to input social media links manually and display platform-specific stats (e.g., likes, comments).
--   **Reset/Cache Bugs:** Fixed a series of critical bugs where the Reset button in Full Query failed to clear all relevant backend caches (, , and caches for RegHP, Passport, Perlintasan), causing subsequent searches to use stale data and fail.
--   **UI/UX Improvements:**
-    -   Added the case owner's name next to the case title for admin users.
-    -   Added the querying user and timestamp to the Full Query history.
-    -   Added a confirmation dialog to prevent accidental re-runs of OSINT and SNA.
-    -   Improved table formatting in generated PDF reports.
-    -   Cleaned displayed OSINT text to remove excessive quotation marks.
--   **Feature Removal:** Successfully removed the Call Data Recorder feature from the UI.
--   **New Simple Queries:** Integrated Have I Been Pwned (for email breaches) and IPinfo.io (for IP geolocation) into the Simple Query tool.
--   **Configuration:** Added the HIBP API key to the  configuration file.
--   **Bug Fix (Full Query):**
-    -   Fixed an issue where the target's photo would not appear during the selection step.
-    -   Fixed a bug where only the first of multiple passports was being processed for perlintasan (border crossing) checks.
+- **Global Busy/Idle Lock:** Implemented a system-wide lock to prevent concurrent queries from all users. The UI now shows a green IDLE or red BUSY status. (DONE)
+- **Full Query Reliability:** Added retry mechanisms and increased timeouts for backend queries to handle the unreliability of the Telegram bot source, making results more consistent. (DONE)
+- **Data & Cache Management:**
+    - Fixed the Full Target Reset function to properly clear all associated cache data. (DONE)
+    - Fixed an authorization bug that prevented users from deleting Simple Query cache items. (DONE)
+- **UI/UX Fixes:**
+    - Fixed a critical bug where the UI would reset to the selection screen after a Full Query completed. (DONE)
+    - Reworked the Pendalaman Lanjutan section to display options as visible cards instead of a hidden dropdown. (DONE)
+    - Fixed the Full Query passport icon to correctly show a yellow warning for no data. (DONE)
+    - Fixed the unclickable PDF download button by adjusting its position in the layout. (DONE)
+- **PDF Generation:**
+    - Fixed the report to include missing Passport and Perlintasan data. (DONE)
+    - Resolved a critical JavaScript error () that prevented PDF generation. (DONE)
+- **Deployment & VPS:**
+    - Provided the user with a corrected, robust deployment command () and a  script. (DONE)
+    - Diagnosed and fixed an issue where the frontend process was not running on the VPS. (DONE)
+- **Backend Stability:** Fixed a Python  related to the  module. (DONE)
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Pre-existing frontend lint errors**
-    -   Debug checklist: Run  in the  folder and fix the reported  warnings in .
-    -   Why to solve this issue and what will be achieved with this? To improve code quality and prevent potential bugs related to React hooks.
-    -   Should Test frontend/backend/both after fix: Frontend
-    -   Is recurring issue? Y
+None. All specific issues reported by the user during this session were addressed, although some required multiple attempts. The overarching issue of general instability remains.
 
 **Known issue recurrence from previous fork**
--   Issue recurrence in previous fork: None mentioned in the history.
--   Recurrence count: 0
--   Status: N/A
+N/A
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend:** Python with FastAPI framework.
--   **Frontend:** React with TypeScript.
--   **Database:** PostgreSQL for persistent storage (cases, users, investigations).
--   **Caching:** Redis is used for a queue lock () and caching intermediate query results ().
--   **Asynchronous Tasks:** Background tasks () are used for long-running operations like fetching data from the Telegram bot to avoid blocking the API.
--   **External Integration:** The system interacts with an external (mocked) Telegram bot for core data lookups and external APIs like HaveIBeenPwned and IPinfo.io.
+- **Frontend:** React, JavaScript (ES6+), JSX,  for PDF generation.
+- **Backend:** Python, Flask.
+- **Database:** A NoSQL database (likely MongoDB) is used for caching and session storage.
+- **Asynchronicity:** The backend uses  for background tasks (investigations). The frontend uses  and  for API polling.
+- **Concurrency Control:** A global lock () and status object on the backend prevent race conditions.
+- **External APIs:** The application is heavily dependent on a Telegram bot and a CP API for data retrieval.
+- **Deployment:** Manual deployment to a Linux VPS using usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
+           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
+           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
+           <command> [<args>]
+
+These are common Git commands used in various situations:
+
+start a working area (see also: git help tutorial)
+   clone     Clone a repository into a new directory
+   init      Create an empty Git repository or reinitialize an existing one
+
+work on the current change (see also: git help everyday)
+   add       Add file contents to the index
+   mv        Move or rename a file, a directory, or a symlink
+   restore   Restore working tree files
+   rm        Remove files from the working tree and from the index
+
+examine the history and state (see also: git help revisions)
+   bisect    Use binary search to find the commit that introduced a bug
+   diff      Show changes between commits, commit and working tree, etc
+   grep      Print lines matching a pattern
+   log       Show commit logs
+   show      Show various types of objects
+   status    Show the working tree status
+
+grow, mark and tweak your common history
+   branch    List, create, or delete branches
+   commit    Record changes to the repository
+   merge     Join two or more development histories together
+   rebase    Reapply commits on top of another base tip
+   reset     Reset current HEAD to the specified state
+   switch    Switch branches
+   tag       Create, list, delete or verify a tag object signed with GPG
+
+collaborate (see also: git help workflows)
+   fetch     Download objects and refs from another repository
+   pull      Fetch from and integrate with another repository or a local branch
+   push      Update remote refs along with associated objects
+
+'git help -a' and 'git help -g' list available subcommands and some
+concept guides. See 'git help <command>' or 'git help <concept>'
+to read about a specific subcommand or concept.
+See 'git help git' for an overview of the system., npm <command>
+
+Usage:
+
+npm install        install all the dependencies in your project
+npm install <foo>  add the <foo> dependency to your project
+npm test           run this project's tests
+npm run <foo>      run the script named <foo>
+npm <command> -h   quick help on <command>
+npm -l             display usage info for all commands
+npm help <term>    search for help on <term>
+npm help npm       more involved overview
+
+All commands:
+
+    access, adduser, audit, bugs, cache, ci, completion,
+    config, dedupe, deprecate, diff, dist-tag, docs, doctor,
+    edit, exec, explain, explore, find-dupes, fund, get, help,
+    help-search, hook, init, install, install-ci-test,
+    install-test, link, ll, login, logout, ls, org, outdated,
+    owner, pack, ping, pkg, prefix, profile, prune, publish,
+    query, rebuild, repo, restart, root, run-script, sbom,
+    search, set, shrinkwrap, star, stars, start, stop, team,
+    test, token, uninstall, unpublish, unstar, update, version,
+    view, whoami
+
+Specify configs in the ini-formatted file:
+    /root/.npmrc
+or on the command line via: npm <command> --key=value
+
+More configuration info: npm help config
+Configuration fields: npm help 7 config
+
+npm@10.8.2 /usr/lib/node_modules/npm, and . Nginx is the reverse proxy.
 
 **key DB schema**
--   **nongeoint_searches:** Caches the initial results of a Full Query search by name.
--   **nik_investigations:** Stores the detailed results of a full investigation tied to a NIK.
--   **cases:** Stores user-created cases, which can contain multiple targets/investigations. Includes a  field.
--   **simple_query_cache:** A key-value store (likely in PostgreSQL or Redis) for caching results from Simple Query and various sub-steps of the Full Query (e.g., , ).
+- **searches**: 
+- **investigations**: 
+- **cache**: 
 
 **changes in tech stack**
--   No fundamental changes to the tech stack were made.
+None.
 
 **All files of reference**
--   : Updated extensively to add new endpoints, fix caching logic, integrate new APIs (HIBP, IPinfo), and fix bugs related to the investigation workflow.
--   : Updated extensively to add new UI components (dialogs for SNA, confirmation), modify component logic (reset button, history display, case owner), fix UI bugs, and integrate new features.
--   : Updated to include the .
--   : Updated to reflect the new  for future setups.
--   : Updated to reflect completed tasks and feature removals.
--   : Updated to add  to the  model for more explicit data handling.
+- : The monolithic backend file containing all API logic. Was modified extensively for bug fixes and feature implementation.
+- : The monolithic component for the Full Query feature. Was modified extensively.
+- : Modified to add global status polling.
+- : Modified to display the global status indicator.
+- : Modified to respect the global lock.
+- : The file for the last pending issue (missing owner name).
+- : A helper script for the user to manage cache.
+- : A helper script created for the user to simplify deployment.
 
 **Areas that need refactoring**:
--    is a monolithic component containing a vast amount of state and logic (over 2500 lines). It should be broken down into smaller, more manageable components (e.g., , , , ). This would improve maintainability and reduce complexity.
+- ****: This >10,000 line file is the primary source of instability. It urgently needs to be broken down into smaller, domain-specific modules (e.g., , , ).
+- ****: This >4,000 line component is a God Component. Its state management is complex and fragile. It should be decomposed into smaller, specialized components and custom hooks to manage logic like polling and data transformation.
+- **Global State Management**: The application would benefit from a dedicated state management library (like Redux Toolkit or Zustand) to handle shared state like , , and , which would make state changes more predictable and less error-prone.
 
 **key api endpoints**
--   : Initiates a new Full Query search.
--   : Starts a detailed investigation on a selected target.
--   : Polls the status of an ongoing investigation.
--   : Deletes a search history entry and its associated caches.
--   : Fetches the next batch of photos for a Full Query result.
--   : Initiates Social Network Analysis.
--   : Handles various simple queries (NIK, KK, IP Lookup, Email Breach).
--   : Fetches the list of cases for the current user.
+- : Initiate a Full Query by name.
+- : Start a detailed investigation on a NIK.
+- : Poll for investigation status.
+- : Get search history.
+- : Run a simple query.
+- : Get the global BUSY/IDLE system status.
+- : Delete a cache entry.
 
 **Critical Info for New Agent**
--   The user deploys the application on a VPS. Environment-related issues, such as an outdated  file, can cause features to fail on their end even if they work locally for the agent. Always remind the user to update their environment/configuration after changes.
--   The application's data-gathering process heavily relies on a simulated Telegram bot. The logic for this is in the backend.
--   Caching is a critical but fragile part of the application. Many bugs have stemmed from caches not being cleared correctly. When implementing a reset or delete feature, ensure all related caches (, , and various keys in ) are properly invalidated.
--   The frontend  component is extremely large. Be cautious when making changes to avoid unintended side effects.
+- **HIGH RISK OF REGRESSION:** The codebase is extremely brittle, especially  and . Any change, no matter how small, requires thorough regression testing of all major features (Full Query start-to-finish, Simple Query, PDF download). The user is very sensitive to this.
+- **GLOBAL LOCK:** A global lock () is now central to the application's concurrency control. All new query features MUST check and set this lock.
+- **EXTERNAL DEPENDENCIES:** The application's performance and consistency are tied to an unreliable Telegram bot. Backend logic includes retries and timeouts to mitigate this, but it remains a point of failure.
 
 **documents and test reports created in this job**
--   
--   
+- 
+-  (as a template for the user's VPS)
+-  (was updated by the agent)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **api untuk haveibeenpwned...**: Provided the API key for HIBP and requested it be added to the system for easy deployment. (COMPLETED)
-2.  **fitur haveipwnd tidak jalan...**: Reported that the HIBP feature is not working, claiming it needs an API key that was already provided. (AGENT INVESTIGATED, PENDING USER ACTION)
-3.  **saat memuat foto 11-20...**: Reported two bugs with loading more photos: no UI lock and new photos not appearing. (FIX IMPLEMENTED, PENDING USER VERIFICATION)
-4.  **Ada gk ya api adint**: Asked if an API for ADINT (Acoustic Intelligence) exists. (PENDING AGENT RESPONSE)
-5.  **di cases , khususnya user yang admin...**: Request to show case ownership for admin users. (COMPLETED)
-6.  **Fitur CALL DATA RECORDER hapus saja...**: Request to remove the Call Data Recorder feature. (COMPLETED)
-7.  **Tombol reset di full query belum berfungsi...**: Reported that the reset button doesn't clear the target's data cache. (COMPLETED - FIRST FIX)
-8.  **Tombol reset di full query masih belum berfungsi di VPS...**: Reported the reset button still fails to clear backend cache. (COMPLETED - SECOND FIX)
-9.  **Saya mencoba mencari history...**: Reported a complex bug where, after a reset, a new search for the same person skips steps due to another, deeper cache (). (COMPLETED - THIRD FIX)
-10. **Sudah bagus sepertinya, tapi kenapa foto target...**: Reported that photos were not appearing during target selection. (COMPLETED)
+1.  **Req:** The case owner's name is missing from the Cases list. (PENDING)
+2.  **Req:** The system lock should also block the same user from running concurrent queries. (Resolved)
+3.  **Feedback:** PDF download still failing. (Resolved)
+4.  **Feedback/Frustration:** PDF download fails with  error; user is frustrated with instability. (Resolved)
+5.  **Feedback:** PDF download button for a new target is not working. (Resolved)
+6.  **Req:** PDF download for a newly investigated target is not working. (Resolved)
+7.  **Req/Frustration:** Cannot delete Simple Query cache items; user complains about regressions. (Resolved)
+8.  **Req:** Target's photo is missing in Full Query search. (Resolved)
+9.  **Feedback:** BUSY/IDLE status indicator not working correctly. (Resolved)
+10. **Req/Correction:** Clarified logic for BUSY status and reported app crash on 503 error. (Resolved)
 
 **Project Health Check:**
--   **Broken:** The load more photos feature was broken; a fix is pending verification. The HIBP feature may be broken on the user's VPS due to an environment issue.
--   **Mocked:** The entire data acquisition process (NIK, KK, Passport, etc.) is simulated through a mock Telegram bot interaction managed by the backend. The results are hardcoded or generated by an LLM, not from real government databases.
+- **Broken:** The Cases list is missing the owner's name, which is a regression.
+- **Mocked:** No features are explicitly mocked. However, the system's heavy reliance on an unreliable external Telegram bot makes its behavior unpredictable.
 
 **3rd Party Integrations**
--   **Telegram Bot (Mock):** Used for fetching core investigation data (NIK, KK, Passport, etc.). Requires internal setup, no external key.
--   **OpenAI GPT-4o:** Used by the agent for code generation and reasoning. Uses Emergent LLM Key.
--   **Have I Been Pwned (HIBP):** Integrated into Simple Query to check for email breaches. Requires a User API Key, which has been provided and added to .
--   **IPinfo.io:** Integrated into Simple Query for IP geolocation. Currently uses the free tier without an API key.
+- **Telegram Bot**: Core integration for data retrieval. No key type specified.
+- **CP API**: External API for passport and crossing data. No key type specified.
+- **jspdf & jspdf-autotable**: Frontend libraries for client-side PDF generation.
 
 **Testing status**
--   Testing agent used after significant changes: YES (once, for the initial SNA implementation).
--   Troubleshoot agent used after agent stuck in loop: NO
--   Test files created: []
--   Known regressions: Several regressions related to the Reset button's caching mechanism were discovered and fixed during this session.
+- **Testing agent used after significant changes:** NO (Agent performed manual tests).
+- **Troubleshoot agent used after agent stuck in loop:** NO
+- **Test files created:** []
+- **Known regressions:** The pending issue of the missing case owner's name is a known regression. The user has repeatedly highlighted the general problem of fixes causing new bugs.
 
 **Credentials to test flow:**
--   **Username:** admin
--   **Password:** admin
+Not provided.
 
 **What agent forgot to execute**
--   **Answer user's latest question:** The agent has not yet responded to the user's query about an ADINT API. This should be the top priority.
--   **Implement Phone Number Lookup:** The agent recommended adding several APIs, and the user approved. The agent implemented HIBP and IPinfo but did not implement the Phone Number Lookup API (e.g., NumLookupAPI) as an option in Simple Query.
--   **Fix Pre-existing Lint Errors:** The agent repeatedly identified but ignored a set of linting errors in .</analysis>
+The agent addressed all specific user requests. The primary oversight was not establishing a robust regression testing process early on, which led to a cycle of fixing and breaking features, causing user frustration. The agent also did not address the underlying technical debt (monolithic files), which is the root cause of the fragility, though this may have been out of scope.</analysis>
