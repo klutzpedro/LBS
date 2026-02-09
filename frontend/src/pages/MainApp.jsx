@@ -98,6 +98,7 @@ const MainApp = () => {
   
   // Request status for query locking
   const [requestStatus, setRequestStatus] = useState({ is_busy: false, username: null, operation: null });
+  const [telegramConnected, setTelegramConnected] = useState(false);
   
   // Face Recognition
   const [frDialogOpen, setFrDialogOpen] = useState(false);
