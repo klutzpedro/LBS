@@ -865,6 +865,7 @@ const TargetsSection = ({
   activeHistoryTargets,
   onShowHistory,
   onHideHistory,
+  activeSchedules,
   onOpenScheduleDialog,
   onCancelSchedule,
   onCountdownEnd,
@@ -872,95 +873,155 @@ const TargetsSection = ({
   printingTarget,
   getStatusColor,
   getTargetSchedule
-}) => (
-  <div className="flex-1 flex flex-col p-4 overflow-hidden">
-    {/* Search Bar */}
-    <div className="mb-3 flex-shrink-0">
-      <div className="relative">
-        <Search 
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-          style={{ color: 'var(--foreground-muted)' }}
-        />
-        <Input
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search phone, nama, NIK..."
-          className="pl-10 bg-background-tertiary border-borders-default text-xs"
-          style={{ color: '#000000' }}
-        />
-      </div>
-    </div>
+}) => {
+  // Sort targets: scheduled targets first (sorted by next_run), then non-scheduled
+  const sortedTargets = React.useMemo(() => {
+    if (!filteredTargets || filteredTargets.length === 0) return [];
+    if (!activeSchedules || activeSchedules.length === 0) return filteredTargets;
+    
+    // Create a map of phone_number to schedule for quick lookup
+    const scheduleMap = {};
+    activeSchedules.forEach(s => {
+      if (s.active && s.next_run) {
+        scheduleMap[s.phone_number] = s;
+      }
+    });
+    
+    // Separate scheduled and non-scheduled targets
+    const scheduledTargets = [];
+    const nonScheduledTargets = [];
+    
+    filteredTargets.forEach(target => {
+      const schedule = scheduleMap[target.phone_number];
+      if (schedule) {
+        scheduledTargets.push({ ...target, _schedule: schedule });
+      } else {
+        nonScheduledTargets.push(target);
+      }
+    });
+    
+    // Sort scheduled targets by next_run (earliest first)
+    scheduledTargets.sort((a, b) => {
+      const timeA = new Date(a._schedule.next_run).getTime();
+      const timeB = new Date(b._schedule.next_run).getTime();
+      return timeA - timeB;
+    });
+    
+    // Return scheduled first, then non-scheduled
+    return [...scheduledTargets, ...nonScheduledTargets];
+  }, [filteredTargets, activeSchedules]);
+  
+  // Count scheduled targets in current case
+  const scheduledCount = React.useMemo(() => {
+    if (!filteredTargets || !activeSchedules) return 0;
+    const phoneNumbers = new Set(filteredTargets.map(t => t.phone_number));
+    return activeSchedules.filter(s => s.active && phoneNumbers.has(s.phone_number)).length;
+  }, [filteredTargets, activeSchedules]);
 
-    <div className="flex items-center justify-between mb-3 flex-shrink-0">
-      <h2 
-        className="text-sm uppercase tracking-wide font-semibold"
-        style={{ color: 'var(--foreground-secondary)', fontFamily: 'Rajdhani, sans-serif' }}
-      >
-        Targets {searchQuery && `(${filteredTargets.length})`}
-      </h2>
-      {selectedCase && (
-        <Button
-          size="sm"
-          onClick={onAddTarget}
-          data-testid="add-target-button"
-          style={{
-            backgroundColor: 'var(--accent-primary)',
-            color: 'var(--background-primary)'
+  return (
+    <div className="flex-1 flex flex-col p-4 overflow-hidden">
+      {/* Search Bar */}
+      <div className="mb-3 flex-shrink-0">
+        <div className="relative">
+          <Search 
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+            style={{ color: 'var(--foreground-muted)' }}
+          />
+          <Input
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search phone, nama, NIK..."
+            className="pl-10 bg-background-tertiary border-borders-default text-xs"
+            style={{ color: '#000000' }}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <h2 
+          className="text-sm uppercase tracking-wide font-semibold"
+          style={{ color: 'var(--foreground-secondary)', fontFamily: 'Rajdhani, sans-serif' }}
+        >
+          Targets {searchQuery && `(${filteredTargets.length})`}
+        </h2>
+        {selectedCase && (
+          <Button
+            size="sm"
+            onClick={onAddTarget}
+            data-testid="add-target-button"
+            style={{
+              backgroundColor: 'var(--accent-primary)',
+              color: 'var(--background-primary)'
+            }}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+      
+      {/* Scheduled targets indicator */}
+      {scheduledCount > 0 && (
+        <div 
+          className="mb-2 px-2 py-1 rounded text-xs font-semibold animate-pulse flex items-center gap-1"
+          style={{ 
+            backgroundColor: 'rgba(255, 59, 92, 0.15)',
+            color: 'var(--status-error)'
           }}
         >
-          <Plus className="w-4 h-4" />
-        </Button>
+          <span className="text-base">⏰</span>
+          <span>{scheduledCount} target terjadwal</span>
+        </div>
       )}
-    </div>
-    
-    <div 
-      className="space-y-2 overflow-y-auto pr-1 flex-1"
-      style={{ 
-        scrollbarWidth: 'thin',
-        scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
-      }}
-    >
-      {filteredTargets.map((target) => (
-        <TargetCard 
-          key={target.id}
-          target={target}
-          isSelected={selectedTargetForChat === target.id}
-          isVisible={visibleTargets.has(target.id)}
-          isHistoryActive={activeHistoryTargets.includes(target.id)}
-          schedule={getTargetSchedule(target.phone_number)}
-          isPrinting={printingTarget === target.id}
-          onTargetClick={onTargetClick}
-          onDelete={onDeleteTarget}
-          onPerbaharui={onPerbaharui}
-          onToggleVisibility={onToggleVisibility}
-          onShowHistory={onShowHistory}
-          onHideHistory={onHideHistory}
-          onOpenScheduleDialog={onOpenScheduleDialog}
-          onCancelSchedule={onCancelSchedule}
-          onCountdownEnd={onCountdownEnd}
-          onPrint={onPrintTarget}
-          getStatusColor={getStatusColor}
-        />
-      ))}
       
-      {!selectedCase && (
-        <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
-          Pilih case terlebih dahulu
-        </p>
-      )}
-      {selectedCase && filteredTargets.length === 0 && searchQuery && (
-        <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
-          Tidak ditemukan untuk &quot;{searchQuery}&quot;
-        </p>
-      )}
-      {selectedCase && filteredTargets.length === 0 && !searchQuery && (
-        <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
-          Belum ada target
-        </p>
-      )}
+      <div 
+        className="space-y-2 overflow-y-auto pr-1 flex-1"
+        style={{ 
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'var(--accent-primary) var(--background-tertiary)'
+        }}
+      >
+        {sortedTargets.map((target) => (
+          <TargetCard 
+            key={target.id}
+            target={target}
+            isSelected={selectedTargetForChat === target.id}
+            isVisible={visibleTargets.has(target.id)}
+            isHistoryActive={activeHistoryTargets.includes(target.id)}
+            schedule={getTargetSchedule(target.phone_number)}
+            isPrinting={printingTarget === target.id}
+            onTargetClick={onTargetClick}
+            onDelete={onDeleteTarget}
+            onPerbaharui={onPerbaharui}
+            onToggleVisibility={onToggleVisibility}
+            onShowHistory={onShowHistory}
+            onHideHistory={onHideHistory}
+            onOpenScheduleDialog={onOpenScheduleDialog}
+            onCancelSchedule={onCancelSchedule}
+            onCountdownEnd={onCountdownEnd}
+            onPrint={onPrintTarget}
+            getStatusColor={getStatusColor}
+          />
+        ))}
+        
+        {!selectedCase && (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
+            Pilih case terlebih dahulu
+          </p>
+        )}
+        {selectedCase && sortedTargets.length === 0 && searchQuery && (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
+            Tidak ditemukan untuk &quot;{searchQuery}&quot;
+          </p>
+        )}
+        {selectedCase && sortedTargets.length === 0 && !searchQuery && (
+          <p className="text-xs text-center py-4" style={{ color: 'var(--foreground-muted)' }}>
+            Belum ada target
+          </p>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // Target card sub-component
 const TargetCard = ({
