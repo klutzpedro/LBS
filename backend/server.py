@@ -1244,6 +1244,33 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "Paparoni290483#"
 
+# Cache for admin check to avoid repeated DB queries
+_admin_cache = {}
+_admin_cache_ttl = 300  # 5 minutes
+
+async def is_user_admin(username: str) -> bool:
+    """Check if user is admin with caching"""
+    import time
+    
+    # Check hardcoded admin
+    if username == ADMIN_USERNAME:
+        return True
+    
+    # Check cache
+    cache_key = username
+    cached = _admin_cache.get(cache_key)
+    if cached and (time.time() - cached['time']) < _admin_cache_ttl:
+        return cached['is_admin']
+    
+    # Query database
+    user = await db.users.find_one({"username": username}, {"_id": 0, "is_admin": 1})
+    is_admin = user and user.get("is_admin", False)
+    
+    # Update cache
+    _admin_cache[cache_key] = {'is_admin': is_admin, 'time': time.time()}
+    
+    return is_admin
+
 # ============================================
 # REQUEST STATUS ENDPOINT (for queue indicator)
 # ============================================
