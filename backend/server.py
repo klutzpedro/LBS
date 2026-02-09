@@ -1211,6 +1211,7 @@ class AOI(BaseModel):
     is_visible: bool = True
     alarm_enabled: bool = True
     color: Optional[str] = None  # Custom color for AOI (hex format)
+    created_by: Optional[str] = None  # Owner of the AOI
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AOIAlert(BaseModel):
@@ -1218,6 +1219,7 @@ class AOIAlert(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     aoi_id: str
     aoi_name: str
+    aoi_owner: Optional[str] = None  # Owner of the AOI for filtering alerts
     target_ids: List[str]
     target_phones: List[str]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
