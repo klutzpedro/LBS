@@ -2482,7 +2482,7 @@ async def query_telegram_bot_refresh_legacy(target_id: str, phone_number: str):
         })
         
         # Wait for bot to respond with buttons
-        await asyncio.sleep(2)  # Reduced from 4s to 2s - bot responds quickly
+        await asyncio.sleep(4)
         
         # Get messages and look for CP button
         async def get_button_messages():
@@ -2526,7 +2526,7 @@ async def query_telegram_bot_refresh_legacy(target_id: str, phone_number: str):
             logging.warning(f"[REFRESH] CP button not found for {phone_number}")
         
         # Wait for location response after clicking CP
-        await asyncio.sleep(2)  # Reduced from 5s to 2s - bot responds quickly
+        await asyncio.sleep(5)
         
         received_response = False
         for attempt in range(15):  # Try for ~45 seconds
@@ -5944,7 +5944,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
             return {"status": "error", "error": "Failed to send name to bot", "niks_found": []}
         
         logger.info(f"[{query_token}] Sent name: {name}")
-        await asyncio.sleep(2)  # Reduced from 4s to 2s - bot responds quickly
+        await asyncio.sleep(4)
         
         # Step 2: Get buttons and click the right one
         async def get_buttons():
@@ -6011,7 +6011,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         
         # Record time after clicking button
         button_click_time = datetime.now(timezone.utc)
-        await asyncio.sleep(2)  # Reduced from 5s to 2s - bot responds quickly
+        await asyncio.sleep(5)
         
         # Step 4: Get response - increase limit for large results
         async def get_response():
@@ -6037,7 +6037,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         
         # For CAPIL queries with potentially many results, wait and get more messages
         if query_type == 'capil':
-            await asyncio.sleep(1.5)  # Reduced from 3s to 1.5s
+            await asyncio.sleep(3)  # Wait for more messages
             more_messages = await safe_telegram_operation(get_response, f"get_more_{query_token}", max_retries=2)
             if more_messages:
                 existing_ids = {m.id for m in response_messages}
