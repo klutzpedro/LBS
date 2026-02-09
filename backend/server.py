@@ -10077,13 +10077,27 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     set_active_query(username, "fr_match", "face_recognition")
     
     try:
-        # Check Telegram connection AND authorization
-        if not telegram_client or not telegram_client.is_connected():
-            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan setup Telegram terlebih dahulu.")
+        # Check Telegram connection - try to reconnect if needed
+        if not telegram_client:
+            raise HTTPException(status_code=503, detail="Telegram client tidak tersedia. Silakan restart server atau setup Telegram.")
         
-        # Check if authorized
-        if not await telegram_client.is_user_authorized():
-            raise HTTPException(status_code=503, detail="Telegram belum login. Silakan setup Telegram terlebih dahulu di menu Settings.")
+        # Try to connect if not connected
+        if not telegram_client.is_connected():
+            try:
+                await telegram_client.connect()
+                logger.info("[FR] Telegram reconnected successfully")
+            except Exception as conn_err:
+                logger.error(f"[FR] Failed to reconnect Telegram: {conn_err}")
+                raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan cek koneksi Telegram di VPS.")
+        
+        # Check if authorized - but don't block if session exists
+        try:
+            is_auth = await telegram_client.is_user_authorized()
+            if not is_auth:
+                logger.warning("[FR] Telegram not authorized, attempting to proceed anyway...")
+                # Don't block - let it try. VPS might have valid session
+        except Exception as auth_err:
+            logger.warning(f"[FR] Auth check failed: {auth_err}, proceeding anyway...")
         
         # Create session ID for this FR request
         session_id = str(uuid.uuid4())[:8]
