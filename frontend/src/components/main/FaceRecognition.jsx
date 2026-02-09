@@ -469,6 +469,29 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
 
         {!isMinimized && (
           <div className="flex-1 overflow-y-auto space-y-2 p-3" style={{ minHeight: 0 }}>
+            {/* Telegram Warning - Show if not connected */}
+            {!telegramConnected && currentStep === 'upload' && (
+              <div 
+                className="p-3 rounded-lg text-xs"
+                style={{ 
+                  backgroundColor: 'rgba(255, 184, 0, 0.15)',
+                  border: '1px solid rgba(255, 184, 0, 0.5)',
+                  color: 'var(--status-warning)'
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold mb-1">⚠️ Telegram Belum Terhubung</p>
+                    <p className="text-[11px] opacity-90">
+                      Fitur Face Recognition memerlukan Telegram yang sudah login. 
+                      Silakan setup Telegram di menu <strong>Settings → Telegram Setup</strong> terlebih dahulu.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Status Message */}
             {statusMessage && (
               <div 
