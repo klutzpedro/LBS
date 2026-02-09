@@ -9813,17 +9813,37 @@ async def delete_aoi(aoi_id: str, username: str = Depends(verify_token)):
 # AOI Alerts Endpoints
 @api_router.get("/aoi-alerts")
 async def get_aoi_alerts(acknowledged: Optional[bool] = None, username: str = Depends(verify_token)):
-    """Get AOI alerts, optionally filtered by acknowledged status"""
+    """Get AOI alerts - users only see alerts for their own AOIs, admin sees all"""
+    # Check if user is admin
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    
     query = {}
     if acknowledged is not None:
         query["acknowledged"] = acknowledged
     
-    alerts = await db.aoi_alerts.find(query, {"_id": 0}).sort("timestamp", -1).to_list(100)
+    if is_admin:
+        # Admin can see all alerts
+        alerts = await db.aoi_alerts.find(query, {"_id": 0}).sort("timestamp", -1).to_list(100)
+    else:
+        # Regular users only see alerts for their own AOIs (or legacy AOIs without owner)
+        query["$or"] = [{"aoi_owner": username}, {"aoi_owner": None}, {"aoi_owner": {"$exists": False}}]
+        alerts = await db.aoi_alerts.find(query, {"_id": 0}).sort("timestamp", -1).to_list(100)
+    
     return {"alerts": alerts}
 
 @api_router.post("/aoi-alerts/{alert_id}/acknowledge")
 async def acknowledge_aoi_alert(alert_id: str, username: str = Depends(verify_token)):
-    """Acknowledge an AOI alert"""
+    """Acknowledge an AOI alert - only owner can acknowledge"""
+    alert = await db.aoi_alerts.find_one({"id": alert_id})
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    # Check ownership
+    aoi_owner = alert.get("aoi_owner")
+    if aoi_owner and aoi_owner != username:
+        raise HTTPException(status_code=403, detail="Hanya pemilik AOI yang bisa mengakui alert ini")
+    
     result = await db.aoi_alerts.update_one(
         {"id": alert_id},
         {"$set": {
@@ -9837,9 +9857,20 @@ async def acknowledge_aoi_alert(alert_id: str, username: str = Depends(verify_to
 
 @api_router.post("/aoi-alerts/acknowledge-all")
 async def acknowledge_all_alerts(username: str = Depends(verify_token)):
-    """Acknowledge all unacknowledged alerts"""
+    """Acknowledge all unacknowledged alerts - only for user's own AOIs"""
+    # Check if user is admin
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    
+    if is_admin:
+        # Admin can acknowledge all alerts (but typically should only acknowledge their own)
+        query = {"acknowledged": False, "$or": [{"aoi_owner": username}, {"aoi_owner": None}, {"aoi_owner": {"$exists": False}}]}
+    else:
+        # Regular users only acknowledge their own AOI alerts
+        query = {"acknowledged": False, "$or": [{"aoi_owner": username}, {"aoi_owner": None}, {"aoi_owner": {"$exists": False}}]}
+    
     result = await db.aoi_alerts.update_many(
-        {"acknowledged": False},
+        query,
         {"$set": {
             "acknowledged": True,
             "acknowledged_at": datetime.now(timezone.utc).isoformat()
