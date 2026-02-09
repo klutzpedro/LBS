@@ -3200,6 +3200,8 @@ async def delete_schedule(schedule_id: str, username: str = Depends(verify_token
 @api_router.post("/schedules/{schedule_id}/execute")
 async def execute_schedule(schedule_id: str, username: str = Depends(verify_token)):
     """Execute a scheduled update immediately - triggered by countdown end"""
+    from zoneinfo import ZoneInfo
+    
     schedule = await db.schedules.find_one({"id": schedule_id}, {"_id": 0})
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
@@ -3222,25 +3224,40 @@ async def execute_schedule(schedule_id: str, username: str = Depends(verify_toke
         raise HTTPException(status_code=400, detail="Quota CP API habis (0 tersisa)")
     
     # Update schedule with last_run and calculate next_run
-    now = datetime.now(timezone.utc)
+    now_utc = datetime.now(timezone.utc)
     interval_type = schedule.get('interval_type', 'hourly')
     interval_value = schedule.get('interval_value', 1)
+    scheduled_time = schedule.get('scheduled_time')
     
-    if interval_type == 'minutes':
-        next_run = now + timedelta(minutes=interval_value)
+    if interval_type == 'specific_time' and scheduled_time:
+        # For specific_time, schedule for same time tomorrow (in WIB)
+        wib = ZoneInfo('Asia/Jakarta')
+        now_wib = now_utc.astimezone(wib)
+        
+        try:
+            hour, minute = map(int, scheduled_time.split(':'))
+            # Calculate next run for tomorrow at the same time
+            target_time_wib = now_wib.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            target_time_wib = target_time_wib + timedelta(days=1)  # Always tomorrow
+            next_run = target_time_wib.astimezone(timezone.utc)
+        except:
+            # Fallback to 24 hours from now
+            next_run = now_utc + timedelta(days=1)
+    elif interval_type == 'minutes':
+        next_run = now_utc + timedelta(minutes=interval_value)
     elif interval_type == 'hourly':
-        next_run = now + timedelta(hours=interval_value)
+        next_run = now_utc + timedelta(hours=interval_value)
     elif interval_type == 'daily':
-        next_run = now + timedelta(days=interval_value)
+        next_run = now_utc + timedelta(days=interval_value)
     elif interval_type == 'weekly':
-        next_run = now + timedelta(weeks=interval_value)
+        next_run = now_utc + timedelta(weeks=interval_value)
     else:
-        next_run = now + timedelta(days=interval_value * 30)
+        next_run = now_utc + timedelta(days=interval_value * 30)
     
     await db.schedules.update_one(
         {"id": schedule_id},
         {"$set": {
-            "last_run": now.isoformat(),
+            "last_run": now_utc.isoformat(),
             "next_run": next_run.isoformat()
         }}
     )
