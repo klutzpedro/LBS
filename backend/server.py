@@ -10077,9 +10077,13 @@ async def fr_match_face(request: FRMatchRequest, username: str = Depends(verify_
     set_active_query(username, "fr_match", "face_recognition")
     
     try:
-        # Check Telegram connection
+        # Check Telegram connection AND authorization
         if not telegram_client or not telegram_client.is_connected():
-            raise HTTPException(status_code=503, detail="Telegram tidak terhubung")
+            raise HTTPException(status_code=503, detail="Telegram tidak terhubung. Silakan setup Telegram terlebih dahulu.")
+        
+        # Check if authorized
+        if not await telegram_client.is_user_authorized():
+            raise HTTPException(status_code=503, detail="Telegram belum login. Silakan setup Telegram terlebih dahulu di menu Settings.")
         
         # Create session ID for this FR request
         session_id = str(uuid.uuid4())[:8]
