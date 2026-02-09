@@ -289,7 +289,7 @@ const History = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredTargets.map((target) => (
+                {paginatedTargets.map((target) => (
                   <tr
                     key={target.id}
                     data-testid={`history-row-${target.id}`}
