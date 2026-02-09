@@ -10541,6 +10541,14 @@ async def startup():
         await db.position_history.create_index("target_id")
         await db.position_history.create_index([("target_id", 1), ("timestamp", -1)])
         await db.schedules.create_index("phone_number")
+        # Simple query cache indexes for faster history retrieval
+        await db.simple_query_cache.create_index([("created_at", -1)])
+        await db.simple_query_cache.create_index("queried_by")
+        await db.simple_query_cache.create_index("query_type")
+        await db.simple_query_cache.create_index("cache_key")
+        # NonGeoint search indexes
+        await db.nongeoint_searches.create_index([("created_at", -1)])
+        await db.nongeoint_searches.create_index("created_by")
         logger.info("✓ Database indexes created/verified")
     except Exception as idx_err:
         logger.warning(f"Index creation warning (may already exist): {idx_err}")
