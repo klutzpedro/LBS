@@ -10527,6 +10527,24 @@ async def fr_get_history(username: str = Depends(verify_token)):
 async def startup():
     global telegram_client
     
+    # Create database indexes for better performance
+    try:
+        await db.targets.create_index("id")
+        await db.targets.create_index("case_id")
+        await db.targets.create_index("created_by")
+        await db.targets.create_index("phone_number")
+        await db.cases.create_index("id")
+        await db.cases.create_index("created_by")
+        await db.users.create_index("username", unique=True)
+        await db.aois.create_index("id")
+        await db.aois.create_index("created_by")
+        await db.position_history.create_index("target_id")
+        await db.position_history.create_index([("target_id", 1), ("timestamp", -1)])
+        await db.schedules.create_index("phone_number")
+        logger.info("✓ Database indexes created/verified")
+    except Exception as idx_err:
+        logger.warning(f"Index creation warning (may already exist): {idx_err}")
+    
     # Auto-seed database if empty
     from seed_database import seed_database, check_database_empty
     
