@@ -1820,6 +1820,14 @@ export const NonGeointSearchDialog = ({
 
   // Function to start investigation with a NIK
   const startInvestigationWithNik = async (nik) => {
+    // Guard: Don't start if already investigating
+    if (isInvestigating) {
+      console.log('[NonGeoint] Already investigating, skipping duplicate request');
+      return;
+    }
+    
+    setIsInvestigating(true);  // Set flag immediately to prevent double calls
+    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/api/nongeoint/investigate-niks`, {
