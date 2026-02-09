@@ -2482,7 +2482,7 @@ async def query_telegram_bot_refresh_legacy(target_id: str, phone_number: str):
         })
         
         # Wait for bot to respond with buttons
-        await asyncio.sleep(4)
+        await asyncio.sleep(2)  # Reduced from 4s to 2s - bot responds quickly
         
         # Get messages and look for CP button
         async def get_button_messages():
