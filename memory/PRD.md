@@ -45,6 +45,28 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Bug Fix: Face Recognition Not Working
+**Date:** 2025-02-09
+**Issue:** Face Recognition tidak berfungsi - error "The key is not registered in the system"
+**Root Cause:** 
+1. Telegram belum di-setup/authorized - FR memerlukan Telegram yang sudah login
+2. Backend tidak memberikan error message yang jelas
+3. Frontend tidak menampilkan warning jika Telegram belum siap
+
+**Fixes Applied:**
+1. Backend: Added `is_user_authorized()` check sebelum FR dan get-nik-details
+2. Backend: Improved error messages untuk Telegram setup errors
+3. Frontend: Added Telegram status polling di MainApp
+4. Frontend: Added warning banner di FR dialog jika Telegram tidak terhubung
+5. Frontend: Improved error handling untuk Telegram-related errors
+
+**Files Modified:**
+- `backend/server.py` - Added auth check in FR endpoints
+- `frontend/src/components/main/FaceRecognition.jsx` - Added warning banner and better error handling
+- `frontend/src/pages/MainApp.jsx` - Added telegramConnected state and polling
+
+**Note:** Face Recognition memerlukan Telegram yang sudah login. User perlu setup Telegram di Settings → Telegram Setup.
+
 ### Bug Fix: Duplicate NIK Request in Full Query
 **Date:** 2025-02-09
 **Issue:** Saat pendalaman NIK di Full Query, webapp mengirim 2 request ke backend (seharusnya 1)
