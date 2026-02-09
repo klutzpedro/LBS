@@ -4262,27 +4262,31 @@ export const NonGeointSearchDialog = ({
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('[NonGeoint] Lanjutkan button clicked! selectedPersonIndex:', selectedPersonIndex);
-                        if (selectedPersonIndex !== null) {
+                        if (selectedPersonIndex !== null && !isInvestigating) {
                           confirmPersonSelection();
+                        } else if (isInvestigating) {
+                          toast.info('Pendalaman sedang berjalan...');
                         } else {
                           toast.error('Pilih target terlebih dahulu dengan klik pada foto');
                         }
                       }}
-                      disabled={selectedPersonIndex === null}
+                      disabled={selectedPersonIndex === null || isInvestigating}
                       className="w-full py-3 px-4 rounded-md font-semibold transition-all hover:opacity-90 active:scale-95"
                       style={{
-                        backgroundColor: selectedPersonIndex === null ? '#6b7280' : 'var(--accent-primary)',
+                        backgroundColor: (selectedPersonIndex === null || isInvestigating) ? '#6b7280' : 'var(--accent-primary)',
                         color: 'white',
-                        opacity: selectedPersonIndex === null ? 0.6 : 1,
-                        cursor: selectedPersonIndex === null ? 'not-allowed' : 'pointer',
+                        opacity: (selectedPersonIndex === null || isInvestigating) ? 0.6 : 1,
+                        cursor: (selectedPersonIndex === null || isInvestigating) ? 'not-allowed' : 'pointer',
                         pointerEvents: 'auto',
                         position: 'relative',
                         zIndex: 25
                       }}
                     >
-                      {selectedPersonIndex === null 
-                        ? '👆 Klik Foto Untuk Memilih Target' 
-                        : '🔍 Mulai Pendalaman Target Terpilih'}
+                      {isInvestigating 
+                        ? '⏳ Pendalaman Sedang Berjalan...'
+                        : selectedPersonIndex === null 
+                          ? '👆 Klik Foto Untuk Memilih Target' 
+                          : '🔍 Mulai Pendalaman Target Terpilih'}
                     </button>
                     
                     {/* Selection status */}
