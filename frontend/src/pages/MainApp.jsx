@@ -2184,6 +2184,7 @@ const MainApp = () => {
             }
           }
         }}
+        telegramConnected={telegramConnected}
       />
 
       {/* Face Recognition History Dialog */}
