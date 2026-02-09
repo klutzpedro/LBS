@@ -45,6 +45,24 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Feature: Time-Based Scheduling & Real-Time Query Updates
+**Date:** 2025-02-09
+**Features Added:**
+1. **Penjadwalan berdasarkan waktu WIB** - User bisa menjadwalkan cek posisi pada jam tertentu (misal 07:00 atau 21:35 WIB). Jadwal akan otomatis dieksekusi setiap hari pada jam yang ditentukan.
+2. **Real-time query updates** - Saat menambah target baru, target langsung muncul di list dengan status "processing". Setelah posisi ditemukan, peta otomatis pan ke lokasi baru tanpa perlu refresh halaman. Polling dipercepat ke 1.5 detik untuk responsivitas lebih baik.
+
+**Files Modified:**
+- `backend/server.py` - Added `scheduled_time` field, WIB timezone handling, specific_time schedule type
+- `frontend/src/components/main/TargetDialogs.jsx` - Updated ScheduleDialog with time picker for WIB
+- `frontend/src/pages/MainApp.jsx` - Updated schedule state handling and real-time polling
+- `frontend/src/components/main/Sidebar.jsx` - Display scheduled time (WIB) on target cards
+
+**Technical Details:**
+- Backend stores times in UTC, converts WIB (Asia/Jakarta) for calculations
+- Schedule types: `specific_time`, `minutes`, `hourly`, `daily`, `weekly`, `monthly`
+- For `specific_time`, schedule recurs daily at the same time
+- Real-time polling: 1.5s for new targets, status change detection with toast notifications
+
 ### Fix: Status Indicator Compact & Admin Role for Cases
 **Date:** 2025-12-10
 **Issues Fixed:**
