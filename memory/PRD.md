@@ -45,6 +45,16 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Fix: Status Indicator Compact & Admin Role for Cases
+**Date:** 2025-12-10
+**Issues Fixed:**
+1. **Status indicator dikecilkan** - Tiga kotak status (IDLE/BUSY, CP API, Telegram) di sidebar sekarang lebih compact dengan padding/font yang lebih kecil
+2. **Owner case untuk admin role** - Nama owner case sekarang ditampilkan untuk user dengan role admin (bukan hanya username "admin"). Backend diperbaiki untuk mengecek `is_admin` field dari database user saat login.
+
+**Files Modified:**
+- `frontend/src/components/main/Sidebar.jsx` - Compact status indicators
+- `backend/server.py` - Login now checks `is_admin` field from database for registered users
+
 ### Fix: Full Reset Target (All Cache Clear)
 **Date:** 2025-12-09
 **Issue:** Reset target tidak menghapus semua cache (OSINT, SNA, dll)
