@@ -9726,8 +9726,8 @@ async def check_aoi_alerts(target_id: str, phone_number: str, lat: float, lng: f
 # AOI CRUD Endpoints
 @api_router.post("/aois")
 async def create_aoi(aoi_data: AOICreate, username: str = Depends(verify_token)):
-    """Create a new AOI"""
-    aoi = AOI(**aoi_data.model_dump())
+    """Create a new AOI - owned by the creating user"""
+    aoi = AOI(**aoi_data.model_dump(), created_by=username)
     doc = aoi.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.aois.insert_one(doc)
@@ -9735,24 +9735,51 @@ async def create_aoi(aoi_data: AOICreate, username: str = Depends(verify_token))
 
 @api_router.get("/aois")
 async def get_aois(username: str = Depends(verify_token)):
-    """Get all AOIs"""
-    aois = await db.aois.find({}, {"_id": 0}).to_list(100)
+    """Get AOIs - users see only their own, admin sees all"""
+    # Check if user is admin
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    
+    if is_admin:
+        # Admin can see all AOIs
+        aois = await db.aois.find({}, {"_id": 0}).to_list(100)
+    else:
+        # Regular users only see their own AOIs (or legacy AOIs without owner)
+        aois = await db.aois.find(
+            {"$or": [{"created_by": username}, {"created_by": None}, {"created_by": {"$exists": False}}]},
+            {"_id": 0}
+        ).to_list(100)
+    
     return {"aois": aois}
 
 @api_router.get("/aois/{aoi_id}")
 async def get_aoi(aoi_id: str, username: str = Depends(verify_token)):
-    """Get a specific AOI"""
+    """Get a specific AOI - check ownership"""
     aoi = await db.aois.find_one({"id": aoi_id}, {"_id": 0})
     if not aoi:
         raise HTTPException(status_code=404, detail="AOI not found")
+    
+    # Check if user is admin or owner
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    aoi_owner = aoi.get("created_by")
+    
+    if not is_admin and aoi_owner and aoi_owner != username:
+        raise HTTPException(status_code=403, detail="Tidak memiliki akses ke AOI ini")
+    
     return aoi
 
 @api_router.put("/aois/{aoi_id}")
 async def update_aoi(aoi_id: str, update_data: dict, username: str = Depends(verify_token)):
-    """Update an AOI"""
+    """Update an AOI - only owner can update"""
     aoi = await db.aois.find_one({"id": aoi_id})
     if not aoi:
         raise HTTPException(status_code=404, detail="AOI not found")
+    
+    # Check ownership - only owner can update
+    aoi_owner = aoi.get("created_by")
+    if aoi_owner and aoi_owner != username:
+        raise HTTPException(status_code=403, detail="Hanya pemilik yang bisa mengubah AOI ini")
     
     allowed_fields = ['name', 'coordinates', 'radius', 'monitored_targets', 'is_visible', 'alarm_enabled', 'color']
     update_fields = {k: v for k, v in update_data.items() if k in allowed_fields}
@@ -9765,7 +9792,16 @@ async def update_aoi(aoi_id: str, update_data: dict, username: str = Depends(ver
 
 @api_router.delete("/aois/{aoi_id}")
 async def delete_aoi(aoi_id: str, username: str = Depends(verify_token)):
-    """Delete an AOI"""
+    """Delete an AOI - only owner can delete"""
+    aoi = await db.aois.find_one({"id": aoi_id})
+    if not aoi:
+        raise HTTPException(status_code=404, detail="AOI not found")
+    
+    # Check ownership - only owner can delete
+    aoi_owner = aoi.get("created_by")
+    if aoi_owner and aoi_owner != username:
+        raise HTTPException(status_code=403, detail="Hanya pemilik yang bisa menghapus AOI ini")
+    
     result = await db.aois.delete_one({"id": aoi_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="AOI not found")
