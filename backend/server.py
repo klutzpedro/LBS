@@ -6037,7 +6037,7 @@ async def execute_nongeoint_query(search_id: str, name: str, query_type: str) ->
         
         # For CAPIL queries with potentially many results, wait and get more messages
         if query_type == 'capil':
-            await asyncio.sleep(3)  # Wait for more messages
+            await asyncio.sleep(1.5)  # Reduced from 3s to 1.5s
             more_messages = await safe_telegram_operation(get_response, f"get_more_{query_token}", max_retries=2)
             if more_messages:
                 existing_ids = {m.id for m in response_messages}
