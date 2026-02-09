@@ -50,18 +50,21 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 **Features Added:**
 1. **Penjadwalan berdasarkan waktu WIB** - User bisa menjadwalkan cek posisi pada jam tertentu (misal 07:00 atau 21:35 WIB). Jadwal akan otomatis dieksekusi setiap hari pada jam yang ditentukan.
 2. **Real-time query updates** - Saat menambah target baru, target langsung muncul di list dengan status "processing". Setelah posisi ditemukan, peta otomatis pan ke lokasi baru tanpa perlu refresh halaman. Polling dipercepat ke 1.5 detik untuk responsivitas lebih baik.
+3. **Target terjadwal di atas list** - Target yang memiliki jadwal aktif otomatis muncul di urutan teratas, diurutkan berdasarkan waktu eksekusi terdekat. Target tanpa jadwal berada di bawah.
+4. **Indikator "X target terjadwal"** - Label merah berkedip (animate-pulse) menunjukkan jumlah target yang terjadwal pada case aktif.
 
 **Files Modified:**
 - `backend/server.py` - Added `scheduled_time` field, WIB timezone handling, specific_time schedule type
 - `frontend/src/components/main/TargetDialogs.jsx` - Updated ScheduleDialog with time picker for WIB
 - `frontend/src/pages/MainApp.jsx` - Updated schedule state handling and real-time polling
-- `frontend/src/components/main/Sidebar.jsx` - Display scheduled time (WIB) on target cards
+- `frontend/src/components/main/Sidebar.jsx` - Display scheduled time (WIB), sorting, and scheduled count indicator
 
 **Technical Details:**
 - Backend stores times in UTC, converts WIB (Asia/Jakarta) for calculations
 - Schedule types: `specific_time`, `minutes`, `hourly`, `daily`, `weekly`, `monthly`
 - For `specific_time`, schedule recurs daily at the same time
 - Real-time polling: 1.5s for new targets, status change detection with toast notifications
+- Sorting: Scheduled targets first (by next_run ascending), then non-scheduled
 
 ### Fix: Status Indicator Compact & Admin Role for Cases
 **Date:** 2025-12-10
