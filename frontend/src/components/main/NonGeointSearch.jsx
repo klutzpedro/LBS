@@ -1947,6 +1947,10 @@ export const NonGeointSearchDialog = ({
       }
       
       // Start polling for investigation results
+      // Clear any existing polling first
+      if (investigationPollingRef.current) {
+        clearInterval(investigationPollingRef.current);
+      }
       investigationPollingRef.current = setInterval(() => {
         pollInvestigation(data.investigation_id);
       }, 3000); // Poll every 3 seconds
