@@ -73,7 +73,17 @@ const History = () => {
 
     filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     setFilteredTargets(filtered);
+    setCurrentPage(1);  // Reset to first page when filters change
   };
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+  const totalPages = Math.ceil(filteredTargets.length / itemsPerPage);
+  const paginatedTargets = filteredTargets.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getCaseName = (caseId) => {
     const caseItem = cases.find(c => c.id === caseId);
