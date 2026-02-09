@@ -3086,17 +3086,44 @@ async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends
     
     # Calculate next run time
     from datetime import timedelta
-    now = datetime.now(timezone.utc)
-    if schedule_data.interval_type == 'minutes':
-        schedule.next_run = now + timedelta(minutes=schedule_data.interval_value)
+    from zoneinfo import ZoneInfo
+    
+    now_utc = datetime.now(timezone.utc)
+    wib = ZoneInfo('Asia/Jakarta')  # WIB timezone
+    now_wib = now_utc.astimezone(wib)
+    
+    if schedule_data.interval_type == 'specific_time':
+        # Parse scheduled_time (HH:MM in WIB)
+        if not schedule_data.scheduled_time:
+            raise HTTPException(status_code=400, detail="scheduled_time diperlukan untuk tipe specific_time")
+        
+        try:
+            hour, minute = map(int, schedule_data.scheduled_time.split(':'))
+            if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                raise ValueError("Invalid time")
+        except:
+            raise HTTPException(status_code=400, detail="Format waktu harus HH:MM (contoh: 07:00 atau 21:35)")
+        
+        # Calculate next run in WIB
+        target_time_wib = now_wib.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        
+        # If target time has passed today, schedule for tomorrow
+        if target_time_wib <= now_wib:
+            target_time_wib = target_time_wib + timedelta(days=1)
+        
+        # Convert back to UTC for storage
+        schedule.next_run = target_time_wib.astimezone(timezone.utc)
+        
+    elif schedule_data.interval_type == 'minutes':
+        schedule.next_run = now_utc + timedelta(minutes=schedule_data.interval_value)
     elif schedule_data.interval_type == 'hourly':
-        schedule.next_run = now + timedelta(hours=schedule_data.interval_value)
+        schedule.next_run = now_utc + timedelta(hours=schedule_data.interval_value)
     elif schedule_data.interval_type == 'daily':
-        schedule.next_run = now + timedelta(days=schedule_data.interval_value)
+        schedule.next_run = now_utc + timedelta(days=schedule_data.interval_value)
     elif schedule_data.interval_type == 'weekly':
-        schedule.next_run = now + timedelta(weeks=schedule_data.interval_value)
+        schedule.next_run = now_utc + timedelta(weeks=schedule_data.interval_value)
     elif schedule_data.interval_type == 'monthly':
-        schedule.next_run = now + timedelta(days=schedule_data.interval_value * 30)
+        schedule.next_run = now_utc + timedelta(days=schedule_data.interval_value * 30)
     
     doc = schedule.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -3106,6 +3133,7 @@ async def create_schedule(schedule_data: ScheduleCreate, username: str = Depends
         doc['last_run'] = doc['last_run'].isoformat()
     
     await db.schedules.insert_one(doc)
+    return schedule
     return schedule
 
 @api_router.get("/schedules", response_model=List[Schedule])
