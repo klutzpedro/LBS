@@ -2147,9 +2147,8 @@ async def process_manual_target(target_id: str, manual_data: dict):
 
 @api_router.get("/targets", response_model=List[Target])
 async def get_targets(case_id: Optional[str] = None, username: str = Depends(verify_token)):
-    # Check if user is admin
-    requester = await db.users.find_one({"username": username})
-    is_admin = (username == ADMIN_USERNAME) or (requester and requester.get("is_admin", False))
+    # Check if user is admin - use cached check
+    is_admin = await is_user_admin(username)
     
     # Filter by user ownership (admin sees all)
     query = {}
@@ -2158,7 +2157,8 @@ async def get_targets(case_id: Optional[str] = None, username: str = Depends(ver
     if not is_admin:
         query["created_by"] = username
     
-    targets = await db.targets.find(query, {"_id": 0}).to_list(1000)
+    # Use projection to only get needed fields for faster query
+    targets = await db.targets.find(query, {"_id": 0}).to_list(500)
     
     for target in targets:
         if isinstance(target.get('created_at'), str):
