@@ -1798,6 +1798,12 @@ export const NonGeointSearchDialog = ({
       return;
     }
     
+    // Guard: Don't start if already investigating
+    if (isInvestigating) {
+      console.log('[NonGeoint] Already investigating, ignoring duplicate click');
+      return;
+    }
+    
     const selectedPerson = personsFound[selectedPersonIndex];
     console.log('[NonGeoint] Starting investigation for selected person:', selectedPerson);
     
@@ -1805,12 +1811,11 @@ export const NonGeointSearchDialog = ({
       // Set selected NIK
       setSelectedNiks([selectedPerson.nik]);
       
-      // Hide person selection and start investigation
+      // Hide person selection
       setShowPersonSelection(false);
-      setIsInvestigating(true);
       setInvestigation(null);
       
-      // Start investigation
+      // Start investigation - this will set isInvestigating
       toast.info(`Memulai pendalaman NIK ${selectedPerson.nik}...`);
       startInvestigationWithNik(selectedPerson.nik);
     } else {
