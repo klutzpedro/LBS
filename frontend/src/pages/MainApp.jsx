@@ -1420,22 +1420,23 @@ const MainApp = () => {
     
     // Check if Telegram is connected - but don't block if just "not authorized"
     // Backend will handle auto-reconnect and return proper error if truly disconnected
-    let telegramConnected = false;
+    let tgConnected = false;
     try {
       const token = localStorage.getItem('token');
       const statusResponse = await axios.get(`${API}/telegram/status`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Consider connected if either authorized OR at least connected (can try auto-auth)
-      telegramConnected = statusResponse.data.authorized || statusResponse.data.connected;
+      tgConnected = statusResponse.data.authorized || statusResponse.data.connected;
+      setTelegramConnected(tgConnected);  // Update state for other components
       
-      if (!telegramConnected) {
+      if (!tgConnected) {
         console.warn('[NIK Pendalaman] Telegram not connected, will let backend handle');
       }
     } catch (err) {
       console.error('[NIK Pendalaman] Telegram status check failed:', err);
       // Don't block - let backend handle the connection
-      telegramConnected = true; // Optimistically proceed
+      tgConnected = true; // Optimistically proceed
     }
     
     // Only block if explicitly disconnected AND not connected at all
