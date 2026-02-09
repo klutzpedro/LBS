@@ -5018,19 +5018,18 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
     if current_request_status.get("is_busy"):
         busy_user = current_request_status.get("username", "unknown")
         busy_operation = current_request_status.get("operation", "unknown")
-        # Allow same user to continue
-        if busy_user != username:
-            logger.warning(f"[NONGEOINT] Blocked - System busy by {busy_user} doing {busy_operation}")
-            raise HTTPException(
-                status_code=503,
-                detail={
-                    "error": "system_busy",
-                    "message": f"Antrian query sedang berjalan. User '{busy_user}' sedang melakukan query. Mohon tunggu.",
-                    "busy_user": busy_user,
-                    "operation": busy_operation,
-                    "started_at": current_request_status.get("started_at")
-                }
-            )
+        # Block ALL users including the same user - no concurrent queries allowed
+        logger.warning(f"[NONGEOINT] Blocked - System busy by {busy_user} doing {busy_operation}")
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "error": "system_busy",
+                "message": f"Antrian query sedang berjalan. User '{busy_user}' sedang melakukan {busy_operation}. Mohon tunggu hingga selesai.",
+                "busy_user": busy_user,
+                "operation": busy_operation,
+                "started_at": current_request_status.get("started_at")
+            }
+        )
     
     search_name = request.name.strip().upper()  # Normalize name for caching
     
