@@ -327,7 +327,8 @@ const MainApp = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/aois`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000
       });
       setAois(response.data.aois || []);
     } catch (error) {
@@ -339,7 +340,8 @@ const MainApp = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/aoi-alerts?acknowledged=false`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 10000
       });
       setAoiAlerts(response.data.alerts || []);
     } catch (error) {
