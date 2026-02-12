@@ -858,7 +858,7 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
   const [selectedItem, setSelectedItem] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const loadHistory = async () => {
+  const loadHistory = async (retryCount = 0) => {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -866,19 +866,33 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
       params.append('limit', '100');
       if (filterType) params.append('query_type', filterType);
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
       const response = await fetch(`${API_URL}/api/simple-query/history?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       
       if (response.ok) {
         const data = await response.json();
         setHistory(data.history || []);
       } else {
-        toast.error('Gagal memuat history');
+        throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
       console.error('Load history error:', error);
-      toast.error('Gagal memuat history');
+      
+      // Retry up to 2 times
+      if (retryCount < 2) {
+        console.log(`[SimpleQuery History] Retrying (${retryCount + 1}/2)...`);
+        setTimeout(() => loadHistory(retryCount + 1), 2000);
+        return;
+      }
+      
+      toast.error('Gagal memuat history. Silakan coba refresh halaman.');
     } finally {
       setIsLoading(false);
     }
