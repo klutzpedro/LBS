@@ -743,7 +743,8 @@ const MainApp = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/cases`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000  // 15 second timeout
       });
       const activeCases = response.data.filter(c => c.status === 'active');
       setCases(activeCases);
@@ -752,6 +753,26 @@ const MainApp = () => {
       }
     } catch (error) {
       console.error('Failed to load cases:', error);
+      // Retry once after 2 seconds if failed
+      if (!error.config?._retry) {
+        setTimeout(async () => {
+          try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API}/cases`, {
+              headers: { Authorization: `Bearer ${token}` },
+              timeout: 15000,
+              _retry: true
+            });
+            const activeCases = response.data.filter(c => c.status === 'active');
+            setCases(activeCases);
+            if (activeCases.length > 0 && !selectedCase) {
+              setSelectedCase(activeCases[0]);
+            }
+          } catch (retryError) {
+            console.error('Retry failed for cases:', retryError);
+          }
+        }, 2000);
+      }
     }
   };
 
