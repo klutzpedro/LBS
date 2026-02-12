@@ -350,19 +350,37 @@ export const NonGeointHistoryDialog = ({ open, onOpenChange, onSelectSearch }) =
   const [searchFilter, setSearchFilter] = useState(''); // Search filter state
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchHistory = async (retryCount = 0) => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
         const response = await fetch(`${API_URL}/api/nongeoint/searches`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           const data = await response.json();
           setSearches(data);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
         }
       } catch (error) {
         console.error('Failed to fetch history:', error);
+        
+        // Retry up to 2 times
+        if (retryCount < 2) {
+          console.log(`[NonGeoint History] Retrying (${retryCount + 1}/2)...`);
+          setTimeout(() => fetchHistory(retryCount + 1), 2000);
+          return;
+        }
+        
+        toast.error('Gagal memuat history. Silakan coba lagi.');
       }
       setLoading(false);
     };
