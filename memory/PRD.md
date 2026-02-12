@@ -45,6 +45,31 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Completed Work (Dec 2025)
 
+### Fix: System Stability - Data Loading Issues
+**Date:** 2025-02-12
+**Issues Fixed:**
+1. **Data tidak muncul setelah refresh** - Cases, targets, dan data lain tidak muncul saat pertama kali load
+2. **History gagal dimuat** - Simple Query dan Full Query history menampilkan error
+3. **Tombol notif tetap merah** - Alert badge tidak ter-reset
+
+**Root Causes:**
+- Tidak ada timeout pada API requests - request bisa hang tanpa batas waktu
+- Tidak ada retry mechanism saat request gagal
+- Terlalu banyak concurrent requests membebani server
+- Error handling tidak menampilkan pesan yang informatif
+
+**Fixes Applied:**
+1. **Added 15s timeout** untuk semua API requests (cases, targets, schedules, AOIs)
+2. **Added retry mechanism** - Auto-retry 2x dengan delay 2s jika request gagal
+3. **Staggered requests** - Jeda 200ms antar request untuk mencegah overwhelming server
+4. **AbortController** untuk history requests dengan proper cleanup
+5. **Better error messages** - Toast informatif saat gagal memuat data
+
+**Files Modified:**
+- `frontend/src/pages/MainApp.jsx` - Added timeout, retry, staggered loading
+- `frontend/src/components/main/SimpleQuery.jsx` - Added timeout and retry for history
+- `frontend/src/components/main/NonGeointSearch.jsx` - Added timeout and retry for history
+
 ### Bug Fix: Face Recognition Not Working
 **Date:** 2025-02-09
 **Issue:** Face Recognition tidak berfungsi - error "The key is not registered in the system"
