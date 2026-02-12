@@ -67,6 +67,7 @@ const MainApp = () => {
   const [targets, setTargets] = useState([]);
   const [isMaximized, setIsMaximized] = useState(false);
   const [selectedTileLayer, setSelectedTileLayer] = useState('street');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);  // Track initial data loading
   
   // Dialog states
   const [addTargetDialog, setAddTargetDialog] = useState(false);
