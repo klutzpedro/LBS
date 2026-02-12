@@ -303,11 +303,22 @@ const MainApp = () => {
   useEffect(() => {
     if (username) {
       console.log('[MainApp] User logged in, fetching data...');
+      setIsInitialLoading(true);
+      
       // Fetch data with small delays to prevent overwhelming the server
-      fetchCases();
-      setTimeout(() => fetchSchedules(), 200);
-      setTimeout(() => fetchAOIs(), 400);
-      setTimeout(() => fetchAOIAlerts(), 600);
+      const loadAllData = async () => {
+        try {
+          await fetchCases();
+          setTimeout(() => fetchSchedules(), 200);
+          setTimeout(() => fetchAOIs(), 400);
+          setTimeout(() => fetchAOIAlerts(), 600);
+        } finally {
+          // Set loading to false after a short delay to ensure rendering completes
+          setTimeout(() => setIsInitialLoading(false), 800);
+        }
+      };
+      
+      loadAllData();
     }
   }, [username]);
 
