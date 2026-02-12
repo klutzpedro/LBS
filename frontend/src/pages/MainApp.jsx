@@ -845,11 +845,25 @@ const MainApp = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/schedules`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000  // 15 second timeout
       });
       setActiveSchedules(response.data);
     } catch (error) {
       console.error('Failed to load schedules:', error);
+      // Retry once after 2 seconds
+      setTimeout(async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${API}/schedules`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 15000
+          });
+          setActiveSchedules(response.data);
+        } catch (retryError) {
+          console.error('Retry failed for schedules:', retryError);
+        }
+      }, 2000);
     }
   };
 
