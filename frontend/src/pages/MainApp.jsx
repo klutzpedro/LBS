@@ -806,14 +806,29 @@ const MainApp = () => {
   };
 
   const fetchTargets = async (caseId) => {
+    if (!caseId) return;
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API}/targets?case_id=${caseId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000  // 15 second timeout
       });
       setTargets(response.data);
     } catch (error) {
       console.error('Failed to load targets:', error);
+      // Retry once after 2 seconds
+      setTimeout(async () => {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(`${API}/targets?case_id=${caseId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 15000
+          });
+          setTargets(response.data);
+        } catch (retryError) {
+          console.error('Retry failed for targets:', retryError);
+        }
+      }, 2000);
     }
   };
 
