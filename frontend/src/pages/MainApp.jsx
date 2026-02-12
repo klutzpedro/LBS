@@ -302,12 +302,26 @@ const MainApp = () => {
   useEffect(() => {
     if (username) {
       console.log('[MainApp] User logged in, fetching data...');
+      // Fetch data with small delays to prevent overwhelming the server
       fetchCases();
-      fetchSchedules();
-      fetchAOIs();
-      fetchAOIAlerts();
+      setTimeout(() => fetchSchedules(), 200);
+      setTimeout(() => fetchAOIs(), 400);
+      setTimeout(() => fetchAOIAlerts(), 600);
     }
   }, [username]);
+
+  // Helper function for retrying failed requests
+  const fetchWithRetry = async (fetchFn, maxRetries = 3, delay = 1000) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        return await fetchFn();
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+        console.log(`[Retry] Attempt ${i + 1} failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  };
 
   const fetchAOIs = async () => {
     try {
