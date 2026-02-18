@@ -10,7 +10,8 @@ import {
   Users,
   ScanFace,
   FileSearch,
-  Settings
+  Settings,
+  MapPin
 } from 'lucide-react';
 
 const ToolsPanel = ({
@@ -31,6 +32,9 @@ const ToolsPanel = ({
   // User Management (Admin)
   isAdmin,
   onOpenUserManagement,
+  
+  // Plot Posisi
+  onOpenPlotPosisi,
   
   // Panel visibility
   isOpen,
