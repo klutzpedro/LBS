@@ -1226,6 +1226,31 @@ class AOIAlert(BaseModel):
     acknowledged: bool = False
     acknowledged_at: Optional[datetime] = None
 
+# Plotted Points (Custom Markers) Models
+class PlottedPointCreate(BaseModel):
+    name: str
+    latitude: float
+    longitude: float
+    icon: Optional[str] = "pin"  # pin, star, flag, marker, home, building
+    color: Optional[str] = "#FF5733"  # Hex color for the marker
+
+class PlottedPointUpdate(BaseModel):
+    name: Optional[str] = None
+    icon: Optional[str] = None
+    color: Optional[str] = None
+
+class PlottedPoint(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    latitude: float
+    longitude: float
+    icon: str = "pin"
+    color: str = "#FF5733"
+    is_visible: bool = True
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Authentication
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
