@@ -2186,6 +2186,19 @@ const MainApp = () => {
               {/* AOI Renderer */}
               <AOIRenderer aois={aois} aoiAlerts={aoiAlerts} />
 
+              {/* Plotted Points Renderer */}
+              <PlottedPointsRenderer
+                plottedPoints={plottedPoints}
+                currentUsername={username}
+                onEdit={(point) => {
+                  // Open edit from panel
+                  setPlottedPointsPanelOpen(true);
+                }}
+                onDelete={handleDeletePlot}
+                onToggleVisibility={handleTogglePlotVisibility}
+                onPointClick={handlePlotPointClick}
+              />
+
               {/* History Paths */}
               <HistoryPathRenderer
                 activeHistoryTargets={activeHistoryTargets}
