@@ -160,6 +160,13 @@ const MainApp = () => {
   const [drawingPoints, setDrawingPoints] = useState([]);
   const [drawingColor, setDrawingColor] = useState('#00D9FF'); // Default cyan for AOI drawing
   
+  // Plotted Points (Custom Markers) states
+  const [plottedPointsPanelOpen, setPlottedPointsPanelOpen] = useState(false);
+  const [plottedPoints, setPlottedPoints] = useState([]);
+  const [isPlottingMode, setIsPlottingMode] = useState(false);
+  const [newPlotDialogOpen, setNewPlotDialogOpen] = useState(false);
+  const [pendingPlotCoordinates, setPendingPlotCoordinates] = useState(null);
+  
   // Global process queue
   const [globalProcessing, setGlobalProcessing] = useState(false);
   const [globalProcessType, setGlobalProcessType] = useState(null);
