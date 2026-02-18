@@ -2311,6 +2311,27 @@ const MainApp = () => {
         refreshAOIs={fetchAOIs}
       />
 
+      {/* Plotted Points Panel */}
+      <PlottedPointsPanel
+        isOpen={plottedPointsPanelOpen}
+        onClose={() => setPlottedPointsPanelOpen(false)}
+        plottedPoints={plottedPoints}
+        onRefresh={fetchPlottedPoints}
+        onPointClick={handlePlotPointClick}
+        currentUsername={username}
+        isPlottingMode={isPlottingMode}
+        onStartPlotting={handleStartPlotting}
+        onCancelPlotting={handleCancelPlotting}
+      />
+
+      {/* New Plot Dialog */}
+      <NewPlotDialog
+        isOpen={newPlotDialogOpen}
+        onClose={() => setNewPlotDialogOpen(false)}
+        coordinates={pendingPlotCoordinates}
+        onSave={handlePlotSaved}
+      />
+
       {/* AOI Alert Notification */}
       <AOIAlertNotification
         alerts={aoiAlerts}
