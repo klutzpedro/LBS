@@ -322,9 +322,10 @@ const MainApp = () => {
           setTimeout(() => fetchSchedules(), 200);
           setTimeout(() => fetchAOIs(), 400);
           setTimeout(() => fetchAOIAlerts(), 600);
+          setTimeout(() => fetchPlottedPoints(), 800);
         } finally {
           // Set loading to false after a short delay to ensure rendering completes
-          setTimeout(() => setIsInitialLoading(false), 800);
+          setTimeout(() => setIsInitialLoading(false), 1000);
         }
       };
       
@@ -355,6 +356,20 @@ const MainApp = () => {
       setAois(response.data.aois || []);
     } catch (error) {
       console.error('Failed to fetch AOIs:', error);
+    }
+  };
+
+  // Fetch Plotted Points
+  const fetchPlottedPoints = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/plots`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000
+      });
+      setPlottedPoints(response.data.points || []);
+    } catch (error) {
+      console.error('Failed to fetch plotted points:', error);
     }
   };
 
