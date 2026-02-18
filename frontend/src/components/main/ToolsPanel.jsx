@@ -405,6 +405,15 @@ const ToolsPanel = ({
           >
             <Search className="w-4 h-4" style={{ color: '#10b981' }} />
           </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="p-2"
+            onClick={onOpenPlotPosisi}
+            title="Plot Posisi"
+          >
+            <MapPin className="w-4 h-4" style={{ color: '#ef4444' }} />
+          </Button>
           {isAdmin && (
             <Button
               size="sm"
