@@ -47,7 +47,10 @@ import {
   SimpleQueryDialog,
   SimpleQueryHistoryDialog,
   ToolsPanel,
-  ToolsPanelToggle
+  ToolsPanelToggle,
+  PlottedPointsPanel,
+  NewPlotDialog,
+  PlottedPointsRenderer
 } from '@/components/main';
 
 // NON GEOINT Search
