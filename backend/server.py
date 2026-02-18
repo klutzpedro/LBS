@@ -9885,14 +9885,18 @@ async def get_aoi_alerts(acknowledged: Optional[bool] = None, username: str = De
 
 @api_router.post("/aoi-alerts/{alert_id}/acknowledge")
 async def acknowledge_aoi_alert(alert_id: str, username: str = Depends(verify_token)):
-    """Acknowledge an AOI alert - only owner can acknowledge"""
+    """Acknowledge an AOI alert - only owner or admin can acknowledge"""
     alert = await db.aoi_alerts.find_one({"id": alert_id})
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     
-    # Check ownership
+    # Check if user is admin
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    
+    # Check ownership - admin can bypass
     aoi_owner = alert.get("aoi_owner")
-    if aoi_owner and aoi_owner != username:
+    if not is_admin and aoi_owner and aoi_owner != username:
         raise HTTPException(status_code=403, detail="Hanya pemilik AOI yang bisa mengakui alert ini")
     
     result = await db.aoi_alerts.update_one(
