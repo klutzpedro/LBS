@@ -2109,6 +2109,10 @@ const MainApp = () => {
               setToolsPanelOpen(false);
               setUserManagementOpen(true);
             }}
+            // Plot Posisi
+            onOpenPlotPosisi={() => {
+              setPlottedPointsPanelOpen(true);
+            }}
           />
 
           {targets.filter(t => t.data && t.data.latitude && t.data.longitude).length === 0 ? (
