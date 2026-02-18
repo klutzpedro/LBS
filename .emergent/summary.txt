@@ -1,250 +1,177 @@
 <analysis>An analysis of the user's problem statement, conversation, and codebase has been conducted. The following is a summary of the work completed and the current status of the project.
 
 **original_problem_statement:**
-The user requested a series of bug fixes and feature enhancements for the Waskita-LBS intelligence application. The core requirements were:
+The user initially requested a series of bug fixes and feature enhancements for the Waskita-LBS intelligence application. During this session, the user added the following requirements:
 
 **PRODUCT REQUIREMENTS:**
-- **Full Query Reliability:**
-    - Full Query results must be consistent and complete. Issues included missing crossing data for targets with multiple passports, and general inconsistency where data (like photos, NIK, NKK) would sometimes appear and sometimes not.
-    - The system must have a global locking mechanism. When any user performs a query (Simple or Full Query), the system status must change to BUSY and block all other users (including the same user) from running concurrent queries to prevent race conditions and crashes. The status indicator should visually reflect this (red for busy, green for idle).
-- **Correct UI Behavior:**
-    - After a Full Query investigation completes, the UI must show the results and a download button, not revert to the NIK selection screen.
-    - Icons must correctly represent the data status (e.g., a yellow warning for no data found vs. a green check for data found).
-    - The Download PDF button must always be functional once an investigation is complete.
-    - UI elements like dropdowns should be easily visible and usable, not hidden by other components.
-- **Data & Cache Management:**
-    - A Reset function in Full Query must completely purge all data (NIK, NKK, Passport, Perlintasan, etc.) for a target from all caches, for all users.
-    - Users must be able to delete cache entries they are authorized to, fixing not authorized errors.
-- **PDF Report Completeness:**
-    - The downloaded PDF report must contain all data visible on the screen, including Passport and Perlintasan (crossing) details.
-- **Stability & Deployment:**
-    - The application must be stable; fixing one feature should not break another.
-    - Deployment to the user's VPS must be reliable, with clear instructions to handle common issues like Git branch conflicts.
 - **Restore Missing Features:**
-    - The owner's name, which was previously visible on each case in the Cases list, should be displayed again.
+    - The owner's name, previously visible on each case in the Cases list, should be displayed again for admin roles.
+- **UI/UX Enhancements:**
+    - The status indicator section in the sidebar should be made smaller.
+    - Scheduled targets must be sorted to the top of the cases list, ordered by the nearest upcoming execution time.
+    - A blinking, red counter (e.g., ⏰ 2 target terjadwal) should be displayed to indicate the number of active schedules.
+- **Scheduling Feature:**
+    - Add the ability to schedule a position check for a specific time of day (e.g., 21:35 WIB), which repeats daily.
+- **Real-time Functionality:**
+    - When a new query is initiated, it must appear in the query list immediately without a page refresh.
+    - When a position is updated, the map should reflect the new location without a page refresh.
+- **Access Control & Security:**
+    - **Scheduling:** Only the owner of a case can schedule or modify schedules for targets within that case. Admins can view all cases but cannot schedule targets owned by other users.
+    - **AOI (Area of Interest):** AOIs must be tied to the user who created them. Users can only see and interact with their own AOIs. Admins can see all AOIs, but alerts are only active for their own AOIs.
+- **Bug Fixes & Stability:**
+    - **Session Conflict:** Fix a bug where two different admin users could not be logged in simultaneously, causing one to be forcefully logged out.
+    - **Performance:** Address slow loading times for the History page and slow data retrieval during Full Query investigations that use the Telegram bot.
+    - **Duplicate Requests:** Fix a bug in the Full Query flow where two identical requests were sent when investigating a NIK.
+    - **Face Recognition:** Fix the Face Recognition feature, which was not working.
+    - **General Instability:** Address intermittent issues where the app loads slowly, data fails to appear, and history modals fail to load on the first try.
+- **New Feature: Plot Position:**
+    - Implement a feature allowing any user to plot a custom position on the map by clicking, entering coordinates, or using a Google Maps link.
+    - The plotted point should be saved with a custom name and icon.
+    - Plotted points must be visible to all users.
+    - Users should be able to edit or delete the points they create.
+- **Rejected/Clarified Requests:**
+    - **Phishing Feature:** User's request to build an SMS phishing feature was rejected on ethical and legal grounds.
+    - **Starlink Tracking:** User's request for a real-time Starlink *device* tracking API was researched. The agent determined no public API exists for user terminals and clarified what is possible (satellite orbital tracking).
 
 **User's preferred language**: **Indonesian**. The next agent MUST respond in Indonesian.
 
 **what currently exists?**
-The project is a full-stack web application with a React frontend and a Python (Flask) backend, managed by PM2 on a VPS. It features Simple Query and Full Query functionalities that fetch data from external sources, including a Telegram bot and other APIs (CP API). The system uses a database for caching and has a recently implemented global BUSY/IDLE locking mechanism to prevent concurrent queries. PDF reports can be generated from investigation results.
+The project is a full-stack intelligence application using a React frontend and a Python/Flask backend. Key features include Simple Query and Full Query for data gathering, a case management system, user-specific Areas of Interest (AOI), and a recently enhanced time-based scheduling system for position checks. The backend uses  for scheduling and a MongoDB database for caching and data persistence. The system relies heavily on external APIs, including a Telegram bot. All user-reported bugs and features from this session have been addressed except for the new Plot Position feature.
 
 **Last working item**:
-- **Last item agent was working:** The user reported that the owner's name for each case in the Cases list has disappeared. This is a regression, as the feature existed before. The agent started investigating the frontend code in  and identified the conditional rendering logic  as the likely cause, as it restricts visibility to admins or the owner of the case.
-- **Status:** IN PROGRESS
+- **Last item agent was working:** The user requested a new feature to allow plotting custom, named locations on the map that are visible to all users. The agent had just begun the exploration phase by viewing the relevant source files (, , and ) to understand the existing map implementation and plan the required changes.
+- **Status:** NOT STARTED
 - **Agent Testing Done:** N
-- **Which testing method agent to use?** Frontend testing agent or screenshot tool. The agent should verify that the owner's name appears for all cases in the list, regardless of the logged-in user's role.
+- **Which testing method agent to use?** Frontend testing agent.
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Case owner's name is missing from the Cases list (P0 - HIGHEST)**
-
-**Issues Detail:**
-- **Issue 1: Case owner's name is missing from the Cases list**
-    - **Attempted fixes:** None. The agent was in the process of debugging when the session ended.
-    - **Next debug checklist:**
-        1.  Open .
-        2.  Locate the section that renders the list of searches (around line 800).
-        3.  The current logic is likely .
-        4.  The user wants the owner to be visible to everyone. Modify the condition to always render the owner information if it exists, e.g., .
-        5.  Ensure the API response for  consistently provides the  field for each search item.
-    - **Why fix this issue and what will be achieved with the fix?** To restore a regression and meet the user's requirement for case ownership visibility.
-    - **Status:** IN PROGRESS
-    - **Is recurring issue?** Y (It's a regression)
-    - **Should Test frontend/backend/both after fix?** Frontend
-    - **Blocked on other issue:** None
+There are no pending bugs. The only remaining item is the implementation of a new feature.
 
 **In progress Task List**:
-None.
+- **Task 1: Implement Plot Posisi Feature (P0 - HIGHEST)**
+    - **Where to resume:** The agent needs to formulate a plan based on the file exploration.
+        1.  **Backend:** Create a new MongoDB collection (). Implement CRUD API endpoints () to create, read, update, and delete these points. The create endpoint should accept , , , and . The read endpoint should return all points to all users.
+        2.  **Frontend:**
+            - Add a new UI element (e.g., a button Plot Posisi) to activate plotting mode.
+            - In , handle map clicks to get coordinates when in plotting mode.
+            - Create a new dialog component to enter the name for the new plot.
+            - On submit, call the new backend API to save the point.
+            - Fetch all plotted points on application load and render them on the map using a distinct marker.
+            - Add a popup to the marker to show the point's name and a delete/edit button.
+    - **What will be achieved with this?** Users will be able to collaboratively mark and share points of interest on the main map.
+    - **Status:** NOT STARTED
+    - **Should Test frontend/backend/both after fix?** Both
+    - **Blocked on something:** None
 
 **Upcoming and Future Tasks**
-- **Task 1: Application Stabilization (P0)**: The user has repeatedly expressed frustration with the application's instability, where fixing one bug introduces another. The next agent's highest priority, alongside fixing the pending issue, should be to perform thorough regression testing after every change to ensure core features (Full Query, Simple Query, PDF Download, System Lock) remain functional.
-- **Task 2: Code Refactoring (P2)**: The backend  (over 10,000 lines) and the frontend  (over 4,000 lines) are monolithic and extremely difficult to maintain. This technical debt is the root cause of the frequent regressions. A long-term task should be to break these files into smaller, manageable modules. This is a lower priority than immediate bug fixes and stability.
+- **Upcoming Tasks:**
+    - **Task 1: Application Stabilization (P1)**: The user has repeatedly expressed frustration with instability. While several fixes were implemented (timeouts, retries), the agent must prioritize thorough regression testing after implementing the Plot Posisi feature to ensure no new bugs are introduced.
+- **Future Tasks:**
+    - **Task 2: Code Refactoring (P2)**: The backend  (>10,000 lines) and frontend  (>4,000 lines) are monolithic and a primary source of regressions. A long-term task is to break these into smaller, manageable modules (e.g., ,  for the backend; custom hooks and smaller components for the frontend).
 
 **Completed work in this session**
-- **Global Busy/Idle Lock:** Implemented a system-wide lock to prevent concurrent queries from all users. The UI now shows a green IDLE or red BUSY status. (DONE)
-- **Full Query Reliability:** Added retry mechanisms and increased timeouts for backend queries to handle the unreliability of the Telegram bot source, making results more consistent. (DONE)
-- **Data & Cache Management:**
-    - Fixed the Full Target Reset function to properly clear all associated cache data. (DONE)
-    - Fixed an authorization bug that prevented users from deleting Simple Query cache items. (DONE)
-- **UI/UX Fixes:**
-    - Fixed a critical bug where the UI would reset to the selection screen after a Full Query completed. (DONE)
-    - Reworked the Pendalaman Lanjutan section to display options as visible cards instead of a hidden dropdown. (DONE)
-    - Fixed the Full Query passport icon to correctly show a yellow warning for no data. (DONE)
-    - Fixed the unclickable PDF download button by adjusting its position in the layout. (DONE)
-- **PDF Generation:**
-    - Fixed the report to include missing Passport and Perlintasan data. (DONE)
-    - Resolved a critical JavaScript error () that prevented PDF generation. (DONE)
-- **Deployment & VPS:**
-    - Provided the user with a corrected, robust deployment command () and a  script. (DONE)
-    - Diagnosed and fixed an issue where the frontend process was not running on the VPS. (DONE)
-- **Backend Stability:** Fixed a Python  related to the  module. (DONE)
+- **Scheduling & UI:**
+    - Implemented scheduling for a specific time of day (WIB). (DONE)
+    - Scheduled targets are now sorted to the top of the list by the nearest time. (DONE)
+    - Added a blinking counter for scheduled targets in the sidebar. (DONE)
+- **Access Control & Security:**
+    - Implemented ownership validation for scheduling (only case owners can schedule). (DONE)
+    - Implemented ownership for Areas of Interest (AOIs); users only see their own, while admins see all. (DONE)
+- **Bug Fixes & Stability:**
+    - **Restored Owner Name**: The case owner's name is now visible again for admin roles. (DONE)
+    - **UI Sizing**: The sidebar status indicator section has been made more compact. (DONE)
+    - **Session Conflict**: Fixed the bug preventing two different admin accounts from being logged in simultaneously. (DONE)
+    - **Duplicate NIK Request**: Resolved the issue where the frontend sent two identical requests during a Full Query NIK investigation. (DONE)
+    - **Face Recognition Fix**: Improved backend error handling for when the Telegram connection is not authorized. Added a clear warning in the UI. (DONE)
+    - **System Stability**: Implemented  with timeouts on all critical frontend data fetching calls to handle slow server responses and prevent the UI from hanging. Added a global loading screen. (DONE)
+    - **Performance Rollback**: Reverted the reduction of  timers in the backend after the user reported it caused regressions in core features. (DONE)
+- **Ethical & Research Tasks:**
+    - **Phishing Request**: Rejected the user's request to build a phishing tool and explained the ethical and legal reasons. (DONE)
+    - **Starlink API**: Researched and informed the user that a public API for tracking user devices does not exist. (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-None. All specific issues reported by the user during this session were addressed, although some required multiple attempts. The overarching issue of general instability remains.
+None.
 
 **Known issue recurrence from previous fork**
-N/A
+The general theme of application instability and regressions continues to be a major concern for the user. While specific bugs were fixed, the monolithic nature of the codebase means this risk remains high.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Frontend:** React, JavaScript (ES6+), JSX,  for PDF generation.
-- **Backend:** Python, Flask.
-- **Database:** A NoSQL database (likely MongoDB) is used for caching and session storage.
-- **Asynchronicity:** The backend uses  for background tasks (investigations). The frontend uses  and  for API polling.
-- **Concurrency Control:** A global lock () and status object on the backend prevent race conditions.
-- **External APIs:** The application is heavily dependent on a Telegram bot and a CP API for data retrieval.
-- **Deployment:** Manual deployment to a Linux VPS using usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
-           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
-           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-           [--super-prefix=<path>] [--config-env=<name>=<envvar>]
-           <command> [<args>]
-
-These are common Git commands used in various situations:
-
-start a working area (see also: git help tutorial)
-   clone     Clone a repository into a new directory
-   init      Create an empty Git repository or reinitialize an existing one
-
-work on the current change (see also: git help everyday)
-   add       Add file contents to the index
-   mv        Move or rename a file, a directory, or a symlink
-   restore   Restore working tree files
-   rm        Remove files from the working tree and from the index
-
-examine the history and state (see also: git help revisions)
-   bisect    Use binary search to find the commit that introduced a bug
-   diff      Show changes between commits, commit and working tree, etc
-   grep      Print lines matching a pattern
-   log       Show commit logs
-   show      Show various types of objects
-   status    Show the working tree status
-
-grow, mark and tweak your common history
-   branch    List, create, or delete branches
-   commit    Record changes to the repository
-   merge     Join two or more development histories together
-   rebase    Reapply commits on top of another base tip
-   reset     Reset current HEAD to the specified state
-   switch    Switch branches
-   tag       Create, list, delete or verify a tag object signed with GPG
-
-collaborate (see also: git help workflows)
-   fetch     Download objects and refs from another repository
-   pull      Fetch from and integrate with another repository or a local branch
-   push      Update remote refs along with associated objects
-
-'git help -a' and 'git help -g' list available subcommands and some
-concept guides. See 'git help <command>' or 'git help <concept>'
-to read about a specific subcommand or concept.
-See 'git help git' for an overview of the system., npm <command>
-
-Usage:
-
-npm install        install all the dependencies in your project
-npm install <foo>  add the <foo> dependency to your project
-npm test           run this project's tests
-npm run <foo>      run the script named <foo>
-npm <command> -h   quick help on <command>
-npm -l             display usage info for all commands
-npm help <term>    search for help on <term>
-npm help npm       more involved overview
-
-All commands:
-
-    access, adduser, audit, bugs, cache, ci, completion,
-    config, dedupe, deprecate, diff, dist-tag, docs, doctor,
-    edit, exec, explain, explore, find-dupes, fund, get, help,
-    help-search, hook, init, install, install-ci-test,
-    install-test, link, ll, login, logout, ls, org, outdated,
-    owner, pack, ping, pkg, prefix, profile, prune, publish,
-    query, rebuild, repo, restart, root, run-script, sbom,
-    search, set, shrinkwrap, star, stars, start, stop, team,
-    test, token, uninstall, unpublish, unstar, update, version,
-    view, whoami
-
-Specify configs in the ini-formatted file:
-    /root/.npmrc
-or on the command line via: npm <command> --key=value
-
-More configuration info: npm help config
-Configuration fields: npm help 7 config
-
-npm@10.8.2 /usr/lib/node_modules/npm, and . Nginx is the reverse proxy.
+- **Frontend:** React, JavaScript (ES6+), JSX, Axios with , Leaflet for maps,  for PDF generation.
+- **Backend:** Python, Flask,  for background tasks/scheduling,  for Telegram integration.
+- **Database:** MongoDB used for caching, session storage, and data persistence.
+- **Concurrency Control:** A global lock () and single-device session enforcement on the backend.
+- **Asynchronicity:** Extensive use of  and  on the backend, and , , and promises on the frontend.
 
 **key DB schema**
-- **searches**: 
-- **investigations**: 
-- **cache**: 
+- **targets**: added , , .
+- **aois**: added .
+- **simple_query_cache**: indexes added on  and .
+- **A new collection  will be needed:** .
 
 **changes in tech stack**
 None.
 
 **All files of reference**
-- : The monolithic backend file containing all API logic. Was modified extensively for bug fixes and feature implementation.
-- : The monolithic component for the Full Query feature. Was modified extensively.
-- : Modified to add global status polling.
-- : Modified to display the global status indicator.
-- : Modified to respect the global lock.
-- : The file for the last pending issue (missing owner name).
-- : A helper script for the user to manage cache.
-- : A helper script created for the user to simplify deployment.
+- : Heavily modified for scheduling, ownership validation (AOI, schedules), performance rollbacks, and bug fixes.
+- : Heavily modified for stability improvements (loading states, retries), scheduling UI logic, and passing state to children.
+- : Modified to display and sort scheduled targets and their counter.
+- : Modified to add an input for specific time scheduling.
+- : Modified to fix a duplicate request bug.
+- : Modified to improve session handling.
 
 **Areas that need refactoring**:
-- ****: This >10,000 line file is the primary source of instability. It urgently needs to be broken down into smaller, domain-specific modules (e.g., , , ).
-- ****: This >4,000 line component is a God Component. Its state management is complex and fragile. It should be decomposed into smaller, specialized components and custom hooks to manage logic like polling and data transformation.
-- **Global State Management**: The application would benefit from a dedicated state management library (like Redux Toolkit or Zustand) to handle shared state like , , and , which would make state changes more predictable and less error-prone.
+- ****: This monolithic file is the primary source of instability. It urgently needs to be broken down into smaller, domain-specific modules (e.g., , , ).
+- ****: This is a God Component with fragile state management. It should be decomposed into smaller components and custom hooks.
+- ****: State management is becoming overly complex. Migrating to a dedicated state management library (like Zustand or Redux Toolkit) is recommended.
 
 **key api endpoints**
-- : Initiate a Full Query by name.
-- : Start a detailed investigation on a NIK.
-- : Poll for investigation status.
-- : Get search history.
-- : Run a simple query.
-- : Get the global BUSY/IDLE system status.
-- : Delete a cache entry.
+- : Updated to handle  and ownership validation.
+- : Updated to enforce ownership rules.
+- **New endpoints required for Plot Position:**  (GET, POST) and  (PUT, DELETE).
 
 **Critical Info for New Agent**
-- **HIGH RISK OF REGRESSION:** The codebase is extremely brittle, especially  and . Any change, no matter how small, requires thorough regression testing of all major features (Full Query start-to-finish, Simple Query, PDF download). The user is very sensitive to this.
-- **GLOBAL LOCK:** A global lock () is now central to the application's concurrency control. All new query features MUST check and set this lock.
-- **EXTERNAL DEPENDENCIES:** The application's performance and consistency are tied to an unreliable Telegram bot. Backend logic includes retries and timeouts to mitigate this, but it remains a point of failure.
+- **STABILITY OVER FEATURES:** The user has repeatedly prioritized a stable application over new features. After implementing the Plot Posisi feature, thorough regression testing of all core functionalities (Full Query, Simple Query, Scheduling, History) is mandatory. The user previously requested a rollback when performance optimizations caused regressions.
+- **ENVIRONMENT MISMATCH (TELEGRAM):** The preview environment **does not have a valid Telegram session**. Features relying on Telegram (Face Recognition, Full Query) will fail with authorization errors. This is expected. Implement logic and error handling to work on the user's VPS, where Telegram is configured correctly.
+- **MONOLITHIC CODEBASE:** Exercise extreme caution when editing  and . These files are very large and complex, and changes can have unforeseen consequences.
+- **ETHICAL BOUNDARIES:** Maintain the established precedent of refusing to build features that are illegal or can be easily used for malicious purposes, such as the previously requested phishing tool.
 
 **documents and test reports created in this job**
-- 
--  (as a template for the user's VPS)
--  (was updated by the agent)
+- The file  was updated multiple times throughout the session.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Req:** The case owner's name is missing from the Cases list. (PENDING)
-2.  **Req:** The system lock should also block the same user from running concurrent queries. (Resolved)
-3.  **Feedback:** PDF download still failing. (Resolved)
-4.  **Feedback/Frustration:** PDF download fails with  error; user is frustrated with instability. (Resolved)
-5.  **Feedback:** PDF download button for a new target is not working. (Resolved)
-6.  **Req:** PDF download for a newly investigated target is not working. (Resolved)
-7.  **Req/Frustration:** Cannot delete Simple Query cache items; user complains about regressions. (Resolved)
-8.  **Req:** Target's photo is missing in Full Query search. (Resolved)
-9.  **Feedback:** BUSY/IDLE status indicator not working correctly. (Resolved)
-10. **Req/Correction:** Clarified logic for BUSY status and reported app crash on 503 error. (Resolved)
+1.  **Request:** Add a Plot Posisi feature to mark custom locations on the map for all users. (PENDING)
+2.  **Report:** The system is unstable, with slow initial loads and failing history modals. (Resolved by adding retries/timeouts)
+3.  **Clarification:** User asked for real-time Starlink device tracking. (Agent clarified this is not publicly available)
+4.  **Request:** Find an API for real-time Starlink device distribution. (Agent Researched)
+5.  **Rejection:** Agent refused to create a phishing feature. (Resolved)
+6.  **Request:** Create a phishing feature, claiming it is for law enforcement. (Agent Refused Again)
+7.  **Request:** Rollback performance optimizations (sleep time reductions) because they broke other features. (Resolved)
+8.  **Report:** The Face Recognition feature is not working. (Resolved, improved error handling)
+9.  **Clarification:** User stated Telegram is connected on their VPS, but the process seems imperfect. (Agent acknowledged)
+10. **Report:** Duplicate requests are being sent during Full Query NIK investigation. (Resolved)
 
 **Project Health Check:**
-- **Broken:** The Cases list is missing the owner's name, which is a regression.
-- **Mocked:** No features are explicitly mocked. However, the system's heavy reliance on an unreliable external Telegram bot makes its behavior unpredictable.
+- **Broken:** No specific feature is broken, but the application suffers from intermittent instability under load, which was the user's last major complaint.
+- **Mocked:** None.
 
 **3rd Party Integrations**
-- **Telegram Bot**: Core integration for data retrieval. No key type specified.
-- **CP API**: External API for passport and crossing data. No key type specified.
+- **Telegram Bot**: Used for data retrieval in Full Query and Face Recognition.
+- **CP API**: An external API for passport and crossing data.
 - **jspdf & jspdf-autotable**: Frontend libraries for client-side PDF generation.
 
 **Testing status**
-- **Testing agent used after significant changes:** NO (Agent performed manual tests).
+- **Testing agent used after significant changes:** NO
 - **Troubleshoot agent used after agent stuck in loop:** NO
 - **Test files created:** []
-- **Known regressions:** The pending issue of the missing case owner's name is a known regression. The user has repeatedly highlighted the general problem of fixes causing new bugs.
+- **Known regressions:** A previous performance optimization attempt was reverted because it caused significant regressions. This highlights the codebase's fragility.
 
 **Credentials to test flow:**
-Not provided.
+- **admin**: Found in  (, ).
+- **keanu**: A test user created during the session with password .
 
 **What agent forgot to execute**
-The agent addressed all specific user requests. The primary oversight was not establishing a robust regression testing process early on, which led to a cycle of fixing and breaking features, causing user frustration. The agent also did not address the underlying technical debt (monolithic files), which is the root cause of the fragility, though this may have been out of scope.</analysis>
+The agent addressed all user requests from this session. The long-term task of refactoring the monolithic codebase remains outstanding but was not the immediate priority.</analysis>
