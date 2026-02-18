@@ -613,11 +613,72 @@ const MainApp = () => {
     toast.info('Drawing dibatalkan');
   };
 
+  // ============== Plotted Points Handlers ==============
+  const handleStartPlotting = () => {
+    setIsPlottingMode(true);
+    toast.info('Klik pada peta untuk menambah pin baru', { duration: 5000 });
+  };
+
+  const handleCancelPlotting = () => {
+    setIsPlottingMode(false);
+    toast.info('Plotting dibatalkan');
+  };
+
+  const handleMapClickForPlotting = (latlng) => {
+    if (!isPlottingMode) return;
+    
+    // Set coordinates and open dialog
+    setPendingPlotCoordinates({ lat: latlng.lat, lng: latlng.lng });
+    setNewPlotDialogOpen(true);
+    setIsPlottingMode(false);
+  };
+
+  const handlePlotSaved = (newPoint) => {
+    // Add new point to the list
+    setPlottedPoints(prev => [...prev, newPoint]);
+  };
+
+  const handlePlotPointClick = (point) => {
+    // Center map on the clicked point
+    setMapCenter([point.latitude, point.longitude]);
+    setMapZoom(16);
+    setMapKey(prev => prev + 1);
+  };
+
+  const handleTogglePlotVisibility = async (point) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API}/plots/${point.id}/visibility`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchPlottedPoints();
+      toast.success(point.is_visible ? 'Pin disembunyikan' : 'Pin ditampilkan');
+    } catch (error) {
+      toast.error('Gagal mengubah visibilitas: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
+  const handleDeletePlot = async (point) => {
+    if (!window.confirm(`Hapus pin "${point.name}"?`)) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/plots/${point.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Pin berhasil dihapus');
+      fetchPlottedPoints();
+    } catch (error) {
+      toast.error('Gagal menghapus pin: ' + (error.response?.data?.detail || error.message));
+    }
+  };
+
   // Map click handler component
   const MapClickHandler = () => {
     useMapEvents({
       click: (e) => {
         if (drawingMode) handleMapClickForDrawing(e.latlng);
+        else if (isPlottingMode) handleMapClickForPlotting(e.latlng);
       },
       dblclick: (e) => {
         if (drawingMode) {
@@ -629,6 +690,10 @@ const MainApp = () => {
         if (drawingMode) {
           e.originalEvent.preventDefault();
           handleCancelDrawing();
+        }
+        if (isPlottingMode) {
+          e.originalEvent.preventDefault();
+          handleCancelPlotting();
         }
       }
     });
