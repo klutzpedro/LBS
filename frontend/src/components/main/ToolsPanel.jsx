@@ -341,6 +341,35 @@ const ToolsPanel = ({
               </Button>
             </div>
           )}
+
+          {/* PLOT POSISI Section */}
+          <div 
+            className="p-3 rounded-lg"
+            style={{ backgroundColor: 'var(--background-tertiary)' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-4 h-4" style={{ color: '#ef4444' }} />
+              <span className="text-sm font-medium" style={{ color: 'var(--foreground-primary)' }}>
+                PLOT POSISI
+              </span>
+            </div>
+            <p className="text-xs mb-2" style={{ color: 'var(--foreground-muted)' }}>
+              Tambah pin lokasi custom di peta, bisa dilihat semua user
+            </p>
+            <Button
+              size="sm"
+              className="w-full"
+              style={{
+                backgroundColor: '#ef4444',
+                color: '#fff'
+              }}
+              onClick={onOpenPlotPosisi}
+              data-testid="open-plot-posisi-button"
+            >
+              <MapPin className="w-3 h-3 mr-1" />
+              Kelola Pin
+            </Button>
+          </div>
         </div>
       )}
 
