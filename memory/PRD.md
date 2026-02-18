@@ -204,6 +204,40 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 - Admin permission for viewing all data
 - ADINT mockup in Simple Query
 
+### Feature: Plot Posisi (Custom Markers)
+**Date:** 2025-02-18
+**Description:** Fitur untuk menambahkan pin lokasi custom di peta yang bisa dilihat semua user.
+
+**Features Implemented:**
+1. **Tambah Pin Baru** - Klik pada peta untuk menambahkan pin dengan nama custom
+2. **Pilihan Ikon** - Pin, Star, Flag, Home, Building, Navigation
+3. **Pilihan Warna** - 10 pilihan warna marker
+4. **View/Unview** - Toggle visibility pin (hanya pembuat yang bisa toggle)
+5. **Edit Pin** - Ubah nama, ikon, dan warna (hanya pembuat)
+6. **Delete Pin** - Hapus pin (hanya pembuat)
+7. **Semua User Bisa Lihat** - Pin visible ke semua user yang login
+8. **Admin Bypass** - Admin bisa edit/delete pin siapapun
+
+**API Endpoints:**
+- `POST /api/plots` - Create new plotted point
+- `GET /api/plots` - Get all plotted points
+- `PUT /api/plots/{id}` - Update point (name, icon, color)
+- `PUT /api/plots/{id}/visibility` - Toggle visibility
+- `DELETE /api/plots/{id}` - Delete point
+
+**Database Collection:**
+- `plotted_points`: {id, name, latitude, longitude, icon, color, is_visible, created_by, created_at}
+
+**Files Created/Modified:**
+- `frontend/src/components/main/PlottedPointsPanel.jsx` - NEW: Panel dan dialog komponen
+- `frontend/src/components/main/PlottedPointsRenderer.jsx` - NEW: Render marker di peta
+- `frontend/src/components/main/ToolsPanel.jsx` - Added "Plot Posisi" section
+- `frontend/src/components/main/index.js` - Export new components
+- `frontend/src/pages/MainApp.jsx` - Integrasi state dan handlers
+- `backend/server.py` - Added CRUD endpoints dan models
+
+**Testing:** 100% Backend tests passed (19/19), Frontend code review verified
+
 ---
 
 ## Known Issues
