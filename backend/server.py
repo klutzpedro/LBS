@@ -10700,6 +10700,8 @@ async def startup():
         await db.users.create_index("username", unique=True)
         await db.aois.create_index("id")
         await db.aois.create_index("created_by")
+        await db.plotted_points.create_index("id")
+        await db.plotted_points.create_index("created_by")
         await db.position_history.create_index("target_id")
         await db.position_history.create_index([("target_id", 1), ("timestamp", -1)])
         await db.schedules.create_index("phone_number")
