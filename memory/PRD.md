@@ -261,20 +261,14 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Pending Tasks
 
-### P0 - High Priority
-1. **Global Busy/Idle Status Lock**
-   - Extend lock system ke Full Query investigations
-   - Saat Full Query berjalan, block semua query dari user lain
-
-### P1 - Medium Priority
-2. **ADINT API Integration**
-   - Menunggu API credentials dari provider (Veraset, etc.)
-   - Mockup sudah ada di Simple Query
+### P1 - Medium Priority  
+1. **Regression Testing** - Testing menyeluruh core features setelah perubahan Plot Posisi
+2. **Global Busy/Idle Status Lock** - Extend lock system ke Full Query investigations
+3. **ADINT API Integration** - Menunggu API credentials dari provider (Veraset, etc.)
 
 ### P2 - Low Priority
-3. **TikTok Scraper Resolution**
-   - Evaluate residential proxy solutions
-   - Or remove feature if not feasible
+4. **Code Refactoring** - Memecah server.py (>10K lines) dan NonGeointSearch.jsx (>4K lines)
+5. **TikTok Scraper Resolution** - Evaluate residential proxy solutions
 
 ---
 
