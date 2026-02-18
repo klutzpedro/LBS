@@ -33,3 +33,7 @@ export { SimpleQueryButton, SimpleQueryDialog, SimpleQueryHistoryDialog } from '
 
 // Tools Panel
 export { default as ToolsPanel, ToolsPanelToggle } from './ToolsPanel';
+
+// Plotted Points (Custom Markers)
+export { PlottedPointsPanel, NewPlotDialog } from './PlottedPointsPanel';
+export { PlottedPointsRenderer } from './PlottedPointsRenderer';
