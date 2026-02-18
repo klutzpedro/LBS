@@ -9930,6 +9930,101 @@ async def acknowledge_all_alerts(username: str = Depends(verify_token)):
     return {"message": f"Acknowledged {result.modified_count} alerts"}
 
 # =====================================================
+# PLOTTED POINTS (CUSTOM MARKERS) ENDPOINTS
+# =====================================================
+
+@api_router.post("/plots")
+async def create_plotted_point(point: PlottedPointCreate, username: str = Depends(verify_token)):
+    """Create a new plotted point - visible to all users"""
+    doc = {
+        "id": str(uuid.uuid4()),
+        "name": point.name,
+        "latitude": point.latitude,
+        "longitude": point.longitude,
+        "icon": point.icon or "pin",
+        "color": point.color or "#FF5733",
+        "is_visible": True,
+        "created_by": username,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.plotted_points.insert_one(doc)
+    return {"point": {k: v for k, v in doc.items() if k != "_id"}}
+
+@api_router.get("/plots")
+async def get_plotted_points(username: str = Depends(verify_token)):
+    """Get all plotted points - visible to all users"""
+    points = await db.plotted_points.find({}, {"_id": 0}).to_list(500)
+    return {"points": points}
+
+@api_router.put("/plots/{point_id}")
+async def update_plotted_point(point_id: str, update: PlottedPointUpdate, username: str = Depends(verify_token)):
+    """Update a plotted point - only creator can update"""
+    point = await db.plotted_points.find_one({"id": point_id})
+    if not point:
+        raise HTTPException(status_code=404, detail="Point not found")
+    
+    # Check ownership - only creator can update
+    if point.get("created_by") != username:
+        # Check if admin
+        user = await db.users.find_one({"username": username}, {"_id": 0})
+        is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Hanya pembuat yang bisa mengubah titik ini")
+    
+    update_fields = {}
+    if update.name is not None:
+        update_fields["name"] = update.name
+    if update.icon is not None:
+        update_fields["icon"] = update.icon
+    if update.color is not None:
+        update_fields["color"] = update.color
+    
+    if update_fields:
+        await db.plotted_points.update_one({"id": point_id}, {"$set": update_fields})
+    
+    updated_point = await db.plotted_points.find_one({"id": point_id}, {"_id": 0})
+    return {"point": updated_point}
+
+@api_router.put("/plots/{point_id}/visibility")
+async def toggle_plotted_point_visibility(point_id: str, username: str = Depends(verify_token)):
+    """Toggle visibility of a plotted point - only creator can toggle"""
+    point = await db.plotted_points.find_one({"id": point_id})
+    if not point:
+        raise HTTPException(status_code=404, detail="Point not found")
+    
+    # Check ownership - only creator can toggle visibility
+    if point.get("created_by") != username:
+        user = await db.users.find_one({"username": username}, {"_id": 0})
+        is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Hanya pembuat yang bisa mengubah visibilitas titik ini")
+    
+    new_visibility = not point.get("is_visible", True)
+    await db.plotted_points.update_one({"id": point_id}, {"$set": {"is_visible": new_visibility}})
+    
+    return {"point_id": point_id, "is_visible": new_visibility}
+
+@api_router.delete("/plots/{point_id}")
+async def delete_plotted_point(point_id: str, username: str = Depends(verify_token)):
+    """Delete a plotted point - only creator can delete"""
+    point = await db.plotted_points.find_one({"id": point_id})
+    if not point:
+        raise HTTPException(status_code=404, detail="Point not found")
+    
+    # Check ownership - only creator can delete
+    if point.get("created_by") != username:
+        user = await db.users.find_one({"username": username}, {"_id": 0})
+        is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Hanya pembuat yang bisa menghapus titik ini")
+    
+    result = await db.plotted_points.delete_one({"id": point_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Point not found")
+    
+    return {"message": "Point deleted"}
+
+# =====================================================
 # DATABASE EXPORT & SEEDING ENDPOINTS
 # =====================================================
 
