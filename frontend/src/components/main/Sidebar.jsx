@@ -756,20 +756,59 @@ const CasesSection = ({
               >
                 ◀
               </Button>
-              <div className="flex gap-1">
-                {cases.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className="w-2 h-2 rounded-full cursor-pointer transition-all"
-                    onClick={() => {
-                      setCurrentIndex(idx);
-                      onSelectCase(cases[idx]);
-                    }}
-                    style={{
-                      backgroundColor: idx === displayIndex ? 'var(--accent-primary)' : 'var(--borders-default)'
-                    }}
-                  />
-                ))}
+              <div className="flex gap-1 items-center">
+                {/* Show max 8 dots with smart pagination */}
+                {(() => {
+                  const maxDots = 8;
+                  const totalCases = cases.length;
+                  
+                  if (totalCases <= maxDots) {
+                    // Show all dots if 8 or less
+                    return cases.map((_, idx) => (
+                      <div
+                        key={idx}
+                        className="w-2 h-2 rounded-full cursor-pointer transition-all"
+                        onClick={() => {
+                          setCurrentIndex(idx);
+                          onSelectCase(cases[idx]);
+                        }}
+                        style={{
+                          backgroundColor: idx === displayIndex ? 'var(--accent-primary)' : 'var(--borders-default)'
+                        }}
+                      />
+                    ));
+                  }
+                  
+                  // Calculate which dots to show (centered around current)
+                  let startIdx = Math.max(0, displayIndex - Math.floor(maxDots / 2));
+                  let endIdx = startIdx + maxDots;
+                  
+                  // Adjust if we're near the end
+                  if (endIdx > totalCases) {
+                    endIdx = totalCases;
+                    startIdx = Math.max(0, endIdx - maxDots);
+                  }
+                  
+                  const visibleDots = [];
+                  
+                  for (let idx = startIdx; idx < endIdx; idx++) {
+                    visibleDots.push(
+                      <div
+                        key={idx}
+                        className="w-2 h-2 rounded-full cursor-pointer transition-all"
+                        onClick={() => {
+                          setCurrentIndex(idx);
+                          onSelectCase(cases[idx]);
+                        }}
+                        style={{
+                          backgroundColor: idx === displayIndex ? 'var(--accent-primary)' : 'var(--borders-default)'
+                        }}
+                      />
+                    );
+                  }
+                  
+                  return visibleDots;
+                })()}
               </div>
               <Button
                 size="sm"
