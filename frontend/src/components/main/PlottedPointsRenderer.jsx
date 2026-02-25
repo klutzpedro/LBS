@@ -66,8 +66,34 @@ export const PlottedPointsRenderer = ({
   onToggleVisibility,
   onPointClick
 }) => {
-  // Only render visible points
-  const visiblePoints = plottedPoints.filter(point => point.is_visible);
+  // Only render visible points (or all for owner to see their hidden ones)
+  const visiblePoints = plottedPoints.filter(point => 
+    point.is_visible || point.created_by === currentUsername
+  );
+
+  const handleToggleClick = (e, point) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onToggleVisibility) {
+      onToggleVisibility(point);
+    }
+  };
+
+  const handleEditClick = (e, point) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onEdit) {
+      onEdit(point);
+    }
+  };
+
+  const handleDeleteClick = (e, point) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onDelete) {
+      onDelete(point);
+    }
+  };
 
   return (
     <>
@@ -79,13 +105,11 @@ export const PlottedPointsRenderer = ({
             key={point.id}
             position={[point.latitude, point.longitude]}
             icon={createPlottedIcon(point.icon || 'pin', point.color || '#FF5733')}
-            eventHandlers={{
-              click: () => onPointClick && onPointClick(point)
-            }}
+            opacity={point.is_visible ? 1 : 0.5}
           >
             <Popup>
               <div 
-                className="min-w-[200px]"
+                className="min-w-[220px]"
                 style={{ 
                   fontFamily: 'Inter, sans-serif'
                 }}
@@ -96,7 +120,7 @@ export const PlottedPointsRenderer = ({
                   style={{ borderColor: '#e5e7eb' }}
                 >
                   <div 
-                    className="w-8 h-8 rounded flex items-center justify-center"
+                    className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: point.color || '#FF5733' }}
                   >
                     {point.icon === 'star' && <Star className="w-4 h-4 text-white" />}
@@ -106,10 +130,15 @@ export const PlottedPointsRenderer = ({
                     {point.icon === 'navigation' && <Navigation className="w-4 h-4 text-white" />}
                     {(!point.icon || point.icon === 'pin') && <MapPin className="w-4 h-4 text-white" />}
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{point.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 truncate">{point.name}</p>
                     <p className="text-xs text-gray-500">oleh: {point.created_by}</p>
                   </div>
+                  {!point.is_visible && (
+                    <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded">
+                      Hidden
+                    </span>
+                  )}
                 </div>
                 
                 {/* Coordinates */}
@@ -124,22 +153,25 @@ export const PlottedPointsRenderer = ({
                 {isOwner && (
                   <div className="flex gap-2 pt-2 border-t" style={{ borderColor: '#e5e7eb' }}>
                     <button
-                      onClick={() => onToggleVisibility && onToggleVisibility(point)}
-                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      type="button"
+                      onClick={(e) => handleToggleClick(e, point)}
+                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer"
                     >
                       {point.is_visible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      {point.is_visible ? 'Sembunyikan' : 'Tampilkan'}
+                      {point.is_visible ? 'Hide' : 'Show'}
                     </button>
                     <button
-                      onClick={() => onEdit && onEdit(point)}
-                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700"
+                      type="button"
+                      onClick={(e) => handleEditClick(e, point)}
+                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
                       Edit
                     </button>
                     <button
-                      onClick={() => onDelete && onDelete(point)}
-                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-red-100 hover:bg-red-200 text-red-700"
+                      type="button"
+                      onClick={(e) => handleDeleteClick(e, point)}
+                      className="flex-1 py-1.5 px-2 rounded text-xs flex items-center justify-center gap-1 bg-red-100 hover:bg-red-200 text-red-700 cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" />
                       Hapus
