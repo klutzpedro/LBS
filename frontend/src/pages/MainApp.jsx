@@ -648,10 +648,15 @@ const MainApp = () => {
   const handleTogglePlotVisibility = async (point) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API}/plots/${point.id}/visibility`, {}, {
+      const response = await axios.put(`${API}/plots/${point.id}/visibility`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      fetchPlottedPoints();
+      
+      // Update local state immediately for better UX
+      setPlottedPoints(prev => prev.map(p => 
+        p.id === point.id ? { ...p, is_visible: response.data.is_visible } : p
+      ));
+      
       toast.success(point.is_visible ? 'Pin disembunyikan' : 'Pin ditampilkan');
     } catch (error) {
       toast.error('Gagal mengubah visibilitas: ' + (error.response?.data?.detail || error.message));
@@ -666,8 +671,11 @@ const MainApp = () => {
       await axios.delete(`${API}/plots/${point.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      // Update local state immediately
+      setPlottedPoints(prev => prev.filter(p => p.id !== point.id));
+      
       toast.success('Pin berhasil dihapus');
-      fetchPlottedPoints();
     } catch (error) {
       toast.error('Gagal menghapus pin: ' + (error.response?.data?.detail || error.message));
     }
