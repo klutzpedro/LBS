@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
-import { renderToString } from 'react-dom/server';
 import { MapPin, Star, Flag, Home, Building, Navigation, Eye, EyeOff, Edit2, Trash2 } from 'lucide-react';
 
 // Create custom icon for plotted points
