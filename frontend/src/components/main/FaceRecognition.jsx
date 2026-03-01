@@ -199,12 +199,11 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setUploadedImage(event.target.result);
-        setUploadedImagePreview(event.target.result);
-      };
-      reader.readAsDataURL(file);
+      // Use same compression for dropped files
+      compressImage(file, (compressedDataUrl) => {
+        setUploadedImage(compressedDataUrl);
+        setUploadedImagePreview(compressedDataUrl);
+      });
     }
   };
 
