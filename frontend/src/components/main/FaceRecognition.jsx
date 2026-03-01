@@ -200,9 +200,24 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
         })
       });
 
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
-        const error = await response.json();
-        const errorMsg = error.detail || 'Face recognition failed';
+        let errorMsg = 'Face recognition failed';
+        
+        // Only try to parse JSON if content-type is JSON
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const error = await response.json();
+            errorMsg = error.detail || errorMsg;
+          } catch (e) {
+            console.error('[FR] Failed to parse error response:', e);
+          }
+        } else {
+          // Response is not JSON (likely HTML error page)
+          errorMsg = `Server error (${response.status}). Coba lagi nanti.`;
+        }
         
         // Check for Telegram setup errors
         if (errorMsg.includes('Telegram') || errorMsg.includes('login') || errorMsg.includes('setup') || errorMsg.includes('session')) {
@@ -214,6 +229,11 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
         }
         
         throw new Error(errorMsg);
+      }
+
+      // Check content type for success response too
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server mengembalikan response tidak valid. Coba lagi nanti.');
       }
 
       const data = await response.json();
