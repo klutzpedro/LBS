@@ -146,15 +146,51 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Ukuran file maksimal 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 10MB');
       return;
     }
 
+    // Compress image before upload to avoid 413 error
+    compressImage(file, (compressedDataUrl) => {
+      setUploadedImage(compressedDataUrl);
+      setUploadedImagePreview(compressedDataUrl);
+    });
+  };
+
+  // Compress image to reduce size for upload
+  const compressImage = (file, callback, maxWidth = 1024, quality = 0.7) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-      setUploadedImage(event.target.result);
-      setUploadedImagePreview(event.target.result);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to JPEG with compression
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        
+        // Log compression result
+        const originalSize = file.size;
+        const compressedSize = Math.round((compressedDataUrl.length * 3) / 4); // Approximate base64 decoded size
+        console.log(`[FR] Image compressed: ${(originalSize/1024).toFixed(1)}KB -> ~${(compressedSize/1024).toFixed(1)}KB`);
+        
+        callback(compressedDataUrl);
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
