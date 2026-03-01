@@ -268,7 +268,9 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
           })
         });
 
-        if (nikResponse.ok) {
+        const nikContentType = nikResponse.headers.get('content-type');
+        
+        if (nikResponse.ok && nikContentType && nikContentType.includes('application/json')) {
           const nikResult = await nikResponse.json();
           console.log('[FR] NIK details:', nikResult);
           
@@ -278,7 +280,15 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
           setStatusMessage('');
           toast.success('Face Recognition selesai!');
         } else {
-          throw new Error('Failed to fetch NIK details');
+          // Handle error or non-JSON response
+          let errorMsg = 'Failed to fetch NIK details';
+          if (nikContentType && nikContentType.includes('application/json')) {
+            try {
+              const errData = await nikResponse.json();
+              errorMsg = errData.detail || errorMsg;
+            } catch (e) { /* ignore */ }
+          }
+          throw new Error(errorMsg);
         }
       } else {
         setCurrentStep('completed');
