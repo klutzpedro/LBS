@@ -189,16 +189,31 @@ export const FaceRecognitionDialog = ({ open, onOpenChange, telegramConnected = 
     try {
       const token = localStorage.getItem('token');
       
-      const response = await fetch(`${API_URL}/api/face-recognition/match`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          image: uploadedImage
-        })
-      });
+      // Add timeout controller for long requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+      
+      let response;
+      try {
+        response = await fetch(`${API_URL}/api/face-recognition/match`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            image: uploadedImage
+          }),
+          signal: controller.signal
+        });
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          throw new Error('Request timeout. Server terlalu lama merespons. Coba lagi.');
+        }
+        throw fetchErr;
+      }
+      clearTimeout(timeoutId);
 
       // Check content type before parsing
       const contentType = response.headers.get('content-type');
