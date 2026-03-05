@@ -1332,6 +1332,37 @@ async def get_request_status():
             "message": "Semua Akun Idle (No Request)"
         }
 
+@api_router.post("/clear-stuck-status")
+async def clear_stuck_status(username: str = Depends(verify_token)):
+    """
+    Clear stuck request status manually.
+    Useful when a request gets stuck and prevents new requests.
+    """
+    global current_request_status
+    
+    # Check if user is admin or the one who started the stuck request
+    user = await db.users.find_one({"username": username}, {"_id": 0})
+    is_admin = username == ADMIN_USERNAME or (user and user.get("is_admin", False))
+    stuck_username = current_request_status.get("username")
+    
+    if not is_admin and stuck_username and stuck_username != username:
+        raise HTTPException(status_code=403, detail="Hanya admin atau pemilik request yang bisa membersihkan status")
+    
+    old_status = dict(current_request_status)
+    
+    # Clear status
+    current_request_status["is_busy"] = False
+    current_request_status["operation"] = None
+    current_request_status["username"] = None
+    current_request_status["started_at"] = None
+    
+    logger.info(f"[CLEAR-STUCK] Status cleared by {username}. Old status: {old_status}")
+    
+    return {
+        "message": "Status berhasil dibersihkan",
+        "old_status": old_status
+    }
+
 @api_router.post("/auth/login", response_model=LoginResponse)
 async def login(request: LoginRequest, req: Request):
     """Login endpoint - supports admin and registered users with single-device enforcement"""
@@ -5450,10 +5481,19 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[NONGEOINT] Error in fetch_next_photo_batch: {e}")
+        logger.error(f"[NONGEOINT] Error in fetch_next_photo_batch for search {search_id}: {e}")
         import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Error fetching next batch: {str(e)}")
+        tb = traceback.format_exc()
+        logger.error(tb)
+        # Return more specific error
+        error_msg = str(e)
+        if "telegram" in error_msg.lower():
+            error_msg = "Koneksi Telegram terputus. Coba lagi."
+        elif "timeout" in error_msg.lower():
+            error_msg = "Request timeout. Coba lagi."
+        elif "connection" in error_msg.lower():
+            error_msg = "Koneksi error. Coba lagi."
+        raise HTTPException(status_code=500, detail=f"Error: {error_msg}")
 
 async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str], batch_num: int):
     """Background task to fetch a batch of photos"""
