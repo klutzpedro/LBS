@@ -5250,6 +5250,13 @@ async def nongeoint_search(request: NonGeointSearchRequest, username: str = Depe
     }
     await db.nongeoint_searches.insert_one(search_doc)
     
+    # SET LOCK: Mark system as busy for Full Query
+    current_request_status["is_busy"] = True
+    current_request_status["operation"] = f"Full Query: {request.name}"
+    current_request_status["username"] = username
+    current_request_status["started_at"] = datetime.now(timezone.utc).isoformat()
+    current_request_status["investigation_id"] = search_id
+    
     # Start background task
     asyncio.create_task(process_nongeoint_search(search_id, request.name, request.query_types))
     
@@ -6043,6 +6050,15 @@ async def process_nongeoint_search(search_id: str, name: str, query_types: List[
             # Always release lock when done
             release_telegram_lock(f"Full Query - {name}")
             logger.info(f"[NONGEOINT {search_id}] Released telegram lock")
+            
+            # CLEAR LOCK: Mark system as not busy after Full Query completes
+            global current_request_status
+            current_request_status["is_busy"] = False
+            current_request_status["operation"] = None
+            current_request_status["username"] = None
+            current_request_status["started_at"] = None
+            current_request_status["investigation_id"] = None
+            logger.info(f"[NONGEOINT {search_id}] Cleared current_request_status lock")
 
 async def execute_nongeoint_query(search_id: str, name: str, query_type: str) -> dict:
     """Execute a single NON GEOINT query"""
