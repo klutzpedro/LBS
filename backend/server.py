@@ -5281,7 +5281,10 @@ async def get_nongeoint_search(search_id: str, username: str = Depends(verify_to
         logger.warning(f"[NONGEOINT] Search {search_id} not found or access denied")
         raise HTTPException(status_code=404, detail="Search not found or access denied")
     
-    logger.info(f"[NONGEOINT] Found search: {search.get('name')}, status: {search.get('status')}, niks_found: {search.get('niks_found', [])}")
+    # Log detailed info about photos
+    nik_photos = search.get("nik_photos", {})
+    photos_count = len(nik_photos) if isinstance(nik_photos, dict) else 0
+    logger.info(f"[NONGEOINT] Found search: {search.get('name')}, status: {search.get('status')}, nik_photos_count: {photos_count}, current_batch: {search.get('current_batch')}, total_niks: {len(search.get('niks_found', []))}")
     
     # Also get investigation if exists
     investigation = await db.nik_investigations.find_one({"search_id": search_id}, {"_id": 0})
@@ -5604,7 +5607,14 @@ async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str],
             # Merge with existing nik_photos
             existing = await db.nongeoint_searches.find_one({"id": search_id}, {"nik_photos": 1})
             existing_photos = existing.get("nik_photos", {}) if existing else {}
-            existing_photos.update(nik_photos)
+            
+            logger.info(f"[NONGEOINT {search_id}] Before merge: existing_photos={len(existing_photos)}, new_photos={len(nik_photos)}")
+            
+            # Deep merge - ensure we don't lose existing photos
+            for nik, photo_data in nik_photos.items():
+                existing_photos[nik] = photo_data
+            
+            logger.info(f"[NONGEOINT {search_id}] After merge: total_photos={len(existing_photos)}")
             
             # Check if all batches are complete
             search_data = await db.nongeoint_searches.find_one({"id": search_id})
