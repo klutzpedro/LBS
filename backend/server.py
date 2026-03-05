@@ -5315,13 +5315,33 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
     """
     global request_status
     
-    # Check if system is busy with another request
+    # Check if system is busy with another request - with timeout check
     if request_status["is_busy"]:
-        return {
-            "status": "busy",
-            "message": f"Sistem sedang memproses request lain: {request_status['operation']}",
-            "queued": True
-        }
+        # Check if request has been running too long (more than 5 minutes = stuck)
+        started_at = request_status.get("started_at")
+        if started_at:
+            try:
+                start_time = datetime.fromisoformat(started_at.replace('Z', '+00:00'))
+                elapsed = (datetime.now(timezone.utc) - start_time).total_seconds()
+                if elapsed > 300:  # 5 minutes
+                    logger.warning(f"[NONGEOINT] Request stuck for {elapsed:.0f}s, clearing status")
+                    request_status = {"is_busy": False, "operation": None, "username": None}
+                else:
+                    return {
+                        "status": "busy",
+                        "message": f"Sistem sedang memproses request lain: {request_status['operation']}",
+                        "queued": True
+                    }
+            except Exception as e:
+                logger.error(f"[NONGEOINT] Error parsing started_at: {e}")
+                # Clear if we can't parse the time
+                request_status = {"is_busy": False, "operation": None, "username": None}
+        else:
+            return {
+                "status": "busy",
+                "message": f"Sistem sedang memproses request lain: {request_status['operation']}",
+                "queued": True
+            }
     
     search = await db.nongeoint_searches.find_one({"id": search_id}, {"_id": 0})
     if not search:
@@ -5336,15 +5356,20 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
     start_idx = current_batch * batch_size
     end_idx = start_idx + batch_size
     
+    logger.info(f"[NONGEOINT {search_id}] Fetch next batch: current_batch={current_batch}, start_idx={start_idx}, end_idx={end_idx}, total_niks={len(all_niks)}, photos_already_fetched={len(nik_photos)}")
+    
     # Get NIKs that haven't been fetched yet
     niks_to_fetch = []
     for i, nik in enumerate(all_niks):
         if i >= start_idx and i < end_idx and nik not in nik_photos:
             niks_to_fetch.append(nik)
     
+    logger.info(f"[NONGEOINT {search_id}] NIKs to fetch in this range: {len(niks_to_fetch)}")
+    
     if not niks_to_fetch:
         # Check if there are more batches
         if end_idx >= len(all_niks):
+            logger.info(f"[NONGEOINT {search_id}] All completed - end_idx ({end_idx}) >= total_niks ({len(all_niks)})")
             return {
                 "status": "all_completed",
                 "message": "Semua foto sudah diambil",
@@ -5354,10 +5379,12 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
             }
         else:
             # Move to next batch
+            logger.info(f"[NONGEOINT {search_id}] Current batch range empty, moving to next batch")
             current_batch += 1
             start_idx = current_batch * batch_size
             end_idx = start_idx + batch_size
             niks_to_fetch = [nik for i, nik in enumerate(all_niks) if i >= start_idx and i < end_idx and nik not in nik_photos]
+            logger.info(f"[NONGEOINT {search_id}] New batch {current_batch}: NIKs to fetch = {len(niks_to_fetch)}")
     
     if not niks_to_fetch:
         return {
