@@ -1027,12 +1027,32 @@ export const NonGeointSearchDialog = ({
     if (!searchResults?.id || isLoadingMorePhotos) return;
     
     setIsLoadingMorePhotos(true);
+    
+    // Add timeout controller
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}/fetch-next-batch`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      let response;
+      
+      try {
+        response = await fetch(`${API_URL}/api/nongeoint/search/${searchResults.id}/fetch-next-batch`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          signal: controller.signal
+        });
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          throw new Error('Request timeout. Server terlalu lama merespons.');
+        }
+        throw fetchErr;
+      }
+      clearTimeout(timeoutId);
+      
+      // Check content type
+      const contentType = response.headers.get('content-type');
       
       if (response.ok) {
         const data = await response.json();
@@ -1052,12 +1072,23 @@ export const NonGeointSearchDialog = ({
           setIsLoadingMorePhotos(false);
         }
       } else {
-        toast.error('Gagal mengambil foto berikutnya');
+        // Try to get error detail
+        let errorMsg = 'Gagal mengambil foto berikutnya';
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errData = await response.json();
+            errorMsg = errData.detail || errData.message || errorMsg;
+          } catch (e) { /* ignore */ }
+        } else {
+          errorMsg = `Server error (${response.status}). Coba lagi nanti.`;
+        }
+        console.error('[NonGeoint] Load more error:', errorMsg);
+        toast.error(errorMsg);
         setIsLoadingMorePhotos(false);
       }
     } catch (error) {
       console.error('Load more photos error:', error);
-      toast.error('Error mengambil foto berikutnya');
+      toast.error('Error mengambil foto berikutnya: ' + (error.message || 'Unknown error'));
       setIsLoadingMorePhotos(false);
     }
   };
@@ -1092,6 +1123,12 @@ export const NonGeointSearchDialog = ({
           if (data.status !== 'fetching_photos') {
             clearInterval(pollInterval);
             setIsLoadingMorePhotos(false);
+            
+            // Check for errors
+            if (data.error) {
+              console.error('[NonGeoint] Batch fetch error:', data.error);
+              toast.error(`Error: ${data.error}`);
+            }
             
             // Update search results with merged data
             setSearchResults(prev => ({
