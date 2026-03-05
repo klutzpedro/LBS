@@ -5446,14 +5446,20 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
         
         logger.info(f"[NONGEOINT {search_id}] Fetching next batch: {len(niks_to_fetch)} NIKs (batch {current_batch + 1})")
         
-        # Set request status to busy BEFORE starting the task
-        request_status = {
-            "is_busy": True,
-            "operation": f"Mengambil foto batch {current_batch + 1}",
-            "username": username,
-            "search_id": search_id,
-            "started_at": datetime.now(timezone.utc).isoformat()
-        }
+        # Set BOTH request statuses to busy BEFORE starting the task
+        # request_status is for internal nongeoint lock
+        # current_request_status is for UI display
+        request_status["is_busy"] = True
+        request_status["operation"] = f"Mengambil foto batch {current_batch + 1}"
+        request_status["username"] = username
+        request_status["search_id"] = search_id
+        request_status["started_at"] = datetime.now(timezone.utc).isoformat()
+        
+        # Also update global current_request_status for UI lock display
+        current_request_status["is_busy"] = True
+        current_request_status["operation"] = f"Full Query: Mengambil foto batch {current_batch + 1}"
+        current_request_status["username"] = username
+        current_request_status["started_at"] = datetime.now(timezone.utc).isoformat()
         
         # Update status
         await db.nongeoint_searches.update_one(
@@ -5500,11 +5506,16 @@ async def fetch_next_photo_batch(search_id: str, username: str = Depends(verify_
 
 async def fetch_photo_batch(search_id: str, name: str, niks_to_fetch: List[str], batch_num: int):
     """Background task to fetch a batch of photos"""
-    global telegram_client, request_status
+    global telegram_client, request_status, current_request_status
     
     def clear_batch_status():
-        global request_status
+        global request_status, current_request_status
         request_status = {"is_busy": False, "operation": None, "username": None}
+        # Also clear global UI status
+        current_request_status["is_busy"] = False
+        current_request_status["operation"] = None
+        current_request_status["username"] = None
+        current_request_status["started_at"] = None
     
     nik_photos = {}
     
