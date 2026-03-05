@@ -5150,6 +5150,9 @@ class NonGeointSearchResult(BaseModel):
 # Global queue lock for NON GEOINT queries
 nongeoint_queue_lock = asyncio.Lock()
 
+# Global request status for photo batch fetching (separate from main request status)
+request_status = {"is_busy": False, "operation": None, "username": None, "started_at": None}
+
 # Constants for pagination
 PHOTO_BATCH_SIZE = 10  # Fetch 10 photos at a time
 
