@@ -270,6 +270,43 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ---
 
+### Fix: Full Query Batch Real-Time Update
+**Date:** 2025-12-XX
+**Issue:** Foto batch 11-20, 21-30 dst tidak langsung muncul secara real-time di popup. User harus keluar dan masuk lagi untuk melihat foto baru.
+
+**Root Cause:** 
+- `startBatchPolling()` hanya update `personsFound` setelah batch selesai (`status !== 'fetching_photos'`)
+- Tidak ada real-time incremental update selama proses fetch
+
+**Fixes Applied:**
+1. **Real-time update di `startBatchPolling()`**: 
+   - Track previous photo count dengan `prevPhotoCount`
+   - Update `personsFound` setiap kali ada foto baru terdeteksi (bukan hanya di akhir)
+   - Force new array reference dengan `[...persons]` untuk trigger React re-render
+   - Polling interval dipercepat dari 3s ke 2s
+
+2. **Real-time update di `startPollingForPhotos()`** (untuk batch pertama):
+   - Sama seperti di atas, tambahkan tracking dan incremental update
+
+**Files Modified:**
+- `frontend/src/components/main/NonGeointSearch.jsx`
+
+**Technical Details:**
+```javascript
+// Before: Update only at end
+if (data.status !== 'fetching_photos') {
+  setPersonsFound(persons);
+}
+
+// After: Real-time incremental update
+if (currentPhotoCount !== prevPhotoCount) {
+  setPersonsFound([...persons]); // Force new array
+  prevPhotoCount = currentPhotoCount;
+}
+```
+
+---
+
 ## Investigation Report (Dec 2025)
 
 ### Change Password Investigation

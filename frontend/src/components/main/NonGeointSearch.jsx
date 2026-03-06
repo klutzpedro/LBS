@@ -1097,6 +1097,9 @@ export const NonGeointSearchDialog = ({
   const startBatchPolling = (searchId) => {
     console.log('[NonGeoint] Starting batch polling for search:', searchId);
     
+    // Track previous photo count to detect new photos
+    let prevPhotoCount = personsFound.length;
+    
     const pollInterval = setInterval(async () => {
       try {
         const token = localStorage.getItem('token');
@@ -1106,20 +1109,72 @@ export const NonGeointSearchDialog = ({
         
         if (response.ok) {
           const data = await response.json();
+          const currentPhotoCount = Object.keys(data.nik_photos || {}).length;
+          
           console.log('[NonGeoint] Batch polling response:', {
             status: data.status,
-            nik_photos_count: Object.keys(data.nik_photos || {}).length,
+            nik_photos_count: currentPhotoCount,
             photos_fetched_count: data.photos_fetched_count,
             has_more_batches: data.has_more_batches,
             current_batch: data.current_batch,
-            total_niks: data.total_niks
+            total_niks: data.total_niks,
+            prevPhotoCount: prevPhotoCount
           });
           
-          // Update progress while fetching
-          if (data.photo_fetch_progress && data.photo_fetch_total) {
-            setPhotosFetched(Object.keys(data.nik_photos || {}).length);
+          // REAL-TIME UPDATE: Always update personsFound if we have new photos
+          // This ensures UI updates incrementally as photos come in
+          if (data.nik_photos && currentPhotoCount > 0) {
+            const persons = Object.entries(data.nik_photos)
+              .map(([nik, d]) => ({
+                nik,
+                nama: d.name || d.nama,
+                name: d.name || d.nama,
+                photo: d.photo,
+                ttl: d.ttl,
+                alamat: d.alamat,
+                jk: d.jk,
+                status: d.status,
+                similarity: d.similarity || 0,
+                batch: d.batch
+              }))
+              .sort((a, b) => b.similarity - a.similarity);
+            
+            // Only update if we have NEW photos (avoid unnecessary re-renders)
+            if (currentPhotoCount !== prevPhotoCount) {
+              console.log(`[NonGeoint] REAL-TIME UPDATE: ${prevPhotoCount} -> ${currentPhotoCount} photos`);
+              setPersonsFound([...persons]); // Force new array reference for React
+              setPhotosFetched(currentPhotoCount);
+              prevPhotoCount = currentPhotoCount;
+              
+              // Show progress toast for incremental updates
+              if (data.status === 'fetching_photos') {
+                const progress = data.photo_fetch_progress || 0;
+                const total = data.photo_fetch_total || 0;
+                if (progress > 0 && total > 0) {
+                  // Update without spamming - only show every 3 photos
+                  if (progress % 3 === 0 || progress === total) {
+                    console.log(`[NonGeoint] Progress: ${progress}/${total} in current batch`);
+                  }
+                }
+              }
+            }
+            
+            // Also update searchResults to keep state in sync
+            setSearchResults(prev => ({
+              ...prev,
+              nik_photos: { ...data.nik_photos },
+              photos_fetched_count: currentPhotoCount,
+              current_batch: data.current_batch,
+              has_more_batches: data.has_more_batches
+            }));
           }
           
+          // Update other state
+          setHasMoreBatches(data.has_more_batches || false);
+          setCurrentBatch(data.current_batch || 0);
+          setTotalNiks(data.total_niks || 0);
+          
+          // Check if batch is complete
           if (data.status !== 'fetching_photos') {
             clearInterval(pollInterval);
             setIsLoadingMorePhotos(false);
@@ -1128,46 +1183,11 @@ export const NonGeointSearchDialog = ({
             if (data.error) {
               console.error('[NonGeoint] Batch fetch error:', data.error);
               toast.error(`Error: ${data.error}`);
-            }
-            
-            // Update search results with merged data
-            setSearchResults(prev => ({
-              ...prev,
-              ...data,
-              nik_photos: data.nik_photos || prev?.nik_photos || {}
-            }));
-            
-            setHasMoreBatches(data.has_more_batches || false);
-            setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
-            setCurrentBatch(data.current_batch || 0);
-            setTotalNiks(data.total_niks || 0);
-            
-            // Refresh persons list with ALL photos (including new batch)
-            if (data.nik_photos) {
-              const nikPhotosCount = Object.keys(data.nik_photos).length;
-              console.log(`[NonGeoint] Updating personsFound with ${nikPhotosCount} photos from nik_photos`);
-              
-              const persons = Object.entries(data.nik_photos)
-                .map(([nik, d]) => ({
-                  nik,
-                  nama: d.name || d.nama,
-                  name: d.name || d.nama,
-                  photo: d.photo,
-                  ttl: d.ttl,
-                  alamat: d.alamat,
-                  jk: d.jk,
-                  status: d.status,
-                  similarity: d.similarity || 0,
-                  batch: d.batch
-                }))
-                .sort((a, b) => b.similarity - a.similarity);
-              
-              console.log(`[NonGeoint] Setting personsFound to ${persons.length} persons (batch ${data.current_batch})`);
-              setPersonsFound(persons);
-              
+            } else {
+              // Show completion toast
               const batchInfo = data.has_more_batches 
-                ? `Batch ${data.current_batch} selesai! Menampilkan ${persons.length} dari ${data.total_niks} target. Masih ada ${data.total_niks - persons.length} target lagi.`
-                : `Semua batch selesai! Menampilkan ${persons.length} target.`;
+                ? `Batch ${data.current_batch} selesai! Menampilkan ${currentPhotoCount} dari ${data.total_niks} target. Masih ada ${data.total_niks - currentPhotoCount} target lagi.`
+                : `Semua batch selesai! Menampilkan ${currentPhotoCount} target.`;
               toast.success(batchInfo);
             }
           } else {
@@ -1177,7 +1197,7 @@ export const NonGeointSearchDialog = ({
       } catch (error) {
         console.error('Batch polling error:', error);
       }
-    }, 3000);
+    }, 2000); // Poll every 2 seconds for faster updates
     
     // Store interval ref so we can clear it on unmount
     pollingRef.current = pollInterval;
@@ -1477,6 +1497,9 @@ export const NonGeointSearchDialog = ({
       clearInterval(pollingRef.current);
     }
     
+    // Track previous photo count to detect new photos
+    let prevPhotoCount = 0;
+    
     pollingRef.current = setInterval(async () => {
       try {
         const token = localStorage.getItem('token');
@@ -1486,16 +1509,21 @@ export const NonGeointSearchDialog = ({
         
         if (response.ok) {
           const data = await response.json();
+          const currentPhotoCount = Object.keys(data.nik_photos || {}).length;
+          
+          console.log('[NonGeoint] Polling response:', {
+            status: data.status,
+            nik_photos_count: currentPhotoCount,
+            prevPhotoCount: prevPhotoCount
+          });
           
           if (data.status !== 'fetching_photos') {
             clearInterval(pollingRef.current);
             pollingRef.current = null;
           }
           
-          setSearchResults(data);
-          setPhotosFetched(data.photos_fetched_count || Object.keys(data.nik_photos || {}).length);
-          
-          if (data.nik_photos) {
+          // REAL-TIME UPDATE: Update personsFound when we have new photos
+          if (data.nik_photos && currentPhotoCount > 0) {
             const persons = Object.entries(data.nik_photos)
               .map(([nik, d]) => ({
                 nik,
@@ -1511,13 +1539,21 @@ export const NonGeointSearchDialog = ({
               }))
               .sort((a, b) => b.similarity - a.similarity);
             
-            setPersonsFound(persons);
+            // Only update if we have NEW photos
+            if (currentPhotoCount !== prevPhotoCount) {
+              console.log(`[NonGeoint] REAL-TIME UPDATE (initial): ${prevPhotoCount} -> ${currentPhotoCount} photos`);
+              setPersonsFound([...persons]); // Force new array reference
+              prevPhotoCount = currentPhotoCount;
+            }
           }
+          
+          setSearchResults(data);
+          setPhotosFetched(data.photos_fetched_count || currentPhotoCount);
         }
       } catch (error) {
         console.error('[NonGeoint] Polling error:', error);
       }
-    }, 3000);
+    }, 2000); // Poll every 2 seconds for faster updates
   };
 
   // Cleanup on close - DON'T reset if search is in progress
