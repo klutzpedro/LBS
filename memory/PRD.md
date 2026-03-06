@@ -242,20 +242,66 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ## Known Issues
 
-### P0 - Critical
-1. **Full Query Admin View Inconsistency** (TESTING NEEDED)
+### P0 - Critical (VPS-Specific - netravision.online)
+1. **Change Password tidak berfungsi di VPS** (REPORTED)
+   - User bisa login dengan password lama setelah ganti password
+   - **Tested di Emergent Preview**: ✅ BERFUNGSI NORMAL
+   - **Kemungkinan penyebab VPS**: Nginx caching, browser cache, MongoDB sync
+   - **Rekomendasi**: Clear browser cache, restart Nginx, check MongoDB
+
+2. **Full Query Batch 2+ tidak muncul di UI** (VPS-Specific)
+   - Backend code sudah benar (merge logic verified)
+   - Frontend polling logic sudah benar
+   - **Kemungkinan penyebab VPS**: Telegram connection timeout, network issues
+
+### P1 - Important
+3. **Full Query Admin View Inconsistency** (TESTING NEEDED)
    - Admin melihat layar seleksi NIK untuk investigasi user lain yang sudah selesai
    - Logic di `getCurrentStep()` sudah diperbaiki, perlu testing
 
-### P1 - Important
-2. **NoneType Error in Simple Query** (VPS-specific)
+4. **NoneType Error in Simple Query** (VPS-specific)
    - Error `'NoneType' object has no attribute 'get'` untuk Perlintasan/Passport
    - Safety checks sudah ditambahkan, monitoring diperlukan
 
 ### Blocked
-3. **TikTok Scraper**
+5. **TikTok Scraper**
    - Blocked oleh anti-bot measures TikTok
    - Butuh residential proxies untuk solusi
+
+---
+
+## Investigation Report (Dec 2025)
+
+### Change Password Investigation
+**Date:** 2025-12-XX
+**Status:** Berfungsi Normal di Emergent Preview
+
+**Test Flow Executed:**
+1. Create test user dengan password "testpass123" → ✅
+2. Login dengan test user → ✅ Token received
+3. Change password ke "newpassword456" → ✅ Success
+4. Logout → ✅ 
+5. Login dengan OLD password → ✅ REJECTED (Invalid credentials)
+6. Login dengan NEW password → ✅ SUCCESS
+
+**Conclusion:** Kode change password berfungsi normal. Masalah di VPS user kemungkinan:
+- Nginx caching response
+- Browser menyimpan token/session lama
+- MongoDB sync issue
+
+**Actions for VPS:**
+```bash
+# 1. Clear Nginx cache
+sudo nginx -s reload
+
+# 2. Check MongoDB connection
+mongo --eval "db.users.find({username:'testuser'})"
+
+# 3. Test API langsung
+curl -X POST https://netravision.online/api/auth/change-password \
+  -H "Authorization: Bearer <token>" \
+  -d '{"current_password":"xxx","new_password":"yyy"}'
+```
 
 ---
 
