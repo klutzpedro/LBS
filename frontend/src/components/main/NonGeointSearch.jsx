@@ -871,6 +871,7 @@ export const NonGeointSearchDialog = ({
   const investigationPollingRef = useRef(null);
   const osintPollingRef = useRef({});
   const lastOpenedWithSearchRef = useRef(null); // Track which search was last opened
+  const lastPhotoCountRef = useRef(0); // Track last photo count for real-time updates
 
   // Notify parent when investigation state changes
   useEffect(() => {
@@ -1097,8 +1098,8 @@ export const NonGeointSearchDialog = ({
   const startBatchPolling = (searchId) => {
     console.log('[NonGeoint] Starting batch polling for search:', searchId);
     
-    // Track previous photo count to detect new photos
-    let prevPhotoCount = personsFound.length;
+    // Reset photo count ref at start
+    lastPhotoCountRef.current = 0;
     
     const pollInterval = setInterval(async () => {
       try {
@@ -1118,55 +1119,48 @@ export const NonGeointSearchDialog = ({
             has_more_batches: data.has_more_batches,
             current_batch: data.current_batch,
             total_niks: data.total_niks,
-            prevPhotoCount: prevPhotoCount
+            lastPhotoCountRef: lastPhotoCountRef.current
           });
           
-          // REAL-TIME UPDATE: Always update personsFound if we have new photos
-          // This ensures UI updates incrementally as photos come in
+          // REAL-TIME UPDATE: Always update when we have photos
           if (data.nik_photos && currentPhotoCount > 0) {
-            const persons = Object.entries(data.nik_photos)
-              .map(([nik, d]) => ({
-                nik,
-                nama: d.name || d.nama,
-                name: d.name || d.nama,
-                photo: d.photo,
-                ttl: d.ttl,
-                alamat: d.alamat,
-                jk: d.jk,
-                status: d.status,
-                similarity: d.similarity || 0,
-                batch: d.batch
-              }))
-              .sort((a, b) => b.similarity - a.similarity);
-            
-            // Only update if we have NEW photos (avoid unnecessary re-renders)
-            if (currentPhotoCount !== prevPhotoCount) {
-              console.log(`[NonGeoint] REAL-TIME UPDATE: ${prevPhotoCount} -> ${currentPhotoCount} photos`);
-              setPersonsFound([...persons]); // Force new array reference for React
-              setPhotosFetched(currentPhotoCount);
-              prevPhotoCount = currentPhotoCount;
+            // Check if photo count changed using ref (avoids stale closure)
+            if (currentPhotoCount !== lastPhotoCountRef.current) {
+              console.log(`[NonGeoint] REAL-TIME UPDATE: ${lastPhotoCountRef.current} -> ${currentPhotoCount} photos`);
+              lastPhotoCountRef.current = currentPhotoCount;
               
-              // Show progress toast for incremental updates
-              if (data.status === 'fetching_photos') {
-                const progress = data.photo_fetch_progress || 0;
-                const total = data.photo_fetch_total || 0;
-                if (progress > 0 && total > 0) {
-                  // Update without spamming - only show every 3 photos
-                  if (progress % 3 === 0 || progress === total) {
-                    console.log(`[NonGeoint] Progress: ${progress}/${total} in current batch`);
-                  }
-                }
-              }
+              const persons = Object.entries(data.nik_photos)
+                .map(([nik, d]) => ({
+                  nik,
+                  nama: d.name || d.nama,
+                  name: d.name || d.nama,
+                  photo: d.photo,
+                  ttl: d.ttl,
+                  alamat: d.alamat,
+                  jk: d.jk,
+                  status: d.status,
+                  similarity: d.similarity || 0,
+                  batch: d.batch
+                }))
+                .sort((a, b) => b.similarity - a.similarity);
+              
+              // Use functional update to ensure we get latest state
+              setPersonsFound(persons);
+              setPhotosFetched(currentPhotoCount);
+              
+              // Also update searchResults to keep in sync
+              setSearchResults(prev => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  nik_photos: data.nik_photos,
+                  photos_fetched_count: currentPhotoCount,
+                  current_batch: data.current_batch,
+                  has_more_batches: data.has_more_batches,
+                  status: data.status
+                };
+              });
             }
-            
-            // Also update searchResults to keep state in sync
-            setSearchResults(prev => ({
-              ...prev,
-              nik_photos: { ...data.nik_photos },
-              photos_fetched_count: currentPhotoCount,
-              current_batch: data.current_batch,
-              has_more_batches: data.has_more_batches
-            }));
           }
           
           // Update other state
@@ -1497,8 +1491,8 @@ export const NonGeointSearchDialog = ({
       clearInterval(pollingRef.current);
     }
     
-    // Track previous photo count to detect new photos
-    let prevPhotoCount = 0;
+    // Reset photo count ref at start
+    lastPhotoCountRef.current = 0;
     
     pollingRef.current = setInterval(async () => {
       try {
@@ -1514,7 +1508,7 @@ export const NonGeointSearchDialog = ({
           console.log('[NonGeoint] Polling response:', {
             status: data.status,
             nik_photos_count: currentPhotoCount,
-            prevPhotoCount: prevPhotoCount
+            lastPhotoCountRef: lastPhotoCountRef.current
           });
           
           if (data.status !== 'fetching_photos') {
@@ -1524,26 +1518,27 @@ export const NonGeointSearchDialog = ({
           
           // REAL-TIME UPDATE: Update personsFound when we have new photos
           if (data.nik_photos && currentPhotoCount > 0) {
-            const persons = Object.entries(data.nik_photos)
-              .map(([nik, d]) => ({
-                nik,
-                nama: d.name || d.nama,
-                name: d.name || d.nama,
-                photo: d.photo,
-                ttl: d.ttl,
-                alamat: d.alamat,
-                jk: d.jk,
-                status: d.status,
-                similarity: d.similarity || 0,
-                batch: d.batch
-              }))
-              .sort((a, b) => b.similarity - a.similarity);
-            
-            // Only update if we have NEW photos
-            if (currentPhotoCount !== prevPhotoCount) {
-              console.log(`[NonGeoint] REAL-TIME UPDATE (initial): ${prevPhotoCount} -> ${currentPhotoCount} photos`);
-              setPersonsFound([...persons]); // Force new array reference
-              prevPhotoCount = currentPhotoCount;
+            // Check if photo count changed using ref
+            if (currentPhotoCount !== lastPhotoCountRef.current) {
+              console.log(`[NonGeoint] REAL-TIME UPDATE (initial): ${lastPhotoCountRef.current} -> ${currentPhotoCount} photos`);
+              lastPhotoCountRef.current = currentPhotoCount;
+              
+              const persons = Object.entries(data.nik_photos)
+                .map(([nik, d]) => ({
+                  nik,
+                  nama: d.name || d.nama,
+                  name: d.name || d.nama,
+                  photo: d.photo,
+                  ttl: d.ttl,
+                  alamat: d.alamat,
+                  jk: d.jk,
+                  status: d.status,
+                  similarity: d.similarity || 0,
+                  batch: d.batch
+                }))
+                .sort((a, b) => b.similarity - a.similarity);
+              
+              setPersonsFound(persons);
             }
           }
           
@@ -3730,8 +3725,22 @@ export const NonGeointSearchDialog = ({
     
     if (isSearching) return 'searching';
     if (!searchResults) return 'input';
-    // Show searching while fetching photos
-    if (searchResults.status === 'fetching_photos') return 'searching';
+    
+    // When fetching_photos, we have two scenarios:
+    // 1. Initial fetch (no photos yet) - show 'searching'
+    // 2. Loading more batches (already have photos) - show 'select_person' with loading indicator
+    if (searchResults.status === 'fetching_photos') {
+      // Check if we already have photos to show
+      const hasExistingPhotos = (searchResults.nik_photos && Object.keys(searchResults.nik_photos).length > 0) || 
+                                 personsFound.length > 0;
+      if (hasExistingPhotos) {
+        // Keep showing photos while fetching more
+        console.log('[NonGeoint] getCurrentStep: fetching_photos but has existing photos, showing select_person');
+        return 'select_person';
+      }
+      return 'searching';
+    }
+    
     if (searchResults.status !== 'completed' && searchResults.status !== 'waiting_selection') return 'searching';
     
     // Get current user info
