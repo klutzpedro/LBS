@@ -318,6 +318,136 @@ const QUERY_TYPES = [
   }
 ];
 
+// ============================================
+// FORMATTER UNTUK HASIL PERLINTASAN
+// ============================================
+const formatPerlintasanData = (rawResponse) => {
+  try {
+    // Coba parse sebagai JSON
+    let data;
+    if (typeof rawResponse === 'string') {
+      data = JSON.parse(rawResponse);
+    } else {
+      data = rawResponse;
+    }
+    
+    // Cek apakah ada dataPerlintasan
+    if (data.dataPerlintasan && Array.isArray(data.dataPerlintasan)) {
+      return {
+        type: 'perlintasan_table',
+        status: data.response_status,
+        message: data.response_message,
+        records: data.dataPerlintasan.map(record => ({
+          passportNo: record.TRAVELDOCUMENTNO || '-',
+          name: record.GIVENNAME || '-',
+          familyName: record.FAMILYNAME || '-',
+          gender: record.GENDERCODE === 'M' ? 'Laki-laki' : record.GENDERCODE === 'F' ? 'Perempuan' : record.GENDERCODE || '-',
+          dob: record.DATEOFBIRTH || '-',
+          nationality: record.NATIONALITYDESCRIPTION || '-',
+          issuingState: record.ISSUINGSTATEDESCRIPTION || '-',
+          port: record.PORTDESCRIPTION || '-',
+          tpi: record.TPINAME || '-',
+          direction: record.DIRECTIONCODE === 'A' ? '🛬 MASUK' : record.DIRECTIONCODE === 'D' ? '🛫 KELUAR' : record.DIRECTIONCODE || '-',
+          movementDate: record.MOVEMENTDATE || '-'
+        }))
+      };
+    }
+    
+    // Fallback: return raw jika bukan format perlintasan
+    return { type: 'raw', data: rawResponse };
+  } catch (e) {
+    // Bukan JSON, return raw
+    return { type: 'raw', data: rawResponse };
+  }
+};
+
+// Komponen untuk menampilkan tabel perlintasan
+const PerlintasanTable = ({ data }) => {
+  if (!data || !data.records || data.records.length === 0) {
+    return <p style={{ color: 'var(--foreground-muted)' }}>Tidak ada data perlintasan</p>;
+  }
+  
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="flex items-center gap-3 mb-3">
+        <span className="text-xs px-2 py-1 rounded" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}>
+          {data.message || 'Data ditemukan'}
+        </span>
+        <span className="text-xs" style={{ color: 'var(--foreground-muted)' }}>
+          {data.records.length} record perlintasan
+        </span>
+      </div>
+      
+      {/* Records as Cards */}
+      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+        {data.records.map((record, idx) => (
+          <div 
+            key={idx} 
+            className="p-3 rounded-lg border"
+            style={{ 
+              backgroundColor: 'var(--background-tertiary)',
+              borderColor: record.direction.includes('MASUK') ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'
+            }}
+          >
+            {/* Header - Direction & Date */}
+            <div className="flex items-center justify-between mb-2">
+              <span 
+                className="text-sm font-bold px-2 py-1 rounded"
+                style={{ 
+                  backgroundColor: record.direction.includes('MASUK') ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                  color: record.direction.includes('MASUK') ? '#10b981' : '#ef4444'
+                }}
+              >
+                {record.direction}
+              </span>
+              <span className="text-xs font-mono" style={{ color: 'var(--accent-primary)' }}>
+                {record.movementDate}
+              </span>
+            </div>
+            
+            {/* Details Grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>Nama: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.name} {record.familyName !== '-' ? record.familyName : ''}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>Passport: </span>
+                <span className="font-mono" style={{ color: '#f59e0b' }}>{record.passportNo}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>TTL: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.dob}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>JK: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.gender}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>Negara: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.nationality}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--foreground-muted)' }}>Penerbit: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.issuingState}</span>
+              </div>
+              <div className="col-span-2">
+                <span style={{ color: 'var(--foreground-muted)' }}>Port: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.port}</span>
+              </div>
+              <div className="col-span-2">
+                <span style={{ color: 'var(--foreground-muted)' }}>TPI: </span>
+                <span style={{ color: 'var(--foreground-primary)' }}>{record.tpi}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Simple Query Button
 export const SimpleQueryButton = ({ onClick }) => {
   return (
@@ -814,12 +944,30 @@ export const SimpleQueryDialog = ({ open, onOpenChange, initialResult = null }) 
                           </Button>
                         </div>
                       )}
-                      <pre 
-                        className="text-xs whitespace-pre-wrap font-mono"
-                        style={{ color: '#00ff88' }}
-                      >
-                        {result.raw_response}
-                      </pre>
+                      
+                      {/* Check if this is perlintasan data and format it nicely */}
+                      {(() => {
+                        // Check if query type is perlintasan or if response contains dataPerlintasan
+                        const isPerlintasan = selectedType?.id === 'perlintasan' || 
+                          (result.raw_response && result.raw_response.includes('dataPerlintasan'));
+                        
+                        if (isPerlintasan) {
+                          const formatted = formatPerlintasanData(result.raw_response);
+                          if (formatted.type === 'perlintasan_table') {
+                            return <PerlintasanTable data={formatted} />;
+                          }
+                        }
+                        
+                        // Default: show raw response
+                        return (
+                          <pre 
+                            className="text-xs whitespace-pre-wrap font-mono"
+                            style={{ color: '#00ff88' }}
+                          >
+                            {result.raw_response}
+                          </pre>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1141,12 +1289,29 @@ export const SimpleQueryHistoryDialog = ({ open, onOpenChange, onSelectHistory }
                     </Button>
                   </div>
                 )}
-                <pre 
-                  className="text-xs whitespace-pre-wrap font-mono"
-                  style={{ color: '#00ff88' }}
-                >
-                  {selectedItem.raw_response || 'Tidak ada data'}
-                </pre>
+                
+                {/* Check if this is perlintasan data and format it nicely */}
+                {(() => {
+                  const isPerlintasan = selectedItem.query_type === 'perlintasan' || 
+                    (selectedItem.raw_response && selectedItem.raw_response.includes('dataPerlintasan'));
+                  
+                  if (isPerlintasan && selectedItem.raw_response) {
+                    const formatted = formatPerlintasanData(selectedItem.raw_response);
+                    if (formatted.type === 'perlintasan_table') {
+                      return <PerlintasanTable data={formatted} />;
+                    }
+                  }
+                  
+                  // Default: show raw response
+                  return (
+                    <pre 
+                      className="text-xs whitespace-pre-wrap font-mono"
+                      style={{ color: '#00ff88' }}
+                    >
+                      {selectedItem.raw_response || 'Tidak ada data'}
+                    </pre>
+                  );
+                })()}
               </div>
             </div>
           )}

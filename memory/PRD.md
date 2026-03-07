@@ -270,6 +270,22 @@ NETRA adalah platform intelijen berbasis web dengan backend Python/Flask, fronte
 
 ---
 
+### Fix: Simple Query Perlintasan Format Display
+**Date:** 2025-12-XX
+**Issue:** Hasil perlintasan di Simple Query menampilkan JSON mentah yang sulit dibaca
+
+**Fixes Applied:**
+1. **Formatter function** - `formatPerlintasanData()` parse JSON dan extract fields penting
+2. **PerlintasanTable component** - Menampilkan data sebagai cards dengan format rapi:
+   - Header: Direction (MASUK/KELUAR) dengan warna berbeda + tanggal
+   - Grid: Nama, Passport, TTL, JK, Negara, Penerbit, Port, TPI
+3. **Applied to both** - Query result dan History detail
+
+**Files Modified:**
+- `frontend/src/components/main/SimpleQuery.jsx`
+
+---
+
 ### Fix: Full Query Batch Real-Time Update
 **Date:** 2025-12-XX
 **Issue:** Foto batch 11-20, 21-30 dst tidak langsung muncul secara real-time di popup. User harus refresh halaman untuk melihat foto baru.
